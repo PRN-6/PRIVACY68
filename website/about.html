@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About // PRIVACY68 & Developer Spotlight</title>
+    <meta name="description"
+        content="Learn about PRIVACY68, the 100% private local voice assistant philosophy, technology stack, and developer profile of Prinson.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,600;0,700;0,800;1,400&family=Silkscreen:wght@400;700&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap"
+        rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body class="crt-enabled">
+
+    <canvas id="matrix-canvas"></canvas>
+    <div class="scanlines"></div>
+
+    <div class="site-wrapper">
+
+        <!-- Top Minimalist Navigation Bar -->
+        <header class="top-nav">
+            <div class="nav-brand">
+                <span class="pixel-dot"></span>
+                <span class="brand-tag">SYS://PRIVACY68.AI</span>
+            </div>
+
+            <nav class="nav-links">
+                <a href="index.html" class="nav-item">[ home ]</a>
+                <span class="nav-sep">·</span>
+                <a href="docs.html" class="nav-item">[ docs ]</a>
+                <span class="nav-sep">·</span>
+                <a href="plugins.html" class="nav-item">[ plugins ]</a>
+                <span class="nav-sep">·</span>
+                <a href="about.html" class="nav-item active">[ about ]</a>
+                <span class="nav-sep">·</span>
+                <a href="index.html#install" class="nav-item">[ setup ]</a>
+            </nav>
+
+            <div class="nav-controls">
+                <button id="sfx-toggle" class="icon-toggle" title="Toggle Sound FX">
+                    <span class="ctrl-label">SFX:</span>
+                    <span id="sfx-status" class="ctrl-val">ON</span>
+                </button>
+                <button id="crt-toggle" class="icon-toggle" title="Toggle CRT Filter">
+                    <span class="ctrl-label">CRT:</span>
+                    <span id="crt-status" class="ctrl-val">ON</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main About Section -->
+        <main class="content-section">
+            <div class="section-title-wrap">
+                <span class="section-index">[ 04 // PROJECT MISSION & CREATOR ]</span>
+                <h2 class="section-heading">About PRIVACY68 Voice Assistant</h2>
+                <p class="section-desc">Building an uncompromised, hyper-fast, private desktop intelligence engine.</p>
+            </div>
+
+            <!-- About Hero Card -->
+            <div class="about-hero">
+                <h3
+                    style="font-family: var(--font-pixel); font-size: 1.1rem; color: var(--color-ruby); margin-bottom: 12px;">
+                    // THE PRIVACY-FIRST PHILOSOPHY
+                </h3>
+                <p style="color: var(--text-secondary); font-size: 0.95rem; line-height: 1.7;">
+                    Modern voice assistants send every spoken word, audio snippet, and ambient recording to remote cloud
+                    telemetry servers. PRIVACY68 was born out of a radical commitment to personal privacy: <strong>your
+                        voice data belongs on your device, nowhere else.</strong>
+                </p>
+                <p style="color: var(--text-secondary); font-size: 0.95rem; line-height: 1.7; margin-top: 12px;">
+                    By combining CTranslate2-accelerated Whisper models, ONNX Silero Voice Activity Detection, CAM++
+                    512-d neural speaker verification, and local Ollama LLM execution, PRIVACY68 delivers sub-50ms voice
+                    assistant capabilities without opening a single network socket to third-party clouds.
+                </p>
+
+                <!-- Developer Bio Box -->
+                <div class="about-author-box">
+                    <div class="author-avatar">P</div>
+                    <div class="author-info">
+                        <h3>Designed & Developed by Prinson</h3>
+                        <p>AI Architect & Full-Stack Systems Engineer focusing on local AI inference, high-performance
+                            desktop automation, and low-latency speech pipelines.</p>
+                        <div style="display: flex; gap: 16px; margin-top: 8px;">
+                            <a href="https://github.com" target="_blank" rel="noreferrer" class="social-icon"
+                                style="font-size: 0.8rem;"><i data-lucide="github"
+                                    style="width: 14px; margin-right: 4px;"></i> GitHub</a>
+                            <a href="https://linkedin.com" target="_blank" rel="noreferrer" class="social-icon"
+                                style="font-size: 0.8rem;"><i data-lucide="linkedin"
+                                    style="width: 14px; margin-right: 4px;"></i> LinkedIn</a>
+                            <a href="mailto:contact@prinson.dev" class="social-icon" style="font-size: 0.8rem;"><i
+                                    data-lucide="mail" style="width: 14px; margin-right: 4px;"></i> Email</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Technology Core Stack Grid -->
+            <div class="section-title-wrap" style="margin-top: 48px;">
+                <span class="section-index">[ NEURAL ENGINE CORE ]</span>
+                <h3 class="section-heading">Technology Stack & Libraries</h3>
+            </div>
+
+            <div class="tech-stack-grid">
+                <div class="tech-card">
+                    <div class="tech-card-header"><i data-lucide="cpu"></i> SPEECH-TO-TEXT</div>
+                    <h4 style="color: var(--text-pure); font-size: 1.05rem;">faster-whisper (CTranslate2)</h4>
+                    <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 6px;">
+                        CTranslate2 PyTorch execution engine running Whisper Medium.en on CUDA float16 GPU memory.
+                    </p>
+                </div>
+
+                <div class="tech-card">
+                    <div class="tech-card-header"><i data-lucide="activity"></i> VOICE ACTIVITY</div>
+                    <h4 style="color: var(--text-pure); font-size: 1.05rem;">Silero VAD (ONNX Runtime)</h4>
+                    <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 6px;">
+                        Ultra-lightweight 32ms frame chunk VAD filter that rejects ambient noise and keyboard clicks.
+                    </p>
+                </div>
+
+                <div class="tech-card">
+                    <div class="tech-card-header"><i data-lucide="shield-check"></i> VOICE SECURITY</div>
+                    <h4 style="color: var(--text-pure); font-size: 1.05rem;">CAM++ Speaker Embedder</h4>
+                    <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 6px;">
+                        512-dimensional neural speaker embedding model verifying voice lock cosine similarity (0.50
+                        threshold).
+                    </p>
+                </div>
+
+                <div class="tech-card">
+                    <div class="tech-card-header"><i data-lucide="bot"></i> LOCAL REASONING</div>
+                    <h4 style="color: var(--text-pure); font-size: 1.05rem;">Ollama AI Core (Qwen 2.5)</h4>
+                    <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 6px;">
+                        Fallback local LLM for intent extraction and complex task planning when fast-lane similarity is
+                        under 0.78.
+                    </p>
+                </div>
+
+                <div class="tech-card">
+                    <div class="tech-card-header"><i data-lucide="video"></i> VISION CONTROL</div>
+                    <h4 style="color: var(--text-pure); font-size: 1.05rem;">MediaPipe + OpenCV</h4>
+                    <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 6px;">
+                        Webcam hand gesture engine detecting open palm wake, fist mute, slide navigation, and Alt-Tab
+                        app switching.
+                    </p>
+                </div>
+
+                <div class="tech-card">
+                    <div class="tech-card-header"><i data-lucide="layout"></i> DASHBOARD UI</div>
+                    <h4 style="color: var(--text-pure); font-size: 1.05rem;">WebView2 + Tailwind CSS</h4>
+                    <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 6px;">
+                        Modern glassmorphic Tailwind Control Center Dashboard running natively inside pywebview.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Version Timeline -->
+            <div class="doc-block" style="margin-top: 48px;">
+                <div class="doc-block-header">
+                    <i data-lucide="git-commit" class="doc-block-icon"></i>
+                    <h3 class="doc-block-title">Version Release History</h3>
+                </div>
+                <ul style="list-style: none; display: flex; flex-direction: column; gap: 16px; margin-top: 16px;">
+                    <li style="border-left: 2px solid var(--color-ruby); padding-left: 16px;">
+                        <div style="font-family: var(--font-pixel); color: var(--color-ruby); font-size: 0.8rem;">v1.1.0
+                            · CURRENT RELEASE</div>
+                        <h4 style="color: var(--text-pure); margin-top: 2px;">Hand Gesture Engine & Alt-Tab Integration
+                        </h4>
+                        <p style="color: var(--text-secondary); font-size: 0.85rem;">Added MediaPipe 0.10.14 gesture
+                            control, PPT presentation remote navigation, Alt-Tab app switcher mode, and dynamic plugin
+                            marketplace.</p>
+                    </li>
+                    <li style="border-left: 2px solid var(--border-bright); padding-left: 16px;">
+                        <div style="font-family: var(--font-pixel); color: var(--text-muted); font-size: 0.8rem;">v1.0.0
+                            · INITIAL LAUNCH</div>
+                        <h4 style="color: var(--text-pure); margin-top: 2px;">Core Assistant & Dual-Lane Semantic Router
+                        </h4>
+                        <p style="color: var(--text-secondary); font-size: 0.85rem;">Initial release featuring Silero
+                            VAD, faster-whisper CUDA acceleration, CAM++ voice lock, and mobile web remote HTTP server.
+                        </p>
+                    </li>
+                </ul>
+            </div>
+
+        </main>
+
+        <!-- Bottom Footer -->
+        <footer class="bottom-bar">
+            <div class="bar-left">
+                <a href="https://github.com" target="_blank" rel="noreferrer" class="social-icon"><i
+                        data-lucide="github"></i></a>
+                <a href="https://linkedin.com" target="_blank" rel="noreferrer" class="social-icon"><i
+                        data-lucide="linkedin"></i></a>
+                <a href="mailto:contact@prinson.dev" class="social-icon"><i data-lucide="mail"></i></a>
+                <span class="bar-tag">© 2026 PRIVACY68 · PRINSON</span>
+            </div>
+            <div class="bar-right">
+                <span class="telemetry-item"><span class="dot-indicator"></span><span class="t-label">SYS:</span>
+                    ONLINE</span>
+                <span class="telemetry-sep">·</span>
+                <span class="telemetry-item"><span class="t-label">BUILD:</span> RELEASE 1.1.0</span>
+            </div>
+        </footer>
+
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>

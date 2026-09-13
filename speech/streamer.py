@@ -79,11 +79,11 @@ class SpeechStreamer:
         Supports any arbitrary unique word or phrase (e.g. 'Zephyr', 'Bumblebee', 'Kratos', 'Aegis').
         """
         if not wake_input:
-            wake_input = "sana"
+            wake_input = "privacy68"
         
         words = [w.strip() for w in wake_input.replace("/", ",").split(",") if w.strip()]
         if not words:
-            words = ["sana"]
+            words = ["privacy68"]
 
         aliases = set()
         for w in words:
@@ -117,7 +117,7 @@ class SpeechStreamer:
 
         for target in target_wake_words:
             if len(target) < 5:
-                # For short names like 'Nova', 'Leo', 'Sana', 'Alexa', require exact word match to avoid false triggers
+                # For short names like 'Nova', 'Leo', 'Alexa', require exact word match to avoid false triggers
                 continue
             for cw in cleaned_words:
                 if len(cw) < 4:
@@ -132,7 +132,7 @@ class SpeechStreamer:
     def strip_wake_word(self, text: str) -> str:
         """Removes the wake word from one-shot inline commands for ANY unique name."""
         res = self.wake_pattern.sub('', text)
-        # Also clean leading 'hey', 'ok', 'sana', etc.
+        # Also clean leading 'hey', 'ok', etc.
         res = re.sub(r'^(hey|ok|okay|hi|hello)\s+', '', res, flags=re.IGNORECASE)
         return res.strip(".!?, \t\n")
 
@@ -143,15 +143,15 @@ class SpeechStreamer:
         self.vad = SileroVAD(threshold=getattr(config, "VAD_THRESHOLD", 0.50))
         self.is_active = False
 
-        # Load user-configured custom wake word (e.g. Nova, Leo, Serena, Sana)
+        # Load user-configured custom wake word (e.g. Nova, Leo, Serena)
         if wake_word:
             self.wake_word = wake_word
         else:
             try:
                 from plugins.profile_manager import profile_manager
-                self.wake_word = profile_manager.get("wake_word", getattr(config, "WAKE_WORD_MODEL", "sana"))
+                self.wake_word = profile_manager.get("wake_word", getattr(config, "WAKE_WORD_MODEL", "privacy68"))
             except Exception:
-                self.wake_word = getattr(config, "WAKE_WORD_MODEL", "sana")
+                self.wake_word = getattr(config, "WAKE_WORD_MODEL", "privacy68")
 
         self.wake_pattern = self._build_wake_pattern(self.wake_word)
         logger.info(f"Custom Wake Word initialized: '{self.wake_word}' (Patterns: {self.wake_pattern.pattern})")
@@ -288,6 +288,7 @@ class SpeechStreamer:
         idle_buffer = []          # Short rolling buffer used for wake word detection
         silence_counter = 0
         has_spoken = False
+        speech_chunks = 0
 
         # Scan every 0.8 seconds (faster detection window)
         IDLE_WINDOW_CHUNKS = int(self.sample_rate * 0.8 / config.BLOCK_SIZE)
@@ -557,8 +558,8 @@ class SpeechStreamer:
 
                         # ── Filter Out Standalone Wake Words / Empty Utterances ──
                         KNOWN_NON_COMMANDS = {
-                            "alexa", "nova", "sana", "privacy68", "jarvis", "friday", "leo", "serena",
-                            "hey alexa", "hey nova", "hey sana", "yes", "yeah", "okay", "hi", "hello"
+                            "alexa", "nova", "privacy68", "jarvis", "friday", "leo", "serena",
+                            "hey alexa", "hey nova", "hey privacy68", "yes", "yeah", "okay", "hi", "hello"
                         }
                         if text.lower().strip(".!?, ") in KNOWN_NON_COMMANDS or len(text.strip()) <= 2:
                             logger.info(f"Wake word detected ('{text}'). Actively listening for your command...")

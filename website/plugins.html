@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plugins Hub // PRIVACY68 Extensions & Downloads</title>
+    <meta name="description"
+        content="Browse, download, and install official and custom plugins for PRIVACY68 autonomous voice assistant.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,600;0,700;0,800;1,400&family=Silkscreen:wght@400;700&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap"
+        rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body class="crt-enabled">
+
+    <canvas id="matrix-canvas"></canvas>
+    <div class="scanlines"></div>
+
+    <div class="site-wrapper">
+
+        <!-- Top Minimalist Navigation Bar -->
+        <header class="top-nav">
+            <div class="nav-brand">
+                <span class="pixel-dot"></span>
+                <span class="brand-tag">SYS://PRIVACY68.AI</span>
+            </div>
+
+            <nav class="nav-links">
+                <a href="index.html" class="nav-item">[ home ]</a>
+                <span class="nav-sep">·</span>
+                <a href="docs.html" class="nav-item">[ docs ]</a>
+                <span class="nav-sep">·</span>
+                <a href="plugins.html" class="nav-item active">[ plugins ]</a>
+                <span class="nav-sep">·</span>
+                <a href="about.html" class="nav-item">[ about ]</a>
+                <span class="nav-sep">·</span>
+                <a href="index.html#install" class="nav-item">[ setup ]</a>
+            </nav>
+
+            <div class="nav-controls">
+                <button id="sfx-toggle" class="icon-toggle" title="Toggle Sound FX">
+                    <span class="ctrl-label">SFX:</span>
+                    <span id="sfx-status" class="ctrl-val">ON</span>
+                </button>
+                <button id="crt-toggle" class="icon-toggle" title="Toggle CRT Filter">
+                    <span class="ctrl-label">CRT:</span>
+                    <span id="crt-status" class="ctrl-val">ON</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Plugins Section -->
+        <main class="content-section">
+            <div class="section-title-wrap">
+                <span class="section-index">[ 03 // PLUGIN MARKETPLACE & DOWNLOADS ]</span>
+                <h2 class="section-heading">PRIVACY68 Ecosystem Plugins</h2>
+                <p class="section-desc">Download modular Python plugins to expand PRIVACY68 automation capabilities
+                    instantly with zero assistant restarts.</p>
+            </div>
+
+            <!-- Plugin Installation Guide Banner -->
+            <div class="plugins-hero-banner">
+                <div>
+                    <h3 style="color: var(--text-pure); font-size: 1.1rem; margin-bottom: 6px;">⚡ How To Install Any
+                        Plugin</h3>
+                    <p style="color: var(--text-secondary); font-size: 0.88rem;">
+                        1. Click <strong>[ ⬇ DOWNLOAD PLUGIN ]</strong> on any card below.<br>
+                        2. Move the downloaded <code>.py</code> file into your local plugins directory:
+                        <code>C:\Users\&lt;You&gt;\AppData\Roaming\PRIVACY68\plugins\</code><br>
+                        3. PRIVACY68 automatically detects the plugin and indexes its voice triggers in real time!
+                    </p>
+                </div>
+                <a href="downloads/plugins/" class="pixel-btn primary-btn" style="white-space: nowrap;">
+                    <span class="btn-bracket">[</span>
+                    <span class="btn-core">📂 BROWSE ALL FILES</span>
+                    <span class="btn-bracket">]</span>
+                </a>
+            </div>
+
+            <!-- Plugins Gallery Grid -->
+            <div class="plugins-grid">
+
+                <!-- Plugin 1: Hand Gestures -->
+                <div class="plugin-card">
+                    <div>
+                        <div class="plugin-top">
+                            <span class="plugin-emoji">✋</span>
+                            <div>
+                                <h3 class="plugin-meta-title">Hand Gestures Engine</h3>
+                                <div class="plugin-badge-row">
+                                    <span class="badge-custom">CUSTOM PLUGIN</span>
+                                    <span class="badge-builtin">HOT-RELOAD</span>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="plugin-desc">
+                            Webcam-based AI gesture recognition powered by MediaPipe. Wake assistant with open palm,
+                            toggle microphone mute with fist, navigate slides with thumbs up/down, and run Alt-Tab app
+                            switcher hands-free.
+                        </p>
+                        <div class="plugin-triggers-box">
+                            <div class="triggers-title">SPOKEN TRIGGERS:</div>
+                            <span class="trigger-tag">"enable hand gestures"</span>
+                            <span class="trigger-tag">"disable hand gestures"</span>
+                            <span class="trigger-tag">"open app switcher"</span>
+                            <span class="trigger-tag">"toggle camera preview"</span>
+                        </div>
+                    </div>
+                    <div class="plugin-footer-action">
+                        <a href="downloads/plugins/gesture_plugin.py" download="gesture_plugin.py"
+                            class="pixel-btn primary-btn" style="width: 100%; text-align: center;">
+                            <span class="btn-bracket">[</span>
+                            <span class="btn-core">⬇ DOWNLOAD GESTURE_PLUGIN.PY</span>
+                            <span class="btn-bracket">]</span>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Plugin 2: PowerPoint Controller -->
+                <div class="plugin-card">
+                    <div>
+                        <div class="plugin-top">
+                            <span class="plugin-emoji">📊</span>
+                            <div>
+                                <h3 class="plugin-meta-title">PowerPoint Controller</h3>
+                                <div class="plugin-badge-row">
+                                    <span class="badge-custom">CUSTOM PLUGIN</span>
+                                    <span class="badge-builtin">HOT-RELOAD</span>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="plugin-desc">
+                            Hands-free slide deck presentation remote. Advance slides, jump to specific slide numbers,
+                            start or end slideshows, and toggle presenter blank screens using voice commands.
+                        </p>
+                        <div class="plugin-triggers-box">
+                            <div class="triggers-title">SPOKEN TRIGGERS:</div>
+                            <span class="trigger-tag">"next slide"</span>
+                            <span class="trigger-tag">"previous slide"</span>
+                            <span class="trigger-tag">"start presentation"</span>
+                            <span class="trigger-tag">"end presentation"</span>
+                        </div>
+                    </div>
+                    <div class="plugin-footer-action">
+                        <a href="downloads/plugins/ppt_plugin.py" download="ppt_plugin.py" class="pixel-btn primary-btn"
+                            style="width: 100%; text-align: center;">
+                            <span class="btn-bracket">[</span>
+                            <span class="btn-core">⬇ DOWNLOAD PPT_PLUGIN.PY</span>
+                            <span class="btn-bracket">]</span>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Plugin 3: WhatsApp Desktop -->
+                <div class="plugin-card">
+                    <div>
+                        <div class="plugin-top">
+                            <span class="plugin-emoji">💬</span>
+                            <div>
+                                <h3 class="plugin-meta-title">WhatsApp Desktop</h3>
+                                <div class="plugin-badge-row">
+                                    <span class="badge-custom">CUSTOM PLUGIN</span>
+                                    <span class="badge-builtin">HOT-RELOAD</span>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="plugin-desc">
+                            Direct integration with WhatsApp Desktop. Open chat windows, search contacts by name,
+                            dictate and send text messages hands-free.
+                        </p>
+                        <div class="plugin-triggers-box">
+                            <div class="triggers-title">SPOKEN TRIGGERS:</div>
+                            <span class="trigger-tag">"open whatsapp"</span>
+                            <span class="trigger-tag">"send whatsapp message"</span>
+                            <span class="trigger-tag">"chat with Alex"</span>
+                        </div>
+                    </div>
+                    <div class="plugin-footer-action">
+                        <a href="downloads/plugins/whatsapp_plugin.py" download="whatsapp_plugin.py"
+                            class="pixel-btn primary-btn" style="width: 100%; text-align: center;">
+                            <span class="btn-bracket">[</span>
+                            <span class="btn-core">⬇ DOWNLOAD WHATSAPP_PLUGIN.PY</span>
+                            <span class="btn-bracket">]</span>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Plugin 4: Google Chrome -->
+                <div class="plugin-card">
+                    <div>
+                        <div class="plugin-top">
+                            <span class="plugin-emoji">🌐</span>
+                            <div>
+                                <h3 class="plugin-meta-title">Google Chrome Controller</h3>
+                                <div class="plugin-badge-row">
+                                    <span class="badge-builtin">BUILT-IN</span>
+                                    <span class="badge-builtin">CORE</span>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="plugin-desc">
+                            Full voice control for Google Chrome: launch browser, open URLs, create new tabs, close
+                            active tab, go back/forward, and refresh web pages seamlessly.
+                        </p>
+                        <div class="plugin-triggers-box">
+                            <div class="triggers-title">SPOKEN TRIGGERS:</div>
+                            <span class="trigger-tag">"open google chrome"</span>
+                            <span class="trigger-tag">"open new tab"</span>
+                            <span class="trigger-tag">"close current tab"</span>
+                        </div>
+                    </div>
+                    <div class="plugin-footer-action">
+                        <a href="downloads/plugins/chrome_plugin.py" download="chrome_plugin.py"
+                            class="pixel-btn primary-btn" style="width: 100%; text-align: center;">
+                            <span class="btn-bracket">[</span>
+                            <span class="btn-core">⬇ DOWNLOAD CHROME_PLUGIN.PY</span>
+                            <span class="btn-bracket">]</span>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Plugin 5: Windows System -->
+                <div class="plugin-card">
+                    <div>
+                        <div class="plugin-top">
+                            <span class="plugin-emoji">⚙️</span>
+                            <div>
+                                <h3 class="plugin-meta-title">Windows System Control</h3>
+                                <div class="plugin-badge-row">
+                                    <span class="badge-builtin">BUILT-IN</span>
+                                    <span class="badge-builtin">CORE</span>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="plugin-desc">
+                            Deep Win32 OS integration for master volume adjustments, muting audio, controlling monitor
+                            brightness, taking screenshots, and launching installed desktop applications.
+                        </p>
+                        <div class="plugin-triggers-box">
+                            <div class="triggers-title">SPOKEN TRIGGERS:</div>
+                            <span class="trigger-tag">"mute volume"</span>
+                            <span class="trigger-tag">"set volume to 80%"</span>
+                            <span class="trigger-tag">"take screenshot"</span>
+                        </div>
+                    </div>
+                    <div class="plugin-footer-action">
+                        <a href="downloads/plugins/system_plugin.py" download="system_plugin.py"
+                            class="pixel-btn primary-btn" style="width: 100%; text-align: center;">
+                            <span class="btn-bracket">[</span>
+                            <span class="btn-core">⬇ DOWNLOAD SYSTEM_PLUGIN.PY</span>
+                            <span class="btn-bracket">]</span>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Plugin 6: Brave Browser -->
+                <div class="plugin-card">
+                    <div>
+                        <div class="plugin-top">
+                            <span class="plugin-emoji">🦁</span>
+                            <div>
+                                <h3 class="plugin-meta-title">Brave Browser Plugin</h3>
+                                <div class="plugin-badge-row">
+                                    <span class="badge-custom">CUSTOM PLUGIN</span>
+                                    <span class="badge-builtin">HOT-RELOAD</span>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="plugin-desc">
+                            Dedicated privacy web browsing automation for Brave Browser. Launch Brave sessions, perform
+                            fast web queries, and navigate domains.
+                        </p>
+                        <div class="plugin-triggers-box">
+                            <div class="triggers-title">SPOKEN TRIGGERS:</div>
+                            <span class="trigger-tag">"launch brave browser"</span>
+                            <span class="trigger-tag">"search on brave"</span>
+                        </div>
+                    </div>
+                    <div class="plugin-footer-action">
+                        <a href="downloads/plugins/brave_plugin.py" download="brave_plugin.py"
+                            class="pixel-btn primary-btn" style="width: 100%; text-align: center;">
+                            <span class="btn-bracket">[</span>
+                            <span class="btn-core">⬇ DOWNLOAD BRAVE_PLUGIN.PY</span>
+                            <span class="btn-bracket">]</span>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Plugin 7: VS Code Automation -->
+                <div class="plugin-card">
+                    <div>
+                        <div class="plugin-top">
+                            <span class="plugin-emoji">💻</span>
+                            <div>
+                                <h3 class="plugin-meta-title">VS Code Controller</h3>
+                                <div class="plugin-badge-row">
+                                    <span class="badge-custom">CUSTOM PLUGIN</span>
+                                    <span class="badge-builtin">HOT-RELOAD</span>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="plugin-desc">
+                            Developer environment voice control for Visual Studio Code. Toggle integrated terminal, run
+                            build commands, format code files, and switch active editor tabs.
+                        </p>
+                        <div class="plugin-triggers-box">
+                            <div class="triggers-title">SPOKEN TRIGGERS:</div>
+                            <span class="trigger-tag">"open terminal in vscode"</span>
+                            <span class="trigger-tag">"toggle sidebar"</span>
+                            <span class="trigger-tag">"format document"</span>
+                        </div>
+                    </div>
+                    <div class="plugin-footer-action">
+                        <a href="downloads/plugins/vscode_plugin.py" download="vscode_plugin.py"
+                            class="pixel-btn primary-btn" style="width: 100%; text-align: center;">
+                            <span class="btn-bracket">[</span>
+                            <span class="btn-core">⬇ DOWNLOAD VSCODE_PLUGIN.PY</span>
+                            <span class="btn-bracket">]</span>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Plugin 8: Notepad Dictation -->
+                <div class="plugin-card">
+                    <div>
+                        <div class="plugin-top">
+                            <span class="plugin-emoji">📝</span>
+                            <div>
+                                <h3 class="plugin-meta-title">Notepad Utility</h3>
+                                <div class="plugin-badge-row">
+                                    <span class="badge-builtin">BUILT-IN</span>
+                                    <span class="badge-builtin">CORE</span>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="plugin-desc">
+                            Rapid hands-free note taking. Opens Windows Notepad, appends spoken dictations, formats
+                            bullet lists, and saves text files automatically.
+                        </p>
+                        <div class="plugin-triggers-box">
+                            <div class="triggers-title">SPOKEN TRIGGERS:</div>
+                            <span class="trigger-tag">"open notepad"</span>
+                            <span class="trigger-tag">"type meeting notes"</span>
+                            <span class="trigger-tag">"save notepad file"</span>
+                        </div>
+                    </div>
+                    <div class="plugin-footer-action">
+                        <a href="downloads/plugins/notepad_plugin.py" download="notepad_plugin.py"
+                            class="pixel-btn primary-btn" style="width: 100%; text-align: center;">
+                            <span class="btn-bracket">[</span>
+                            <span class="btn-core">⬇ DOWNLOAD NOTEPAD_PLUGIN.PY</span>
+                            <span class="btn-bracket">]</span>
+                        </a>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+
+        <!-- Bottom Footer -->
+        <footer class="bottom-bar">
+            <div class="bar-left">
+                <a href="https://github.com" target="_blank" rel="noreferrer" class="social-icon"><i
+                        data-lucide="github"></i></a>
+                <a href="https://linkedin.com" target="_blank" rel="noreferrer" class="social-icon"><i
+                        data-lucide="linkedin"></i></a>
+                <a href="mailto:contact@prinson.dev" class="social-icon"><i data-lucide="mail"></i></a>
+                <span class="bar-tag">© 2026 PRIVACY68 · PRINSON</span>
+            </div>
+            <div class="bar-right">
+                <span class="telemetry-item"><span class="dot-indicator"></span><span class="t-label">SYS:</span>
+                    ONLINE</span>
+                <span class="telemetry-sep">·</span>
+                <span class="telemetry-item"><span class="t-label">PLUGINS:</span> 8 AVAILABLE</span>
+            </div>
+        </footer>
+
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>

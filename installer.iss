@@ -99,4 +99,4 @@ Filename: "taskkill"; Parameters: "/F /IM ""{#MyAppExeName}"""; Flags: runhidden
 WelcomeLabel1=Welcome to {#MyAppName} Setup
 WelcomeLabel2=This wizard will install {#MyAppName} v{#MyAppVersion} — an ultra-fast, 100%% private AI voice assistant for Windows.%n%nClick Next to continue.
 FinishedHeadingLabel=Setup Complete — {#MyAppName} is Ready!
-FinishedLabel={#MyAppName} has been installed on your PC.%n%nSay "Sana" or "Privacy68" to wake it up and speak your command.%n%nClick Finish to exit Setup.
+FinishedLabel={#MyAppName} has been installed on your PC.%n%nSay "Privacy68" to wake it up and speak your command.%n%nClick Finish to exit Setup.

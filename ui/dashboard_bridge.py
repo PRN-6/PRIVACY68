@@ -34,8 +34,8 @@ class DashboardAPI:
         try:
             return {
                 "user_name": profile_manager.get("user_name", "User"),
-                "assistant_name": profile_manager.get("assistant_name", "Sana"),
-                "wake_word": profile_manager.get("wake_word", "sana"),
+                "assistant_name": profile_manager.get("assistant_name", "Privacy68"),
+                "wake_word": profile_manager.get("wake_word", "privacy68"),
                 "wake_threshold": float(profile_manager.get("wake_threshold", 0.50)),
                 "whisper_model": profile_manager.get("whisper_model", "small.en"),
                 "hud_enabled": bool(profile_manager.get("hud_enabled", True)),

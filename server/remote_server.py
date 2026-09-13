@@ -67,7 +67,7 @@ def generate_qr_png_bytes(url: str) -> bytes:
 _global_on_command_callback = None
 _global_server_port = 8765
 
-class SanaRemoteHandler(SimpleHTTPRequestHandler):
+class Privacy68RemoteHandler(SimpleHTTPRequestHandler):
     """
     HTTP Request Handler serving the Mobile Remote Web App and REST API endpoints.
     """
@@ -194,7 +194,7 @@ class SanaRemoteHandler(SimpleHTTPRequestHandler):
                 logger.info(f"📱 Remote Mobile Command Received: '{command_text}'")
 
                 if _global_on_command_callback:
-                    # Execute on PC via SANA Core
+                    # Execute on PC via Privacy68 Core
                     result = _global_on_command_callback(command_text)
                     if isinstance(result, dict):
                         self._send_json({
@@ -225,13 +225,13 @@ class SanaRemoteHandler(SimpleHTTPRequestHandler):
         self.send_error(404, "Unknown API endpoint")
 
     def log_message(self, format, *args):
-        """Redirect HTTP server logging to SANA's logger (debug level)."""
+        """Redirect HTTP server logging to Privacy68's logger (debug level)."""
         logger.debug(f"{self.address_string()} - - {format % args}")
 
 
 class RemoteServerManager:
     """
-    Manages the lifecycle of the SANA Mobile Web Remote Server.
+    Manages the lifecycle of the Privacy68 Mobile Web Remote Server.
     """
     def __init__(self, host: str = "0.0.0.0", port: int = 8765):
         self.host = host
@@ -255,7 +255,7 @@ class RemoteServerManager:
 
 
         try:
-            self.httpd = ThreadedHTTPServer((self.host, self.port), SanaRemoteHandler)
+            self.httpd = ThreadedHTTPServer((self.host, self.port), Privacy68RemoteHandler)
             self.is_running = True
             self.server_thread = threading.Thread(target=self.httpd.serve_forever, daemon=True)
             self.server_thread.start()

@@ -11,8 +11,10 @@
     <!-- Retro & Monospace Typography (Silkscreen + JetBrains Mono + Space Mono) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,600;0,700;0,800;1,400&family=Silkscreen:wght@400;700&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
-    
+    <link
+        href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,600;0,700;0,800;1,400&family=Silkscreen:wght@400;700&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap"
+        rel="stylesheet">
+
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
 
@@ -38,13 +40,15 @@
             </div>
 
             <nav class="nav-links">
-                <a href="#overview" class="nav-item active">[ 01 // home ]</a>
+                <a href="index.html" class="nav-item active">[ home ]</a>
                 <span class="nav-sep">·</span>
-                <a href="#features" class="nav-item">[ 02 // features ]</a>
+                <a href="docs.html" class="nav-item">[ docs ]</a>
                 <span class="nav-sep">·</span>
-                <a href="#terminal" class="nav-item">[ 03 // terminal ]</a>
+                <a href="plugins.html" class="nav-item">[ plugins ]</a>
                 <span class="nav-sep">·</span>
-                <a href="#install" class="nav-item">[ 04 // setup ]</a>
+                <a href="about.html" class="nav-item">[ about ]</a>
+                <span class="nav-sep">·</span>
+                <a href="index.html#install" class="nav-item">[ setup ]</a>
             </nav>
 
             <div class="nav-controls">
@@ -62,7 +66,7 @@
         <!-- Hero Section: Iconic Pixel Brutalist Centerpiece -->
         <main class="hero-section" id="overview">
             <div class="hero-center">
-                
+
                 <!-- Status Badge -->
                 <div class="hero-pill">
                     <span class="pill-pulse"></span>
@@ -77,7 +81,8 @@
                     <span class="hash-tag">#</span> Autonomous Local Voice Assistant & OS Automation
                 </p>
                 <p class="hero-author">
-                    [ <span class="dim">crafted with local neural models by</span> <span class="author-name">prinson</span> ]
+                    [ <span class="dim">crafted with local neural models by</span> <span
+                        class="author-name">prinson</span> ]
                 </p>
 
                 <!-- Hero Interactive Audio Waveform Visualizer -->
@@ -95,7 +100,8 @@
 
                 <!-- Call To Action -->
                 <div class="cta-actions">
-                    <a href="downloads/PRIVACY68-Setup-v1.0.0.exe" download class="pixel-btn primary-btn" id="main-download-btn">
+                    <a href="downloads/PRIVACY68-Setup-v1.0.0.exe" download class="pixel-btn primary-btn"
+                        id="main-download-btn">
                         <span class="btn-bracket">[</span>
                         <span class="btn-core">⬇ DOWNLOAD PRIVACY68.EXE v1.0</span>
                         <span class="btn-bracket">]</span>
@@ -114,18 +120,28 @@
             <div class="section-title-wrap">
                 <span class="section-index">[ 03 // LIVE TERMINAL SIMULATOR ]</span>
                 <h2 class="section-heading">Test Dual-Lane Intelligence</h2>
-                <p class="section-desc">Click any voice prompt to watch PRIVACY68 route between Fast-Lane (<2ms) and Ollama AI in real time.</p>
+                <p class="section-desc">Click any voice prompt to watch PRIVACY68 route between Fast-Lane (<2ms) and
+                        Ollama AI in real time.</p>
             </div>
 
             <div class="terminal-container">
                 <!-- Preset Prompt Triggers -->
                 <div class="prompt-chips">
                     <span class="chips-label">&gt; SELECT VOICE INPUT:</span>
-                    <button class="cmd-chip active" data-cmd="Privacy68, open Google Chrome" data-lane="FAST_LANE" data-action="Launching Chrome Browser (Native API)" data-conf="0.98">"Privacy68, open Chrome"</button>
-                    <button class="cmd-chip" data-cmd="Privacy68, launch WhatsApp" data-lane="FAST_LANE" data-action="Executing WhatsApp Desktop Protocol" data-conf="0.99">"Privacy68, launch WhatsApp"</button>
-                    <button class="cmd-chip" data-cmd="Privacy68, type meeting notes on notepad" data-lane="FAST_LANE" data-action="Simulating Direct Keyboard Input" data-conf="0.94">"Privacy68, type notes"</button>
-                    <button class="cmd-chip" data-cmd="Privacy68, search what is quantum computing on google" data-lane="OLLAMA_AI" data-action="Ollama Qwen 2.5 → Resolved to WebSearchSkill" data-conf="0.96">"Privacy68, search quantum physics"</button>
-                    <button class="cmd-chip" data-cmd="Privacy68, mute the system volume right now" data-lane="FAST_LANE" data-action="Win32 Audio API → Volume Set 0%" data-conf="0.97">"Privacy68, mute volume"</button>
+                    <button class="cmd-chip active" data-cmd="Privacy68, open Google Chrome" data-lane="FAST_LANE"
+                        data-action="Launching Chrome Browser (Native API)" data-conf="0.98">"Privacy68, open
+                        Chrome"</button>
+                    <button class="cmd-chip" data-cmd="Privacy68, launch WhatsApp" data-lane="FAST_LANE"
+                        data-action="Executing WhatsApp Desktop Protocol" data-conf="0.99">"Privacy68, launch
+                        WhatsApp"</button>
+                    <button class="cmd-chip" data-cmd="Privacy68, type meeting notes on notepad" data-lane="FAST_LANE"
+                        data-action="Simulating Direct Keyboard Input" data-conf="0.94">"Privacy68, type notes"</button>
+                    <button class="cmd-chip" data-cmd="Privacy68, search what is quantum computing on google"
+                        data-lane="OLLAMA_AI" data-action="Ollama Qwen 2.5 → Resolved to WebSearchSkill"
+                        data-conf="0.96">"Privacy68, search quantum physics"</button>
+                    <button class="cmd-chip" data-cmd="Privacy68, mute the system volume right now"
+                        data-lane="FAST_LANE" data-action="Win32 Audio API → Volume Set 0%" data-conf="0.97">"Privacy68,
+                        mute volume"</button>
                 </div>
 
                 <!-- Retro CRT Terminal Window -->
@@ -142,13 +158,18 @@
                         </div>
                     </div>
                     <div class="terminal-screen" id="terminal-screen">
-                        <p class="term-line dim">[00:00:01] PRIVACY68 Neural Engine initialized on device: CUDA (float16)</p>
+                        <p class="term-line dim">[00:00:01] PRIVACY68 Neural Engine initialized on device: CUDA
+                            (float16)</p>
                         <p class="term-line dim">[00:00:01] Silero VAD speech filter engaged (threshold: 0.50)</p>
-                        <p class="term-line dim">[00:00:02] Listening on microphone stream (16kHz / 1280 chunk buffer)...</p>
-                        <p class="term-line accent" id="term-wake">&gt; [WAKE DETECTED] Keyword 'Privacy68' spotted via Whisper idle scan</p>
+                        <p class="term-line dim">[00:00:02] Listening on microphone stream (16kHz / 1280 chunk
+                            buffer)...</p>
+                        <p class="term-line accent" id="term-wake">&gt; [WAKE DETECTED] Keyword 'Privacy68' spotted via
+                            Whisper idle scan</p>
                         <p class="term-line user" id="term-input">&gt; [USER SPOKE] "Privacy68, open Google Chrome"</p>
-                        <p class="term-line router" id="term-lane">&gt; [DUAL-LANE ROUTER] Matched Fast Lane (Cosine Conf: 0.98 &gt;= 0.78)</p>
-                        <p class="term-line success" id="term-action">&gt; [ACTION SUCCESS] ⚡ Executed 'chrome.open' in 1.4ms</p>
+                        <p class="term-line router" id="term-lane">&gt; [DUAL-LANE ROUTER] Matched Fast Lane (Cosine
+                            Conf: 0.98 &gt;= 0.78)</p>
+                        <p class="term-line success" id="term-action">&gt; [ACTION SUCCESS] ⚡ Executed 'chrome.open' in
+                            1.4ms</p>
                         <p class="term-cursor">&gt; _</p>
                     </div>
                 </div>
@@ -160,7 +181,8 @@
             <div class="section-title-wrap">
                 <span class="section-index">[ 02 // ARCHITECTURE & SPECIFICATIONS ]</span>
                 <h2 class="section-heading">Engineered for Extreme Speed & Privacy</h2>
-                <p class="section-desc">Hardware-accelerated neural networks running directly on your Windows desktop.</p>
+                <p class="section-desc">Hardware-accelerated neural networks running directly on your Windows desktop.
+                </p>
             </div>
 
             <div class="specs-grid">
@@ -171,7 +193,8 @@
                         <span class="spec-icon"><i data-lucide="zap"></i></span>
                     </div>
                     <h3 class="spec-title">Sub-100ms Inference</h3>
-                    <p class="spec-body">Powered by <code>faster-whisper</code> (CTranslate2) with CUDA float16 GPU acceleration and automatic int8 CPU fallback.</p>
+                    <p class="spec-body">Powered by <code>faster-whisper</code> (CTranslate2) with CUDA float16 GPU
+                        acceleration and automatic int8 CPU fallback.</p>
                     <div class="spec-tag">BENCHMARK: 48ms</div>
                 </div>
 
@@ -182,7 +205,8 @@
                         <span class="spec-icon"><i data-lucide="shield-check"></i></span>
                     </div>
                     <h3 class="spec-title">100% Local & Private</h3>
-                    <p class="spec-body">Zero cloud servers, zero telemetry. Audio buffers never touch the network, keeping your desktop privacy inviolable.</p>
+                    <p class="spec-body">Zero cloud servers, zero telemetry. Audio buffers never touch the network,
+                        keeping your desktop privacy inviolable.</p>
                     <div class="spec-tag">CLOUD DETACHED</div>
                 </div>
 
@@ -193,7 +217,8 @@
                         <span class="spec-icon"><i data-lucide="git-branch"></i></span>
                     </div>
                     <h3 class="spec-title">Dual-Lane Decision Core</h3>
-                    <p class="spec-body">TF-IDF vector matching resolves 80% of routine actions in &lt;2ms. Complex reasoning dynamically falls through to Ollama AI.</p>
+                    <p class="spec-body">TF-IDF vector matching resolves 80% of routine actions in &lt;2ms. Complex
+                        reasoning dynamically falls through to Ollama AI.</p>
                     <div class="spec-tag">HYBRID ENGINE</div>
                 </div>
 
@@ -204,7 +229,8 @@
                         <span class="spec-icon"><i data-lucide="activity"></i></span>
                     </div>
                     <h3 class="spec-title">Silero Neural VAD</h3>
-                    <p class="spec-body">32ms frame-level Voice Activity Detection ignores keyboard clicks, breathing, and background TV chatter seamlessly.</p>
+                    <p class="spec-body">32ms frame-level Voice Activity Detection ignores keyboard clicks, breathing,
+                        and background TV chatter seamlessly.</p>
                     <div class="spec-tag">NOISE RESISTANT</div>
                 </div>
 
@@ -215,7 +241,8 @@
                         <span class="spec-icon"><i data-lucide="layers"></i></span>
                     </div>
                     <h3 class="spec-title">Click-Through Neon HUD</h3>
-                    <p class="spec-body">Full-screen transparent overlay with Windows WS_EX_TRANSPARENT integration so games & work are never blocked.</p>
+                    <p class="spec-body">Full-screen transparent overlay with Windows WS_EX_TRANSPARENT integration so
+                        games & work are never blocked.</p>
                     <div class="spec-tag">NON-INTRUSIVE UI</div>
                 </div>
 
@@ -226,7 +253,8 @@
                         <span class="spec-icon"><i data-lucide="puzzle"></i></span>
                     </div>
                     <h3 class="spec-title">Hot-Reload Plugin Hub</h3>
-                    <p class="spec-body">Drop Python scripts into <code>%APPDATA%/PRIVACY68/plugins/</code> and PRIVACY68 instantly re-indexes new voice triggers with zero restarts.</p>
+                    <p class="spec-body">Drop Python scripts into <code>%APPDATA%/PRIVACY68/plugins/</code> and
+                        PRIVACY68 instantly re-indexes new voice triggers with zero restarts.</p>
                     <div class="spec-tag">EXTENSIBLE ARCH</div>
                 </div>
             </div>
@@ -247,7 +275,8 @@
                         <h4>Clone Repository & Setup Environment</h4>
                         <div class="code-block">
                             <code>git clone https://github.com/yourusername/PRIVACY68.git &amp;&amp; cd PRIVACY68</code>
-                            <button class="copy-btn" onclick="copyCode(this, 'git clone https://github.com/yourusername/PRIVACY68.git && cd PRIVACY68')">COPY</button>
+                            <button class="copy-btn"
+                                onclick="copyCode(this, 'git clone https://github.com/yourusername/PRIVACY68.git && cd PRIVACY68')">COPY</button>
                         </div>
                     </div>
                 </div>
@@ -258,7 +287,8 @@
                         <h4>Install Dependencies</h4>
                         <div class="code-block">
                             <code>pip install -r requirements.txt</code>
-                            <button class="copy-btn" onclick="copyCode(this, 'pip install -r requirements.txt')">COPY</button>
+                            <button class="copy-btn"
+                                onclick="copyCode(this, 'pip install -r requirements.txt')">COPY</button>
                         </div>
                     </div>
                 </div>
@@ -286,7 +316,7 @@
                 <a href="https://linkedin.com" target="_blank" rel="noreferrer" class="social-icon" title="LinkedIn">
                     <i data-lucide="linkedin"></i>
                 </a>
-                <a href="mailto:contact@prinson.dev" class="social-icon" title="Email">
+                <a href="mailto:prinsonroyal1@gmail.com" class="social-icon" title="Email">
                     <i data-lucide="mail"></i>
                 </a>
                 <span class="bar-tag">© 2026 PRIVACY68 · PRINSON</span>

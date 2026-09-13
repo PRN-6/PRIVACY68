@@ -10,14 +10,14 @@ This document outlines the planned improvements, bug fixes, new plugins, and arc
   - Robust fallback sequence: Windows Store UWP Package (`shell:AppsFolder`) $\rightarrow$ Standalone EXE (`WhatsApp.exe`) $\rightarrow$ Protocol URI (`whatsapp:`) $\rightarrow$ WhatsApp Web in browser (`https://web.whatsapp.com`).
   - Contact Manager Modal in Dashboard allows adding named contacts with nicknames/aliases and fuzzy matching (`_resolve_contact`) so spoken commands accurately match real WhatsApp chat names.
 - [ ] **Text-To-Speech (TTS) Voice Responses**
-  - Add offline, low-latency TTS (e.g., `pyttsx3`, `edge-tts`, or `piper-tts`) so SANA can speak back to confirm actions (e.g., *"Opening Chrome"*, *"Volume set to 50%"*).
+  - Add offline, low-latency TTS (e.g., `pyttsx3`, `edge-tts`, or `piper-tts`) so Privacy68 can speak back to confirm actions (e.g., *"Opening Chrome"*, *"Volume set to 50%"*).
 - [x] **Silero VAD Neural Network Integration**
   - Replace simple energy/RMS thresholding with **Silero VAD (ONNX)** for enterprise-grade speech segmentation.
   - Eliminates false triggers from breathing, keyboard clicks, and background fans while cutting latency when you stop speaking.
 - [ ] **Wake-Word Sensitivity & Noise Calibration**
   - Add an automatic ambient noise calibration step on startup to dynamically adjust `SILENCE_THRESHOLD`.
 - [ ] **Custom User Wake-Word & Activation Phrases**
-  - Allow users to set custom wake words (e.g., *"Hey Jarvis"*, *"Computer"*, *"Hey Sana"*, *"Friday"*) via UI settings or config.
+  - Allow users to set custom wake words (e.g., *"Hey Jarvis"*, *"Computer"*, *"Hey Privacy68"*, *"Friday"*) via UI settings or config.
   - Support custom regex patterns, phonetic alias expansion, and configurable sensitivity for user-defined awake call commands.
 - [x] **Speaker Recognition & Voice Biometrics (Owner-Only Voice Lock)**
   - Integrated SOTA ECAPA-TDNN 512-d (192-d embedding) ONNX model with full Kaldi 80-channel filterbank and CMVN.
@@ -72,13 +72,13 @@ This document outlines the planned improvements, bug fixes, new plugins, and arc
 
 - [ ] **Real-Time Hand Landmark Tracking (`gesture_service.py`)**
   - Integrate **Google MediaPipe Hands** + **OpenCV** running on CPU (30–60 FPS) with negligible compute overhead.
-  - Add optional toggle via voice (*"Sana, enable/disable gesture mode"*) or hotkey to conserve resources when camera is unneeded.
+  - Add optional toggle via voice (*"Privacy68, enable/disable gesture mode"*) or hotkey to conserve resources when camera is unneeded.
 - [ ] **Air Gesture Controls:**
   - ✋ **Open Palm $\rightarrow$ ✊ Fist:** Play / Pause active media.
   - 🤏 **Thumb-Index Pinch & Move:** Continuous smooth system volume adjustment.
   - 👈 / 👉 **Horizontal Air Swipe:** Switch active browser tabs or virtual desktops.
   - ✌️ **Two Fingers Point Up/Down:** Smooth document / webpage scrolling.
-  - 🤫 **Index Finger to Lips:** Instant audio mute / put SANA to sleep.
+  - 🤫 **Index Finger to Lips:** Instant audio mute / put Privacy68 to sleep.
 - [ ] **HUD Gesture Feedback Overlay:**
   - Display subtle hand tracking skeleton or visual icon on the floating HUD when camera mode is engaged.
 
@@ -112,7 +112,7 @@ This document outlines the planned improvements, bug fixes, new plugins, and arc
 ## 📦 6. Deployment, Packaging & Distribution
 
 - [ ] **Start with Windows (Auto-Start)**
-  - Add optional toggle in System Tray to launch SANA automatically on Windows boot.
+  - Add optional toggle in System Tray to launch Privacy68 automatically on Windows boot.
 - [ ] **Standalone One-Click Installer**
   - Build signed `.exe` installer using `PyInstaller` and `Inno Setup` bundling CUDA DLLs and default models.
 - [ ] **Automatic Dependency & Model Downloader**
@@ -121,32 +121,32 @@ This document outlines the planned improvements, bug fixes, new plugins, and arc
 
 ---
 
-## 📱 7. SANA Mobile — Android AI Assistant
+## 📱 7. Privacy68 Mobile — Android AI Assistant
 
-> Internet-connected mobile companion to SANA PC. Uses SANA's PC as the AI brain over WiFi/mobile data, with on-device fallback for basic offline commands.
+> Internet-connected mobile companion to Privacy68 PC. Uses Privacy68's PC as the AI brain over WiFi/mobile data, with on-device fallback for basic offline commands.
 
 ### 🏗️ Architecture
-- **Online mode:** Android app streams mic audio → SANA PC WebSocket server → Whisper `small.en` transcribes → response sent back → phone executes command
+- **Online mode:** Android app streams mic audio → Privacy68 PC WebSocket server → Whisper `small.en` transcribes → response sent back → phone executes command
 - **Offline mode:** On-device Whisper tiny/base model (ONNX via Whisper.cpp JNI) for basic commands without internet
 
 ### 📋 Tasks
-- [ ] **Add WebSocket Server to SANA PC (`server/ws_server.py`)**
+- [ ] **Add WebSocket Server to Privacy68 PC (`server/ws_server.py`)**
   - Accept audio stream from Android client over LAN/internet
   - Transcribe using existing Whisper pipeline and return text result
   - Accept remote command execution requests from Android
 - [ ] **Android App — Core (`app/`)** *(Kotlin, Android Studio)*
   - Microphone recording and streaming
   - Wake word detection on-device (tiny Whisper ONNX)
-  - Connect to SANA PC WebSocket server
-  - Floating overlay HUD (like SANA's desktop HUD)
+  - Connect to Privacy68 PC WebSocket server
+  - Floating overlay HUD (like Privacy68's desktop HUD)
 - [ ] **Android App — Phone Control**
   - Open apps via Android Intents (*"Open WhatsApp"*, *"Open YouTube"*)
   - Send WhatsApp messages via Intents
   - Control volume, brightness, flashlight
   - Read notifications aloud via Accessibility Service
 - [ ] **Android App — Remote PC Control**
-  - Send commands to SANA PC over WebSocket (*"Open Chrome on PC"*, *"Lock PC"*)
-  - View PC status from phone (CPU, RAM, SANA active/sleeping)
+  - Send commands to Privacy68 PC over WebSocket (*"Open Chrome on PC"*, *"Lock PC"*)
+  - View PC status from phone (CPU, RAM, Privacy68 active/sleeping)
 - [ ] **Offline / Online Auto-Switch**
   - Detect internet/LAN availability and seamlessly switch between on-device and PC-powered AI
 - [ ] **Android App — UI**
@@ -164,7 +164,7 @@ This document outlines the planned improvements, bug fixes, new plugins, and arc
 | **v1.3** | *Vision Multimodal* | MediaPipe hand gestures (Air swipe, Pinch volume, Play/Pause). |
 | **v1.4** | *Intelligence* | Multi-turn conversation memory, streaming HUD text. |
 | **v2.0** | *Production Release* | Complete Inno Setup installer with Auto-start and settings GUI. |
-| **v3.0** | *Mobile Expansion* | SANA Android app — voice control for phone + remote PC control over internet. |
+| **v3.0** | *Mobile Expansion* | Privacy68 Android app — voice control for phone + remote PC control over internet. |
 
 
 

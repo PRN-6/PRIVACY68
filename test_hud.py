@@ -57,7 +57,7 @@ def interactive_demo(hud):
 
 def _run_interactive_loop(hud):
     print("\n" + "=" * 55, flush=True)
-    print(" 🚀 SANA HUD Overlay — Interactive Visual Tester", flush=True)
+    print(" 🚀 PRIVACY68 HUD Overlay — Interactive Visual Tester", flush=True)
     print(" 💡 The overlay is 100% click-through (apps & clicks work normally).", flush=True)
     print("=" * 55, flush=True)
     print(" 🎮 Options:", flush=True)

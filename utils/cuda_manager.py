@@ -186,7 +186,7 @@ def _get_wheel_url(package_name: str) -> Optional[str]:
     """Queries PyPI JSON API to get the official Windows AMD64 wheel URL."""
     try:
         api_url = f"https://pypi.org/pypi/{package_name}/json"
-        req = urllib.request.Request(api_url, headers={"User-Agent": "SANA-Assistant-Installer/1.1"})
+        req = urllib.request.Request(api_url, headers={"User-Agent": "Privacy68-Assistant-Installer/1.1"})
         with urllib.request.urlopen(req, timeout=15) as resp:
             data = json.loads(resp.read().decode("utf-8"))
             for file_info in data.get("urls", []):
@@ -270,7 +270,7 @@ def start_cuda_runtime_download(
                     _download_state["status"] = f"Downloading {pkg_name} ({idx + 1}/{total_pkgs})..."
 
                 temp_whl = os.path.join(APPDATA_DIR, f"{pkg_name}_temp.whl")
-                req = urllib.request.Request(url, headers={"User-Agent": "SANA-Assistant/1.1"})
+                req = urllib.request.Request(url, headers={"User-Agent": "Privacy68-Assistant/1.1"})
 
                 with urllib.request.urlopen(req, timeout=30) as response, open(temp_whl, "wb") as out_file:
                     pkg_size = response.length or (400 * 1024 * 1024)

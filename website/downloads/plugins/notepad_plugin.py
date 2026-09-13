@@ -6,12 +6,12 @@ from plugins.win_keys import kill_process
 
 logger = logging.getLogger("PRIVACY68.Plugin.Notepad")
 
-class NotepadPlugin(BasePlugin):
+class NotepadPluggin(BasePlugin):
     #this plugin opens and closes notepad
     id = "notepad"
     name = "Notepad"
     icon = "📝"
-    description = "Notepad text editor plugin"
+    description ="notepad , plugin"
     version ="1.0.0"
     author="prinson"
     is_builtin = False
@@ -47,8 +47,8 @@ class NotepadPlugin(BasePlugin):
     @property
     def descriptions(self) -> Dict[str,str]:
         return{
-            "notepad.open": "open the notepad text editor",
-            "notepad.close": "close all open notepad windows",
+            "notepad.open": "open the notepad text editor ",
+            "notepad.close": "closes all open windows notepad windows",
         }
     
 
@@ -56,7 +56,7 @@ class NotepadPlugin(BasePlugin):
     def open_notepad(self,text:str="")-> bool:
         try:
             subprocess.Popen(["notepad.exe"])
-            logger.info("Notepad launched successfully")
+            logger.info("Notepad launced successfully")
             return True
         except Exception as e:
             logger.error(f"failed to open notepad {e}")

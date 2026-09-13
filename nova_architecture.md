@@ -1,4 +1,4 @@
-# SANA — High-Level Architecture
+# PRIVACY68 — High-Level Architecture
 
 ## System Architecture Diagram
 
@@ -41,10 +41,10 @@ flowchart TB
         direction TB
         subgraph WAKE_DETECT ["Wake Word Detection"]
             WHISPER_IDLE["🗣️ Whisper Idle Scan<br/><i>0.8s overlapping windows<br/>beam_size=2</i>"]:::speechNode
-            WAKE_REGEX["🔑 Wake Pattern<br/><i>Regex: sana · saana · sanna<br/>+ inline command extraction</i>"]:::speechNode
+            WAKE_REGEX["🔑 Wake Pattern<br/><i>Regex: privacy68 · alexa · nova<br/>+ inline command extraction</i>"]:::speechNode
         end
         VAD["🧠 Silero VAD<br/><i>ONNX Neural Model<br/>512-sample frames · 32ms<br/>Speech Probability ≥ 0.50</i>"]:::speechNode
-        WHISPER["⚡ Faster-Whisper ASR<br/><i>CTranslate2 Engine<br/>small.en · float16 CUDA / int8 CPU<br/>beam_size=5 · vad_filter</i>"]:::speechNode
+        WHISPER["⚡ Faster-Whisper ASR<br/><i>CTranslate2 Engine<br/>medium.en · float16 CUDA / int8 CPU<br/>beam_size=8 · vad_filter</i>"]:::speechNode
     end
 
     %% ═══════════════════════════════════════════════════════════════
@@ -77,7 +77,7 @@ flowchart TB
         subgraph SKILL_PLUGIN ["Skills & Plugins Registry"]
             direction LR
             SKILL_MGR["📂 Skill Manager<br/><i>Built-in Skills Registry</i>"]:::skillNode
-            PLUGIN_MGR["🧩 Plugin Manager<br/><i>Built-in + Custom Plugins<br/>Hot-reload · Enable/Disable<br/>%APPDATA%/SANA/plugins/</i>"]:::pluginNode
+            PLUGIN_MGR["🧩 Plugin Manager<br/><i>Built-in + Custom Plugins<br/>Hot-reload · Enable/Disable<br/>%APPDATA%/PRIVACY68/plugins/</i>"]:::pluginNode
         end
 
         subgraph SKILLS_LIST ["Built-in Skills"]
@@ -121,7 +121,7 @@ flowchart TB
     %% Speech processing flow
     AUDIOBUFFER -->|"Idle State"| WHISPER_IDLE
     WHISPER_IDLE -->|"Transcribed Idle Text"| WAKE_REGEX
-    WAKE_REGEX -->|"'Sana' Detected → Activate"| VAD
+    WAKE_REGEX -->|"'Privacy68' Detected → Activate"| VAD
 
     AUDIOBUFFER -->|"Active State"| VAD
     VAD -->|"Speech Confirmed +<br/>Silence Detected"| WHISPER
@@ -175,9 +175,9 @@ flowchart TB
 | Layer | Module(s) | Responsibility |
 |:------|:----------|:---------------|
 | **Audio Capture** | `SoundDevice InputStream` | Captures 16kHz mono float32 audio in 1280-sample blocks (~80ms) via a callback-driven producer–consumer queue |
-| **Wake Word Detection** | `SpeechStreamer` (idle scan) | Transcribes short overlapping 0.8s audio windows with Whisper to detect "Sana" via regex pattern matching |
+| **Wake Word Detection** | `SpeechStreamer` (idle scan) | Transcribes short overlapping 0.8s audio windows with Whisper to detect the configured wake word (e.g., "Privacy68") via regex pattern matching |
 | **Voice Activity Detection** | `SileroVAD` (ONNX) | Neural speech-probability model processing 512-sample frames (32ms); distinguishes human speech from silence/noise |
-| **ASR Engine** | `Faster-Whisper` + `CTranslate2` | Quantized transformer ASR — `small.en` model with float16 (CUDA) or int8 (CPU) precision, beam search, VAD filter, and hotword biasing |
+| **ASR Engine** | `Faster-Whisper` + `CTranslate2` | Quantized transformer ASR — `medium.en` model with float16 (CUDA) or int8 (CPU) precision, beam search, VAD filter, and hotword biasing |
 | **Fast Lane** | `SemanticRouter` | TF-IDF (1,2)-gram vectorizer + cosine similarity against indexed intent phrases; threshold ≥ 0.78 for instant match |
 | **Complex Lane** | `Ollama` + `Qwen 2.5:0.5B` | Local LLM fallback with dynamically generated system prompt listing all active tools; selects the best-matching tool name |
 | **Action Executor** | `execute_system_command()` | Dispatches the resolved intent to the correct skill or plugin handler |
@@ -202,7 +202,7 @@ flowchart TB
 🎙️ Microphone
   → SoundDevice (16kHz/mono/float32)
     → Audio Queue (thread-safe buffer)
-      → [IDLE] Whisper Idle Scan → Wake Regex ("Sana"?)
+      → [IDLE] Whisper Idle Scan → Wake Regex ("Privacy68"?)
         → [ACTIVE] Silero VAD (speech detection)
           → Faster-Whisper ASR (full transcription)
             → Semantic Router

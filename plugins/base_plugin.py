@@ -2,7 +2,7 @@ from typing import Callable, Dict, List
 
 class BasePlugin:
     """
-    Abstract base class for modular app plugins in SANA.
+    Abstract base class for modular app plugins in Privacy68.
     Each plugin can expose multiple in-app voice commands and skills.
     """
     id: str = "base"
@@ -10,7 +10,7 @@ class BasePlugin:
     icon: str = "🧩"
     description: str = "Base plugin description"
     version: str = "1.0.0"
-    author: str = "SANA Team"
+    author: str = "Privacy68 Team"
     is_builtin: bool = False
     
     def __init__(self, is_enabled: bool = True):

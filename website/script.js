@@ -1,5 +1,5 @@
 /**
- * SANA // Autonomous Voice Intelligence - Interactive Controller
+ * PRIVACY68 // Autonomous Voice Intelligence - Interactive Controller
  * Web Audio API retro sound synthesis, simulated audio HUD, terminal router demo, and telemetry.
  */
 

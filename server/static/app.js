@@ -1,5 +1,5 @@
 /**
- * SANA Mobile Web Remote Client Controller
+ * PRIVACY68 Mobile Web Remote Client Controller
  */
 document.addEventListener('DOMContentLoaded', () => {
     // DOM Elements
@@ -100,7 +100,7 @@ document.addEventListener('DOMContentLoaded', () => {
         connectionStatus.querySelector('.status-text').textContent = 'Offline';
     }
 
-    // 3. Dispatch Command to SANA PC Core
+    // 3. Dispatch Command to Privacy68 PC Core
     async function dispatchCommand(commandText) {
         const text = commandText.trim();
         if (!text) return;

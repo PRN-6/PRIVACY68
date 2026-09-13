@@ -10,7 +10,7 @@ import inspect
 from typing import Callable, Dict, List, Optional
 from plugins.base_plugin import BasePlugin
 
-logger = logging.getLogger("SANA.PluginManager")
+logger = logging.getLogger("PRIVACY68.PluginManager")
 
 # 1. Paths Configuration
 APPDATA_DIR = os.path.join(os.getenv("APPDATA", os.path.expanduser("~")), "PRIVACY68")
@@ -98,7 +98,7 @@ class PluginManager:
         """Dynamically loads and registers a plugin class from a file."""
         try:
             prefix = "builtin" if is_builtin else "user"
-            unique_mod_name = f"sana_plugins_{prefix}_{module_name}"
+            unique_mod_name = f"privacy68_plugins_{prefix}_{module_name}"
             spec = importlib.util.spec_from_file_location(unique_mod_name, file_path)
             if spec and spec.loader:
                 module = importlib.util.module_from_spec(spec)
@@ -222,7 +222,7 @@ import subprocess
 from typing import Callable, Dict, List
 from plugins.base_plugin import BasePlugin
 
-logger = logging.getLogger("SANA.Plugin.{class_name}")
+logger = logging.getLogger("PRIVACY68.Plugin.{class_name}")
 
 class {class_name}(BasePlugin):
     id = "{clean_id}"

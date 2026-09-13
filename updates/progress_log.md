@@ -1,4 +1,4 @@
-# SANA Project Progress Log & Improvements
+# Privacy68 Project Progress Log & Improvements
 
 ## Date: August 14, 2026
 
@@ -9,7 +9,7 @@
   * Audio is saved locally as a `.wav` file (`input.wav` or `record.wav`).
 * **Speech-to-Text Recognizer (`speech/recognizer.py`):**
   * Integrated `faster-whisper` (utilizing CTranslate2) running on CPU with `int8` quantization for efficient local transcription.
-  * Added `initial_prompt` configuration to improve spelling accuracy for important keywords (e.g., "Sana", "Chrome", "WhatsApp", "VS Code").
+  * Added `initial_prompt` configuration to improve spelling accuracy for important keywords (e.g., "Privacy68", "Chrome", "WhatsApp", "VS Code").
 
 ---
 

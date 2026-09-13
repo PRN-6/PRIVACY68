@@ -44,7 +44,7 @@ WHISPER_BEAM_SIZE    = 8          # wider beam = higher accuracy (was 5)
 # Hotwords: Whisper boosts log-probability for these tokens during decoding.
 # List every app name, action word, and proper noun the assistant might hear.
 WHISPER_HOTWORDS = (
-    "Alexa, Nova, Sana, open, close, launch, search, go to, "
+    "Alexa, Nova, Privacy68, open, close, launch, search, go to, "
     "Chrome, Brave, WhatsApp, YouTube, Google, Notepad, "
     "volume, mute, screenshot, lock, tab, new tab, enter, "
     "send message, message, chat, call"
@@ -60,7 +60,7 @@ INITIAL_PROMPT = (
 )
 
 # Wake word configuration
-WAKE_WORD_MODEL = "sana"
+WAKE_WORD_MODEL = "privacy68"
 WAKE_WORD_THRESHOLD = 0.50
 
 # Audio feedback sounds (True = beep on wake, False = silent)

@@ -105,7 +105,7 @@
   <header
     class="h-16 bg-nova-surface/90 backdrop-blur border-b border-nova-border px-6 flex items-center justify-between shrink-0">
     <div class="flex items-center space-x-3">
-      <!-- SANA logo: glowing scarlet ruby orb + metallic red wordmark + badge -->
+      <!-- PRIVACY68 logo: glowing scarlet ruby orb + metallic red wordmark + badge -->
       <div class="flex items-center gap-2.5">
         <!-- Glowing scarlet orb -->
         <span style="
@@ -203,7 +203,7 @@
       <div class="p-3.5 rounded-xl bg-nova-card/80 border border-nova-border/70 space-y-2">
         <div class="flex items-center justify-between text-xs">
           <span class="text-slate-400">Wake Trigger</span>
-          <span id="quick-wake-word" class="font-mono text-red-400 uppercase font-semibold">SANA</span>
+          <span id="quick-wake-word" class="font-mono text-red-400 uppercase font-semibold">PRIVACY68</span>
         </div>
         <div class="flex items-center justify-between text-xs">
           <span class="text-slate-400">Whisper Mode</span>
@@ -417,7 +417,7 @@
                 <button type="button" onclick="setPresetWake('Nova')" class="px-3 py-1.5 rounded-lg bg-nova-surface2 hover:bg-red-500/20 hover:border-red-500/40 border border-nova-border text-xs font-medium text-slate-200 transition-all">✨ Nova</button>
                 <button type="button" onclick="setPresetWake('Leo')" class="px-3 py-1.5 rounded-lg bg-nova-surface2 hover:bg-red-500/20 hover:border-red-500/40 border border-nova-border text-xs font-medium text-slate-200 transition-all">🦁 Leo</button>
                 <button type="button" onclick="setPresetWake('Serena')" class="px-3 py-1.5 rounded-lg bg-nova-surface2 hover:bg-red-500/20 hover:border-red-500/40 border border-nova-border text-xs font-medium text-slate-200 transition-all">🌙 Serena</button>
-                <button type="button" onclick="setPresetWake('Sana')" class="px-3 py-1.5 rounded-lg bg-nova-surface2 hover:bg-red-500/20 hover:border-red-500/40 border border-nova-border text-xs font-medium text-slate-200 transition-all">⚡ Sana</button>
+                <button type="button" onclick="setPresetWake('Privacy68')" class="px-3 py-1.5 rounded-lg bg-nova-surface2 hover:bg-red-500/20 hover:border-red-500/40 border border-nova-border text-xs font-medium text-slate-200 transition-all">🛡️ Privacy68</button>
                 <button type="button" onclick="setPresetWake('Jarvis')" class="px-3 py-1.5 rounded-lg bg-nova-surface2 hover:bg-red-500/20 hover:border-red-500/40 border border-nova-border text-xs font-medium text-slate-200 transition-all">🤖 Jarvis</button>
                 <button type="button" onclick="setPresetWake('Friday')" class="px-3 py-1.5 rounded-lg bg-nova-surface2 hover:bg-red-500/20 hover:border-red-500/40 border border-nova-border text-xs font-medium text-slate-200 transition-all">💎 Friday</button>
               </div>
@@ -460,7 +460,7 @@
 
             <div class="space-y-2">
               <label class="text-xs font-semibold text-slate-300">Assistant Display Name</label>
-              <input type="text" id="assistant_name" placeholder="Sana"
+              <input type="text" id="assistant_name" placeholder="Privacy68"
                 class="w-full px-4 py-2 rounded-xl bg-nova-surface border border-nova-border focus:border-red-500 focus:outline-none text-white text-sm">
             </div>
 
@@ -689,13 +689,13 @@
         if (!p) return;
 
         if (document.getElementById('user_name')) document.getElementById('user_name').value = p.user_name || '';
-        if (document.getElementById('assistant_name')) document.getElementById('assistant_name').value = p.assistant_name || 'Sana';
-        if (document.getElementById('wake_word')) document.getElementById('wake_word').value = p.wake_word || 'sana';
+        if (document.getElementById('assistant_name')) document.getElementById('assistant_name').value = p.assistant_name || 'Privacy68';
+        if (document.getElementById('wake_word')) document.getElementById('wake_word').value = p.wake_word || 'privacy68';
         if (document.getElementById('whisper_model')) document.getElementById('whisper_model').value = p.whisper_model || 'small.en';
         if (document.getElementById('wake_threshold')) document.getElementById('wake_threshold').value = p.wake_threshold || 0.50;
         if (document.getElementById('sens_val')) document.getElementById('sens_val').innerText = parseFloat(p.wake_threshold || 0.50).toFixed(2);
         if (document.getElementById('header-user-tag')) document.getElementById('header-user-tag').innerText = p.user_name || 'User';
-        if (document.getElementById('quick-wake-word')) document.getElementById('quick-wake-word').innerText = (p.wake_word || 'SANA').toUpperCase();
+        if (document.getElementById('quick-wake-word')) document.getElementById('quick-wake-word').innerText = (p.wake_word || 'PRIVACY68').toUpperCase();
         if (document.getElementById('quick-whisper-model')) document.getElementById('quick-whisper-model').innerText = p.whisper_model || 'small.en';
 
         // Load Voice Lock Status
@@ -950,8 +950,8 @@ async function recordEnrollmentSample() {
       if (!window.pywebview || !window.pywebview.api) return;
       const data = {
         user_name: document.getElementById('user_name').value.trim() || 'User',
-        assistant_name: document.getElementById('assistant_name').value.trim() || 'Sana',
-        wake_word: document.getElementById('wake_word').value.trim() || 'sana',
+        assistant_name: document.getElementById('assistant_name').value.trim() || 'Privacy68',
+        wake_word: document.getElementById('wake_word').value.trim() || 'privacy68',
         whisper_model: document.getElementById('whisper_model').value,
         wake_threshold: parseFloat(document.getElementById('wake_threshold').value)
       };
@@ -1323,7 +1323,7 @@ async function recordEnrollmentSample() {
               if (status) status.innerHTML = `<span class="text-rose-400">Error: ${prog.error}</span>`;
             } else {
               showToast("CUDA Runtime installed successfully!");
-              if (status) status.innerHTML = `<span class="text-emerald-400 font-semibold">Ready! Restart SANA to activate GPU.</span>`;
+              if (status) status.innerHTML = `<span class="text-emerald-400 font-semibold">Ready! Restart Privacy68 to activate GPU.</span>`;
               const closeBtn = document.getElementById('cuda-modal-close');
               if (closeBtn) {
                 closeBtn.innerText = 'Close & Refresh';
@@ -1721,7 +1721,7 @@ async function recordEnrollmentSample() {
       <div class="px-5 py-3 border-t border-nova-border flex items-center justify-between text-xs text-slate-400 shrink-0 bg-nova-surface/30">
         <div class="flex items-center space-x-1.5 text-[11px]">
           <i data-lucide="mic" class="w-3.5 h-3.5 text-orange-400"></i>
-          <span>Say: <strong class="text-white">"Alexa, [command]"</strong> or <strong class="text-white">"Sana, [command]"</strong></span>
+          <span>Say: <strong class="text-white">"Alexa, [command]"</strong> or <strong class="text-white">"Privacy68, [command]"</strong></span>
         </div>
         <button onclick="closePPTCommands()" class="px-4 py-1.5 rounded-xl bg-nova-surface hover:bg-nova-surface2 border border-nova-border text-xs text-slate-300 font-medium transition-all">
           Close Guide

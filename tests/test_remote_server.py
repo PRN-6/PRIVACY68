@@ -37,7 +37,7 @@ def test_remote_server():
         with urllib.request.urlopen("http://127.0.0.1:8799/") as res:
             html = res.read().decode("utf-8")
             print(f"-> HTML served length: {len(html)} bytes", flush=True)
-            assert "<title>SANA Mobile Remote</title>" in html
+            assert "<title>PRIVACY68 Mobile Remote</title>" in html
 
         # 4. QR Code API
         print("5. Testing GET /api/qr...", flush=True)

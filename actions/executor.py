@@ -33,8 +33,8 @@ def execute_system_command_detailed(text: str, on_action_callback = None) -> dic
 
     # Ignore standalone wake words or greetings (never search them in Chrome)
     STANDALONE_WAKE_WORDS = {
-        "alexa", "nova", "sana", "privacy68", "jarvis", "friday", "leo", "serena",
-        "hey alexa", "hey nova", "hey sana", "hey jarvis", "hi", "hello", "yes", "okay", "yeah"
+        "alexa", "nova", "privacy68", "jarvis", "friday", "leo", "serena",
+        "hey alexa", "hey nova", "hey privacy68", "hey jarvis", "hi", "hello", "yes", "okay", "yeah"
     }
     if cleaned.lower().strip(".!?, ") in STANDALONE_WAKE_WORDS or len(cleaned) <= 2:
         logger.info(f"Input '{cleaned}' is a standalone wake greeting. No external action required.")
