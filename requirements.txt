@@ -10,6 +10,10 @@ numpy
 # Machine Learning & AI
 scikit-learn
 ollama
+    
+# Hand Gesture Control (extra_plugins/gesture_plugin.py)
+mediapipe
+opencv-python
 
 # NVIDIA CUDA Acceleration (for faster-whisper GPU)
 nvidia-cublas-cu12

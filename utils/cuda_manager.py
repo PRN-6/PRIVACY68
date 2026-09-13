@@ -89,6 +89,31 @@ def get_candidate_cuda_dirs() -> List[str]:
     for pkg in ["cublas", "cudnn", "cuda_nvrtc"]:
         candidates.append(os.path.join(venv_nvidia, pkg, "bin"))
 
+    # Running interpreter's site-packages (covers venv AND system installs, incl. pip nvidia-* wheels)
+    try:
+        import sysconfig
+        import site
+        site_pkgs = set()
+        for key in ("purelib", "platlib"):
+            p = sysconfig.get_paths().get(key)
+            if p:
+                site_pkgs.add(p)
+        _getsitepackages = getattr(site, "getsitepackages", None)
+        if callable(_getsitepackages):
+            try:
+                site_pkgs.update(_getsitepackages())
+            except Exception:
+                pass
+        for sp in site_pkgs:
+            if not sp:
+                continue
+            for pkg in ["cublas", "cudnn", "cuda_nvrtc"]:
+                candidates.append(os.path.join(sp, "nvidia", pkg, "bin"))
+    except Exception:
+        pass
+    finally:
+        pass
+
     # System CUDA toolkit path fallback
     cuda_path_env = os.environ.get("CUDA_PATH", "")
     if cuda_path_env and os.path.isdir(os.path.join(cuda_path_env, "bin")):
@@ -178,7 +203,7 @@ def start_cuda_runtime_download(
 ) -> Dict[str, Any]:
     """
     Starts asynchronous download and extraction of CUDA 12 runtime DLLs
-    into AppData/SANA/cuda/bin.
+    into AppData/PRIVACY68/cuda/bin.
     """
     global _download_state
     with _download_lock:
@@ -198,18 +223,21 @@ def start_cuda_runtime_download(
         try:
             os.makedirs(APPDATA_CUDA_BIN, exist_ok=True)
 
-            # Step 1: Check if local venv already has the DLLs (instant copy)
-            project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            # Step 1: Check if local env already has the DLLs (instant copy)
             local_copied = 0
-            for pkg in ["cublas", "cudnn", "cuda_nvrtc"]:
-                local_bin = os.path.join(project_root, ".venv", "Lib", "site-packages", "nvidia", pkg, "bin")
-                if os.path.isdir(local_bin):
-                    for fname in os.listdir(local_bin):
-                        if fname.lower().endswith(".dll"):
-                            src = os.path.join(local_bin, fname)
-                            dst = os.path.join(APPDATA_CUDA_BIN, fname)
-                            shutil.copy2(src, dst)
-                            local_copied += 1
+            local_bin_dirs = []
+            for d in get_candidate_cuda_dirs():
+                if "lib\\site-packages" in d.replace("/", "\\").lower() and os.path.isdir(d):
+                    local_bin_dirs.append(d)
+            for local_bin in local_bin_dirs:
+                for fname in os.listdir(local_bin):
+                    if fname.lower().endswith(".dll"):
+                        src = os.path.join(local_bin, fname)
+                        dst = os.path.join(APPDATA_CUDA_BIN, fname)
+                        if os.path.exists(dst) and os.path.getsize(dst) == os.path.getsize(src):
+                            continue
+                        shutil.copy2(src, dst)
+                        local_copied += 1
 
             if local_copied >= 10:
                 logger.info(f"Copied {local_copied} CUDA DLLs from local environment.")

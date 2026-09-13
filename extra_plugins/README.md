@@ -16,6 +16,13 @@ This directory contains standalone, optional plugins that are separated from SAN
    - Close browser (`"close brave"`)
    - Tab controls (`"new tab in brave"`, `"close tab in brave"`, `"reopen tab in brave"`)
 
+3. **`vscode_plugin.py`** (🧑‍💻 Visual Studio Code)
+   - Launch editor (`"open vscode"`)
+   - Close editor (`"close vscode"`)
+   - Open integrated terminal (`"open terminal in vscode"`)
+   - Quick-open files (`"find file called config.json"`)
+   - Search disk for a file and open it (`"search for a file called main.py in vscode"`)
+
 ---
 
 ## 🚀 How to Install Them into SANA

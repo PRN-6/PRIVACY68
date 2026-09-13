@@ -13,21 +13,47 @@ from plugins.base_plugin import BasePlugin
 logger = logging.getLogger("SANA.PluginManager")
 
 # 1. Paths Configuration
-APPDATA_DIR = os.path.join(os.getenv("APPDATA", os.path.expanduser("~")), "SANA")
+APPDATA_DIR = os.path.join(os.getenv("APPDATA", os.path.expanduser("~")), "PRIVACY68")
 USER_PLUGINS_DIR = os.path.join(APPDATA_DIR, "plugins")
 CONFIG_PATH = os.path.join(APPDATA_DIR, "plugins_config.json")
 BUILTIN_PLUGINS_DIR = os.path.dirname(__file__)
+
+# Legacy AppData path (older builds stored user plugins under %APPDATA%/SANA)
+LEGACY_APPDATA_DIR = os.path.join(os.getenv("APPDATA", os.path.expanduser("~")), "SANA")
+LEGACY_USER_PLUGINS_DIR = os.path.join(LEGACY_APPDATA_DIR, "plugins")
+LEGACY_CONFIG_PATH = os.path.join(LEGACY_APPDATA_DIR, "plugins_config.json")
 
 # Ensure AppData directories exist
 os.makedirs(APPDATA_DIR, exist_ok=True)
 os.makedirs(USER_PLUGINS_DIR, exist_ok=True)
 
+
+def _migrate_legacy_data():
+    """Migrates user plugins & config from the legacy %APPDATA%/SANA folder."""
+    if not os.path.isdir(LEGACY_USER_PLUGINS_DIR):
+        return
+    migrated = False
+    for filename in os.listdir(LEGACY_USER_PLUGINS_DIR):
+        src = os.path.join(LEGACY_USER_PLUGINS_DIR, filename)
+        dst = os.path.join(USER_PLUGINS_DIR, filename)
+        if os.path.isfile(src) and not os.path.exists(dst):
+            shutil.copy2(src, dst)
+            migrated = True
+    if os.path.isfile(LEGACY_CONFIG_PATH) and not os.path.exists(CONFIG_PATH):
+        shutil.copy2(LEGACY_CONFIG_PATH, CONFIG_PATH)
+        migrated = True
+    if migrated:
+        logger.info("Migrated user plugins/config from legacy %APPDATA%/SANA folder.")
+
+
+_migrate_legacy_data()
+
 class PluginManager:
     """
-    Production-grade Plugin Architecture for SANA:
+    Production-grade Plugin Architecture for PRIVACY68:
     - Shipped Built-In Plugins: In application directory (Read-only / Safe).
-    - Custom User Plugins: In %APPDATA%/SANA/plugins/ (Read-write / Portable).
-    - User Configuration: In %APPDATA%/SANA/plugins_config.json.
+    - Custom User Plugins: In %APPDATA%/PRIVACY68/plugins/ (Read-write / Portable).
+    - User Configuration: In %APPDATA%/PRIVACY68/plugins_config.json.
     """
     def __init__(self):
         self.plugins: Dict[str, BasePlugin] = {}
@@ -244,7 +270,7 @@ class {class_name}(BasePlugin):
         return file_path
 
     def uninstall_plugin(self, plugin_id: str) -> bool:
-        """Deletes a custom plugin file from %APPDATA%/SANA/plugins/."""
+        """Deletes a custom plugin file from %APPDATA%/PRIVACY68/plugins/."""
         plugin = self.get_plugin(plugin_id)
         if not plugin or plugin.is_builtin:
             # Cannot uninstall built-in core plugins

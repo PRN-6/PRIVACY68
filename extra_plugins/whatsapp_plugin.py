@@ -54,6 +54,10 @@ class WhatsAppPlugin(BasePlugin):
 
     # ---------- Contacts Storage ---------- #
     _CONTACTS_PATH = os.path.join(
+        os.getenv("APPDATA", os.path.expanduser("~")), "PRIVACY68", "whatsapp_contacts.json"
+    )
+    # Legacy path migrated from older builds (was %APPDATA%/SANA)
+    _LEGACY_CONTACTS_PATH = os.path.join(
         os.getenv("APPDATA", os.path.expanduser("~")), "SANA", "whatsapp_contacts.json"
     )
 
@@ -64,6 +68,12 @@ class WhatsAppPlugin(BasePlugin):
             if os.path.exists(cls._CONTACTS_PATH):
                 with open(cls._CONTACTS_PATH, "r", encoding="utf-8") as f:
                     return json.load(f)
+            # Legacy fallback: read (and auto-migrate) contacts from %APPDATA%/SANA
+            if os.path.exists(cls._LEGACY_CONTACTS_PATH):
+                with open(cls._LEGACY_CONTACTS_PATH, "r", encoding="utf-8") as f:
+                    contacts = json.load(f)
+                cls.save_contacts(contacts)
+                return contacts
         except Exception as e:
             logger.warning(f"Could not load WhatsApp contacts: {e}")
         return []

@@ -29,6 +29,7 @@ DTYPE = "float32"
 
 # Silence / Voice Activity Detection (VAD)
 VAD_THRESHOLD = 0.50             # Silero neural VAD speech probability threshold (0.0 to 1.0)
+VAD_IDLE_THRESHOLD = 0.30        # Lower threshold for idle wake-word scan gating (skip Whisper on silence)
 SILENCE_DURATION_CHUNKS = 8      # 8 chunks * 80ms = ~0.64s pause after speech for rapid cut-off
 SILENCE_THRESHOLD = 0.008        # Fallback RMS noise floor
 

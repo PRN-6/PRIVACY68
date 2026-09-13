@@ -13,6 +13,7 @@ for _pkg in ["cublas", "cudnn", "cuda_nvrtc"]:
             pass
 
 # openWakeWord replaced by Whisper-based wake detection
+from typing import Callable, List, Dict, Any, Optional
 import logging
 import re
 import threading

@@ -56,6 +56,12 @@ class SkillManager:
             return plugin_manager.execute_action("chrome.open", text)
         elif "notepad" in normalized:
             return plugin_manager.execute_action("notepad.open", text)
+        elif "gesture" in normalized or "handgesture" in normalized or "webcam" in normalized:
+            # AI often returns 'Gestures' / 'Hand Gestures' without enable/disable
+            intent_text = text.lower()
+            if any(w in intent_text for w in ("disable", "stop", "turn off", "turnoff", "deactivate", "off")):
+                return plugin_manager.execute_action("gesture.disable", text)
+            return plugin_manager.execute_action("gesture.enable", text)
 
         return False
 

@@ -12,13 +12,20 @@ class SimpleTfidfVectorizer:
     Avoids heavy C-extension DLLs (scipy/sklearn) to guarantee compatibility across
     all Windows systems and App Control / WDAC policies.
     """
+    # Filler/stop words are dropped before tokenization so Whisper-injected
+    # noise ("enable and gestures") does not dilute or shift intent matches.
+    STOP_WORDS = frozenset({
+        "and", "the", "a", "an", "to", "for", "of", "on", "in", "with",
+        "please", "can", "could", "you", "me", "my", "that", "this", "sir",
+    })
+
     def __init__(self, ngram_range=(1, 2)):
         self.ngram_range = ngram_range
         self.vocabulary = {}
         self.idf_ = None
 
     def _tokenize(self, text: str):
-        words = re.findall(r'\b\w+\b', text.lower())
+        words = [w for w in re.findall(r'\b\w+\b', text.lower()) if w not in self.STOP_WORDS]
         tokens = []
         n_min, n_max = self.ngram_range
         for n in range(n_min, n_max + 1):
