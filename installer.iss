@@ -1,11 +1,11 @@
 ; ─────────────────────────────────────────────────────────────────────────────
 ; PRIVACY68 Assistant - Inno Setup Installer Script
 ; Build Command: Open this file in Inno Setup Compiler and click Build → Compile
-; Output: installer/PRIVACY68-Setup-v1.1.0.exe
+; Output: installer/PRIVACY68-Setup-v1.0.0.exe
 ; ─────────────────────────────────────────────────────────────────────────────
 
 #define MyAppName "PRIVACY68"
-#define MyAppVersion "1.1.0"
+#define MyAppVersion "1.0.0"
 #define MyAppPublisher "PRIVACY68 Team"
 #define MyAppURL "https://github.com/PRN-6/PRIVACY68"
 #define MyAppExeName "PRIVACY68.exe"
