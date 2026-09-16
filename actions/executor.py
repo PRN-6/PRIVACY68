@@ -22,6 +22,19 @@ def preload_ai_model():
     except Exception as e:
         logger.warning(f"could not preload ai model: {e}")
 
+def _web_search_fallback(text: str, on_action_callback = None) -> dict:
+    """Searches the web for ANY words that no other tool handled."""
+    logger.info(f"Catch-all web search: '{text}'")
+    success = manager.execute_skill("web_search", text)
+    if on_action_callback:
+        on_action_callback("web_search", success)
+    return {
+        "success": success,
+        "tool": "web_search",
+        "method": "fallback_web_search",
+        "message": f"Searched the web for '{text}'" if success else f"Failed to search the web for '{text}'"
+    }
+
 def execute_system_command_detailed(text: str, on_action_callback = None) -> dict:
     """
     Executes a command via Fast Lane Semantic Router or Ollama AI Fallback.
@@ -34,7 +47,11 @@ def execute_system_command_detailed(text: str, on_action_callback = None) -> dic
     # Ignore standalone wake words or greetings (never search them in Chrome)
     STANDALONE_WAKE_WORDS = {
         "alexa", "nova", "privacy68", "jarvis", "friday", "leo", "serena",
-        "hey alexa", "hey nova", "hey privacy68", "hey jarvis", "hi", "hello", "yes", "okay", "yeah"
+        "hey alexa", "hey nova", "hey privacy68", "hey jarvis",
+        "hi", "hello", "hey", "yes", "okay", "ok", "yeah", "no", "bye", "goodbye",
+        "good morning", "good afternoon", "good evening", "good night",
+        "thank you", "thanks", "thankyou", "welcome", "sorry", "nice", "cool",
+        "great", "awesome", "well done", "good job",
     }
     if cleaned.lower().strip(".!?, ") in STANDALONE_WAKE_WORDS or len(cleaned) <= 2:
         logger.info(f"Input '{cleaned}' is a standalone wake greeting. No external action required.")
@@ -97,26 +114,15 @@ def execute_system_command_detailed(text: str, on_action_callback = None) -> dic
                 "method": "ai_lane",
                 "message": f"Executed '{selected_tool}' via AI Lane" if success else f"Failed executing '{selected_tool}'"
             }
-        else:
-            if on_action_callback:
-                on_action_callback("Unknown", False)
-            return {
-                "success": False,
-                "tool": "Unknown",
-                "method": "ai_lane",
-                "message": "No matching tool found for command"
-            }
-        
+        # AI matched no tool (or returned None) -> search the web with any words
+        logger.info(f"AI matched no tool. Falling back to web search for '{cleaned}'.")
+        return _web_search_fallback(cleaned, on_action_callback)
+
     except Exception as e:
         logger.error(f"Error communicating with local ai: {e}")
-        if on_action_callback:
-            on_action_callback("Error", False)
-        return {
-            "success": False,
-            "tool": "Error",
-            "method": "error",
-            "message": str(e)
-        }
+        # AI unavailable -> don't leave the user hanging, search the web instead
+        logger.info(f"AI unavailable. Falling back to web search for '{cleaned}'.")
+        return _web_search_fallback(cleaned, on_action_callback)
 
 def execute_system_command(text: str, on_action_callback = None) -> bool:
     """
