@@ -18,6 +18,7 @@ DEFAULT_PROFILE = {
     "wake_threshold": 0.50,
     "whisper_device": "cuda",
     "whisper_model": "medium.en",
+    "llm_model": "qwen2.5:0.5b",
     "hud_enabled": True,
     "theme": "obsidian_red",
     "biometrics_enabled": False

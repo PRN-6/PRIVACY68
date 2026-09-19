@@ -38,6 +38,7 @@ class DashboardAPI:
                 "wake_word": profile_manager.get("wake_word", "privacy68"),
                 "wake_threshold": float(profile_manager.get("wake_threshold", 0.50)),
                 "whisper_model": profile_manager.get("whisper_model", "small.en"),
+                "llm_model": profile_manager.get("llm_model", "qwen2.5:0.5b"),
                 "hud_enabled": bool(profile_manager.get("hud_enabled", True)),
                 "theme": profile_manager.get("theme", "obsidian_red"),
                 "voice_lock_enabled": bool(profile_manager.get("voice_lock_enabled", False)),
@@ -46,6 +47,42 @@ class DashboardAPI:
         except Exception as e:
             logger.error(f"Error getting profile: {e}")
             return {}
+
+    def get_available_llm_models(self) -> List[Dict[str, Any]]:
+        """Returns a list of all models installed in local Ollama instance."""
+        try:
+            import ollama
+            res = ollama.list()
+            models_list = []
+            raw_models = getattr(res, 'models', []) if not isinstance(res, dict) else res.get('models', [])
+            for m in raw_models:
+                name = m.get('model') if isinstance(m, dict) else getattr(m, 'model', None) or getattr(m, 'name', None)
+                size = m.get('size') if isinstance(m, dict) else getattr(m, 'size', None)
+                if name:
+                    models_list.append({
+                        "name": name,
+                        "size_mb": round(size / (1024 * 1024), 1) if size else None
+                    })
+            if not models_list:
+                models_list = [{"name": "qwen2.5:0.5b", "size_mb": 397}]
+            return models_list
+        except Exception as e:
+            logger.warning(f"Failed to query Ollama models: {e}")
+            return [{"name": "qwen2.5:0.5b", "size_mb": 397}]
+
+    def pull_llm_model(self, model_name: str) -> Dict[str, Any]:
+        """Pulls a new model via Ollama."""
+        try:
+            import ollama
+            clean_name = model_name.strip()
+            if not clean_name:
+                return {"success": False, "message": "Model name cannot be empty."}
+            logger.info(f"Pulling model: {clean_name}")
+            ollama.pull(clean_name)
+            return {"success": True, "message": f"Successfully pulled {clean_name}"}
+        except Exception as e:
+            logger.error(f"Failed to pull {model_name}: {e}")
+            return {"success": False, "message": str(e)}
 
     def save_profile(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Saves updated settings to user_profile.json."""

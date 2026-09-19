@@ -3,24 +3,30 @@ import ollama
 from actions.skill_manager import manager
 from actions.router import SemanticRouter
 from speech.streamer import autocorrect_speech_command
+from plugins.profile_manager import profile_manager
 
 logger = logging.getLogger("PRIVACY68.ActionExecutor")
 fast_router = SemanticRouter()
 
+def get_active_llm_model() -> str:
+    """Returns the user-selected Ollama model from profile settings."""
+    return profile_manager.get("llm_model", "qwen2.5:0.5b")
+
 def preload_ai_model():
-    logger.info("preloading ai model")
+    model_name = get_active_llm_model()
+    logger.info(f"preloading ai model ({model_name})")
     try:
         ollama.chat(
-            model='qwen2.5:0.5b',
+            model=model_name,
             messages=[{'role': 'user', 'content': 'ping'}],
             keep_alive="60s",
             options={
                 'num_ctx': 512
             }
         )
-        logger.info("ai model preloaded successfully")
+        logger.info(f"ai model ({model_name}) preloaded successfully")
     except Exception as e:
-        logger.warning(f"could not preload ai model: {e}")
+        logger.warning(f"could not preload ai model ({model_name}): {e}")
 
 def _web_search_fallback(text: str, on_action_callback = None) -> dict:
     """Searches the web for ANY words that no other tool handled."""
@@ -86,8 +92,10 @@ def execute_system_command_detailed(text: str, on_action_callback = None) -> dic
     )
 
     try:
+        active_model = get_active_llm_model()
+        logger.info(f"Querying local model: '{active_model}'")
         response = ollama.chat(
-            model='qwen2.5:0.5b',
+            model=active_model,
             keep_alive="60s",
             options={
                 'temperature': 0.2,
