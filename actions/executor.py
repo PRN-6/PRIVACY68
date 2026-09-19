@@ -5,6 +5,8 @@ from actions.router import SemanticRouter
 from speech.streamer import autocorrect_speech_command
 from plugins.profile_manager import profile_manager
 
+from actions.hermes_agent import hermes_agent
+
 logger = logging.getLogger("PRIVACY68.ActionExecutor")
 fast_router = SemanticRouter()
 
@@ -43,7 +45,7 @@ def _web_search_fallback(text: str, on_action_callback = None) -> dict:
 
 def execute_system_command_detailed(text: str, on_action_callback = None) -> dict:
     """
-    Executes a command via Fast Lane Semantic Router or Ollama AI Fallback.
+    Executes a command via Fast Lane Semantic Router or Hermes Agent Lane.
     Returns a dict: {"success": bool, "tool": str, "method": str, "message": str}
     """
     cleaned = autocorrect_speech_command(text.strip())
@@ -63,7 +65,7 @@ def execute_system_command_detailed(text: str, on_action_callback = None) -> dic
         logger.info(f"Input '{cleaned}' is a standalone wake greeting. No external action required.")
         return {"success": True, "tool": "greeting_ack", "method": "none", "message": "Listening for command..."}
 
-    # 1. Fast Lane (Instant Execution)
+    # 1. Fast Lane (Instant Execution for standard phrases)
     fast_tool = fast_router.route(cleaned)
     if fast_tool:
         success = manager.execute_skill(fast_tool, cleaned)
@@ -76,61 +78,14 @@ def execute_system_command_detailed(text: str, on_action_callback = None) -> dic
             "message": f"Executed '{fast_tool}' via Fast Lane" if success else f"Failed executing '{fast_tool}'"
         }
 
-    # 2. Slow AI Lane (Fallback)
-    logger.info(f"Command '{cleaned}' is complex. Sending to Ollama AI...")
+    # 2. Smart Lane (Hermes Agent / Structured Tool Calling)
+    logger.info(f"Command '{cleaned}' is complex. Routing to Hermes Agent...")
+    active_model = get_active_llm_model()
+    result = hermes_agent.run(cleaned, model_name=active_model)
     
-    # Dynamically generate the system prompt based on active skills!
-    available_tools = manager.get_system_prompt_descriptions()
-    
-    system_prompt = (
-        "You are the brain of PRIVACY68, a desktop assistant.\n"
-        "You must select the most appropriate tool to run based on the user's request.\n"
-        "Available tools:\n"
-        f"{available_tools}\n\n"
-        "If none of the tools match, return the word: None\n"
-        "Otherwise, return ONLY the exact name of the tool. Do not include any punctuation, quotes, or extra text."
-    )
-
-    try:
-        active_model = get_active_llm_model()
-        logger.info(f"Querying local model: '{active_model}'")
-        response = ollama.chat(
-            model=active_model,
-            keep_alive="60s",
-            options={
-                'temperature': 0.2,
-                'top_p': 0.9,
-                'top_k': 40,
-                'num_ctx': 512
-            },
-            messages=[
-                {'role': 'system', 'content': system_prompt},
-                {'role': 'user', 'content': cleaned}
-            ]
-        )
-
-        selected_tool = response['message']['content'].strip()
-        logger.info(f"AI Selected: '{selected_tool}' for input: '{cleaned}'")
-
-        if selected_tool != "None":
-            success = manager.execute_skill(selected_tool, cleaned)
-            if on_action_callback:
-                on_action_callback(selected_tool, success)
-            return {
-                "success": success,
-                "tool": selected_tool,
-                "method": "ai_lane",
-                "message": f"Executed '{selected_tool}' via AI Lane" if success else f"Failed executing '{selected_tool}'"
-            }
-        # AI matched no tool (or returned None) -> search the web with any words
-        logger.info(f"AI matched no tool. Falling back to web search for '{cleaned}'.")
-        return _web_search_fallback(cleaned, on_action_callback)
-
-    except Exception as e:
-        logger.error(f"Error communicating with local ai: {e}")
-        # AI unavailable -> don't leave the user hanging, search the web instead
-        logger.info(f"AI unavailable. Falling back to web search for '{cleaned}'.")
-        return _web_search_fallback(cleaned, on_action_callback)
+    if on_action_callback:
+        on_action_callback(result.get("tool", "web_search"), result.get("success", False))
+    return result
 
 def execute_system_command(text: str, on_action_callback = None) -> bool:
     """

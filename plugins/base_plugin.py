@@ -1,4 +1,4 @@
-from typing import Callable, Dict, List
+from typing import Callable, Dict, List, Any
 
 class BasePlugin:
     """
@@ -46,3 +46,49 @@ class BasePlugin:
         if action:
             return action(text)
         return False
+
+    def get_tool_definitions(self) -> List[Dict[str, Any]]:
+        """
+        Returns Ollama-compatible JSON Schema tool specifications for this plugin.
+        By default, auto-generates schema from the plugin's actions and descriptions.
+        """
+        tools = []
+        try:
+            for action_name, desc in self.descriptions.items():
+                clean_name = action_name.replace(".", "_")
+                tools.append({
+                    "type": "function",
+                    "function": {
+                        "name": f"plugin_{clean_name}",
+                        "description": f"[{self.name}] {desc}",
+                        "parameters": {
+                            "type": "object",
+                            "properties": {
+                                "input_text": {
+                                    "type": "string",
+                                    "description": f"Voice command or parameter for {action_name}"
+                                }
+                            },
+                            "required": []
+                        }
+                    }
+                })
+        except Exception:
+            tools.append({
+                "type": "function",
+                "function": {
+                    "name": f"plugin_{self.id}",
+                    "description": f"[{self.name}] {self.description}",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "command": {
+                                "type": "string",
+                                "description": f"Command or instruction for {self.name}"
+                            }
+                        },
+                        "required": ["command"]
+                    }
+                }
+            })
+        return tools

@@ -7,7 +7,7 @@ import zipfile
 import importlib
 import importlib.util
 import inspect
-from typing import Callable, Dict, List, Optional
+from typing import Callable, Dict, List, Optional, Any
 from plugins.base_plugin import BasePlugin
 
 logger = logging.getLogger("PRIVACY68.PluginManager")
@@ -176,6 +176,17 @@ class PluginManager:
                 for desc in plugin.descriptions.values():
                     descriptions.append(desc)
         return "\n".join(descriptions)
+
+    def get_active_tool_definitions(self) -> List[Dict[str, Any]]:
+        """Aggregates all Hermes tool schemas from enabled plugins."""
+        tools = []
+        for plugin in self.plugins.values():
+            if plugin.is_enabled:
+                try:
+                    tools.extend(plugin.get_tool_definitions())
+                except Exception as e:
+                    logger.warning(f"Failed to get tool definition for plugin '{plugin.id}': {e}")
+        return tools
 
     def execute_action(self, action_name: str, text: str) -> bool:
         """Finds the plugin that owns this action and executes it."""
