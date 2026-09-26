@@ -2,6 +2,7 @@
     Configuration settings for Privacy68 Assistant
 """
 
+import os
 import ctypes
 import subprocess
 
@@ -70,5 +71,3 @@ ENABLE_BEEP = False
 ENABLE_REMOTE_SERVER = True
 REMOTE_SERVER_HOST = "0.0.0.0"
 REMOTE_SERVER_PORT = 8765
-
-

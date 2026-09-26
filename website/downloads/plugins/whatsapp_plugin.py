@@ -7,7 +7,7 @@ import json
 import ctypes
 from typing import Callable, Dict, List, Tuple, Optional
 from plugins.base_plugin import BasePlugin
-from plugins.win_keys import trigger_new_chat, trigger_press_enter, kill_process
+from plugins.win_utils import kill_process
 
 try:
     import ollama
@@ -293,7 +293,8 @@ class WhatsAppPlugin(BasePlugin):
 
     def new_chat(self, text: str) -> bool:
         logger.info("Plugin Action: Triggering new chat in WhatsApp")
-        trigger_new_chat()
+        import pyautogui
+        pyautogui.hotkey("ctrl", "n")
         return True
 
     def _set_clipboard(self, value: str) -> bool:
@@ -430,7 +431,8 @@ class WhatsAppPlugin(BasePlugin):
         self._focus_whatsapp()
 
         # 2. Open New Chat (Ctrl+N)
-        trigger_new_chat()
+        import pyautogui
+        pyautogui.hotkey("ctrl", "n")
         time.sleep(1.0)
 
         # 3. Paste resolved contact name and search
@@ -442,7 +444,7 @@ class WhatsAppPlugin(BasePlugin):
         # Select first result & open chat
         _press_key(VK_DOWN)
         time.sleep(0.2)
-        trigger_press_enter()
+        pyautogui.press("enter")
 
         # 4. Type and send message (if provided)
         if message_body:
@@ -451,7 +453,7 @@ class WhatsAppPlugin(BasePlugin):
                 return False
             _press_paste()
             time.sleep(0.3)
-            trigger_press_enter()
+            pyautogui.press("enter")
             logger.info(f"Message sent to '{resolved_name}': '{message_body}'")
 
         return True

@@ -6,7 +6,7 @@ import ctypes
 import subprocess
 from typing import Callable, Dict, List, Optional
 from plugins.base_plugin import BasePlugin
-from plugins.win_keys import kill_process
+from plugins.win_utils import kill_process
 
 logger = logging.getLogger("PRIVACY68.Plugin.PPT")
 user32 = ctypes.windll.user32

@@ -86,7 +86,7 @@ class PluginManager:
         if not os.path.exists(folder_path):
             return
 
-        ignore_files = ["base_plugin.py", "manager.py", "profile_manager.py", "win_keys.py", "__init__.py"]
+        ignore_files = ["base_plugin.py", "manager.py", "profile_manager.py", "win_utils.py", "__init__.py"]
 
         for filename in os.listdir(folder_path):
             if filename.endswith(".py") and not filename.startswith("__") and filename not in ignore_files:
@@ -135,6 +135,15 @@ class PluginManager:
             logger.info("Plugin configuration saved.")
         except Exception as e:
             logger.error(f"Could not save plugin config: {e}")
+
+    @property
+    def all_actions(self) -> Dict[str, Callable[[str], bool]]:
+        """Aggregates all action callables from currently enabled plugins."""
+        actions = {}
+        for plugin in self.plugins.values():
+            if plugin.is_enabled:
+                actions.update(plugin.actions)
+        return actions
 
     def get_all_plugins(self) -> List[BasePlugin]:
         return list(self.plugins.values())

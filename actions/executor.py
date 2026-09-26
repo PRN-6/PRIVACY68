@@ -1,58 +1,25 @@
 import logging
-import ollama
 from actions.skill_manager import manager
 from actions.router import SemanticRouter
+from actions.fast_lane import fast_lane_router
 from speech.streamer import autocorrect_speech_command
-from plugins.profile_manager import profile_manager
-
-from actions.hermes_agent import hermes_agent
 
 logger = logging.getLogger("PRIVACY68.ActionExecutor")
 fast_router = SemanticRouter()
 
-def get_active_llm_model() -> str:
-    """Returns the user-selected Ollama model from profile settings."""
-    return profile_manager.get("llm_model", "qwen2.5:0.5b")
 
-def preload_ai_model():
-    model_name = get_active_llm_model()
-    logger.info(f"preloading ai model ({model_name})")
-    try:
-        ollama.chat(
-            model=model_name,
-            messages=[{'role': 'user', 'content': 'ping'}],
-            keep_alive="60s",
-            options={
-                'num_ctx': 512
-            }
-        )
-        logger.info(f"ai model ({model_name}) preloaded successfully")
-    except Exception as e:
-        logger.warning(f"could not preload ai model ({model_name}): {e}")
-
-def _web_search_fallback(text: str, on_action_callback = None) -> dict:
-    """Searches the web for ANY words that no other tool handled."""
-    logger.info(f"Catch-all web search: '{text}'")
-    success = manager.execute_skill("web_search", text)
-    if on_action_callback:
-        on_action_callback("web_search", success)
-    return {
-        "success": success,
-        "tool": "web_search",
-        "method": "fallback_web_search",
-        "message": f"Searched the web for '{text}'" if success else f"Failed to search the web for '{text}'"
-    }
-
-def execute_system_command_detailed(text: str, on_action_callback = None) -> dict:
+def execute_system_command_detailed(text: str, on_action_callback=None, on_status_callback=None) -> dict:
     """
-    Executes a command via Fast Lane Semantic Router or Hermes Agent Lane.
-    Returns a dict: {"success": bool, "tool": str, "method": str, "message": str}
+    Two-Lane Command Architecture:
+    1. Fast Lane — Regex deterministic tools -> instant execution (<5ms, zero LLM)
+       Handles: app launches, window navigation, command prompt, web search, settings, file/folder ops, system volume/lock.
+    2. Plugin Lane — Semantic TF-IDF matching -> direct plugin execution (Spotify, WhatsApp, gestures).
     """
     cleaned = autocorrect_speech_command(text.strip())
     if not cleaned:
         return {"success": False, "tool": "None", "method": "none", "message": "Empty command"}
 
-    # Ignore standalone wake words or greetings (never search them in Chrome)
+    # Standalone wake words or greetings — no action needed
     STANDALONE_WAKE_WORDS = {
         "alexa", "nova", "privacy68", "jarvis", "friday", "leo", "serena",
         "hey alexa", "hey nova", "hey privacy68", "hey jarvis",
@@ -65,31 +32,79 @@ def execute_system_command_detailed(text: str, on_action_callback = None) -> dic
         logger.info(f"Input '{cleaned}' is a standalone wake greeting. No external action required.")
         return {"success": True, "tool": "greeting_ack", "method": "none", "message": "Listening for command..."}
 
-    # 1. Fast Lane (Instant Execution for standard phrases)
-    fast_tool = fast_router.route(cleaned)
-    if fast_tool:
-        success = manager.execute_skill(fast_tool, cleaned)
+    # ─────────────────────────────────────────────────────────────────────────
+    # LANE 1: FAST LANE (Deterministic OS Tools & Navigation — Instant)
+    # ─────────────────────────────────────────────────────────────────────────
+    fast_result = fast_lane_router.try_execute_fast(cleaned)
+    if fast_result is not None:
+        success = fast_result.get("success", False)
+        tool_name = fast_result.get("tool", "fast_tool")
+        message = fast_result.get("message", f"Executed '{tool_name}' via Fast Lane")
+        if on_status_callback:
+            status_type = "completed" if success else "error"
+            on_status_callback(status_type, message)
         if on_action_callback:
-            on_action_callback(fast_tool, success)
+            try:
+                on_action_callback(tool_name, success, message)
+            except TypeError:
+                on_action_callback(tool_name, success)
         return {
             "success": success,
-            "tool": fast_tool,
+            "tool": tool_name,
             "method": "fast_lane",
-            "message": f"Executed '{fast_tool}' via Fast Lane" if success else f"Failed executing '{fast_tool}'"
+            "message": message,
+            "details": fast_result.get("details"),
         }
 
-    # 2. Smart Lane (Hermes Agent / Structured Tool Calling)
-    logger.info(f"Command '{cleaned}' is complex. Routing to Hermes Agent...")
-    active_model = get_active_llm_model()
-    result = hermes_agent.run(cleaned, model_name=active_model)
-    
-    if on_action_callback:
-        on_action_callback(result.get("tool", "web_search"), result.get("success", False))
-    return result
+    # ─────────────────────────────────────────────────────────────────────────
+    # LANE 2: PLUGIN LANE (TF-IDF Matching for Registered Plugins)
+    # ─────────────────────────────────────────────────────────────────────────
+    plugin_tool = fast_router.route(cleaned)
+    if plugin_tool:
+        logger.info(f"[ROUTER] Command matched plugin: {plugin_tool}")
+        success = manager.execute_skill(plugin_tool, cleaned)
+        plugin_message = f"Executed '{plugin_tool}' via Plugin" if success else f"Failed executing '{plugin_tool}'"
+        if on_status_callback:
+            status_type = "completed" if success else "error"
+            on_status_callback(status_type, plugin_message)
+        if on_action_callback:
+            try:
+                on_action_callback(plugin_tool, success, plugin_message)
+            except TypeError:
+                on_action_callback(plugin_tool, success)
+        return {
+            "success": success,
+            "tool": plugin_tool,
+            "method": "plugin_lane",
+            "message": plugin_message,
+        }
 
-def execute_system_command(text: str, on_action_callback = None) -> bool:
-    """
-    Sends user text to the router/skill manager. Returns True if successful.
-    """
-    result = execute_system_command_detailed(text, on_action_callback=on_action_callback)
-    return result["success"]
+    # ─────────────────────────────────────────────────────────────────────────
+    # UNRECOGNIZED COMMAND
+    # ─────────────────────────────────────────────────────────────────────────
+    msg = f"Command not recognized: '{cleaned}'"
+    logger.info(f"[ROUTER] {msg}")
+    if on_status_callback:
+        on_status_callback("error", msg)
+    if on_action_callback:
+        try:
+            on_action_callback("unknown", False, msg)
+        except TypeError:
+            on_action_callback("unknown", False)
+
+    return {
+        "success": False,
+        "tool": "none",
+        "method": "none",
+        "message": msg,
+    }
+
+
+def execute_system_command(text: str, on_action_callback=None, on_status_callback=None) -> bool:
+    """Sends user text to the command pipeline. Returns True if successful."""
+    result = execute_system_command_detailed(
+        text,
+        on_action_callback=on_action_callback,
+        on_status_callback=on_status_callback
+    )
+    return result.get("success", False)

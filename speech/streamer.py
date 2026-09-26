@@ -1,16 +1,8 @@
-import os
-import sys
-
-# Ensure CUDA 12 runtime DLLs are discoverable
-_venv_nvidia = os.path.join(os.path.dirname(os.path.dirname(__file__)), ".venv", "Lib", "site-packages", "nvidia")
-for _pkg in ["cublas", "cudnn", "cuda_nvrtc"]:
-    _dll_path = os.path.join(_venv_nvidia, _pkg, "bin")
-    if os.path.isdir(_dll_path):
-        try:
-            os.add_dll_directory(_dll_path)
-            os.environ["PATH"] = _dll_path + os.pathsep + os.environ["PATH"]
-        except Exception:
-            pass
+try:
+    from utils.cuda_manager import register_cuda_dlls
+    register_cuda_dlls()
+except Exception:
+    pass
 
 # openWakeWord replaced by Whisper-based wake detection
 from typing import Callable, List, Dict, Any, Optional
@@ -18,7 +10,23 @@ import logging
 import re
 import threading
 import config
-from faster_whisper import WhisperModel
+
+try:
+    from faster_whisper import WhisperModel
+except Exception:
+    WhisperModel = None
+
+def get_whisper_model_class():
+    global WhisperModel
+    if WhisperModel is None:
+        try:
+            from utils.cuda_manager import register_cuda_dlls
+            register_cuda_dlls()
+            from faster_whisper import WhisperModel as WM
+            WhisperModel = WM
+        except Exception:
+            WhisperModel = None
+    return WhisperModel
 from speech.vad import SileroVAD
 import queue
 import sounddevice as sd
@@ -156,38 +164,39 @@ class SpeechStreamer:
         self.wake_pattern = self._build_wake_pattern(self.wake_word)
         logger.info(f"Custom Wake Word initialized: '{self.wake_word}' (Patterns: {self.wake_pattern.pattern})")
 
-        logger.info(f"Loading whisper model {config.WHISPER_MODEL_SIZE} on {config.WHISPER_DEVICE}")
-
-        try:
-            self.model = WhisperModel(
-                config.WHISPER_MODEL_SIZE,
-                device=config.WHISPER_DEVICE,
-                compute_type=config.WHISPER_COMPUTE_TYPE,
-                num_workers=1,      # limit worker threads → less RAM overhead
-                cpu_threads=2,      # cap CPU threads → pushes compute to GPU
-            )
-            # Warm up GPU inference so first command is instant
-            _warmup = np.zeros(config.SAMPLE_RATE, dtype=np.float32)
-            list(self.model.transcribe(_warmup, beam_size=1, without_timestamps=True)[0])
-            logger.info(f"Whisper model warmed up on {config.WHISPER_DEVICE}.")
-        except Exception as e:
-            if config.WHISPER_DEVICE == "cuda":
-                logger.warning(f"Failed to load Whisper model on CUDA ({e}). Falling back to multi-core CPU (int8)...")
-                try:
-                    self.model = WhisperModel(
-                        config.WHISPER_MODEL_SIZE,
-                        device="cpu",
-                        compute_type="int8",
-                        num_workers=1,
-                        cpu_threads=4,
-                    )
-                    logger.info("Whisper model successfully loaded on CPU (int8 fallback mode).")
-                except Exception as cpu_e:
-                    logger.error(f"Failed to load Whisper model on CPU fallback: {cpu_e}")
-                    raise
-            else:
-                logger.error(f"failed to load whisper model: {e}")
-                raise
+        self.model = None
+        WM = get_whisper_model_class()
+        if WM is not None:
+            try:
+                self.model = WM(
+                    config.WHISPER_MODEL_SIZE,
+                    device=config.WHISPER_DEVICE,
+                    compute_type=config.WHISPER_COMPUTE_TYPE,
+                    num_workers=1,      # limit worker threads → less RAM overhead
+                    cpu_threads=2,      # cap CPU threads → pushes compute to GPU
+                )
+                # Warm up GPU inference so first command is instant
+                _warmup = np.zeros(config.SAMPLE_RATE, dtype=np.float32)
+                list(self.model.transcribe(_warmup, beam_size=1, without_timestamps=True)[0])
+                logger.info(f"Whisper model warmed up on {config.WHISPER_DEVICE}.")
+            except Exception as e:
+                if config.WHISPER_DEVICE == "cuda":
+                    logger.warning(f"Failed to load Whisper model on CUDA ({e}). Falling back to multi-core CPU (int8)...")
+                    try:
+                        self.model = WM(
+                            config.WHISPER_MODEL_SIZE,
+                            device="cpu",
+                            compute_type="int8",
+                            num_workers=1,
+                            cpu_threads=4,
+                        )
+                        logger.info("Whisper model successfully loaded on CPU (int8 fallback mode).")
+                    except Exception as cpu_e:
+                        logger.warning(f"Whisper model CPU load failed ({cpu_e}).")
+                else:
+                    logger.warning(f"Failed to load whisper model: {e}")
+        else:
+            logger.warning("faster_whisper is unavailable (DLL policy or missing dependencies). Voice microphone input disabled; HUD/Remote/Agent services remain active.")
 
         
         self.is_muted = False
@@ -332,6 +341,9 @@ class SpeechStreamer:
                             idle_rms  = float(np.sqrt(np.mean(idle_audio**2)))
                             idle_peak = float(np.max(np.abs(idle_audio)))
                             if idle_rms < 0.018 or idle_peak < 0.06:
+                                continue
+
+                            if self.model is None:
                                 continue
 
                             segments, info = self.model.transcribe(
@@ -515,17 +527,21 @@ class SpeechStreamer:
                         if max_peak > 0.005:
                             full_audio = (full_audio / max_peak) * 0.9
 
-                        segments, info = self.model.transcribe(
-                            full_audio,
-                            beam_size=config.WHISPER_BEAM_SIZE,
-                            temperature=0.0,
-                            condition_on_previous_text=False,
-                            without_timestamps=True,
-                            language='en',
-                            vad_filter=True,
-                            initial_prompt=config.INITIAL_PROMPT,
-                            hotwords=config.WHISPER_HOTWORDS,
-                        )
+                        if self.model is None:
+                            logger.warning("Whisper model is not available for transcription.")
+                            text = ""
+                        else:
+                            segments, info = self.model.transcribe(
+                                full_audio,
+                                beam_size=config.WHISPER_BEAM_SIZE,
+                                temperature=0.0,
+                                condition_on_previous_text=False,
+                                without_timestamps=True,
+                                language='en',
+                                vad_filter=True,
+                                initial_prompt=config.INITIAL_PROMPT,
+                                hotwords=config.WHISPER_HOTWORDS,
+                            )
 
                         # ── Anti-hallucination gate 2: no_speech_prob check ──
                         # medium.en is more calibrated — 0.45 discards more noise without

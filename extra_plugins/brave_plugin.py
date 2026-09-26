@@ -4,7 +4,7 @@ import re
 import urllib.parse
 from typing import Callable, Dict, List
 from plugins.base_plugin import BasePlugin
-from plugins.win_keys import trigger_new_tab, trigger_close_tab, trigger_reopen_tab, kill_process
+from plugins.win_utils import kill_process
 
 logger = logging.getLogger("PRIVACY68.Plugin.Brave")
 
@@ -94,17 +94,20 @@ class BravePlugin(BasePlugin):
 
     def new_tab(self, text: str) -> bool:
         logger.info("Plugin Action: New tab in Brave")
-        trigger_new_tab()
+        import pyautogui
+        pyautogui.hotkey("ctrl", "t")
         return True
 
     def close_tab(self, text: str) -> bool:
         logger.info("Plugin Action: Close tab in Brave")
-        trigger_close_tab()
+        import pyautogui
+        pyautogui.hotkey("ctrl", "w")
         return True
 
     def reopen_tab(self, text: str) -> bool:
         logger.info("Plugin Action: Reopen tab in Brave")
-        trigger_reopen_tab()
+        import pyautogui
+        pyautogui.hotkey("ctrl", "shift", "t")
         return True
 
     def search_web(self, text: str) -> bool:

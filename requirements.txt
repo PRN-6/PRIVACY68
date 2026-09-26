@@ -7,10 +7,9 @@ sounddevice
 scipy
 numpy
 
-# Machine Learning & AI
+# Machine Learning & Routing
 scikit-learn
-ollama
-    
+
 # Hand Gesture Control (extra_plugins/gesture_plugin.py)
 mediapipe
 opencv-python
@@ -24,6 +23,10 @@ pystray
 pillow
 pywebview
 pyautogui
+pywinauto
+comtypes
+pywin32
+qrcode
 
 # Distribution & Build
 pyinstaller

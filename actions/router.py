@@ -121,6 +121,12 @@ class SemanticRouter:
             logger.info("Fast Lane Router matched 'system.type_text' (Direct Dictation Prefix)")
             return "system.type_text"
 
+        # Compound / multi-step tasks should bypass single-intent TF-IDF matching
+        # so Hermes Agent can orchestrate multiple tool calls.
+        if re.search(r"\b(?:and\s+go\s+to|and\s+then|and\s+switch\s+to|and\s+open|and\s+search|and\s+click|and\s+type|and\s+also|then\s+go\s+to|then\s+open|then\s+switch|after\s+that)\b", cleaned_text):
+            logger.info("Semantic Router identified compound task connector — routing to Agent Lane.")
+            return None
+
         user_vector = self.vectorizer.transform([cleaned_text])
         # Cosine similarity between normalized vectors is dot product
         similarities = (user_vector @ self.knowledge_base_vectors.T)[0]

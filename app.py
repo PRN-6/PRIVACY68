@@ -45,6 +45,18 @@ import threading
 # 4. Logging — always write to AppData log file; only echo to stdout if a
 #    console is attached (i.e. not in --windowed EXE mode where stdout=None).
 # ─────────────────────────────────────────────────────────────────────────────
+if sys.stdout is not None and hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
+if sys.stderr is not None and hasattr(sys.stderr, "reconfigure"):
+    try:
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
 log_handlers = [logging.FileHandler(LOG_FILE, encoding="utf-8")]
 if sys.stdout is not None:
     log_handlers.append(logging.StreamHandler(sys.stdout))
@@ -91,7 +103,8 @@ def main() -> None:
         ui_manager.on_transcription(text)
         return execute_system_command(
             text,
-            on_action_callback=ui_manager.on_action_completed
+            on_action_callback=ui_manager.on_action_completed,
+            on_status_callback=ui_manager.on_agent_status
         )
 
     def on_remote_command(text: str) -> dict:
@@ -107,7 +120,8 @@ def main() -> None:
         ui_manager.on_transcription(text)
         result = execute_system_command_detailed(
             text,
-            on_action_callback=ui_manager.on_action_completed
+            on_action_callback=ui_manager.on_action_completed,
+            on_status_callback=ui_manager.on_agent_status
         )
         return result
 

@@ -98,26 +98,37 @@ class DashboardAPI:
     # ---------------- Plugin Management ---------------- #
 
     def get_plugins(self) -> List[Dict[str, Any]]:
-        """Returns a list of all installed plugins with metadata."""
+        """Returns a list of all installed plugins with complete command metadata."""
         try:
             plugins = plugin_manager.get_all_plugins()
             result = []
             for p in plugins:
-                # Gather voice trigger phrases
-                triggers = []
-                for phrases in p.fast_intents.values():
+                # Gather all actions, descriptions, and trigger phrases
+                commands_info = []
+                all_triggers = []
+                for action_key, phrases in getattr(p, "fast_intents", {}).items():
+                    desc = getattr(p, "descriptions", {}).get(action_key, f"Executes {action_key}")
+                    if ":" in desc:
+                        desc = desc.split(":", 1)[1].strip()
+                    commands_info.append({
+                        "action": action_key,
+                        "description": desc,
+                        "triggers": phrases
+                    })
                     if phrases:
-                        triggers.extend(phrases[:2])
+                        all_triggers.extend(phrases[:2])
 
                 result.append({
                     "id": p.id,
                     "name": p.name,
-                    "version": p.version,
+                    "version": getattr(p, "version", "1.0.0"),
                     "description": p.description,
                     "icon": p.icon,
                     "is_enabled": bool(p.is_enabled),
                     "is_builtin": getattr(p, "is_builtin", False),
-                    "triggers": triggers[:5]
+                    "triggers": all_triggers[:6],
+                    "commands": commands_info,
+                    "total_commands": len(commands_info)
                 })
             return result
         except Exception as e:

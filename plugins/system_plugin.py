@@ -1,18 +1,8 @@
 import logging
+import pyautogui
 from typing import Callable, Dict, List
 from plugins.base_plugin import BasePlugin
-from plugins.win_keys import (
-    trigger_volume_up,
-    trigger_volume_down,
-    trigger_volume_mute,
-    trigger_lock_workstation,
-    trigger_snipping_tool,
-    trigger_press_enter,
-    trigger_press_tab,
-    trigger_close_window,
-    trigger_maximize_window,
-    trigger_minimize_window
-)
+from plugins.win_utils import type_text, press_enter, press_tab
 
 logger = logging.getLogger("PRIVACY68.Plugin.System")
 
@@ -201,7 +191,7 @@ class SystemPlugin(BasePlugin):
             user32.ShowWindow(hwnd, 3)  # SW_MAXIMIZE
             user32.SetForegroundWindow(hwnd)
             return True
-        trigger_maximize_window()
+        pyautogui.hotkey("win", "up")
         return True
 
     def minimize_window(self, text: str) -> bool:
@@ -212,12 +202,12 @@ class SystemPlugin(BasePlugin):
             user32 = ctypes.windll.user32
             user32.ShowWindow(hwnd, 6)  # SW_MINIMIZE
             return True
-        trigger_minimize_window()
+        pyautogui.hotkey("win", "down")
         return True
 
     def close_window(self, text: str) -> bool:
         logger.info("Plugin Action: Closing active window (Alt+F4)")
-        trigger_close_window()
+        pyautogui.hotkey("alt", "f4")
         return True
 
     def type_text(self, text: str) -> bool:
@@ -238,45 +228,47 @@ class SystemPlugin(BasePlugin):
             and_enter = True
 
         logger.info(f"Plugin Action: Typing into focused window: '{content}' (and_enter={and_enter})")
-        from plugins.win_keys import type_text as do_type, trigger_press_enter
-        do_type(content)
+        type_text(content)
         if and_enter:
+            import time
             time.sleep(0.1)
-            trigger_press_enter()
+            press_enter()
         return True
 
     def press_enter(self, text: str) -> bool:
         logger.info("Plugin Action: Pressing Enter key")
-        trigger_press_enter()
+        press_enter()
         return True
 
     def press_tab(self, text: str) -> bool:
         logger.info("Plugin Action: Pressing Tab key")
-        trigger_press_tab(1)
+        press_tab(1)
         return True
 
     def volume_up(self, text: str) -> bool:
         logger.info("Plugin Action: Volume Up")
-        trigger_volume_up()
+        for _ in range(5):
+            pyautogui.press("volumeup")
         return True
 
     def volume_down(self, text: str) -> bool:
         logger.info("Plugin Action: Volume Down")
-        trigger_volume_down()
+        for _ in range(5):
+            pyautogui.press("volumedown")
         return True
 
     def volume_mute(self, text: str) -> bool:
         logger.info("Plugin Action: Toggle Volume Mute")
-        trigger_volume_mute()
+        pyautogui.press("volumemute")
         return True
 
     def lock_screen(self, text: str) -> bool:
         logger.info("Plugin Action: Locking Computer Screen")
-        trigger_lock_workstation()
+        import ctypes
+        ctypes.windll.user32.LockWorkStation()
         return True
 
     def take_screenshot(self, text: str) -> bool:
         logger.info("Plugin Action: Taking Screenshot")
-        trigger_snipping_tool()
+        pyautogui.hotkey("win", "shift", "s")
         return True
-

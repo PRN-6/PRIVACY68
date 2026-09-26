@@ -1,168 +1,151 @@
 import logging
-from skills.chrome import Chrome
-from skills.web_search import WebSearch
+import re
+from typing import Any, Dict, List, Optional
 from plugins.manager import plugin_manager
 
-logger = logging.getLogger("PRIVACY68.SkillManager")
+logger = logging.getLogger("PRIVACY68.PluginActionManager")
 
-class SkillManager:
+# Words that flip gesture control off/on when the command contains explicit state words
+GESTURE_DISABLE_WORDS = ("disable", "stop", "turn off", "turnoff", "deactivate", "switch off", "off")
+GESTURE_ENABLE_WORDS = ("enable", "start", "turn on", "turnon", "activate", "on")
+
+# Generic name tokens that shouldn't identify a plugin on their own
+GENERIC_APP_TOKENS = frozenset({
+    "windows", "browser", "app", "application", "controller", "desktop",
+    "hand", "gestures", "studio", "code", "the", "a", "an", "for",
+})
+
+
+class PluginActionManager:
+    """
+    Central action coordinator for dynamic plugins.
+    Bridges the Semantic Router (Lane 2) and fast-lane plugin actions.
+    """
+
     def __init__(self):
-        self.active_skills = [
-            Chrome(),
-            WebSearch(),
-        ]
-        logger.info(f"SkillManager initialized with {len(self.active_skills)} skills + {len(plugin_manager.get_all_plugins())} plugins.")
+        self._action_aliases: Dict[str, str] = {}
+        self._rebuild_action_aliases()
+        plugin_manager.register_reload_listener(self._rebuild_action_aliases)
+        logger.info(f"PluginActionManager initialized with {len(plugin_manager.get_all_plugins())} plugins.")
 
-    def get_all_intents(self) -> dict:
-        """Collects fast-lane training phrases from active skills and enabled plugins."""
-        intents_dict = {}
-        for skill in self.active_skills:
-            intents_dict[skill.name] = skill.fast_intents
-            
-        # Merge plugin intents
-        intents_dict.update(plugin_manager.get_active_fast_intents())
-        return intents_dict
+    def get_all_intents(self) -> Dict[str, List[str]]:
+        """Collects fast-lane training phrases from all enabled plugins."""
+        return plugin_manager.get_active_fast_intents()
 
     def get_system_prompt_descriptions(self) -> str:
-        """Collects descriptions for Ollama's system prompt."""
-        descriptions = []
-        for skill in self.active_skills:
-            descriptions.append(skill.description)
-            
-        # Merge plugin descriptions
-        plugin_descs = plugin_manager.get_active_system_descriptions()
-        if plugin_descs:
-            descriptions.append(plugin_descs)
-            
-        return "\n".join(descriptions)
+        """Collects action descriptions from all enabled plugins."""
+        return plugin_manager.get_active_system_descriptions()
+
+    @staticmethod
+    def _normalize(text: str) -> str:
+        """Stabilizes arbitrary AI/speech text into a case/space/punctuation-insensitive key."""
+        return (
+            text.lower().strip()
+            .replace(" ", "").replace("_", "").replace("-", "")
+            .replace(".", "").replace("/", "").replace(",", "")
+        )
+
+    def _plugin_default_action(self, plugin) -> str:
+        """Returns the most sensible 'primary' action for a plugin (e.g., its .open action)."""
+        actions = dict(plugin.actions)
+        pid = plugin.id
+        for candidate in (f"{pid}.open", "open"):
+            if candidate in actions:
+                return candidate
+        for name in actions:
+            if name.endswith(".open"):
+                return name
+        return ""
+
+    def _rebuild_action_aliases(self):
+        """Builds a dynamic alias table from currently enabled plugins."""
+        aliases = {}
+        for plugin in plugin_manager.get_all_plugins():
+            if not plugin.is_enabled:
+                continue
+            pid = (plugin.id or "").strip()
+            if not pid:
+                continue
+
+            default_action = self._plugin_default_action(plugin)
+            if default_action:
+                name = (plugin.name or "").strip()
+                name_tokens = name.split()
+
+                identities = {pid, name}
+                if name_tokens:
+                    first_token = name_tokens[0]
+                    if len(first_token) >= 3 and first_token.lower() not in GENERIC_APP_TOKENS:
+                        identities.add(first_token)
+
+                for identity in identities:
+                    identity = (identity or "").strip()
+                    if not identity:
+                        continue
+                    for variant in (identity, f"open {identity}", f"{identity} open"):
+                        key = self._normalize(variant)
+                        if key:
+                            aliases.setdefault(key, default_action)
+
+            # Every concrete action is also addressable by its own normalized name
+            for action_name in plugin.actions:
+                norm = self._normalize(action_name)
+                if norm:
+                    aliases.setdefault(norm, action_name)
+
+            # Gesture plugin explicit aliases
+            if pid == "gesture":
+                gesture_keys = (
+                    "gesture", "gestures", "hand gesture", "hand gestures", "webcam",
+                    "enable gesture", "start gesture", "activate gesture",
+                    "disable gesture", "stop gesture", "turn off gesture",
+                    "turn on gesture", "turnoff gesture", "deactivate gesture",
+                    "switch off gesture", "open gesture", "launch gesture",
+                )
+                for key in gesture_keys:
+                    aliases[self._normalize(key)] = "gesture.enable"
+
+        self._action_aliases = aliases
+        logger.debug(f"Rebuilt plugin alias table with {len(aliases)} entries.")
+
+    def _resolve_gesture(self, resolved: str, text: str) -> str:
+        """Resolves gesture enable/disable based on spoken intent words."""
+        if not resolved.startswith("gesture."):
+            return resolved
+        low = text.lower()
+        if any(w in low for w in GESTURE_DISABLE_WORDS):
+            return "gesture.disable"
+        if any(w in low for w in GESTURE_ENABLE_WORDS):
+            return "gesture.enable"
+        return resolved
 
     def execute_skill(self, tool_name: str, text: str) -> bool:
-        """Finds the correct skill or plugin action and executes it."""
-        for skill in self.active_skills:
-            if skill.name == tool_name:
-                return skill.execute(text)
-                
-        # Check direct plugin action (e.g. 'ppt.open', 'whatsapp.send_message')
-        if plugin_manager.execute_action(tool_name, text):
+        """Finds the correct plugin action and executes it."""
+        # 1. Direct match in registered plugin actions
+        if tool_name in plugin_manager.all_actions:
+            return plugin_manager.execute_action(tool_name, text)
+
+        # 2. Resolve against dynamic alias table
+        resolved = tool_name.strip()
+        norm = self._normalize(resolved)
+        if norm in self._action_aliases:
+            resolved = self._action_aliases[norm]
+        elif "gesture" in norm or "webcam" in norm:
+            resolved = "gesture.enable"
+
+        # 3. Gesture disambiguation
+        resolved = self._resolve_gesture(resolved, text)
+
+        # 4. Execute the resolved plugin action
+        if plugin_manager.execute_action(resolved, text):
             return True
 
-        # AI name fallback mapping (e.g. if Ollama selected 'PowerPoint' instead of 'ppt.open')
-        normalized = tool_name.lower().strip().replace(" ", "").replace("_", "").replace(".", "")
-        if "powerpoint" in normalized or normalized == "ppt":
-            return plugin_manager.execute_action("ppt.open", text)
-        elif "whatsapp" in normalized:
-            return plugin_manager.execute_action("whatsapp.open", text)
-        elif "chrome" in normalized:
-            return plugin_manager.execute_action("chrome.open", text)
-        elif "notepad" in normalized:
-            return plugin_manager.execute_action("notepad.open", text)
-        elif "gesture" in normalized or "handgesture" in normalized or "webcam" in normalized:
-            # AI often returns 'Gestures' / 'Hand Gestures' without enable/disable
-            intent_text = text.lower()
-            if any(w in intent_text for w in ("disable", "stop", "turn off", "turnoff", "deactivate", "off")):
-                return plugin_manager.execute_action("gesture.disable", text)
-            return plugin_manager.execute_action("gesture.enable", text)
+        logger.info(f"Unknown tool '{tool_name}' resolved to '{resolved}' — no plugin action found.")
+        return False
 
-    def execute_tool_with_args(self, tool_name: str, args: dict, raw_text: str = "") -> bool:
-        """
-        Executes a tool call using structured arguments extracted by Hermes Agent.
-        """
-        clean_tool = tool_name.lower().strip()
 
-        # 1. Open App / Desktop Launcher
-        if clean_tool in ("open_app", "launch_app", "app.open"):
-            app_name = (args.get("app_name") or raw_text).lower().strip()
-            if "chrome" in app_name:
-                return plugin_manager.execute_action("chrome.open", raw_text) or self.execute_skill("chrome", raw_text)
-            elif "brave" in app_name:
-                return plugin_manager.execute_action("brave.open", raw_text)
-            elif "vscode" in app_name or "code" in app_name:
-                return plugin_manager.execute_action("vscode.open", raw_text)
-            elif "notepad" in app_name:
-                return plugin_manager.execute_action("notepad.open", raw_text)
-            elif "powerpoint" in app_name or "ppt" in app_name:
-                return plugin_manager.execute_action("ppt.open", raw_text)
-            elif "whatsapp" in app_name:
-                return plugin_manager.execute_action("whatsapp.open", raw_text)
-            else:
-                return self.execute_skill(app_name, raw_text)
+# Compatibility alias
+SkillManager = PluginActionManager
 
-        # 2. Web Search / Knowledge Lookups
-        elif clean_tool in ("web_search", "google_search", "search_web"):
-            query = args.get("query") or raw_text
-            for skill in self.active_skills:
-                if skill.name == "web_search":
-                    return skill.execute(query)
-            return self.execute_skill("web_search", query)
-
-        # 3. WhatsApp Messaging & Chats
-        elif clean_tool in ("whatsapp_send", "whatsapp.send_message", "whatsapp_message"):
-            contact = args.get("contact", "")
-            message = args.get("message", "")
-            cmd_text = f"send message to {contact} saying {message}" if message else f"open chat with {contact}"
-            return plugin_manager.execute_action("whatsapp.send_message", cmd_text) or plugin_manager.execute_action("whatsapp.open", raw_text)
-
-        # 4. PowerPoint Control
-        elif clean_tool in ("powerpoint_control", "ppt_control", "ppt"):
-            action = (args.get("action") or "").lower().strip()
-            slide_num = args.get("slide_number")
-            if "next" in action:
-                return plugin_manager.execute_action("ppt.next", raw_text)
-            elif "prev" in action or "back" in action:
-                return plugin_manager.execute_action("ppt.previous", raw_text)
-            elif "start" in action:
-                return plugin_manager.execute_action("ppt.start_slideshow", raw_text)
-            elif "end" in action or "stop" in action:
-                return plugin_manager.execute_action("ppt.end_slideshow", raw_text)
-            elif "laser" in action:
-                return plugin_manager.execute_action("ppt.laser", raw_text)
-            elif "pen" in action:
-                return plugin_manager.execute_action("ppt.pen", raw_text)
-            elif "black" in action:
-                return plugin_manager.execute_action("ppt.black_screen", raw_text)
-            elif "white" in action:
-                return plugin_manager.execute_action("ppt.white_screen", raw_text)
-            elif slide_num is not None:
-                return plugin_manager.execute_action("ppt.goto_slide", f"slide {slide_num}")
-            return plugin_manager.execute_action("ppt.open", raw_text)
-
-        # 5. Hand Gestures Control
-        elif clean_tool in ("gesture_control", "gesture", "gestures"):
-            action = (args.get("action") or raw_text).lower().strip()
-            if any(w in action for w in ("disable", "stop", "off", "turn off", "deactivate")):
-                return plugin_manager.execute_action("gesture.disable", raw_text)
-            return plugin_manager.execute_action("gesture.enable", raw_text)
-
-        # 6. Windows System Control
-        elif clean_tool in ("system_control", "system"):
-            cmd = (args.get("command") or raw_text).lower().strip()
-            if "up" in cmd:
-                return plugin_manager.execute_action("system.volume_up", raw_text)
-            elif "down" in cmd:
-                return plugin_manager.execute_action("system.volume_down", raw_text)
-            elif "mute" in cmd:
-                return plugin_manager.execute_action("system.volume_mute", raw_text)
-            elif "lock" in cmd:
-                return plugin_manager.execute_action("system.lock", raw_text)
-            elif "sleep" in cmd:
-                return plugin_manager.execute_action("system.sleep", raw_text)
-            return plugin_manager.execute_action("system.volume_up", raw_text)
-
-        # 7. Generic Dynamic Plugin Handler (e.g. 'plugin_spotify_main_action', 'plugin_discord_open')
-        elif clean_tool.startswith("plugin_"):
-            raw_action = clean_tool[7:]  # strip 'plugin_' prefix
-            dot_action = raw_action.replace("_", ".", 1)
-            inp_text = args.get("input_text") or args.get("command") or raw_text
-            if plugin_manager.execute_action(dot_action, inp_text):
-                return True
-            if plugin_manager.execute_action(raw_action, inp_text):
-                return True
-            # Fallback to main_action for custom user-created plugins
-            if plugin_manager.execute_action(f"{raw_action}.main_action", inp_text):
-                return True
-
-        # Fallback to standard execute_skill
-        return self.execute_skill(tool_name, raw_text)
-
-# Create a global instance that executor.py and router.py will use
-manager = SkillManager()
+# Global singleton instance
+manager = PluginActionManager()

@@ -67,9 +67,43 @@ You will see the PRIVACY68 icon appear in your Windows System Tray. Say *"Privac
 - `config.py`: Central configuration for model sizes, thresholds, and device selection.
 - `speech/streamer.py`: The core audio engine handling the microphone stream and Whisper transcription.
 - `speech/vad.py`: The Voice Activity Detection logic.
-- `actions/executor.py`: Routes transcribed text to the correct plugin or AI model.
+- `actions/executor.py`: Routes transcribed text across Fast Lane and Plugin Lane.
+- `actions/fast_lane.py`: Instant deterministic Windows OS automation (<5ms, zero LLM overhead).
+- `actions/router.py`: TF-IDF Semantic Router for plugin matching.
+- `computer_use/`: Low-level Windows OS automation (UIA, window management, app launching, file tools).
 - `plugins/`: Directory containing all the executable skills and integrations.
 - `ui/`: Contains the System Tray and Floating HUD interfaces.
 
 ---
-*Built with ❤️ for local AI enthusiasts.*
+
+## ⚡ Command Execution Architecture
+
+PRIVACY68 uses an ultra-fast, local execution pipeline designed for privacy, reliability, and zero latency:
+
+```
+Privacy68
+├── Voice / Wake Word (Faster-Whisper + Silero VAD)
+├── Voice Authentication (Biometric Speaker Recognition)
+├── Fast Lane (Instant <5ms Deterministic Windows Automation)
+├── Vision / Gesture System (MediaPipe + OpenCV)
+├── HUD / Control Center (Neon Click-Through Overlay)
+└── Plugin Lane (WhatsApp, Chrome, PPT, Spotify, etc.)
+```
+
+### ⚡ Fast Lane vs. 🔌 Plugin Lane
+
+- **Fast Lane (Deterministic / Regex)**: Core desktop actions execute in **< 5ms** with zero LLM overhead:
+  - *"Open Chrome"* / *"Open Command Prompt"* / *"Launch VS Code"*
+  - *"Volume up"* / *"Mute"* / *"Take a screenshot"* / *"Lock screen"*
+  - *"Create a folder named Project on Desktop"*
+  - *"Open settings and go to display"*
+  - *"Open Chrome and search for YouTube"*
+  - *"Play believer on YouTube"*
+
+- **Plugin Lane (Semantic TF-IDF)**: Matches natural phrases against registered plugins:
+  - *"Send WhatsApp message to Mom"*
+  - *"Play music on Spotify"*
+  - *"Next slide"* / *"Previous slide"*
+
+---
+*Built with ❤️ for local, private, and instant desktop automation.*

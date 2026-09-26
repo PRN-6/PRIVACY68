@@ -60,6 +60,10 @@ class FloatingHUD:
             "error": {
                 "accent": "#EF4444", "bloom": "#B91C1C", "halo": "#7F1D1D",
                 "badge": "✖ PRIVACY68 // UNKNOWN COMMAND"
+            },
+            "agent": {
+                "accent": "#A78BFA", "bloom": "#8B5CF6", "halo": "#5B21B6",
+                "badge": "⚡ PRIVACY68 // ASSISTANT"
             }
         }
         

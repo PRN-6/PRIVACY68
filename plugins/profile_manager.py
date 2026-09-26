@@ -18,10 +18,14 @@ DEFAULT_PROFILE = {
     "wake_threshold": 0.50,
     "whisper_device": "cuda",
     "whisper_model": "medium.en",
-    "llm_model": "qwen2.5:0.5b",
+    "llm_model": "tobestyledintro/qwen3.8-9b-distill:latest",
     "hud_enabled": True,
     "theme": "obsidian_red",
-    "biometrics_enabled": False
+    "biometrics_enabled": False,
+    "agent_enabled": True,
+    "ollama_url": "http://localhost:11434/v1",
+    "agent_timeout": 30,
+    "agent_max_steps": 10
 }
 
 class ProfileManager:
@@ -39,6 +43,10 @@ class ProfileManager:
                 with open(PROFILE_PATH, "r", encoding="utf-8") as f:
                     saved = json.load(f)
                     self.profile.update(saved)
+                # Auto-heal legacy non-existent models
+                if self.profile.get("llm_model") in ("llama3.2:3b", "llama3:latest", None):
+                    self.profile["llm_model"] = "tobestyledintro/qwen3.8-9b-distill:latest"
+                    self.save()
                 logger.info(f"User profile loaded from {PROFILE_PATH}")
             except Exception as e:
                 logger.warning(f"Could not load user profile: {e}")

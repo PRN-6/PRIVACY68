@@ -1,6 +1,7 @@
 import logging
 import os
 import sys
+from typing import Optional
 from ui.hud import FloatingHUD
 from ui.tray import SystemTray
 
@@ -48,14 +49,29 @@ class UIManager:
         self.hud.set_state("processing", text=f'"{text}"')
         self.tray.set_status_color("#F97316")
 
-    def on_action_completed(self, tool_name: str, success: bool = True):
+    def on_agent_status(self, status_type: str, message: str):
+        """Triggered during command execution status updates."""
+        if not self.is_muted:
+            if status_type in ("planning", "executing"):
+                self.hud.set_state("agent", title="⚡ PRIVACY68", text=message)
+                self.tray.set_status_color("#8B5CF6")
+            elif status_type in ("completed", "success"):
+                self.hud.set_state("success", title="✔ ACTION COMPLETED", text=message)
+                self.tray.set_status_color("#10B981")
+            elif status_type in ("error", "failed"):
+                self.hud.set_state("error", title="✖ NOT RECOGNIZED", text=message)
+                self.tray.set_status_color("#EF4444")
+
+    def on_action_completed(self, tool_name: str, success: bool = True, message: Optional[str] = None):
         """Triggered when a skill finishes executing."""
         if success:
             display_title = f"⚡ {tool_name.replace('_', ' ').upper()}"
-            self.hud.set_state("success", title=display_title, text="Executed successfully")
+            display_text = message if message else "Executed successfully"
+            self.hud.set_state("success", title=display_title, text=display_text)
             self.tray.set_status_color("#10B981")
         else:
-            self.hud.set_state("error", text="Command not recognized")
+            display_text = message if message else "Command not recognized"
+            self.hud.set_state("error", text=display_text)
             self.tray.set_status_color("#EF4444")
 
     def on_sleep(self):
