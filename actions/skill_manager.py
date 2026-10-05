@@ -5,14 +5,12 @@ from plugins.manager import plugin_manager
 
 logger = logging.getLogger("PRIVACY68.PluginActionManager")
 
-# Words that flip gesture control off/on when the command contains explicit state words
-GESTURE_DISABLE_WORDS = ("disable", "stop", "turn off", "turnoff", "deactivate", "switch off", "off")
-GESTURE_ENABLE_WORDS = ("enable", "start", "turn on", "turnon", "activate", "on")
+
 
 # Generic name tokens that shouldn't identify a plugin on their own
 GENERIC_APP_TOKENS = frozenset({
     "windows", "browser", "app", "application", "controller", "desktop",
-    "hand", "gestures", "studio", "code", "the", "a", "an", "for",
+    "studio", "code", "the", "a", "an", "for",
 })
 
 
@@ -93,31 +91,11 @@ class PluginActionManager:
                 if norm:
                     aliases.setdefault(norm, action_name)
 
-            # Gesture plugin explicit aliases
-            if pid == "gesture":
-                gesture_keys = (
-                    "gesture", "gestures", "hand gesture", "hand gestures", "webcam",
-                    "enable gesture", "start gesture", "activate gesture",
-                    "disable gesture", "stop gesture", "turn off gesture",
-                    "turn on gesture", "turnoff gesture", "deactivate gesture",
-                    "switch off gesture", "open gesture", "launch gesture",
-                )
-                for key in gesture_keys:
-                    aliases[self._normalize(key)] = "gesture.enable"
+
 
         self._action_aliases = aliases
         logger.debug(f"Rebuilt plugin alias table with {len(aliases)} entries.")
 
-    def _resolve_gesture(self, resolved: str, text: str) -> str:
-        """Resolves gesture enable/disable based on spoken intent words."""
-        if not resolved.startswith("gesture."):
-            return resolved
-        low = text.lower()
-        if any(w in low for w in GESTURE_DISABLE_WORDS):
-            return "gesture.disable"
-        if any(w in low for w in GESTURE_ENABLE_WORDS):
-            return "gesture.enable"
-        return resolved
 
     def execute_skill(self, tool_name: str, text: str) -> bool:
         """Finds the correct plugin action and executes it."""
@@ -130,13 +108,8 @@ class PluginActionManager:
         norm = self._normalize(resolved)
         if norm in self._action_aliases:
             resolved = self._action_aliases[norm]
-        elif "gesture" in norm or "webcam" in norm:
-            resolved = "gesture.enable"
 
-        # 3. Gesture disambiguation
-        resolved = self._resolve_gesture(resolved, text)
-
-        # 4. Execute the resolved plugin action
+        # 3. Execute the resolved plugin action
         if plugin_manager.execute_action(resolved, text):
             return True
 

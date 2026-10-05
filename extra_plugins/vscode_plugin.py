@@ -34,6 +34,8 @@ class VSCodePlugin(BasePlugin):
     version = "2.0.0"
     author = "PRIVACY68 Core"
     is_builtin = False
+    category = "Developer"
+    plugin_type = "IDE & Code"
 
     @property
     def actions(self) -> Dict[str, Callable[[str], bool]]:

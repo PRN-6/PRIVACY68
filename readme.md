@@ -85,7 +85,6 @@ Privacy68
 ├── Voice / Wake Word (Faster-Whisper + Silero VAD)
 ├── Voice Authentication (Biometric Speaker Recognition)
 ├── Fast Lane (Instant <5ms Deterministic Windows Automation)
-├── Vision / Gesture System (MediaPipe + OpenCV)
 ├── HUD / Control Center (Neon Click-Through Overlay)
 └── Plugin Lane (WhatsApp, Chrome, PPT, Spotify, etc.)
 ```

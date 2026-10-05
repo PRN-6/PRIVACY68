@@ -205,6 +205,8 @@ class PPTPlugin(BasePlugin):
     version = "1.0.0"
     author = "PRIVACY68 Core"
     is_builtin = False
+    category = "Productivity"
+    plugin_type = "Office & Slides"
 
     @property
     def actions(self) -> Dict[str, Callable[[str], bool]]:

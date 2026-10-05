@@ -17,6 +17,8 @@ class BasePlugin:
     version: str = "1.0.0"
     author: str = "Privacy68 Team"
     is_builtin: bool = False
+    category: str = "General"
+    plugin_type: str = "General Automation"
 
     def __init__(self, is_enabled: bool = True):
         self.is_enabled = is_enabled

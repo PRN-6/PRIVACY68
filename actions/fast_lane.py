@@ -205,6 +205,108 @@ class FastLaneRouter:
             return query, site_target
         return None, None
 
+    def _run_windows(self, plugin, action: str, text: str, message: str) -> Optional[Dict[str, Any]]:
+        """Executes a windows plugin action and wraps it in a fast-lane result dict."""
+        if not getattr(plugin, "is_enabled", False):
+            return None
+        try:
+            ok = plugin.execute(action, text)
+        except Exception as e:
+            logger.error(f"Windows bridge failed for {action}: {e}")
+            return None
+        if not ok:
+            return None
+        return {
+            "handled": True,
+            "tool": action,
+            "method": "fast_lane",
+            "success": True,
+            "details": {"bridge": action},
+            "message": message,
+        }
+
+    def _windows_bridge(self, text: str, low: str) -> Optional[Dict[str, Any]]:
+        """
+        Routes Windows system commands to the windows plugin, which owns the
+        authoritative Control Panel / Settings / system-action tables.
+        Returns a fast-lane result dict when handled, otherwise None.
+        """
+        from plugins.manager import plugin_manager
+        plugin = plugin_manager.plugins.get("windows")
+        if not plugin:
+            return None
+
+        checks = (
+            ("windows.control_panel", r"\bcontrol panel\b|\bpower options?\b|\bpower plan\b|"
+             r"\bnetwork (?:connections|and sharing)\b|\binternet options\b|\bsharing center\b|"
+             r"\buser accounts\b|\bprograms and features\b|\buninstall (?:a )?program\b|"
+             r"\b(?:folder|file explorer) options\b|\bsystem restore\b|\bcredential manager\b|"
+             r"\bindexing options\b|\bcolor management\b|\bbackup and restore\b|\btroubleshooting\b|"
+             r"\bdefault programs\b|\bdate and time\b|\bregion and language\b",
+             "Opened the Control Panel page."),
+            ("windows.open_system_tool", r"\bdevice manager\b|\btask scheduler\b|\bevent viewer\b|"
+             r"\bservice manager\b|\bcomputer management\b|\blocal users and groups\b|"
+             r"\bperformance monitor\b|\bresource monitor\b|\bdisk management\b|\bregistry editor\b|"
+             r"\bmsconfig\b|\bsystem configuration\b|\bsystem information\b|\bgroup policy\b|"
+             r"\bcharacter map\b|\bsteps recorder\b|\bon screen keyboard\b|\bmemory diagnostic\b",
+             "Opened the Windows system tool."),
+            ("windows.system_action", r"\bsign out\b|\blog ?off\b|\bhibernate\b|"
+             r"\b(?:put|go) (?:the )?(?:pc|computer) to sleep\b|\bgo to sleep\b|"
+             r"\brestart (?:the |my )?(?:pc|computer)\b|\breboot\b|\bshut ?down\b|"
+             r"\bturn off (?:the )?(?:pc|computer)\b|\bcancel (?:shutdown|restart)\b|\babort shutdown\b",
+             "Ran the Windows system action."),
+            ("windows.brightness", r"\bbrightness\b",
+             "Adjusted the screen brightness."),
+            ("windows.system_info", r"\bhow much (?:battery|storage|memory|ram)\b|"
+             r"\bcheck (?:disk space|memory|battery|storage)\b|\bstorage left\b|"
+             r"\bwhat(?:'s| is) my ip\b|\bip address\b|\bsystem uptime\b|\bwindows version\b|"
+             r"\bwhich wifi\b|\bwhat wifi am i on\b|\bcomputer name\b|\bhostname\b|\bpower plan\b|"
+             r"\bcheck the (?:processor|cpu|gpu|graphics card|monitor)\b|\bcpu info\b|\bram\b",
+             "Retrieved the system information."),
+            ("windows.empty_recycle_bin", r"\b(?:empty|clear) (?:the )?recycle bin\b|\bempty (?:the )?trash\b",
+             "Emptied the Recycle Bin."),
+            ("windows.show_desktop", r"\bshow desktop\b|\b(?:show|minimi[sz]e) (?:all|my) windows\b|\bminimi[sz]e everything\b",
+             "Minimized all windows to show the desktop."),
+            ("windows.clipboard_clear", r"\b(?:clear|empty|wipe) (?:the )?clipboard\b",
+             "Cleared the clipboard."),
+            ("windows.toggle_connectivity", r"\b(?:turn|switch) (?:on|off)\s+(?:the\s+)?wi[\s-]?fi\b|"
+             r"\b(?:enable|disable)\s+(?:the\s+)?wi[\s-]?fi\b|\btoggle wi[\s-]?fi\b|"
+             r"\b(?:turn|switch) (?:on|off)\s+(?:the\s+)?bluetooth\b|"
+             r"\b(?:enable|disable)\s+(?:the\s+)?bluetooth\b|\btoggle bluetooth\b",
+             "Toggled the network radio."),
+            ("windows.set_default_browser", r"\bdefault browser\b",
+             "Opened the Default Apps settings page."),
+            ("windows.window_control", r"\bsnap (?:the |this )?window\b|\bwindow snapping\b",
+             "Snapped the active window."),
+            ("windows.open_run", r"\bopen run\b|\bthe run dialog\b|\brun box\b",
+             "Opened the Run dialog."),
+        )
+
+        for action, pattern, message in checks:
+            if re.search(pattern, low):
+                logger.info(f"[ROUTER] Command classified as FAST via windows plugin: {action}")
+                return self._run_windows(plugin, action, text, message)
+
+        # Deep Settings pages that the fast lane's own map does not know about
+        if re.search(r"\bsettings\b", low):
+            try:
+                from plugins.windows_plugin import ALL_SETTINGS_PAGES
+                for key in sorted(ALL_SETTINGS_PAGES, key=len, reverse=True):
+                    if key in SETTINGS_PAGES:
+                        continue
+                    if re.search(rf"\b{re.escape(key)}\b", low, re.IGNORECASE):
+                        logger.info(
+                            f"[ROUTER] Command classified as FAST via windows plugin: "
+                            f"windows.open_settings ({key})"
+                        )
+                        return self._run_windows(
+                            plugin, "windows.open_settings", text,
+                            f"Opened the {key.title()} Settings page.",
+                        )
+            except Exception as e:
+                logger.error(f"Windows settings bridge failed: {e}")
+        return None
+
     def try_execute_fast(self, text: str) -> Optional[Dict[str, Any]]:
         """
         Attempts to match and execute user command via deterministic Fast Lane.
@@ -442,6 +544,11 @@ class FastLaneRouter:
                         "success": True,
                         "message": f"Clicked '{target_nav}' in active window.",
                     }
+
+        # Windows System Bridge - delegate Windows system commands to the windows plugin
+        bridged = self._windows_bridge(text, low)
+        if bridged is not None:
+            return bridged
 
         # Standalone "settings" or "open settings" fallback
         if re.search(r"\b(?:settings|windows settings)\b", low):

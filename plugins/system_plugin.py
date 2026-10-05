@@ -13,6 +13,8 @@ class SystemPlugin(BasePlugin):
     description = "Control Windows OS: volume, screen lock, screenshot, enter, close, maximize, and minimize windows."
     version = "1.3.0"
     author = "Privacy68 Team"
+    category = "System"
+    plugin_type = "OS Controls"
 
     @property
     def actions(self) -> Dict[str, Callable[[str], bool]]:

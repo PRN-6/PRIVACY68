@@ -68,22 +68,6 @@ This document outlines the planned improvements, bug fixes, new plugins, and arc
 
 ---
 
-## 🖐️ 3. Multimodal Computer Vision (Hand Gesture Engine)
-
-- [ ] **Real-Time Hand Landmark Tracking (`gesture_service.py`)**
-  - Integrate **Google MediaPipe Hands** + **OpenCV** running on CPU (30–60 FPS) with negligible compute overhead.
-  - Add optional toggle via voice (*"Privacy68, enable/disable gesture mode"*) or hotkey to conserve resources when camera is unneeded.
-- [ ] **Air Gesture Controls:**
-  - ✋ **Open Palm $\rightarrow$ ✊ Fist:** Play / Pause active media.
-  - 🤏 **Thumb-Index Pinch & Move:** Continuous smooth system volume adjustment.
-  - 👈 / 👉 **Horizontal Air Swipe:** Switch active browser tabs or virtual desktops.
-  - ✌️ **Two Fingers Point Up/Down:** Smooth document / webpage scrolling.
-  - 🤫 **Index Finger to Lips:** Instant audio mute / put Privacy68 to sleep.
-- [ ] **HUD Gesture Feedback Overlay:**
-  - Display subtle hand tracking skeleton or visual icon on the floating HUD when camera mode is engaged.
-
----
-
 ## 🧠 4. AI & Natural Language Processing (NLP)
 
 - [ ] **Conversation Context & Multi-turn Memory**
@@ -161,7 +145,7 @@ This document outlines the planned improvements, bug fixes, new plugins, and arc
 | :--- | :--- | :--- |
 | **v1.1** | *Core Polish* | Fix WhatsApp launcher, add pyttsx3 voice feedback, Silero VAD integration, Speaker Recognition (Voice Lock). |
 | **v1.2** | *Media & System* | Spotify plugin, Volume/Brightness controls, Screenshot tool. |
-| **v1.3** | *Vision Multimodal* | MediaPipe hand gestures (Air swipe, Pinch volume, Play/Pause). |
+
 | **v1.4** | *Intelligence* | Multi-turn conversation memory, streaming HUD text. |
 | **v2.0** | *Production Release* | Complete Inno Setup installer with Auto-start and settings GUI. |
 | **v3.0** | *Mobile Expansion* | Privacy68 Android app — voice control for phone + remote PC control over internet. |

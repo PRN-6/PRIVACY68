@@ -98,7 +98,7 @@ class DashboardAPI:
     # ---------------- Plugin Management ---------------- #
 
     def get_plugins(self) -> List[Dict[str, Any]]:
-        """Returns a list of all installed plugins with complete command metadata."""
+        """Returns a list of all installed plugins with complete command and category metadata."""
         try:
             plugins = plugin_manager.get_all_plugins()
             result = []
@@ -118,6 +118,33 @@ class DashboardAPI:
                     if phrases:
                         all_triggers.extend(phrases[:2])
 
+                # Determine category & plugin_type
+                category = getattr(p, "category", "")
+                plugin_type = getattr(p, "plugin_type", "")
+                if not category or category == "General":
+                    pid = getattr(p, "id", "").lower()
+                    if pid in ("windows", "system", "windows_plugin", "system_plugin"):
+                        category = "System"
+                        plugin_type = "OS Controls"
+                    elif pid in ("chrome", "brave", "edge", "firefox", "browser"):
+                        category = "Browser"
+                        plugin_type = "Browser Control"
+                    elif pid in ("whatsapp", "telegram", "discord", "slack"):
+                        category = "Communication"
+                        plugin_type = "Messaging & Chat"
+                    elif pid in ("vscode", "terminal", "git", "python", "ide"):
+                        category = "Developer"
+                        plugin_type = "IDE & Code"
+                    elif pid in ("ppt", "powerpoint", "notepad", "word", "excel", "calculator"):
+                        category = "Productivity"
+                        plugin_type = "Office & Slides"
+                    elif getattr(p, "is_builtin", False):
+                        category = "System"
+                        plugin_type = "Core Integration"
+                    else:
+                        category = "Custom"
+                        plugin_type = "Custom Application"
+
                 result.append({
                     "id": p.id,
                     "name": p.name,
@@ -126,7 +153,9 @@ class DashboardAPI:
                     "icon": p.icon,
                     "is_enabled": bool(p.is_enabled),
                     "is_builtin": getattr(p, "is_builtin", False),
-                    "triggers": all_triggers[:6],
+                    "category": category,
+                    "plugin_type": plugin_type,
+                    "triggers": all_triggers[:4],
                     "commands": commands_info,
                     "total_commands": len(commands_info)
                 })

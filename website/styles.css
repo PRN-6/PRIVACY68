@@ -834,29 +834,6 @@ body.crt-enabled .scanlines {
 }
 
 /* ==========================================
-   Responsive Adaptations
-   ========================================== */
-@media (max-width: 860px) {
-    .terminal-container {
-        grid-template-columns: 1fr;
-    }
-    .top-nav {
-        flex-direction: column;
-        gap: 16px;
-        align-items: flex-start;
-    }
-    .bottom-bar {
-        flex-direction: column;
-        gap: 16px;
-        align-items: flex-start;
-    }
-    .step-row {
-        grid-template-columns: 1fr;
-        gap: 12px;
-    }
-}
-
-/* ==========================================
    Documentation Page (docs.html)
    ========================================== */
 .docs-wrapper {
@@ -1167,13 +1144,4 @@ body.crt-enabled .scanlines {
     margin-bottom: 10px;
     font-family: var(--font-pixel);
     font-size: 0.8rem;
-}
-
-@media (max-width: 860px) {
-    .docs-wrapper {
-        grid-template-columns: 1fr;
-    }
-    .docs-sidebar {
-        position: static;
-    }
 }

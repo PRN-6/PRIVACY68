@@ -74,6 +74,10 @@ class BoilerplatePlugin(BasePlugin):
     # 'author': Developer / Creator name
     author: str = "Developer"
 
+    # Category and Type
+    category: str = "Custom"
+    plugin_type: str = "Custom App Template"
+
     # 'is_builtin': Keep False for community / user plugins
     is_builtin: bool = False
 

@@ -1,11 +1,11 @@
 import logging
 from actions.skill_manager import manager
-from actions.router import SemanticRouter
+from actions.router import LLMRouter
 from actions.fast_lane import fast_lane_router
 from speech.streamer import autocorrect_speech_command
 
 logger = logging.getLogger("PRIVACY68.ActionExecutor")
-fast_router = SemanticRouter()
+llm_router = LLMRouter()
 
 
 def execute_system_command_detailed(text: str, on_action_callback=None, on_status_callback=None) -> dict:
@@ -13,7 +13,7 @@ def execute_system_command_detailed(text: str, on_action_callback=None, on_statu
     Two-Lane Command Architecture:
     1. Fast Lane — Regex deterministic tools -> instant execution (<5ms, zero LLM)
        Handles: app launches, window navigation, command prompt, web search, settings, file/folder ops, system volume/lock.
-    2. Plugin Lane — Semantic TF-IDF matching -> direct plugin execution (Spotify, WhatsApp, gestures).
+    2. LLM Lane — Ollama tool-calling -> intelligent plugin execution (WhatsApp, Chrome, VS Code, etc.)
     """
     cleaned = autocorrect_speech_command(text.strip())
     if not cleaned:
@@ -57,13 +57,13 @@ def execute_system_command_detailed(text: str, on_action_callback=None, on_statu
         }
 
     # ─────────────────────────────────────────────────────────────────────────
-    # LANE 2: PLUGIN LANE (TF-IDF Matching for Registered Plugins)
+    # LANE 2: LLM LANE (Ollama Tool-Calling for Plugin Actions)
     # ─────────────────────────────────────────────────────────────────────────
-    plugin_tool = fast_router.route(cleaned)
+    plugin_tool = llm_router.route(cleaned)
     if plugin_tool:
-        logger.info(f"[ROUTER] Command matched plugin: {plugin_tool}")
+        logger.info(f"[LLM ROUTER] Command matched plugin: {plugin_tool}")
         success = manager.execute_skill(plugin_tool, cleaned)
-        plugin_message = f"Executed '{plugin_tool}' via Plugin" if success else f"Failed executing '{plugin_tool}'"
+        plugin_message = f"Executed '{plugin_tool}' via LLM" if success else f"Failed executing '{plugin_tool}'"
         if on_status_callback:
             status_type = "completed" if success else "error"
             on_status_callback(status_type, plugin_message)
@@ -75,7 +75,7 @@ def execute_system_command_detailed(text: str, on_action_callback=None, on_statu
         return {
             "success": success,
             "tool": plugin_tool,
-            "method": "plugin_lane",
+            "method": "llm_lane",
             "message": plugin_message,
         }
 

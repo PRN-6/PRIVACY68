@@ -7,12 +7,8 @@ sounddevice
 scipy
 numpy
 
-# Machine Learning & Routing
-scikit-learn
-
-# Hand Gesture Control (extra_plugins/gesture_plugin.py)
-mediapipe
-opencv-python
+# Local LLM Routing (Ollama)
+ollama
 
 # NVIDIA CUDA Acceleration (for faster-whisper GPU)
 nvidia-cublas-cu12

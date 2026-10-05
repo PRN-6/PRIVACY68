@@ -14,7 +14,8 @@ class ComputerActions:
     Safe Abstraction Layer for Windows Computer-Use Actions.
     Provides standard high-level interaction primitives:
     launch, click, double click, type text, send hotkey, switch window,
-    close window, and tab selection.
+    close window, tab selection, toggle, slider value setting, expand/collapse,
+    and scroll into view.
     """
 
     def launch_application(self, app_name: str, wait_timeout: float = 4.0) -> bool:
@@ -38,6 +39,7 @@ class ComputerActions:
         control_type: Optional[str] = None,
         automation_id: Optional[str] = None,
         exact_match: bool = False,
+        scope: str = "descendants",
     ) -> Optional[UIElementWrapper]:
         """Locates an element in the active window by properties."""
         return uia_engine.find_element(
@@ -45,6 +47,7 @@ class ComputerActions:
             control_type=control_type,
             automation_id=automation_id,
             exact_match=exact_match,
+            scope=scope,
         )
 
     def click_element(
@@ -76,6 +79,18 @@ class ComputerActions:
         elem = self.find_ui_element(name=name, control_type=control_type)
         if elem:
             return elem.double_click()
+        return False
+
+    def right_click_element(
+        self,
+        name: str,
+        control_type: Optional[str] = None,
+    ) -> bool:
+        """Finds and right-clicks a UI element."""
+        logger.info(f"Action: right_click_element(name='{name}')")
+        elem = self.find_ui_element(name=name, control_type=control_type)
+        if elem:
+            return elem.right_click()
         return False
 
     def select_tab(self, tab_name: str) -> bool:
@@ -113,6 +128,66 @@ class ComputerActions:
         if generic_elem:
             return generic_elem.click()
 
+        return False
+
+    def toggle_element(
+        self,
+        name: str,
+        target_state: Optional[bool] = None,
+        control_type: Optional[str] = None,
+    ) -> bool:
+        """
+        Toggles a switch, checkbox, or toggle button in the active window.
+        `target_state`: True for ON, False for OFF, None to toggle state.
+        """
+        logger.info(f"Action: toggle_element('{name}', target_state={target_state})")
+        elem = self.find_ui_element(name=name, control_type=control_type or "CheckBox")
+        if not elem:
+            elem = self.find_ui_element(name=name, control_type="Button")
+        if not elem:
+            elem = self.find_ui_element(name=name)
+
+        if elem:
+            return elem.toggle(target_state=target_state)
+
+        logger.warning(f"Action: toggle_element could not locate '{name}'")
+        return False
+
+    def set_slider_value(self, name: str, value: float) -> bool:
+        """Sets the numeric value on a slider or progress control."""
+        logger.info(f"Action: set_slider_value('{name}', value={value})")
+        elem = self.find_ui_element(name=name, control_type="Slider")
+        if not elem:
+            elem = self.find_ui_element(name=name)
+
+        if elem:
+            return elem.set_value(value)
+
+        logger.warning(f"Action: set_slider_value could not locate '{name}'")
+        return False
+
+    def expand_element(self, name: str) -> bool:
+        """Expands a dropdown, combobox, or tree item."""
+        logger.info(f"Action: expand_element('{name}')")
+        elem = self.find_ui_element(name=name)
+        if elem:
+            return elem.expand()
+        return False
+
+    def collapse_element(self, name: str) -> bool:
+        """Collapses an expanded dropdown or tree item."""
+        logger.info(f"Action: collapse_element('{name}')")
+        elem = self.find_ui_element(name=name)
+        if elem:
+            return elem.collapse()
+        return False
+
+    def scroll_into_view(self, name: str) -> bool:
+        """Scrolls the active window until the target UI element is visible."""
+        logger.info(f"Action: scroll_into_view('{name}')")
+        elem = self.find_ui_element(name=name)
+        if elem:
+            return elem.scroll_into_view()
         return False
 
     def type_text(self, text: str, target_field_name: Optional[str] = None) -> bool:

@@ -224,21 +224,56 @@
     <main class="flex-1 bg-nova-bg overflow-y-auto p-8 relative">
 
       <!-- ================= TAB 1: PLUGIN HUB ================= -->
-      <section id="tab-plugins" class="tab-content space-y-6">
-        <div class="flex items-center justify-between">
+      <section id="tab-plugins" class="tab-content space-y-5">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h2 class="text-xl font-bold text-white tracking-tight">Plugin Hub & Skills</h2>
-            <p class="text-sm text-slate-400">Modular action extensions equipped to execute system tasks.</p>
+            <h2 class="text-xl font-bold text-white tracking-tight flex items-center space-x-2">
+              <span>Plugin Hub & Skills</span>
+              <span id="plugins-total-count" class="text-xs px-2 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/20 font-mono">0 Loaded</span>
+            </h2>
+            <p class="text-xs text-slate-400 mt-0.5">Modular action extensions equipped to execute voice commands and OS tasks.</p>
           </div>
-          <div class="relative w-64">
+          <div class="relative w-full sm:w-72">
             <i data-lucide="search" class="w-4 h-4 text-slate-500 absolute left-3 top-2.5"></i>
-            <input type="text" id="plugin-search" oninput="filterPlugins()" placeholder="Search plugins..."
+            <input type="text" id="plugin-search" oninput="filterPlugins()" placeholder="Search by name, action, or voice command..."
               class="w-full bg-nova-surface border border-nova-border rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-red-500">
           </div>
         </div>
 
+        <!-- Category Filter Pills Bar -->
+        <div class="flex items-center gap-2 overflow-x-auto pb-1" id="plugin-category-filters">
+          <button onclick="setPluginCategoryFilter('all')" id="cat-filter-all"
+            class="cat-filter-btn px-3 py-1.5 rounded-xl text-xs font-semibold bg-gradient-to-r from-red-500/20 to-rose-500/20 text-white border border-red-500/50 transition-all cursor-pointer whitespace-nowrap shadow-sm">
+            All <span id="cat-count-all" class="ml-1 opacity-70 font-mono text-[10px]">(0)</span>
+          </button>
+          <button onclick="setPluginCategoryFilter('System')" id="cat-filter-System"
+            class="cat-filter-btn px-3 py-1.5 rounded-xl text-xs font-medium bg-nova-surface2 text-slate-400 hover:text-white border border-nova-border transition-all cursor-pointer whitespace-nowrap">
+            🖥️ System & OS <span id="cat-count-System" class="ml-1 opacity-70 font-mono text-[10px]">(0)</span>
+          </button>
+          <button onclick="setPluginCategoryFilter('Browser')" id="cat-filter-Browser"
+            class="cat-filter-btn px-3 py-1.5 rounded-xl text-xs font-medium bg-nova-surface2 text-slate-400 hover:text-white border border-nova-border transition-all cursor-pointer whitespace-nowrap">
+            🌐 Browsers <span id="cat-count-Browser" class="ml-1 opacity-70 font-mono text-[10px]">(0)</span>
+          </button>
+          <button onclick="setPluginCategoryFilter('Communication')" id="cat-filter-Communication"
+            class="cat-filter-btn px-3 py-1.5 rounded-xl text-xs font-medium bg-nova-surface2 text-slate-400 hover:text-white border border-nova-border transition-all cursor-pointer whitespace-nowrap">
+            💬 Messaging <span id="cat-count-Communication" class="ml-1 opacity-70 font-mono text-[10px]">(0)</span>
+          </button>
+          <button onclick="setPluginCategoryFilter('Developer')" id="cat-filter-Developer"
+            class="cat-filter-btn px-3 py-1.5 rounded-xl text-xs font-medium bg-nova-surface2 text-slate-400 hover:text-white border border-nova-border transition-all cursor-pointer whitespace-nowrap">
+            💻 Dev Tools <span id="cat-count-Developer" class="ml-1 opacity-70 font-mono text-[10px]">(0)</span>
+          </button>
+          <button onclick="setPluginCategoryFilter('Productivity')" id="cat-filter-Productivity"
+            class="cat-filter-btn px-3 py-1.5 rounded-xl text-xs font-medium bg-nova-surface2 text-slate-400 hover:text-white border border-nova-border transition-all cursor-pointer whitespace-nowrap">
+            ⚡ Productivity <span id="cat-count-Productivity" class="ml-1 opacity-70 font-mono text-[10px]">(0)</span>
+          </button>
+          <button onclick="setPluginCategoryFilter('Custom')" id="cat-filter-Custom"
+            class="cat-filter-btn px-3 py-1.5 rounded-xl text-xs font-medium bg-nova-surface2 text-slate-400 hover:text-white border border-nova-border transition-all cursor-pointer whitespace-nowrap">
+            🚀 Custom <span id="cat-count-Custom" class="ml-1 opacity-70 font-mono text-[10px]">(0)</span>
+          </button>
+        </div>
+
         <!-- Cards Container -->
-        <div id="plugins-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div id="plugins-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch">
           <!-- Loaded dynamically -->
           <div class="col-span-full py-12 text-center text-slate-500">
             <i data-lucide="loader-2" class="w-6 h-6 animate-spin mx-auto mb-2 text-red-500"></i>
@@ -1118,83 +1153,153 @@ async function recordEnrollmentSample() {
       }
     }
 
-    // Load Plugins
+    // Load Plugins & Category State
+    let activePluginCategory = 'all';
+
     async function loadPlugins() {
       if (!window.pywebview || !window.pywebview.api) return;
       try {
         allPlugins = await window.pywebview.api.get_plugins();
-        document.getElementById('plugins-count-badge').innerText = allPlugins.length;
-        renderPluginCards(allPlugins);
+        const countBadge = document.getElementById('plugins-count-badge');
+        if (countBadge) countBadge.innerText = allPlugins.length;
+        const totalCount = document.getElementById('plugins-total-count');
+        if (totalCount) totalCount.innerText = `${allPlugins.length} Loaded`;
+        
+        updatePluginCategoryCounts();
+        filterPlugins();
       } catch (err) {
         console.error('Failed to load plugins:', err);
+      }
+    }
+
+    function updatePluginCategoryCounts() {
+      if (!allPlugins) return;
+      const counts = { all: allPlugins.length, System: 0, Browser: 0, Communication: 0, Developer: 0, Productivity: 0, Custom: 0 };
+      allPlugins.forEach(p => {
+        const cat = p.category || (p.is_builtin ? 'System' : 'Custom');
+        if (counts[cat] !== undefined) counts[cat]++;
+        else counts.Custom++;
+      });
+
+      for (const [k, v] of Object.entries(counts)) {
+        const el = document.getElementById(`cat-count-${k}`);
+        if (el) el.innerText = `(${v})`;
+      }
+    }
+
+    function setPluginCategoryFilter(category) {
+      activePluginCategory = category;
+      document.querySelectorAll('.cat-filter-btn').forEach(btn => {
+        btn.classList.remove('bg-gradient-to-r', 'from-red-500/20', 'to-rose-500/20', 'text-white', 'border-red-500/50', 'shadow-sm', 'font-semibold');
+        btn.classList.add('bg-nova-surface2', 'text-slate-400', 'hover:text-white', 'border-nova-border', 'font-medium');
+      });
+
+      const activeBtn = document.getElementById(`cat-filter-${category}`);
+      if (activeBtn) {
+        activeBtn.classList.add('bg-gradient-to-r', 'from-red-500/20', 'to-rose-500/20', 'text-white', 'border-red-500/50', 'shadow-sm', 'font-semibold');
+        activeBtn.classList.remove('bg-nova-surface2', 'text-slate-400', 'border-nova-border', 'font-medium');
+      }
+
+      filterPlugins();
+    }
+
+    function getCategoryBadgeConfig(category) {
+      switch (category) {
+        case 'System':
+          return { label: 'System & OS', bg: 'bg-cyan-950/60 text-cyan-300 border-cyan-800/60' };
+        case 'Browser':
+          return { label: 'Browser', bg: 'bg-sky-950/60 text-sky-300 border-sky-800/60' };
+        case 'Communication':
+          return { label: 'Messaging', bg: 'bg-emerald-950/60 text-emerald-300 border-emerald-800/60' };
+        case 'Developer':
+          return { label: 'Developer', bg: 'bg-violet-950/60 text-violet-300 border-violet-800/60' };
+        case 'Productivity':
+          return { label: 'Productivity', bg: 'bg-amber-950/60 text-amber-300 border-amber-800/60' };
+        default:
+          return { label: 'Custom App', bg: 'bg-rose-950/60 text-rose-300 border-rose-800/60' };
       }
     }
 
     function renderPluginCards(plugins) {
       const container = document.getElementById('plugins-grid');
       if (!plugins || plugins.length === 0) {
-        container.innerHTML = `<div class="col-span-full py-12 text-center text-slate-500">No matching plugins found.</div>`;
+        container.innerHTML = `
+          <div class="col-span-full py-16 text-center text-slate-500 bg-nova-card/50 rounded-2xl border border-nova-border/50">
+            <i data-lucide="package-open" class="w-10 h-10 mx-auto mb-3 opacity-40 text-slate-400"></i>
+            <p class="text-sm font-semibold text-slate-300">No matching plugins found</p>
+            <p class="text-xs text-slate-500 mt-1">Try switching category tabs or clearing your search query.</p>
+          </div>
+        `;
+        lucide.createIcons();
         return;
       }
 
       container.innerHTML = plugins.map(p => {
         const isBuiltin = p.is_builtin;
-        const badgeClass = isBuiltin ? 'bg-red-950/60 text-red-400 border-red-800/60' : 'bg-rose-950/60 text-rose-300 border-rose-800/60';
-        const badgeText = isBuiltin ? 'Core' : 'Custom';
-        const triggersHtml = (p.triggers || []).map(t => `<span class="px-2 py-0.5 rounded-md bg-nova-surface2 text-slate-300 text-[10px] font-mono border border-nova-border">"${t}"</span>`).join(' ');
+        const originClass = isBuiltin ? 'bg-red-950/60 text-red-400 border-red-800/60' : 'bg-rose-950/60 text-rose-300 border-rose-800/60';
+        const originText = isBuiltin ? 'Core' : 'Custom';
+        
+        const catConfig = getCategoryBadgeConfig(p.category || (isBuiltin ? 'System' : 'Custom'));
+        const triggers = p.triggers || [];
+        const triggersHtml = triggers.map(t => `<span class="px-2 py-0.5 rounded-md bg-nova-surface2 text-slate-300 text-[10px] font-mono border border-nova-border">"${t}"</span>`).join(' ');
 
         const cmdCount = p.total_commands || (p.commands ? p.commands.length : (p.triggers ? p.triggers.length : 0));
         return `
-          <div class="p-5 rounded-2xl bg-nova-card border border-nova-border hover:border-nova-borderHover transition-all flex flex-col justify-between space-y-4">
-            <div class="space-y-2.5">
+          <div class="p-5 rounded-2xl bg-nova-card border border-nova-border hover:border-nova-borderHover transition-all flex flex-col justify-between space-y-4 shadow-sm hover:shadow-md">
+            <div class="space-y-3">
+              <!-- Header -->
               <div class="flex items-start justify-between">
                 <div class="flex items-center space-x-3 cursor-pointer group/title flex-1 mr-3" onclick="openPluginCommandsModal('${p.id}')">
-                  <span class="text-2xl group-hover/title:scale-110 transition-transform">${p.icon || '🔌'}</span>
-                  <div>
-                    <div class="flex items-center space-x-2">
-                      <h4 class="font-bold text-sm text-white group-hover/title:text-red-400 transition-colors">${p.name}</h4>
+                  <div class="w-10 h-10 rounded-xl bg-nova-surface2 border border-nova-border flex items-center justify-center text-2xl group-hover/title:scale-105 transition-transform shrink-0">
+                    ${p.icon || '🔌'}
+                  </div>
+                  <div class="min-w-0 flex-1">
+                    <div class="flex items-center space-x-1.5 flex-wrap gap-y-1">
+                      <h4 class="font-bold text-sm text-white group-hover/title:text-red-400 transition-colors truncate">${p.name}</h4>
                       <span class="text-[10px] font-mono text-slate-500">v${p.version || '1.0'}</span>
-                      <span class="text-[10px] px-1.5 py-0.2 rounded border font-medium ${badgeClass}">${badgeText}</span>
+                      <span class="text-[9px] px-1.5 py-0.2 rounded border font-medium ${catConfig.bg}">${catConfig.label}</span>
+                      <span class="text-[9px] px-1.5 py-0.2 rounded border font-medium ${originClass}">${originText}</span>
                     </div>
-                    <p class="text-xs text-slate-400 mt-0.5">${p.description}</p>
+                    <p class="text-xs text-slate-400 mt-1 line-clamp-2" title="${p.description || ''}">${p.description || 'No description provided.'}</p>
                   </div>
                 </div>
                 
                 <!-- Toggle switch -->
-                <label class="relative inline-flex items-center cursor-pointer shrink-0">
+                <label class="relative inline-flex items-center cursor-pointer shrink-0 mt-0.5">
                   <input type="checkbox" onchange="togglePlugin('${p.id}', this.checked)" ${p.is_enabled ? 'checked' : ''} class="sr-only peer">
                   <div class="w-9 h-5 bg-nova-surface peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500 border border-nova-border"></div>
                 </label>
               </div>
 
               <!-- Triggers preview (clickable) -->
-              ${triggersHtml ? `
-                <div class="pt-2 flex flex-wrap gap-1.5 items-center cursor-pointer" onclick="openPluginCommandsModal('${p.id}')">
-                  <span class="text-[10px] text-slate-500 font-semibold uppercase">Voice triggers:</span>
-                  ${triggersHtml}
-                  ${cmdCount > (p.triggers ? p.triggers.length : 0) ? `<span class="text-[10px] text-red-400/80 font-mono">+${cmdCount - p.triggers.length} more...</span>` : ''}
+              <div class="pt-1">
+                <div class="flex flex-wrap gap-1.5 items-center cursor-pointer min-h-[28px]" onclick="openPluginCommandsModal('${p.id}')">
+                  <span class="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Triggers:</span>
+                  ${triggersHtml || `<span class="text-[10px] text-slate-500 italic">No triggers defined</span>`}
+                  ${cmdCount > triggers.length ? `<span class="text-[10px] text-red-400/90 font-mono hover:underline">+${cmdCount - triggers.length} more...</span>` : ''}
                 </div>
-              ` : ''}
+              </div>
             </div>
 
             <!-- Actions footer -->
-            <div class="pt-2 border-t border-nova-border/50 flex items-center justify-between text-xs">
-              <span class="text-[11px] ${p.is_enabled ? 'text-emerald-400' : 'text-slate-500'} font-medium">
-                ${p.is_enabled ? '● Active & Listening' : '○ Disabled'}
+            <div class="pt-3 border-t border-nova-border/50 flex items-center justify-between text-xs">
+              <span class="text-[11px] ${p.is_enabled ? 'text-emerald-400' : 'text-slate-500'} font-medium flex items-center space-x-1">
+                <span class="w-1.5 h-1.5 rounded-full ${p.is_enabled ? 'bg-emerald-400 animate-pulse' : 'bg-slate-500'}"></span>
+                <span>${p.is_enabled ? 'Active & Listening' : 'Disabled'}</span>
               </span>
               <div class="flex items-center space-x-1.5">
-                <button onclick="openPluginCommandsModal('${p.id}')" class="flex items-center space-x-1.5 text-[11px] px-2.5 py-1 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 transition-all shadow-sm font-medium" title="View All Voice Commands">
+                <button onclick="openPluginCommandsModal('${p.id}')" class="flex items-center space-x-1.5 text-[11px] px-2.5 py-1 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 transition-all shadow-sm font-medium cursor-pointer" title="View All Voice Commands">
                   <i data-lucide="help-circle" class="w-3 h-3"></i>
                   <span>Commands ${cmdCount ? `(${cmdCount})` : ''}</span>
                 </button>
                 ${p.id === 'whatsapp' ? `
-                  <button onclick="openWhatsAppContacts()" class="flex items-center space-x-1 text-[11px] px-2 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 transition-all" title="Manage Contacts">
+                  <button onclick="openWhatsAppContacts()" class="flex items-center space-x-1 text-[11px] px-2 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 transition-all cursor-pointer" title="Manage Contacts">
                     <i data-lucide="users" class="w-3 h-3"></i>
                     <span>Contacts</span>
                   </button>
                 ` : ''}
                 ${!isBuiltin ? `
-                  <button onclick="uninstallPlugin('${p.id}', '${p.name}')" class="text-slate-400 hover:text-rose-400 transition-colors p-1 rounded-md hover:bg-nova-surface2" title="Uninstall plugin">
+                  <button onclick="uninstallPlugin('${p.id}', '${p.name}')" class="text-slate-400 hover:text-rose-400 transition-colors p-1 rounded-md hover:bg-nova-surface2 cursor-pointer" title="Uninstall plugin">
                     <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
                   </button>
                 ` : ''}
@@ -1208,8 +1313,29 @@ async function recordEnrollmentSample() {
     }
 
     function filterPlugins() {
-      const q = document.getElementById('plugin-search').value.toLowerCase();
-      const filtered = allPlugins.filter(p => p.name.toLowerCase().includes(q) || p.description.toLowerCase().includes(q) || (p.triggers && p.triggers.some(t => t.toLowerCase().includes(q))));
+      const q = (document.getElementById('plugin-search') ? document.getElementById('plugin-search').value : '').toLowerCase().trim();
+      let filtered = allPlugins;
+
+      // Filter by category
+      if (activePluginCategory !== 'all') {
+        filtered = filtered.filter(p => {
+          const cat = p.category || (p.is_builtin ? 'System' : 'Custom');
+          return cat.toLowerCase() === activePluginCategory.toLowerCase();
+        });
+      }
+
+      // Filter by search query
+      if (q) {
+        filtered = filtered.filter(p => 
+          (p.name && p.name.toLowerCase().includes(q)) || 
+          (p.description && p.description.toLowerCase().includes(q)) || 
+          (p.category && p.category.toLowerCase().includes(q)) ||
+          (p.plugin_type && p.plugin_type.toLowerCase().includes(q)) ||
+          (p.triggers && p.triggers.some(t => t.toLowerCase().includes(q))) ||
+          (p.commands && p.commands.some(c => c.action.toLowerCase().includes(q) || (c.triggers && c.triggers.some(t => t.toLowerCase().includes(q)))))
+        );
+      }
+
       renderPluginCards(filtered);
     }
 

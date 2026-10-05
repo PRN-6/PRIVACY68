@@ -51,6 +51,8 @@ class WhatsAppPlugin(BasePlugin):
     version = "1.5.0"
     author = "Community Plugin"
     is_builtin = False
+    category = "Communication"
+    plugin_type = "Messaging & Chat"
 
     # ---------- Contacts Storage ---------- #
     _CONTACTS_PATH = os.path.join(

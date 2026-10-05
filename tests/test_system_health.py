@@ -4,7 +4,7 @@ sys.path.insert(0, os.path.abspath("."))
 import numpy as np
 from plugins.profile_manager import profile_manager
 from speech.voice_auth import voice_authenticator
-from actions.router import SemanticRouter
+from actions.router import LLMRouter
 from actions.skill_manager import manager
 
 def test_system():
@@ -14,14 +14,12 @@ def test_system():
     print(f"Voice Lock threshold: {profile_manager.get('voice_lock_threshold')}")
     print(f"Master voice profile loaded: {voice_authenticator.master_embedding is not None}")
 
-    # 1. Semantic Router test
-    router = SemanticRouter()
+    # 1. LLM Router test
+    router = LLMRouter()
     test_phrases = [
-        "open powerpoint",
-        "next slide",
-        "laser pointer",
         "launch chrome",
-        "open whatsapp"
+        "open whatsapp",
+        "open vscode"
     ]
     for phrase in test_phrases:
         tool = router.route(phrase)

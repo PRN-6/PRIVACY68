@@ -23,13 +23,8 @@ This directory contains standalone, optional plugins that are separated from Pri
    - Quick-open files (`"find file called config.json"`)
    - Search disk for a file and open it (`"search for a file called main.py in vscode"`)
 
-4. **`gesture_plugin.py`** (🖐️ Webcam Hand Gesture Control)
-   - Wake / listen / mute with palm & fist gestures
-   - Alt+Tab app switcher mode
-   - Thumbs-up left/right navigation
-   - PowerPoint slide control (1 finger = previous, 2 fingers = next)
 
-5. **`ppt_plugin.py`** (📽️ PowerPoint Control)
+4. **`ppt_plugin.py`** (📽️ PowerPoint Control)
    - Launch / close PowerPoint
    - Start / end slideshow
 

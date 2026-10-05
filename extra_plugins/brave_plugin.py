@@ -20,6 +20,8 @@ class BravePlugin(BasePlugin):
     version = "1.1.0"
     author = "Community Plugin"
     is_builtin = False
+    category = "Browser"
+    plugin_type = "Browser Control"
 
     @property
     def actions(self) -> Dict[str, Callable[[str], bool]]:

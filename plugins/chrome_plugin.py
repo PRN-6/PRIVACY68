@@ -15,6 +15,8 @@ class ChromePlugin(BasePlugin):
     description = "Control Google Chrome: open, close, new tab, close tab, search, and incognito mode."
     version = "1.3.0"
     author = "Privacy68 Team"
+    category = "Browser"
+    plugin_type = "Browser Control"
 
     @property
     def actions(self) -> Dict[str, Callable[[str], bool]]:

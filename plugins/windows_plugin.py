@@ -33,7 +33,9 @@ except ImportError:
         "microphone": "ms-settings:privacy-microphone",
         "apps": "ms-settings:appsfeatures",
         "default apps": "ms-settings:defaultapps",
-        "accounts": "ms-settings:accounts",
+"accounts": "ms-settings:accounts",
+    "account": "ms-settings:accounts",
+    "sign in options": "ms-settings:signinoptions",
         "sign in": "ms-settings:signinoptions",
         "time": "ms-settings:dateandtime",
         "language": "ms-settings:regionlanguage",
@@ -58,6 +60,280 @@ SPECIAL_APPS = {
     "my computer": "explorer.exe",
     "snipping tool": "ms-snippingtool:",
     "task manager": "taskmgr.exe",
+}
+
+# Deep Windows Settings pages not covered by the base map
+EXTRA_SETTINGS_PAGES = {
+    "update": "ms-settings:windowsupdate",
+    "windows update": "ms-settings:windowsupdate",
+    "windows update history": "ms-settings:windowsupdate-history",
+    "optional update": "ms-settings:windowsupdate-optional",
+    "recovery": "ms-settings:recovery",
+    "reset this pc": "ms-settings:recovery",
+    "reset": "ms-settings:recovery",
+    "about": "ms-settings:about",
+    "system info": "ms-settings:about",
+    "system information settings": "ms-settings:about",
+    "printers": "ms-settings:printers",
+    "printer": "ms-settings:printers",
+    "printers and scanners": "ms-settings:printers",
+    "accessibility": "ms-settings:easeofaccess",
+    "ease of access": "ms-settings:easeofaccess",
+    "magnifier settings": "ms-settings:easeofaccess-magnifier",
+    "narrator settings": "ms-settings:easeofaccess-narrator",
+    "start menu": "ms-settings:start",
+    "optional updates": "ms-settings:windowsupdate-optional",
+    "update history": "ms-settings:windowsupdate-history",
+    "power and sleep": "ms-settings:powersleep",
+    "notifications and actions": "ms-settings:notifications",
+    "accounts": "ms-settings:accounts",
+    "sync": "ms-settings:syncsettings",
+    "default browser": "ms-settings:defaultapps",
+    "default apps": "ms-settings:defaultapps",
+    "default programs": "ms-settings:defaultapps",
+    "clipboard": "ms-settings:clipboard",
+    "startup": "ms-settings:startupapps",
+    "startup apps": "ms-settings:startupapps",
+    "start": "ms-settings:start",
+    "taskbar": "ms-settings:taskbar",
+    "multitasking": "ms-settings:multitasking",
+    "window snapping": "ms-settings:multitasking-windows",
+    "snap windows": "ms-settings:multitasking-windows",
+    "desktop": "ms-settings:multitasking-desk",
+    "hotspot": "ms-settings:mobilehotspot",
+    "mobile hotspot": "ms-settings:mobilehotspot",
+    "data usage": "ms-settings:datausage",
+    "vpn": "ms-settings:vpn",
+    "nearby sharing": "ms-settings:nearbyshare",
+    "sharing": "ms-settings:nearbyshare",
+    "optional features": "ms-settings:optionalfeatures",
+    "indexing": "ms-settings:indexingoptions",
+    "indexed locations": "ms-settings:indexingoptions",
+    "search indexing": "ms-settings:indexingoptions",
+    "memory": "ms-settings:memory",
+    "maps": "ms-settings:maps",
+    "email accounts": "ms-settings:emailandaccounts",
+    "your info": "ms-settings:yourinfo",
+    "sync settings": "ms-settings:syncsettings",
+    "find my device": "ms-settings:findmydevice",
+    "family": "ms-settings:family",
+    "night light": "ms-settings:nightlight",
+    "advanced display": "ms-settings:displayadvanced",
+    "scale and layout": "ms-settings:displayadvanced",
+    "screen brightness": "ms-settings:display",
+    "volume mixer": "ms-settings:sound-volumemixer",
+    "audio": "ms-settings:sound",
+    "focus assist": "ms-settings:quietmode",
+    "do not disturb": "ms-settings:quietmode",
+    "dnd": "ms-settings:quietmode",
+    "usage": "ms-settings:usage",
+    "screen time": "ms-settings:usage",
+    "battery saver": "ms-settings:batterysaver",
+    "power saving": "ms-settings:batterysaver",
+    "power usage": "ms-settings:usage",
+    "sleep": "ms-settings:powersleep",
+    "screen saver": "ms-settings:screensaver",
+    "desktop background": "ms-settings:personalization-background",
+    "lock screen": "ms-settings:lockscreen",
+    "language": "ms-settings:regionlanguage",
+    "region": "ms-settings:regionlanguage",
+    "speech": "ms-settings:speech",
+    "typing": "ms-settings:typing",
+    "privacy and security": "ms-settings:privacy",
+    "windows security": "windowsdefender:",
+    "security": "windowsdefender:",
+    "antivirus": "windowsdefender:",
+    "firewall": "control.exe /name Microsoft.WindowsFirewall",
+    "webcam": "ms-settings:privacy-webcam",
+    "location": "ms-settings:privacy-location",
+    "advertising": "ms-settings:privacy-advertising",
+    "diagnostics": "ms-settings:privacy-diagnostics",
+    "game bar": "ms-settings:gaming-gamebar",
+    "captures": "ms-settings:gaming-captures",
+    "xbox": "ms-settings:gaming-xbox",
+    "storage sense": "ms-settings:storagesense",
+    "troubleshoot": "ms-settings:troubleshoot",
+    "activation": "ms-settings:activation",
+    "phone link": "ms-settings:mobilelink",
+}
+
+ALL_SETTINGS_PAGES = {**SETTINGS_PAGES, **EXTRA_SETTINGS_PAGES}
+
+# Control Panel pages (.cpl / control.exe targets)
+CONTROL_PANEL_PAGES = {
+    "power options": "powercfg.cpl",
+    "power plan": "powercfg.cpl",
+    "power": "powercfg.cpl",
+    "network connections": "ncpa.cpl",
+    "network": "ncpa.cpl",
+    "internet options": "inetcpl.cpl",
+    "internet properties": "inetcpl.cpl",
+    "network and sharing center": "control.exe /name Microsoft.NetworkAndSharingCenter",
+    "sharing center": "control.exe /name Microsoft.NetworkAndSharingCenter",
+    "sound": "mmsys.cpl",
+    "sounds": "mmsys.cpl",
+    "playback devices": "mmsys.cpl",
+    "recording devices": "mmsys.cpl",
+    "user accounts": "netplwiz",
+    "user accounts control panel": "netplwiz",
+    "accounts": "netplwiz",
+    "date and time": "timedate.cpl",
+    "region and language": "intl.cpl",
+    "region": "intl.cpl",
+    "keyboard": "main.cpl",
+    "mouse": "main.cpl",
+    "printers": "control.exe /name Microsoft.DevicesAndPrinters",
+    "printers and scanners": "control.exe /name Microsoft.DevicesAndPrinters",
+    "programs and features": "appwiz.cpl",
+    "programs": "appwiz.cpl",
+    "uninstall a program": "appwiz.cpl",
+    "uninstall programs": "appwiz.cpl",
+    "administrative tools": "control.exe /name Microsoft.AdministrativeTools",
+    "file explorer options": "control.exe /name Microsoft.FileExplorerOptions",
+    "folder options": "control.exe /name Microsoft.FileExplorerOptions",
+    "fonts": "control.exe /name Microsoft.Fonts",
+    "color management": "color.cpl",
+    "indexing options": "control.exe /name Microsoft.IndexingOptions",
+    "sync center": "control.exe /name Microsoft.SyncCenter",
+    "credential manager": "control.exe /name Microsoft.CredentialManager",
+    "security center": "control.exe /name Microsoft.SecurityCenter",
+    "troubleshooting": "control.exe /name Microsoft.Troubleshooting",
+    "backup and restore": "control.exe /name Microsoft.BackupAndRestoreCenter",
+    "system restore": "control.exe /name Microsoft.SystemRestore",
+    "windows firewall": "control.exe /name Microsoft.WindowsFirewall",
+    "windows update": "control.exe /name Microsoft.Update",
+    "default programs": "control.exe /name Microsoft.DefaultPrograms",
+    "personalization": "control.exe /name Microsoft.Personalization",
+    "mail": "mail.exe",
+    "dial up networking": "control.exe /name Microsoft.DialupNetworking",
+}
+
+# Legacy MMC/exe system tools keyed by spoken name
+SYSTEM_TOOLS = {
+    "device manager": "devmgmt.msc",
+    "task scheduler": "taskschd.msc",
+    "services": "services.msc",
+    "service manager": "services.msc",
+    "event viewer": "eventvwr.msc",
+    "system configuration": "msconfig",
+    "msconfig": "msconfig",
+    "system information": "msinfo32",
+    "computer management": "compmgmt.msc",
+    "local users and groups": "lusrmgr.msc",
+    "performance monitor": "perfmon.msc",
+    "resource monitor": "resmon",
+    "disk management": "diskmgmt.msc",
+    "disk cleanup": "cleanmgr",
+    "defragment and optimize drives": "dfrgui.exe",
+    "defragment": "dfrgui.exe",
+    "registry editor": "regedit",
+    "windows memory diagnostic": "mdsched",
+    "group policy editor": "gpedit.msc",
+    "windows powershell": "powershell",
+    "character map": "charmap",
+    "steps recorder": "psr",
+    "on screen keyboard": "osk",
+    "magnifier": "magnify",
+    "narrator": "narrator",
+    "voice recorder": "soundrecorder:",
+    "media player": "wmplayer",
+    "sticky notes": "ms-sticky-notes:",
+    "alarms and clock": "ms-clock:",
+    "clock app": "ms-clock:",
+    "weather": "ms-weather:",
+    "photos": "microsoft.windows.photos:",
+    "camera app": "microsoft.windows.camera:",
+    "microsoft store": "ms-windows-store:",
+    "store": "ms-windows-store:",
+    "feedback hub": "ms-feedbackhub:",
+    "xbox app": "xbox:",
+    "movies and tv": "filmsandtv:",
+    "mail and calendar": "outlookmail:",
+    "windows settings": "ms-settings:",
+    "calculator app": "calc",
+    "notepad": "notepad",
+    "paint app": "mspaint",
+    "device pairing": "control.exe /name Microsoft.DevicesAndPrinters",
+}
+
+# Full-system power/session commands
+SYSTEM_ACTIONS = {
+    "cancel": "shutdown /a",
+    "cancel shutdown": "shutdown /a",
+    "abort shutdown": "shutdown /a",
+    "lock": "rundll32.exe user32.dll,LockWorkStation",
+    "lock pc": "rundll32.exe user32.dll,LockWorkStation",
+    "lock screen": "rundll32.exe user32.dll,LockWorkStation",
+    "log off": "shutdown /l",
+    "logoff": "shutdown /l",
+    "sign out": "shutdown /l",
+    "sleep": "rundll32.exe powrprof.dll,SetSuspendState 0,1,0",
+    "standby": "rundll32.exe powrprof.dll,SetSuspendState 0,1,0",
+    "hibernate": "shutdown /h",
+    "restart": "shutdown /r /t 3",
+    "reboot": "shutdown /r /t 3",
+    "restart pc": "shutdown /r /t 3",
+    "shutdown": "shutdown /s /t 3",
+    "shut down": "shutdown /s /t 3",
+    "turn off pc": "shutdown /s /t 3",
+}
+
+# Read-only system information queries
+SYSTEM_INFO_QUERIES = {
+    "battery": "Get-CimInstance Win32_Battery | Select-Object EstimatedChargeRemaining, BatteryStatus | Format-List",
+    "battery level": "Get-CimInstance Win32_Battery | Select-Object EstimatedChargeRemaining, BatteryStatus | Format-List",
+    "power plan": "powercfg /getactivescheme",
+    "disk space": "Get-Volume | Select-Object DriveLetter, SizeRemaining, Size | Format-Table -AutoSize",
+    "disk usage": "Get-Volume | Select-Object DriveLetter, SizeRemaining, Size | Format-Table -AutoSize",
+    "storage": "Get-Volume | Select-Object DriveLetter, SizeRemaining, Size | Format-Table -AutoSize",
+    "memory": "Get-CimInstance Win32_OperatingSystem | Select-Object @{n='FreeGB';e={[math]::Round($_.FreePhysicalMemory/1MB,2)}}, @{n='TotalGB';e={[math]::Round($_.TotalVisibleMemorySize/1MB,2)}} | Format-List",
+    "ram": "Get-CimInstance Win32_ComputerSystem | Select-Object @{n='TotalRAM_GB';e={[math]::Round($_.TotalPhysicalMemory/1GB,2)}} | Format-List",
+    "cpu": "Get-CimInstance Win32_Processor | Select-Object Name, NumberOfCores, MaxClockSpeed | Format-List",
+    "processor": "Get-CimInstance Win32_Processor | Select-Object Name, NumberOfCores, MaxClockSpeed | Format-List",
+    "gpu": "Get-CimInstance Win32_VideoController | Select-Object Name, DriverVersion | Format-List",
+    "graphics": "Get-CimInstance Win32_VideoController | Select-Object Name, DriverVersion | Format-List",
+    "ip address": "Get-NetIPAddress -AddressFamily IPv4 | Where-Object {$_.IPAddress -notlike '127.*'} | Select-Object InterfaceAlias, IPAddress | Format-Table -AutoSize",
+    "ip": "Get-NetIPAddress -AddressFamily IPv4 | Where-Object {$_.IPAddress -notlike '127.*'} | Select-Object InterfaceAlias, IPAddress | Format-Table -AutoSize",
+    "uptime": "(Get-Date) - (Get-CimInstance Win32_OperatingSystem).LastBootUpTime",
+    "windows version": "Get-CimInstance Win32_OperatingSystem | Select-Object Caption, Version, BuildNumber | Format-List",
+    "os version": "Get-CimInstance Win32_OperatingSystem | Select-Object Caption, Version, BuildNumber | Format-List",
+    "wifi network": "netsh wlan show interfaces | Select-String -Pattern 'SSID|Signal|State'",
+    "wi-fi network": "netsh wlan show interfaces | Select-String -Pattern 'SSID|Signal|State'",
+    "system info": "Get-ComputerInfo | Select-Object CsName, WindowsProductName, WindowsVersion, OsBuildNumber | Format-List",
+    "computer name": "$env:COMPUTERNAME",
+    "hostname": "$env:COMPUTERNAME",
+    "monitor": "Get-CimInstance -Namespace root\\wmi -Class WmiMonitorID | ForEach-Object { ($_.UserFriendlyName | Where-Object {$_ -ne 0} | ForEach-Object {[char]$_}) -join '' }",
+}
+
+# Volume control intents
+VOLUME_PATTERNS = {
+    "mute": "mute",
+    "unmute": "unmute",
+    "silence": "mute",
+    "volume up": "up",
+    "increase volume": "up",
+    "turn up the volume": "up",
+    "turn up volume": "up",
+    "louder": "up",
+    "volume down": "down",
+    "decrease volume": "down",
+    "turn down the volume": "down",
+    "turn down volume": "down",
+    "lower the volume": "down",
+    "quieter": "down",
+    "volume": "up",
+}
+
+# Default browser candidates per vendor
+DEFAULT_BROWSER = {
+    "edge": "msedge.exe",
+    "microsoft edge": "msedge.exe",
+    "chrome": "chrome.exe",
+    "google chrome": "chrome.exe",
+    "firefox": "firefox.exe",
+    "mozilla firefox": "firefox.exe",
+    "brave": "brave.exe",
+    "opera": "opera.exe",
 }
 
 # Helper to dynamically find real Windows User Shell Folders (OneDrive, custom user paths, etc.)
@@ -125,6 +401,8 @@ class WindowsPlugin(BasePlugin):
     version = "1.0.0"
     author = "PRIVACY68 Core"
     is_builtin = True
+    category = "System"
+    plugin_type = "System & Automation"
 
     @property
     def actions(self) -> Dict[str, Callable[[str], bool]]:
@@ -137,6 +415,20 @@ class WindowsPlugin(BasePlugin):
             "windows.move": self.move,
             "windows.delete": self.delete,
             "windows.open_location": self.open_location,
+            "windows.control_panel": self.control_panel,
+            "windows.open_system_tool": self.open_system_tool,
+            "windows.system_action": self.system_action,
+            "windows.volume_control": self.volume_control,
+            "windows.brightness": self.brightness,
+            "windows.system_info": self.system_info,
+            "windows.empty_recycle_bin": self.empty_recycle_bin,
+            "windows.open_run": self.open_run,
+            "windows.screenshot": self.screenshot,
+            "windows.show_desktop": self.show_desktop,
+            "windows.window_control": self.window_control,
+            "windows.clipboard_clear": self.clipboard_clear,
+            "windows.toggle_connectivity": self.toggle_connectivity,
+            "windows.set_default_browser": self.set_default_browser,
             "windows.taskmgr_performance": self.taskmgr_performance,
             "windows.taskmgr_processes": self.taskmgr_processes,
             "windows.taskmgr_startup": self.taskmgr_startup,
@@ -174,6 +466,17 @@ class WindowsPlugin(BasePlugin):
                 "go to battery",
                 "go to storage",
                 "go to update",
+                "open clipboard settings",
+                "open accessibility settings",
+                "open printer settings",
+                "open recovery settings",
+                "open windows update settings",
+                "open account settings",
+                "open volume mixer settings",
+                "open activation settings",
+                "open start menu settings",
+                "open mobile hotspot settings",
+                "open multitasking settings",
                 "system tab",
                 "bluetooth tab",
                 "wifi tab",
@@ -185,7 +488,6 @@ class WindowsPlugin(BasePlugin):
                 "open task manager",
                 "open file explorer",
                 "open this pc",
-                "open control panel",
                 "open terminal",
                 "open command prompt",
                 "open powershell",
@@ -333,6 +635,130 @@ class WindowsPlugin(BasePlugin):
                 "explore folder", "explore the folder",
                 "browse folder", "browse files",
             ],
+            "windows.control_panel": [
+                "open control panel", "open the control panel",
+                "show control panel", "open control panel settings",
+                "open control panel for power options",
+                "open control panel for network connections",
+                "open control panel for sound",
+                "open control panel for user accounts",
+                "open power options", "show power options",
+                "open network connections", "open internet options",
+                "open network and sharing center", "open sharing center",
+                "open sound settings control panel", "open user accounts",
+                "open date and time settings", "open region settings",
+                "open folder options", "open file explorer options",
+                "open fonts", "open index options", "open indexing options",
+                "open credential manager", "open color management",
+                "open programs and features", "open uninstall programs",
+                "open system restore", "open backup and restore",
+                "open troubleshooting", "open default programs",
+                "open personalization", "open mail control panel",
+            ],
+            "windows.open_system_tool": [
+                "open device manager", "open task scheduler",
+                "open services", "open service manager",
+                "open event viewer", "open system configuration",
+                "open msconfig", "open system information",
+                "open computer management", "open local users and groups",
+                "open performance monitor", "open resource monitor",
+                "open disk management", "open disk cleanup",
+                "open registry editor", "open memory diagnostic",
+                "open group policy editor", "open character map",
+                "open steps recorder", "open on screen keyboard",
+                "open magnifier", "open narrator", "open voice recorder",
+                "open media player", "open sticky notes",
+                "open alarms and clock", "open weather app",
+                "open photos", "open camera app", "open microsoft store",
+                "open store", "open feedback hub", "open notepad",
+                "open paint app", "open calculator app",
+            ],
+            "windows.system_action": [
+                "lock the pc", "lock my pc", "lock the screen",
+                "lock this computer", "lock computer",
+                "sign out", "log off", "log out", "sign me out",
+                "put the pc to sleep", "sleep the pc", "go to sleep",
+                "hibernate", "hibernate the pc",
+                "restart the pc", "restart the computer", "restart",
+                "reboot the pc", "reboot", "restart my pc",
+                "shut down the pc", "shutdown the pc", "shut down",
+                "shutdown", "turn off the pc", "turn off my pc",
+                "cancel shutdown", "abort shutdown", "cancel restart",
+            ],
+            "windows.volume_control": [
+                "mute", "mute the volume", "mute audio", "silence the audio",
+                "unmute", "unmute the volume", "unmute audio",
+                "volume up", "turn up the volume", "increase the volume",
+                "raise the volume", "make it louder", "louder",
+                "volume down", "turn down the volume", "decrease the volume",
+                "lower the volume", "make it quieter", "quieter",
+                "set volume", "change volume",
+            ],
+            "windows.brightness": [
+                "increase brightness", "brightness up", "make it brighter",
+                "decrease brightness", "brightness down", "dim the screen",
+                "lower the brightness", "set brightness", "adjust brightness",
+            ],
+            "windows.system_info": [
+                "check battery", "battery level", "how much battery",
+                "how much storage", "check disk space", "storage left",
+                "how much ram", "how much memory", "check memory",
+                "what is my ip", "show ip address", "check ip address",
+                "system uptime", "how long has the pc been on",
+                "windows version", "check windows version",
+                "what is my wifi network", "which wifi am i on",
+                "cpu info", "check the processor", "graphics card",
+                "what is my computer name", "check the monitor",
+                "check the power plan",
+            ],
+            "windows.empty_recycle_bin": [
+                "empty the recycle bin", "empty recycle bin",
+                "clear the recycle bin", "clear recycle bin",
+                "delete everything in the recycle bin",
+                "empty the trash",
+            ],
+            "windows.open_run": [
+                "open run dialog", "open the run box", "show run dialog",
+                "open run and type", "run a command", "run command",
+                "run this command", "open run",
+            ],
+            "windows.screenshot": [
+                "take a screenshot", "take screenshot", "capture the screen",
+                "capture screen", "screenshot this", "snip the screen",
+                "take a snip", "snip", "screen capture",
+            ],
+            "windows.show_desktop": [
+                "show desktop", "show the desktop", "minimize all windows",
+                "minimise all windows", "go to the desktop", "desktop please",
+                "show my desktop",
+            ],
+            "windows.window_control": [
+                "minimize the window", "minimise the window",
+                "maximize the window", "maximise the window", "maximize this window",
+                "close the window", "close this window",
+                "snap the window left", "snap window to the left",
+                "snap the window right", "snap window to the right",
+                "snap the window", "snap window",
+            ],
+            "windows.clipboard_clear": [
+                "clear the clipboard", "empty the clipboard",
+                "wipe the clipboard", "clear clipboard",
+            ],
+            "windows.toggle_connectivity": [
+                "turn on wifi", "turn on wi fi", "enable wifi", "enable wi fi",
+                "turn off wifi", "turn off wi fi", "disable wifi", "disable wi fi",
+                "switch on wifi", "switch off wifi",
+                "turn on bluetooth", "enable bluetooth",
+                "turn off bluetooth", "disable bluetooth",
+                "toggle wifi", "toggle bluetooth",
+            ],
+            "windows.set_default_browser": [
+                "set default browser", "change default browser",
+                "make chrome the default browser", "make edge the default browser",
+                "set chrome as default browser", "set edge as default browser",
+                "set firefox as default browser",
+                "make firefox the default browser", "default browser",
+            ],
         }
 
     @property
@@ -355,6 +781,20 @@ class WindowsPlugin(BasePlugin):
             "windows.move": "- windows.move: Move a file or folder to another location (e.g. 'move reports.pdf to documents', 'move the project folder into the projects folder').",
             "windows.delete": "- windows.delete: Delete a file or folder (e.g. 'delete the file notes.txt from desktop').",
             "windows.open_location": "- windows.open_location: Open a folder or file's location in Explorer or VS Code (e.g. 'open the projects folder in explorer', 'open folder in vscode').",
+            "windows.control_panel": "- windows.control_panel: Open a Control Panel page (e.g. 'open control panel', 'open power options', 'open network connections', 'open internet options', 'open programs and features', 'open folder options').",
+            "windows.open_system_tool": "- windows.open_system_tool: Open a Windows administrative tool (e.g. 'open device manager', 'open task scheduler', 'open services', 'open event viewer', 'open disk management', 'open registry editor').",
+            "windows.system_action": "- windows.system_action: Lock, sleep, hibernate, sign out, restart or shut down Windows, or cancel a pending shutdown (e.g. 'lock the pc', 'shut down the pc', 'restart my pc').",
+            "windows.volume_control": "- windows.volume_control: Mute, unmute, or raise/lower system volume (e.g. 'mute', 'volume up', 'turn down the volume').",
+            "windows.brightness": "- windows.brightness: Raise, lower or set the screen brightness (e.g. 'increase brightness', 'set brightness to 60').",
+            "windows.system_info": "- windows.system_info: Report PC information such as battery level, disk space, RAM, IP address, uptime, Windows version, or Wi-Fi network (e.g. 'how much battery is left', 'check disk space', 'what is my ip').",
+            "windows.empty_recycle_bin": "- windows.empty_recycle_bin: Permanently clear the Recycle Bin (e.g. 'empty the recycle bin').",
+            "windows.open_run": "- windows.open_run: Open the Run dialog and optionally type a command into it (e.g. 'open run and type notepad').",
+            "windows.screenshot": "- windows.screenshot: Take a screenshot or open the screen snipping overlay (e.g. 'take a screenshot', 'snip the screen').",
+            "windows.show_desktop": "- windows.show_desktop: Minimize all windows and reveal the desktop (e.g. 'show desktop', 'minimize all windows').",
+            "windows.window_control": "- windows.window_control: Control the active window - minimize, maximize, close, or snap it left/right (e.g. 'snap the window left', 'close the window').",
+            "windows.clipboard_clear": "- windows.clipboard_clear: Erase the current clipboard contents (e.g. 'clear the clipboard').",
+            "windows.toggle_connectivity": "- windows.toggle_connectivity: Turn Wi-Fi or Bluetooth on/off (e.g. 'turn on wifi', 'disable bluetooth').",
+            "windows.set_default_browser": "- windows.set_default_browser: Change the default web browser (e.g. 'set chrome as default browser', 'make edge the default browser').",
         }
 
     # ────────────────────────── Parsing Helpers ──────────────────────────
@@ -488,8 +928,9 @@ class WindowsPlugin(BasePlugin):
         low = text.strip(" .!?, ")
         if not low or low.lower() in ("settings", "windows settings", "system settings", "settings app"):
             low = "system"
-        for key, uri in SETTINGS_PAGES.items():
+        for key in sorted(ALL_SETTINGS_PAGES, key=len, reverse=True):
             if re.search(rf"\b{re.escape(key)}\b", low, re.IGNORECASE):
+                uri = ALL_SETTINGS_PAGES[key]
                 try:
                     subprocess.Popen(f"start {uri}", shell=True)
                     logger.info(f"Opened Settings page: {uri}")
@@ -525,7 +966,18 @@ class WindowsPlugin(BasePlugin):
                     logger.error(f"Failed to launch special app '{key}': {e}")
                     return False
 
-        # 2. Search Start Menu (handles UWP + classic apps) and launch best match
+        # 2. Known Windows system tools / legacy admin apps (reliable, no Start Menu)
+        for key, launch in sorted(SYSTEM_TOOLS.items(), key=lambda kv: len(kv[0]), reverse=True):
+            if re.search(rf"\b{re.escape(key)}\b", low, re.IGNORECASE):
+                try:
+                    subprocess.Popen(f"start {launch}", shell=True)
+                    logger.info(f"Launched system tool: {launch}")
+                    return True
+                except Exception as e:
+                    logger.error(f"Failed to launch system tool '{launch}': {e}")
+                    return False
+
+        # 3. Search Start Menu (handles UWP + classic apps) and launch best match
         safe = query.replace("'", "''")
         ps = (
             "$app = Get-StartApps | Where-Object {{ $_.Name -like '*{0}*' }} "
@@ -877,3 +1329,289 @@ class WindowsPlugin(BasePlugin):
         except Exception:
             pass
         return True
+
+    # ────────────────────────── Windows System Control ──────────────────────────
+
+    def _ps(self, script: str, timeout: int = 25) -> Tuple[bool, str]:
+        """Runs a PowerShell snippet and returns (ok, output)."""
+        try:
+            result = subprocess.run(
+                ["powershell", "-NoProfile", "-NonInteractive", "-Command", script],
+                capture_output=True, text=True, timeout=timeout,
+            )
+        except Exception as e:
+            logger.error(f"PowerShell execution failed: {e}")
+            return False, ""
+        if result.returncode != 0:
+            logger.error(f"PowerShell error: {result.stderr.strip()}")
+            return False, result.stderr.strip()
+        return True, result.stdout.strip()
+
+    def control_panel(self, text: str) -> bool:
+        """Opens a Control Panel page, defaulting to the Control Panel root."""
+        logger.info(f"Plugin Action: Opening Control Panel for '{text}'")
+        low = text.lower()
+        for key in sorted(CONTROL_PANEL_PAGES, key=len, reverse=True):
+            if re.search(rf"\b{re.escape(key)}\b", low, re.IGNORECASE):
+                target = CONTROL_PANEL_PAGES[key]
+                try:
+                    subprocess.Popen(f"start {target}", shell=True)
+                    logger.info(f"Opened Control Panel page: {target}")
+                    return True
+                except Exception as e:
+                    logger.error(f"Failed to open Control Panel '{target}': {e}")
+                    return False
+        try:
+            subprocess.Popen("start control.exe", shell=True)
+            return True
+        except Exception as e:
+            logger.error(f"Failed to open Control Panel: {e}")
+            return False
+
+    def open_system_tool(self, text: str) -> bool:
+        """Opens a Windows administrative tool (MMC snap-in or legacy exe)."""
+        logger.info(f"Plugin Action: Opening system tool for '{text}'")
+        low = text.lower()
+        for key in sorted(SYSTEM_TOOLS, key=len, reverse=True):
+            if re.search(rf"\b{re.escape(key)}\b", low, re.IGNORECASE):
+                target = SYSTEM_TOOLS[key]
+                try:
+                    subprocess.Popen(f"start {target}", shell=True)
+                    logger.info(f"Launched system tool: {target}")
+                    return True
+                except Exception as e:
+                    logger.error(f"Failed to launch system tool '{target}': {e}")
+                    return False
+        logger.warning(f"No matching system tool for '{text}'")
+        return False
+
+    def system_action(self, text: str) -> bool:
+        """Lock/sleep/hibernate/sign out/restart/shut down, or cancel a pending shutdown."""
+        logger.info(f"Plugin Action: System action '{text}'")
+        low = text.lower()
+        if re.search(r"\b(cancel|abort)\b", low):
+            self._ps("shutdown /a")
+            logger.info("Cancelled pending shutdown/restart")
+            return True
+        for key in sorted(SYSTEM_ACTIONS, key=len, reverse=True):
+            if re.search(rf"\b{re.escape(key)}\b", low, re.IGNORECASE):
+                cmd = SYSTEM_ACTIONS[key]
+                try:
+                    subprocess.Popen(cmd, shell=True)
+                    logger.info(f"Ran system action: {cmd}")
+                    return True
+                except Exception as e:
+                    logger.error(f"Failed to run system action '{cmd}': {e}")
+                    return False
+        logger.warning(f"No matching system action for '{text}'")
+        return False
+
+    def volume_control(self, text: str) -> bool:
+        """Mutes/unmutes or raises/lowers the system volume."""
+        logger.info(f"Plugin Action: Volume control '{text}'")
+        low = text.lower()
+        intent = None
+        for key in sorted(VOLUME_PATTERNS, key=len, reverse=True):
+            if key in low:
+                intent = VOLUME_PATTERNS[key]
+                break
+        if intent is None:
+            return False
+        steps = 10
+        num = re.search(r"\b(\d{1,3})\b", low)
+        if num:
+            steps = max(1, min(50, int(num.group(1))))
+        single = intent in ("mute", "unmute")
+        try:
+            import pyautogui
+            pyautogui.press(
+                {"up": "volumeup", "down": "volumedown",
+                 "mute": "volumemute", "unmute": "volumemute"}[intent],
+                presses=1 if single else steps, interval=0.03,
+            )
+            return True
+        except Exception:
+            pass
+        vkey = {"up": 175, "down": 174, "mute": 173, "unmute": 173}[intent]
+        script = (
+            "$ws = New-Object -ComObject WScript.Shell; "
+            + "; ".join(["$ws.SendKeys([char]" + str(vkey) + ")"] * (1 if single else min(steps, 20)))
+        )
+        ok, _ = self._ps(script)
+        return ok
+
+    def brightness(self, text: str) -> bool:
+        """Raises, lowers, or sets the display brightness (percent)."""
+        logger.info(f"Plugin Action: Brightness '{text}'")
+        low = text.lower()
+        _, out = self._ps("(Get-CimInstance -Namespace root/WMI -Class WmiMonitorBrightness).CurrentBrightness")
+        current = int(out.strip()) if out.strip().isdigit() else 50
+        explicit = re.search(r"\b(\d{1,3})\b", low)
+        if explicit and re.search(r"\b(to|by)\b", low):
+            target = int(explicit.group(1))
+        elif re.search(r"\b(increase|raise|up|brighter|higher|more)\b", low):
+            target = current + 10
+        elif re.search(r"\b(decrease|lower|down|dim|reduce|less)\b", low):
+            target = current - 10
+        else:
+            target = current
+        target = max(0, min(100, target))
+        script = (
+            "$m = Get-CimInstance -Namespace root/WMI -Class WmiMonitorBrightnessMethods; "
+            f"if ($m) {{ $m.WmiSetBrightness(1, {target}) }}"
+        )
+        ok, _ = self._ps(script)
+        logger.info(f"Brightness: {current}% -> {target}%")
+        return ok
+
+    def system_info(self, text: str) -> bool:
+        """Reports read-only system information (battery, disk, RAM, IP, uptime...)."""
+        logger.info(f"Plugin Action: System info query '{text}'")
+        low = text.lower()
+        for key in sorted(SYSTEM_INFO_QUERIES, key=len, reverse=True):
+            if re.search(rf"\b{re.escape(key)}\b", low, re.IGNORECASE):
+                ok, out = self._ps(SYSTEM_INFO_QUERIES[key])
+                if ok:
+                    logger.info(f"System info [{key}]:\n{out}")
+                return ok
+        logger.warning(f"No matching system info query for '{text}'")
+        return False
+
+    def empty_recycle_bin(self, text: str = "") -> bool:
+        """Permanently clears the Recycle Bin."""
+        logger.info("Plugin Action: Emptying Recycle Bin")
+        ok, _ = self._ps("Clear-RecycleBin -Force -ErrorAction SilentlyContinue")
+        return ok
+
+    def open_run(self, text: str) -> bool:
+        """Opens the Run dialog (Win+R), optionally typing a command into it."""
+        import time
+        logger.info(f"Plugin Action: Open Run dialog for '{text}'")
+        cmd = re.sub(
+            r"^\s*(?:please\s+)?(?:open\s+)?(?:the\s+)?run(?:\s+(?:dialog|box|command|window))?"
+            r"\s*(?:and\s+)?(?:type|enter|run|open|with)\s+",
+            "", text, flags=re.IGNORECASE,
+        ).strip(" .!?,:\"'")
+        try:
+            import pyautogui
+            pyautogui.hotkey("win", "r")
+            time.sleep(0.5)
+            if cmd:
+                pyautogui.typewrite(cmd, interval=0.01)
+                time.sleep(0.2)
+                pyautogui.press("enter")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to open Run dialog: {e}")
+            return False
+
+    def screenshot(self, text: str) -> bool:
+        """Opens the snip overlay for a region, or the full Snipping Tool."""
+        logger.info(f"Plugin Action: Screenshot '{text}'")
+        if re.search(r"\b(region|partial|select|crop|area|snip)\b", text.lower()):
+            try:
+                import pyautogui
+                pyautogui.hotkey("win", "shift", "s")
+                return True
+            except Exception:
+                pass
+        try:
+            subprocess.Popen("start ms-snippingtool:", shell=True)
+            return True
+        except Exception as e:
+            logger.error(f"Failed to start Snipping Tool: {e}")
+            return False
+
+    def show_desktop(self, text: str = "") -> bool:
+        """Minimizes all windows to reveal the desktop."""
+        logger.info("Plugin Action: Show Desktop")
+        try:
+            import pyautogui
+            pyautogui.hotkey("win", "d")
+            return True
+        except Exception:
+            return self._ps("(New-Object -ComObject Shell.Application).MinimizeAll()")[0]
+
+    def window_control(self, text: str) -> bool:
+        """Minimizes, maximizes, closes, or snaps the active window."""
+        logger.info(f"Plugin Action: Window control '{text}'")
+        low = text.lower()
+        keys = None
+        if re.search(r"\b(minimi[sz]e)\b", low):
+            keys = ("win", "down")
+        elif re.search(r"\b(maximi[sz]e)\b", low):
+            keys = ("win", "up")
+        elif re.search(r"\bleft\b", low) and re.search(r"\b(snap|side|align)\b", low):
+            keys = ("win", "left")
+        elif re.search(r"\bright\b", low) and re.search(r"\b(snap|side|align)\b", low):
+            keys = ("win", "right")
+        elif re.search(r"\bclose\b", low):
+            keys = ("alt", "f4")
+        if not keys:
+            return False
+        try:
+            import pyautogui
+            pyautogui.hotkey(*keys)
+            return True
+        except Exception as e:
+            logger.error(f"Failed window control {keys}: {e}")
+            return False
+
+    def clipboard_clear(self, text: str = "") -> bool:
+        """Erases the clipboard contents."""
+        logger.info("Plugin Action: Clearing clipboard")
+        ok, _ = self._ps("Set-Clipboard -Value ''")
+        return ok
+
+    def toggle_connectivity(self, text: str) -> bool:
+        """Turns Wi-Fi or Bluetooth on/off."""
+        logger.info(f"Plugin Action: Connectivity toggle '{text}'")
+        low = text.lower()
+        want_on = bool(re.search(r"\b(on|enable[ds]?|switch\s+on|turn\s+on|start)\b", low))
+        want_off = bool(re.search(r"\b(off|disable[ds]?|switch\s+off|turn\s+off|stop)\b", low))
+        if re.search(r"\b(bluetooth|bt)\b", low) and not re.search(r"\bwi[\s-]?fi\b", low):
+            if not (want_on or want_off):
+                return False
+            verb = "Enable" if want_on else "Disable"
+            script = (
+                "$d = Get-PnpDevice -Class Bluetooth -ErrorAction SilentlyContinue | Select-Object -First 1; "
+                f"if ($d) {{ {verb}-PnpDevice -InputObject $d.InstanceId -Confirm:$false }}"
+            )
+            ok, out = self._ps(script)
+            if ok:
+                logger.info(f"Bluetooth {verb}d")
+                return True
+            logger.warning("PnP toggle unavailable, opening Bluetooth settings instead")
+            subprocess.Popen("start ms-settings:bluetooth", shell=True)
+            return True
+        if re.search(r"\b(wi[\s-]?fi|wlan|wireless|internet)\b", low):
+            if not (want_on or want_off):
+                return False
+            state = "enabled" if want_on else "disabled"
+            ok, out = self._ps(
+                'netsh interface set interface name="Wi-Fi" admin=' + state
+            )
+            if ok:
+                logger.info(f"Wi-Fi set to {state}")
+                return True
+            logger.warning("Wi-Fi toggle failed, opening Wi-Fi settings instead")
+            subprocess.Popen("start ms-settings:network-wifi", shell=True)
+            return True
+        return False
+
+    def set_default_browser(self, text: str) -> bool:
+        """Opens the Default Apps Settings page filtered to the requested browser."""
+        logger.info(f"Plugin Action: Set default browser '{text}'")
+        low = text.lower()
+        known = None
+        for key in sorted(DEFAULT_BROWSER, key=len, reverse=True):
+            if key in low:
+                known = key
+                break
+        try:
+            subprocess.Popen("start ms-settings:defaultapps", shell=True)
+            logger.info(f"Opened Default Apps settings (browser: {known or 'unspecified'})")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to open Default Apps settings: {e}")
+            return False
