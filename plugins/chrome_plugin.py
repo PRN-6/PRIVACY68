@@ -1,6 +1,7 @@
 import logging
 import re
 import subprocess
+import time
 import urllib.parse
 from typing import Callable, Dict, List
 from plugins.base_plugin import BasePlugin
@@ -55,15 +56,26 @@ class ChromePlugin(BasePlugin):
                 "create a new tab in chrome",
                 "open new tab in chrome",
                 "chrome new tab",
+                "new tab",
+                "open new tab",
+                "open a new tab",
+                "create a new tab",
             ],
             "chrome.close_tab": [
                 "close tab in chrome",
                 "close current tab in chrome",
                 "chrome close tab",
+                "close tab",
+                "close this tab",
+                "close current tab",
             ],
             "chrome.reopen_tab": [
                 "reopen tab in chrome",
                 "restore tab in chrome",
+                "reopen tab",
+                "reopen last tab",
+                "restore tab",
+                "restore last tab",
             ],
             "chrome.incognito": [
                 "open incognito in chrome",
@@ -111,6 +123,7 @@ class ChromePlugin(BasePlugin):
             "chrome.reopen_tab": "- chrome.reopen_tab: Reopen the last closed tab in Chrome.",
             "chrome.incognito": "- chrome.incognito: Open a new Incognito window in Chrome.",
             "chrome.search": "- chrome.search: Search a query using Google Chrome.",
+            "chrome.open_website": "- chrome.open_website: Open a website URL directly in Chrome (e.g. 'open youtube.com', 'go to github.com').",
             "chrome.select_profile": "- chrome.select_profile: Select a numbered Chrome profile (e.g. 'select 2nd user').",
         }
 
@@ -124,20 +137,43 @@ class ChromePlugin(BasePlugin):
         kill_process("chrome.exe")
         return True
 
+    def _ensure_focused(self) -> bool:
+        """Ensures Chrome is the focused foreground window before sending hotkeys."""
+        from computer_use.window_manager import window_manager
+        active = window_manager.get_active_window()
+        proc = str(active.get("process_name", "")).lower()
+        if proc == "chrome.exe":
+            return True
+        # Chrome is not focused — try to find and focus it
+        hwnd = window_manager.find_window("chrome")
+        if hwnd:
+            logger.info("Chrome not focused — bringing Chrome to foreground")
+            window_manager.focus_window(hwnd)
+            time.sleep(0.15)
+            return True
+        # Chrome not open at all — launch it
+        logger.info("Chrome not running — launching Chrome")
+        subprocess.Popen("start chrome", shell=True)
+        time.sleep(1.0)
+        return True
+
     def new_tab(self, text: str) -> bool:
         logger.info("Plugin Action: Opening new tab in Chrome")
+        self._ensure_focused()
         import pyautogui
         pyautogui.hotkey("ctrl", "t")
         return True
 
     def close_tab(self, text: str) -> bool:
         logger.info("Plugin Action: Closing current tab in Chrome")
+        self._ensure_focused()
         import pyautogui
         pyautogui.hotkey("ctrl", "w")
         return True
 
     def reopen_tab(self, text: str) -> bool:
         logger.info("Plugin Action: Reopening last closed tab in Chrome")
+        self._ensure_focused()
         import pyautogui
         pyautogui.hotkey("ctrl", "shift", "t")
         return True

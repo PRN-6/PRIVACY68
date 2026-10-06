@@ -470,6 +470,69 @@ class FastLaneRouter:
                 "message": "Opened integrated terminal in VS Code.",
             }
 
+        # Pattern 0H: Context-aware generic tab commands ("new tab", "close tab", "reopen tab")
+        # Detects which browser is currently focused and sends the hotkey to the right window.
+        m_generic_tab = re.match(
+            r"^(?:please\s*)?(?:can\s+you\s*)?"
+            r"(?:open\s+(?:a\s+)?(?:new\s+)?tab|new\s+tab|create\s+(?:a\s+)?(?:new\s+)?tab|"
+            r"close\s+(?:the\s+|this\s+|current\s+)?tab|"
+            r"reopen\s+(?:the\s+|last\s+)?(?:closed\s+)?tab|restore\s+(?:the\s+|last\s+)?(?:closed\s+)?tab)$",
+            low,
+        )
+        if m_generic_tab:
+            from computer_use.window_manager import window_manager
+            import pyautogui, time as _time
+
+            # Map process names to friendly browser names
+            BROWSER_PROCESSES = {
+                "chrome.exe": "Google Chrome",
+                "brave.exe": "Brave",
+                "msedge.exe": "Microsoft Edge",
+                "firefox.exe": "Firefox",
+            }
+
+            active_win = window_manager.get_active_window()
+            active_proc = str(active_win.get("process_name", "")).lower()
+            browser_name = BROWSER_PROCESSES.get(active_proc)
+
+            if not browser_name:
+                # Active window is NOT a browser — find any open browser and focus it
+                for proc_key, bname in BROWSER_PROCESSES.items():
+                    search_key = proc_key.replace(".exe", "")
+                    hwnd = window_manager.find_window(search_key)
+                    if hwnd:
+                        logger.info(f"[ROUTER] Tab command: no browser focused, focusing {bname}")
+                        window_manager.focus_window(hwnd)
+                        _time.sleep(0.15)
+                        browser_name = bname
+                        break
+
+            if not browser_name:
+                # No browser open at all — let plugin lane handle (will launch a browser)
+                logger.info("[ROUTER] Tab command: no browser window found, deferring to plugin lane")
+            else:
+                # Determine which tab action to perform
+                if re.search(r"\b(?:close)\b", low):
+                    logger.info(f"[ROUTER] Context-aware close tab in {browser_name}")
+                    pyautogui.hotkey("ctrl", "w")
+                    action_msg = f"Closed active tab in {browser_name}."
+                elif re.search(r"\b(?:reopen|restore)\b", low):
+                    logger.info(f"[ROUTER] Context-aware reopen tab in {browser_name}")
+                    pyautogui.hotkey("ctrl", "shift", "t")
+                    action_msg = f"Reopened last closed tab in {browser_name}."
+                else:
+                    logger.info(f"[ROUTER] Context-aware new tab in {browser_name}")
+                    pyautogui.hotkey("ctrl", "t")
+                    action_msg = f"Opened new tab in {browser_name}."
+
+                return {
+                    "handled": True,
+                    "tool": "browser_tab_action",
+                    "method": "fast_lane",
+                    "success": True,
+                    "message": action_msg,
+                }
+
         # Reject complex multi-step & open-ended agent tasks (e.g. "create folder and inside create a python script with a function")
         if re.search(
             r"\b(?:and\s+(?:type|send|message|tell|write|read|check|create|make|generate|put|add|code|build|run|execute|save))\b"

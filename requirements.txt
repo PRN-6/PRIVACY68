@@ -23,6 +23,7 @@ pywinauto
 comtypes
 pywin32
 qrcode
+psutil
 
 # Distribution & Build
 pyinstaller

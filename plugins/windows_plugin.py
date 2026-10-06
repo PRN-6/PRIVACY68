@@ -1487,11 +1487,13 @@ class WindowsPlugin(BasePlugin):
         """Opens the Run dialog (Win+R), optionally typing a command into it."""
         import time
         logger.info(f"Plugin Action: Open Run dialog for '{text}'")
-        cmd = re.sub(
-            r"^\s*(?:please\s+)?(?:open\s+)?(?:the\s+)?run(?:\s+(?:dialog|box|command|window))?"
-            r"\s*(?:and\s+)?(?:type|enter|run|open|with)\s+",
-            "", text, flags=re.IGNORECASE,
-        ).strip(" .!?,:\"'")
+        cmd = ""
+        m = re.search(
+            r"\b(?:and\s+)?(?:type|enter|run|with)\s+(.+)$",
+            text, flags=re.IGNORECASE,
+        )
+        if m:
+            cmd = m.group(1).strip(" .!?,:\"'")
         try:
             import pyautogui
             pyautogui.hotkey("win", "r")

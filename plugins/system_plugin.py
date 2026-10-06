@@ -156,7 +156,11 @@ class SystemPlugin(BasePlugin):
 
     def _find_window_by_app_name(self, text: str) -> int:
         """Finds a visible window matching an app named in the command text."""
-        known_apps = ["whatsapp", "chrome", "notepad", "brave", "code", "terminal", "powershell", "spotify", "discord"]
+        known_apps = [
+            "whatsapp", "chrome", "notepad", "brave", "code", "vs code",
+            "visual studio", "terminal", "powershell", "spotify", "discord",
+            "powerpoint", "word", "excel", "edge", "slack", "telegram",
+        ]
         target = None
         lower_text = text.lower()
         for app in known_apps:
@@ -165,6 +169,14 @@ class SystemPlugin(BasePlugin):
                 break
         if not target:
             return 0
+
+        try:
+            from computer_use.window_manager import window_manager
+            hwnd = window_manager.find_window(target)
+            if hwnd:
+                return hwnd
+        except Exception:
+            pass
 
         import ctypes
         from ctypes import wintypes
@@ -216,7 +228,7 @@ class SystemPlugin(BasePlugin):
         import re
         import time
         content = re.sub(
-            r'^(?:privacy68,?\s*|sena,?\s*|nova,?\s*)?(?:please\s*)?(?:can\s+you\s*)?(?:type\s+that|type\s+out|type\s+in|type|write\s+that|write\s+out|write\s+down|write)\s+',
+            r'^(?:privacy68,?\s*|sena,?\s*|nova,?\s*)?(?:please\s*)?(?:can\s+you\s*)?(?:type\s+that|type\s+out|type\s+in|type|write\s+that|write\s+out|write\s+down|write|dictate\s+that|dictate\s+out|dictate)\s+',
             '', text, flags=re.IGNORECASE
         ).strip()
 

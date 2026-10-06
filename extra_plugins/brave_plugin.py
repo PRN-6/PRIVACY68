@@ -1,6 +1,7 @@
 import logging
 import subprocess
 import re
+import time
 import urllib.parse
 from typing import Callable, Dict, List
 from plugins.base_plugin import BasePlugin
@@ -94,20 +95,43 @@ class BravePlugin(BasePlugin):
         kill_process("brave.exe")
         return True
 
+    def _ensure_focused(self) -> bool:
+        """Ensures Brave is the focused foreground window before sending hotkeys."""
+        from computer_use.window_manager import window_manager
+        active = window_manager.get_active_window()
+        proc = str(active.get("process_name", "")).lower()
+        if proc == "brave.exe":
+            return True
+        # Brave is not focused — try to find and focus it
+        hwnd = window_manager.find_window("brave")
+        if hwnd:
+            logger.info("Brave not focused — bringing Brave to foreground")
+            window_manager.focus_window(hwnd)
+            time.sleep(0.15)
+            return True
+        # Brave not open at all — launch it
+        logger.info("Brave not running — launching Brave")
+        subprocess.Popen("start brave", shell=True)
+        time.sleep(1.0)
+        return True
+
     def new_tab(self, text: str) -> bool:
         logger.info("Plugin Action: New tab in Brave")
+        self._ensure_focused()
         import pyautogui
         pyautogui.hotkey("ctrl", "t")
         return True
 
     def close_tab(self, text: str) -> bool:
         logger.info("Plugin Action: Close tab in Brave")
+        self._ensure_focused()
         import pyautogui
         pyautogui.hotkey("ctrl", "w")
         return True
 
     def reopen_tab(self, text: str) -> bool:
         logger.info("Plugin Action: Reopen tab in Brave")
+        self._ensure_focused()
         import pyautogui
         pyautogui.hotkey("ctrl", "shift", "t")
         return True
