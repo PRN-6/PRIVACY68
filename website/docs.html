@@ -31,7 +31,7 @@
                 <span class="brand-tag">SYS://PRIVACY68.AI</span>
             </div>
 
-            <nav class="nav-links">
+            <nav class="nav-links" id="main-nav">
                 <a href="index.html" class="nav-item">[ home ]</a>
                 <span class="nav-sep">·</span>
                 <a href="docs.html" class="nav-item active">[ docs ]</a>
@@ -51,6 +51,11 @@
                 <button id="crt-toggle" class="icon-toggle" title="Toggle CRT Filter">
                     <span class="ctrl-label">CRT:</span>
                     <span id="crt-status" class="ctrl-val">ON</span>
+                </button>
+                <button id="nav-toggle" class="icon-toggle mobile-menu-btn" title="Toggle Navigation Menu" aria-label="Toggle Navigation Menu">
+                    <span class="ctrl-label">[</span>
+                    <span class="ctrl-val" id="nav-toggle-text">MENU</span>
+                    <span class="ctrl-label">]</span>
                 </button>
             </div>
         </header>
@@ -220,43 +225,45 @@
                         </div>
                         <p class="doc-text">Available out-of-the-box voice triggers included in PRIVACY68 core plugins:
                         </p>
-                        <table class="cmd-table">
-                            <thead>
-                                <tr>
-                                    <th>PLUGIN</th>
-                                    <th>EXAMPLE VOICE COMMANDS</th>
-                                    <th>ACTION PERFORMED</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td><strong>Google Chrome</strong></td>
-                                    <td><code>"Privacy68, open Google Chrome"</code>, <code>"open new tab"</code></td>
-                                    <td>Launches Chrome, manages tabs & browsing</td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Windows System</strong></td>
-                                    <td><code>"Privacy68, mute system volume"</code>, <code>"set volume 80%"</code></td>
-                                    <td>Win32 audio & system brightness control</td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Brave Browser</strong></td>
-                                    <td><code>"Privacy68, launch brave browser"</code></td>
-                                    <td>Starts private browsing session</td>
-                                </tr>
-                                <tr>
-                                    <td><strong>PowerPoint</strong></td>
-                                    <td><code>"next slide"</code>, <code>"previous slide"</code>,
-                                        <code>"start presentation"</code></td>
-                                    <td>Controls active PowerPoint slideshow</td>
-                                </tr>
-                                <tr>
-                                    <td><strong>WhatsApp Desktop</strong></td>
-                                    <td><code>"open whatsapp"</code>, <code>"send message to Alex"</code></td>
-                                    <td>Automates desktop messaging</td>
-                                </tr>
-                            </tbody>
-                        </table>
+                        <div class="table-responsive">
+                            <table class="cmd-table">
+                                <thead>
+                                    <tr>
+                                        <th>PLUGIN</th>
+                                        <th>EXAMPLE VOICE COMMANDS</th>
+                                        <th>ACTION PERFORMED</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><strong>Google Chrome</strong></td>
+                                        <td><code>"Privacy68, open Google Chrome"</code>, <code>"open new tab"</code></td>
+                                        <td>Launches Chrome, manages tabs & browsing</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Windows System</strong></td>
+                                        <td><code>"Privacy68, mute system volume"</code>, <code>"set volume 80%"</code></td>
+                                        <td>Win32 audio & system brightness control</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Brave Browser</strong></td>
+                                        <td><code>"Privacy68, launch brave browser"</code></td>
+                                        <td>Starts private browsing session</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>PowerPoint</strong></td>
+                                        <td><code>"next slide"</code>, <code>"previous slide"</code>,
+                                            <code>"start presentation"</code></td>
+                                        <td>Controls active PowerPoint slideshow</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>WhatsApp Desktop</strong></td>
+                                        <td><code>"open whatsapp"</code>, <code>"send message to Alex"</code></td>
+                                        <td>Automates desktop messaging</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
 
                     <!-- Section 07: Configuration Reference -->

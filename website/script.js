@@ -240,6 +240,48 @@ function initControls() {
         });
     }
 
+    // Mobile Navigation Menu Toggle
+    const navToggle = document.getElementById('nav-toggle');
+    const mainNav = document.getElementById('main-nav');
+    const navToggleText = document.getElementById('nav-toggle-text');
+
+    if (navToggle && mainNav) {
+        navToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isOpen = mainNav.classList.toggle('open');
+            if (navToggleText) {
+                navToggleText.innerText = isOpen ? 'CLOSE' : 'MENU';
+            }
+            playRetroSFX('beep');
+        });
+
+        // Close menu when clicking anywhere outside
+        document.addEventListener('click', (e) => {
+            if (mainNav.classList.contains('open') && !mainNav.contains(e.target) && !navToggle.contains(e.target)) {
+                mainNav.classList.remove('open');
+                if (navToggleText) navToggleText.innerText = 'MENU';
+            }
+        });
+
+        // Close menu when clicking any nav link
+        mainNav.querySelectorAll('.nav-item').forEach(link => {
+            link.addEventListener('click', () => {
+                if (mainNav.classList.contains('open')) {
+                    mainNav.classList.remove('open');
+                    if (navToggleText) navToggleText.innerText = 'MENU';
+                }
+            });
+        });
+
+        // Close menu on resize to desktop
+        window.addEventListener('resize', () => {
+            if (window.innerWidth > 820 && mainNav.classList.contains('open')) {
+                mainNav.classList.remove('open');
+                if (navToggleText) navToggleText.innerText = 'MENU';
+            }
+        });
+    }
+
     // Global interactive clicks for sound
     document.querySelectorAll('.pixel-btn, .nav-item, .social-icon').forEach(el => {
         el.addEventListener('click', () => playRetroSFX('click'));
