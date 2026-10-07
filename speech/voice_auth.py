@@ -15,6 +15,7 @@ except Exception:
 
 from typing import Tuple, Optional, List, Dict
 from huggingface_hub import hf_hub_download
+import scipy.signal as signal
 
 logger = logging.getLogger("PRIVACY68.VoiceAuth")
 
@@ -29,6 +30,41 @@ LEGACY_PROFILE_PATH = os.path.join(LEGACY_APPDATA_DIR, "voice_profile.npy")
 LEGACY_META_PATH = os.path.join(LEGACY_APPDATA_DIR, "voice_profile_meta.json")
 
 os.makedirs(MODELS_DIR, exist_ok=True)
+
+
+def preprocess_farfield_audio(audio: np.ndarray, sample_rate: int = 16000) -> np.ndarray:
+    """
+    Conditions far-field microphone audio for biometric verification:
+    1. Removes DC offset and sub-bass room rumble (HVAC, laptop fan, table vibrations) using an 80Hz Butterworth HPF.
+    2. Dynamically scales RMS energy to standard listening levels so distance attenuation does not penalize cosine similarity.
+    """
+    waveform = audio.flatten().astype(np.float32)
+    if len(waveform) < 160:  # < 10ms
+        return waveform
+
+    # 1. DC offset removal
+    waveform = waveform - np.mean(waveform)
+
+    # 2. 80Hz High-pass Butterworth filter (removes low-frequency mechanical & room rumble)
+    try:
+        sos = signal.butter(4, 80.0, 'hp', fs=sample_rate, output='sos')
+        filtered = signal.sosfilt(sos, waveform).astype(np.float32)
+    except Exception:
+        filtered = waveform
+
+    # 3. RMS Loudness Normalization to target -20 dBFS (~0.10 RMS)
+    rms = float(np.sqrt(np.mean(filtered**2)))
+    if rms > 1e-4:
+        target_rms = 0.10
+        gain = min(target_rms / rms, 25.0)  # max 25x digital gain boost
+        filtered = filtered * gain
+
+    # 4. Soft peak limiter to avoid hard clipping distortion
+    max_peak = float(np.max(np.abs(filtered)))
+    if max_peak > 0.95:
+        filtered = (filtered / max_peak) * 0.95
+
+    return filtered.astype(np.float32)
 
 
 def normalize_audio(audio: np.ndarray, target_peak: float = 0.9) -> np.ndarray:
@@ -217,17 +253,24 @@ class VoiceAuthenticator:
         log_mel -= np.mean(log_mel, axis=0, keepdims=True)
         return log_mel.astype(np.float32)
 
-    def extract_embedding(self, audio: np.ndarray) -> Optional[np.ndarray]:
+    def extract_embedding(self, audio: np.ndarray, apply_preprocess: bool = True) -> Optional[np.ndarray]:
         """
-        Extracts a 192-dimensional unit-normalized speaker embedding vector from 16kHz audio.
-        Applies peak normalization and silence trimming first to ensure features represent pure vocal tract resonance.
+        Extracts a 512-dimensional unit-normalized speaker embedding vector from 16kHz audio using CAM++.
+        Applies far-field filtering, RMS normalization, and silence trimming to isolate pure vocal tract resonance.
         """
         if not self.is_ready or self.session is None:
             return None
 
         try:
-            norm_audio = normalize_audio(audio, target_peak=0.9)
-            clean_audio = trim_speech(norm_audio, sample_rate=self.sample_rate)
+            if apply_preprocess:
+                prep = preprocess_farfield_audio(audio, sample_rate=self.sample_rate)
+                clean_audio = trim_speech(prep, sample_rate=self.sample_rate)
+            else:
+                clean_audio = audio
+
+            if len(clean_audio) < int(self.sample_rate * 0.1):  # Less than 100ms
+                return None
+
             feats = self.compute_fbank(clean_audio)
             feats_batch = np.expand_dims(feats, axis=0)  # Shape: (1, T, 80)
             
@@ -243,12 +286,46 @@ class VoiceAuthenticator:
             logger.error(f"Error extracting voice embedding: {e}")
             return None
 
+    def extract_multi_window_embeddings(self, audio: np.ndarray, window_sec: float = 1.2, hop_sec: float = 0.5) -> List[np.ndarray]:
+        """
+        Extracts temporal sliding-window embeddings across the voiced segments of an utterance.
+        Prevents a single momentary room reflection or muffled syllable from corrupting the entire score.
+        """
+        prep = preprocess_farfield_audio(audio, sample_rate=self.sample_rate)
+        voiced = trim_speech(prep, sample_rate=self.sample_rate)
+        
+        window_samples = int(self.sample_rate * window_sec)
+        hop_samples = int(self.sample_rate * hop_sec)
+        
+        embeddings: List[np.ndarray] = []
+        
+        # If utterance is shorter than sliding window, extract directly
+        if len(voiced) <= window_samples:
+            emb = self.extract_embedding(voiced, apply_preprocess=False)
+            return [emb] if emb is not None else []
+            
+        # Sliding temporal windows
+        for start in range(0, len(voiced) - window_samples + 1, hop_samples):
+            chunk = voiced[start : start + window_samples]
+            chunk_rms = float(np.sqrt(np.mean(chunk**2)))
+            if chunk_rms >= 0.003:
+                emb = self.extract_embedding(chunk, apply_preprocess=False)
+                if emb is not None:
+                    embeddings.append(emb)
+                    
+        # Also include global whole-utterance embedding
+        global_emb = self.extract_embedding(voiced, apply_preprocess=False)
+        if global_emb is not None:
+            embeddings.append(global_emb)
+            
+        return embeddings
+
     def enroll_sample(self, audio: np.ndarray) -> Dict:
         """
         Records an enrollment audio sample into temporary buffer.
         Returns the current sample count and sample status.
         """
-        emb = self.extract_embedding(audio)
+        emb = self.extract_embedding(audio, apply_preprocess=True)
         if emb is None:
             return {"success": False, "message": "Failed to extract voice embedding from sample.", "count": len(self.temp_enrollment_samples)}
 
@@ -263,7 +340,7 @@ class VoiceAuthenticator:
 
     def save_profile(self, owner_name: str = "Owner") -> bool:
         """
-        Saves all recorded enrollment sample embeddings as an ensemble matrix (N, 192)
+        Saves all recorded enrollment sample embeddings as an ensemble matrix (N, 512)
         and computes the master centroid vector for Google Voice Match style ensemble verification.
         """
         if not self.temp_enrollment_samples:
@@ -287,8 +364,8 @@ class VoiceAuthenticator:
                 "owner_name": owner_name,
                 "samples_count": len(self.temp_enrollment_samples),
                 "created_at": time.strftime("%Y-%m-%d %H:%M:%S"),
-                "model": "ECAPA-TDNN-512-192d",
-                "dim": 192,
+                "model": "CAM++-512d",
+                "dim": 512,
                 "ensemble": True
             }
             with open(PROFILE_META_PATH, "w", encoding="utf-8") as f:
@@ -316,7 +393,7 @@ class VoiceAuthenticator:
                     self.master_embedding = (data / norm) if norm > 0 else data
                     self.enrolled_samples = self.master_embedding.reshape(1, -1)
                 elif data.ndim == 2:
-                    # Multi-sample ensemble matrix (N, 192)
+                    # Multi-sample ensemble matrix (N, 512)
                     self.enrolled_samples = data
                     centroid = np.mean(data, axis=0)
                     norm = np.linalg.norm(centroid)
@@ -350,8 +427,8 @@ class VoiceAuthenticator:
 
     def verify_speaker(self, audio: np.ndarray, threshold: float = 0.50) -> Tuple[bool, float]:
         """
-        Compares live audio against master voice profile using Google Voice Match ensemble scoring.
-        Calculates similarity across all enrolled voice samples and the centroid embedding.
+        Compares live far-field audio against master voice profile using Multi-Window Ensemble Biometrics.
+        Evaluates sliding temporal speech segments against the centroid and sample cluster.
         Returns: (is_authorized: bool, score: float)
         """
         if self.master_embedding is None:
@@ -361,24 +438,46 @@ class VoiceAuthenticator:
             logger.warning("Voice Lock active, but no master profile is enrolled! Access blocked.")
             return False, 0.0
 
-        live_emb = self.extract_embedding(audio)
-        if live_emb is None:
+        window_embs = self.extract_multi_window_embeddings(audio)
+        if not window_embs:
             return False, 0.0
 
-        # Multi-sample ensemble scoring
-        centroid_score = float(np.dot(self.master_embedding, live_emb))
-        if self.enrolled_samples is not None and len(self.enrolled_samples) > 0:
-            scores = np.dot(self.enrolled_samples, live_emb)
-            max_sample_score = float(np.max(scores))
-            mean_sample_score = float(np.mean(scores))
-            # Blended score balances closest sample similarity with centroid robustness
-            effective_score = max(centroid_score, max_sample_score, 0.6 * max_sample_score + 0.4 * centroid_score)
-        else:
-            effective_score = centroid_score
+        scores = []
+        centroid_scores = []
+        for emb in window_embs:
+            c_score = float(np.dot(self.master_embedding, emb))
+            centroid_scores.append(c_score)
+            
+            if self.enrolled_samples is not None and len(self.enrolled_samples) > 0:
+                sample_sims = np.dot(self.enrolled_samples, emb)
+                max_s = float(np.max(sample_sims))
+                mean_s = float(np.mean(sample_sims))
+                # Balance closest exemplar with centroid
+                w_score = max(c_score, max_s, 0.60 * max_s + 0.40 * c_score)
+            else:
+                w_score = c_score
+            scores.append(w_score)
+
+        scores.sort(reverse=True)
+        max_chunk_score = scores[0]
+        top_k = max(1, len(scores) // 2)
+        top_k_mean = float(np.mean(scores[:top_k]))
+        centroid_avg = float(np.mean(centroid_scores))
+
+        # Robust aggregation: Top-K mean prevents single bad/reverberant chunk from hurting score
+        effective_score = max(
+            top_k_mean,
+            max_chunk_score * 0.92,
+            0.65 * top_k_mean + 0.35 * max_chunk_score
+        )
 
         is_authorized = bool(effective_score >= threshold)
-        logger.info(f"Voice Verification: Score = {effective_score:.3f} (Centroid: {centroid_score:.3f}) | Threshold = {threshold:.2f} | Authorized = {is_authorized}")
-        return is_authorized, effective_score
+        logger.info(
+            f"Voice Lock Verification: Score = {effective_score:.3f} "
+            f"(Top Chunk: {max_chunk_score:.3f}, Top-K Mean: {top_k_mean:.3f}, Centroid: {centroid_avg:.3f}, Windows: {len(window_embs)}) "
+            f"| Threshold = {threshold:.2f} | Authorized = {is_authorized}"
+        )
+        return is_authorized, round(effective_score, 4)
 
     def get_status(self) -> Dict:
         """Returns the current state of voice biometrics."""

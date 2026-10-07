@@ -38,15 +38,73 @@ class DashboardAPI:
                 "wake_word": profile_manager.get("wake_word", "privacy68"),
                 "wake_threshold": float(profile_manager.get("wake_threshold", 0.50)),
                 "whisper_model": profile_manager.get("whisper_model", "small.en"),
+                "llm_provider": profile_manager.get("llm_provider", "ollama"),
                 "llm_model": profile_manager.get("llm_model", "qwen2.5:0.5b"),
+                "api_key": profile_manager.get("api_key", ""),
+                "api_base_url": profile_manager.get("api_base_url", ""),
+                "cloud_model": profile_manager.get("cloud_model", "gpt-4o-mini"),
                 "hud_enabled": bool(profile_manager.get("hud_enabled", True)),
                 "theme": profile_manager.get("theme", "obsidian_red"),
                 "voice_lock_enabled": bool(profile_manager.get("voice_lock_enabled", False)),
-                "voice_lock_threshold": float(profile_manager.get("voice_lock_threshold", 0.70)),
+                "voice_lock_threshold": float(profile_manager.get("voice_lock_threshold", 0.50)),
             }
         except Exception as e:
             logger.error(f"Error getting profile: {e}")
             return {}
+
+    def test_llm_connection(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Tests connection to Local Ollama or Cloud API Key (OpenAI / Groq / Custom)."""
+        provider = data.get("provider", "ollama").lower()
+        api_key = data.get("api_key", "").strip()
+        model = data.get("model", "").strip()
+
+        if provider == "ollama":
+            try:
+                import ollama
+                res = ollama.list()
+                models = [m.get("model", "") or m.get("name", "") for m in getattr(res, "models", [])]
+                return {
+                    "success": True,
+                    "message": f"Connected to local Ollama! Found {len(models)} model(s)."
+                }
+            except Exception as e:
+                return {
+                    "success": False,
+                    "message": f"Failed to connect to local Ollama: {e}"
+                }
+
+        # Cloud validation
+        if not api_key:
+            return {"success": False, "message": "Please enter an API Key to test."}
+
+        import urllib.request
+        if provider == "groq":
+            endpoint = "https://api.groq.com/openai/v1/models"
+        elif provider == "openai":
+            endpoint = "https://api.openai.com/v1/models"
+        else:
+            base = data.get("base_url", "").strip() or "https://api.openai.com/v1"
+            endpoint = f"{base.rstrip('/')}/models"
+
+        req = urllib.request.Request(
+            endpoint,
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "User-Agent": "PRIVACY68/1.0"
+            },
+            method="GET"
+        )
+
+        try:
+            with urllib.request.urlopen(req, timeout=6) as res:
+                if res.status == 200:
+                    return {
+                        "success": True,
+                        "message": f"Successfully authenticated with {provider.upper()} Cloud API!"
+                    }
+                return {"success": False, "message": f"HTTP status: {res.status}"}
+        except Exception as e:
+            return {"success": False, "message": f"Authentication failed: {e}"}
 
     def get_available_llm_models(self) -> List[Dict[str, Any]]:
         """Returns a list of all models installed in local Ollama instance."""
