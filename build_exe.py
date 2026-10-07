@@ -23,20 +23,29 @@ def build():
     else:
         print("[*] Building Slim Lightweight Package (CUDA downloaded on-demand in-app)")
 
+    # Collect data directories that exist
+    data_dirs = ["plugins", "actions", "computer_use", "speech", "server", "ui", "utils", "assets"]
+    add_data_args = []
+    for d in data_dirs:
+        if os.path.isdir(d):
+            add_data_args.append(f"--add-data={d};{d}")
+    if os.path.isfile("config.py"):
+        add_data_args.append("--add-data=config.py;.")
+
+    # Clean any stale build folders before compiling to prevent Windows file locks
+    import shutil
+    shutil.rmtree("build", ignore_errors=True)
+
     # 3. Assemble PyInstaller Build Command
     cmd = [
         sys.executable, "-m", "PyInstaller",
         "--noconfirm",
+        "--clean",
         "--onedir",
         "--windowed",
         "--name=PRIVACY68",
         "--icon=assets\\icon.ico",
-        "--add-data=plugins;plugins",
-        "--add-data=skills;skills",
-        "--add-data=server;server",
-        "--add-data=ui;ui",
-        "--add-data=utils;utils",
-        "--add-data=config.py;.",
+    ] + add_data_args + [
         "--collect-all=faster_whisper",
         "--collect-all=ctranslate2",
         "--collect-all=sounddevice",
