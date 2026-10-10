@@ -1,5 +1,11 @@
 # 🌌 PRIVACY68 Voice Assistant
 
+[![License: MIT](https://img.shields.io/badge/license-MIT-yellow.svg)](LICENSE)
+[![Security Policy](https://img.shields.io/badge/security-Policy-blue.svg)](SECURITY.md)
+[![Contributing](https://img.shields.io/badge/contributing-Guide-orange.svg)](CONTRIBUTING.md)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-3776AB.svg?logo=python&logoColor=white)](https://www.python.org/)
+[![Privacy First](https://img.shields.io/badge/privacy-100%25%20Local-brightgreen.svg)](#)
+
 PRIVACY68 is a high-performance, locally-hosted AI voice assistant built in Python. Designed for speed and 100% privacy, it uses local neural networks to listen for a customizable wake word (e.g. Privacy68, Nova, Leo, Serena, etc.), transcribe your speech, and execute system commands or query local AI models (via Ollama)—all without sending any voice data to the cloud.
 
 ---
