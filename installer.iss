@@ -1,11 +1,11 @@
 ; ─────────────────────────────────────────────────────────────────────────────
 ; PRIVACY68 Assistant - Inno Setup Installer Script
 ; Build Command: Open this file in Inno Setup Compiler and click Build → Compile
-; Output: installer/PRIVACY68-Setup-v1.1.0.exe
+; Output: installer/PRIVACY68-Setup-v1.2.0.exe
 ; ─────────────────────────────────────────────────────────────────────────────
 
 #define MyAppName "PRIVACY68"
-#define MyAppVersion "1.1.0"
+#define MyAppVersion "1.2.0"
 #define MyAppPublisher "PRIVACY68 Team"
 #define MyAppURL "https://github.com/PRN-6/PRIVACY68"
 #define MyAppExeName "PRIVACY68.exe"
@@ -97,6 +97,6 @@ Filename: "taskkill"; Parameters: "/F /IM ""{#MyAppExeName}"""; Flags: runhidden
 [Messages]
 ; Customize Wizard UI text
 WelcomeLabel1=Welcome to {#MyAppName} Setup
-WelcomeLabel2=This wizard will install {#MyAppName} v{#MyAppVersion} — an ultra-fast, 100%% private AI voice assistant for Windows.%n%nClick Next to continue.
+WelcomeLabel2=This wizard will install {#MyAppName} v{#MyAppVersion} — an ultra-fast, 100%% private AI voice assistant for Windows.%n%nNew in v1.2.0: Cloud API Support (OpenAI / Groq), improved Voice Detection, and WhatsApp Contact Manager.%n%nClick Next to continue.
 FinishedHeadingLabel=Setup Complete — {#MyAppName} is Ready!
 FinishedLabel={#MyAppName} has been installed on your PC.%n%nSay "Privacy68" to wake it up and speak your command.%n%nClick Finish to exit Setup.

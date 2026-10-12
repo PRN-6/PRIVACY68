@@ -2,9 +2,11 @@ import os
 import sys
 import subprocess
 
+APP_VERSION = "1.2.0"
+
 def build():
     print("=" * 50)
-    print("      PRIVACY68 Standalone EXE Build Pipeline     ")
+    print(f"   PRIVACY68 v{APP_VERSION} Standalone EXE Build Pipeline  ")
     print("=" * 50)
 
     # Check for optional CUDA bundling flag
@@ -44,6 +46,7 @@ def build():
         "--onedir",
         "--windowed",
         "--name=PRIVACY68",
+        *(["--version-file=version_info.txt"] if os.path.isfile("version_info.txt") else []),
         "--icon=assets\\icon.ico",
     ] + add_data_args + [
         "--collect-all=faster_whisper",
@@ -63,8 +66,9 @@ def build():
     subprocess.run(cmd, check=True)
 
     print("\n" + "=" * 50)
-    print(" [OK] Build Successful! Output directory: dist/PRIVACY68/")
-    print(" You can zip 'dist/PRIVACY68' and distribute it to any Windows user.")
+    print(f" [OK] Build Successful! PRIVACY68 v{APP_VERSION}")
+    print(" Output directory: dist/PRIVACY68/")
+    print(" Distribute by zipping 'dist/PRIVACY68' or running installer.iss")
     print("=" * 50)
 
 if __name__ == "__main__":
