@@ -46,7 +46,14 @@ jobs:
         shell: bash
         run: echo "VERSION=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
 
-      # ── 6. Zip the dist folder ────────────────────────────────────────────────
+      # ── 6. Build Inno Setup Installer ─────────────────────────────────────────
+      - name: Build Inno Setup Installer
+        shell: pwsh
+        run: |
+          choco install innosetup -y
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss
+
+      # ── 7. Zip the dist folder ────────────────────────────────────────────────
       - name: Zip dist output
         shell: pwsh
         run: |
@@ -55,7 +62,7 @@ jobs:
           Compress-Archive -Path dist\PRIVACY68\* -DestinationPath $zipName
           echo "ZIP_NAME=$zipName" >> $env:GITHUB_ENV
 
-      # ── 7. Create GitHub Release and upload assets ────────────────────────────
+      # ── 8. Create GitHub Release and upload assets ────────────────────────────
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -66,3 +73,4 @@ jobs:
           prerelease: false
           files: |
             ${{ env.ZIP_NAME }}
+            installer/PRIVACY68-Setup-*.exe
