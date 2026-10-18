@@ -15,8 +15,8 @@ llm_router = LLMRouter()
 
 
 STANDALONE_GREETINGS = frozenset({
-    "alexa", "nova", "privacy68", "jarvis", "friday", "leo", "serena",
-    "hey alexa", "hey nova", "hey privacy68", "hey jarvis",
+    "alexa", "nova", "privacy68", "jarvis", "jarvice", "jarves", "friday", "leo", "serena",
+    "hey alexa", "hey nova", "hey privacy68", "hey jarvis", "hey jarvice",
     "hi", "hello", "hey", "yes", "okay", "ok", "yeah", "no", "bye", "goodbye",
     "good morning", "good afternoon", "good evening", "good night",
     "thank you", "thanks", "thankyou", "welcome", "sorry", "nice", "cool",

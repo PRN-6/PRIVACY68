@@ -45,7 +45,7 @@ WHISPER_BEAM_SIZE    = 8          # wider beam = higher accuracy (was 5)
 # Hotwords: Whisper boosts log-probability for these tokens during decoding.
 # List every app name, action word, and proper noun the assistant might hear.
 WHISPER_HOTWORDS = (
-    "Alexa, Nova, Privacy68, open, close, launch, search, go to, "
+    "Jarvis, Jarvice, Alexa, Nova, Friday, Leo, Serena, Privacy68, open, close, launch, search, go to, "
     "Chrome, Brave, WhatsApp, YouTube, Google, Notepad, "
     "volume, mute, screenshot, lock, tab, new tab, enter, "
     "send message, message, chat, call"
@@ -55,9 +55,9 @@ WHISPER_HOTWORDS = (
 # A precise, command-style prompt dramatically reduces misrecognition of app names.
 INITIAL_PROMPT = (
     "Voice commands for a desktop assistant named Privacy68. Commands always start with a wake word "
-    "like Privacy 68, Privacy68, Nova, or Alexa, followed by an action. Examples: 'Privacy 68 open Chrome', "
-    "'Privacy 68 search YouTube for music', 'Privacy 68 open WhatsApp', "
-    "'Privacy 68 send message to mom', 'Privacy 68 take a screenshot', 'Privacy 68 lock the screen'."
+    "like Jarvis, Alexa, Nova, Friday, or Privacy68, followed by an action. Examples: 'Jarvis open Chrome', "
+    "'Alexa search YouTube for music', 'Jarvis open WhatsApp', "
+    "'Privacy 68 send message to mom', 'Jarvis take a screenshot', 'Jarvis lock the screen'."
 )
 
 # Wake word configuration

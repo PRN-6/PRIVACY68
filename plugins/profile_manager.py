@@ -43,11 +43,23 @@ class ProfileManager:
     """
     def __init__(self):
         self.profile: Dict[str, Any] = DEFAULT_PROFILE.copy()
+        self._last_mtime: float = 0.0
         self.load()
+
+    def _check_and_reload(self):
+        """Auto-reloads settings from disk if another process (like Dashboard UI) modified the profile file."""
+        if os.path.exists(PROFILE_PATH):
+            try:
+                mtime = os.path.getmtime(PROFILE_PATH)
+                if mtime > self._last_mtime:
+                    self.load()
+            except Exception:
+                pass
 
     def load(self):
         if os.path.exists(PROFILE_PATH):
             try:
+                self._last_mtime = os.path.getmtime(PROFILE_PATH)
                 with open(PROFILE_PATH, "r", encoding="utf-8") as f:
                     saved = json.load(f)
                     self.profile.update(saved)
@@ -65,11 +77,14 @@ class ProfileManager:
         try:
             with open(PROFILE_PATH, "w", encoding="utf-8") as f:
                 json.dump(self.profile, f, indent=2)
+            if os.path.exists(PROFILE_PATH):
+                self._last_mtime = os.path.getmtime(PROFILE_PATH)
             logger.info("User profile saved successfully.")
         except Exception as e:
             logger.error(f"Failed to save user profile: {e}")
 
     def get(self, key: str, default: Any = None) -> Any:
+        self._check_and_reload()
         return self.profile.get(key, default)
 
     def set(self, key: str, value: Any):
@@ -82,3 +97,4 @@ class ProfileManager:
 
 # Global Singleton
 profile_manager = ProfileManager()
+

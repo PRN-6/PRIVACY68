@@ -75,7 +75,7 @@ def autocorrect_speech_command(text: str) -> str:
         cleaned = re.sub(pattern, repl, cleaned, flags=re.IGNORECASE)
 
     # 5. Strip conversational/filler prefixes at start of command (e.g. 'accept, go to...' -> 'go to...')
-    cleaned = re.sub(r'^(?:accept|please|kindly|hey|alexa|privacy68)[,\s]+', '', cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r'^(?:accept|please|kindly|hey|alexa|privacy68|jarvis|jarvice|nova|friday|leo|serena)[,\s]+', '', cleaned, flags=re.IGNORECASE)
 
     # 6. Collapse multiple spaces and clean punctuation
     cleaned = re.sub(r'\s+', ' ', cleaned).strip(".!?, \t\n")
@@ -123,7 +123,14 @@ class SpeechStreamer:
                     aliases.add('privacy sixty eight')
                     aliases.add('privacy sixty-eight')
                     aliases.add('privacy six eight')
-                    aliases.add('privacy 6 8')
+                if any(k in clean for k in ('jarvis', 'jarvice', 'jarves', 'jarviz')):
+                    aliases.update({'jarvis', 'jarvice', 'jarves', 'jarviz', 'jar vus', 'javis'})
+                if 'alexa' in clean:
+                    aliases.update({'alexa', 'alexia', 'alixa', 'alex'})
+                if 'nova' in clean:
+                    aliases.update({'nova', 'novah'})
+                if 'friday' in clean:
+                    aliases.update({'friday', 'fryday'})
 
         # Convert aliases to regex parts, handling spaces and hyphens flexibly
         escaped = [
@@ -150,17 +157,17 @@ class SpeechStreamer:
         if self.wake_pattern.search(text):
             return True
 
-        # 2. Dynamic Fuzzy Matching for custom names (threshold 0.80)
+        # 2. Dynamic Fuzzy Matching for custom names (threshold 0.75 allows jarvis/jarvice & accents)
         import difflib
         cleaned_words = [w.strip(".!?, \t\n").lower() for w in text.split()]
         target_wake_words = [w.strip().lower() for w in self.wake_word.replace("/", ",").split(",") if w.strip()]
 
         for target in target_wake_words:
-            # Single word fuzzy match (e.g. 'novva' vs 'nova', 'zephyros' vs 'zephyr')
+            # Single word fuzzy match (e.g. 'jarvice' vs 'jarvis' [0.77], 'novva' vs 'nova')
             for cw in cleaned_words:
                 if len(cw) >= 3 and len(target) >= 4:
                     similarity = difflib.SequenceMatcher(None, target, cw).ratio()
-                    if similarity >= 0.80:
+                    if similarity >= 0.75:
                         logger.info(f"Fuzzy wake word match: '{cw}' matches '{target}' (Similarity: {similarity:.2f})")
                         return True
             
@@ -169,7 +176,7 @@ class SpeechStreamer:
                 for i in range(len(cleaned_words) - 1):
                     two_gram = f"{cleaned_words[i]} {cleaned_words[i+1]}"
                     similarity = difflib.SequenceMatcher(None, target, two_gram).ratio()
-                    if similarity >= 0.80:
+                    if similarity >= 0.75:
                         logger.info(f"Fuzzy 2-gram wake word match: '{two_gram}' matches '{target}' (Similarity: {similarity:.2f})")
                         return True
 
@@ -615,8 +622,9 @@ class SpeechStreamer:
                         # ── Filter Out Standalone Wake Words / Empty Utterances ──
                         KNOWN_NON_COMMANDS = {
                             "alexa", "nova", "privacy68", "privacy 68", "privacy sixty eight", "privacy sixty-eight",
-                            "privacy six eight", "privacy", "jarvis", "friday", "leo", "serena",
+                            "privacy six eight", "privacy", "jarvis", "jarvice", "jarves", "friday", "leo", "serena",
                             "hey alexa", "hey nova", "hey privacy", "hey privacy68", "hey privacy 68",
+                            "hey jarvis", "hey jarvice", "ok jarvis",
                             "ok privacy", "ok privacy 68", "yes", "yeah", "okay", "hi", "hello"
                         }
                         if text.lower().strip(".!?, ") in KNOWN_NON_COMMANDS or len(text.strip()) <= 2:
