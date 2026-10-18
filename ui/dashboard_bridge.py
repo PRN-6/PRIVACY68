@@ -78,8 +78,23 @@ class DashboardAPI:
             return {"success": False, "message": "Please enter an API Key to test."}
 
         import urllib.request
-        if provider == "groq":
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "User-Agent": "PRIVACY68/1.0",
+        }
+        if provider in ("claude", "anthropic"):
+            endpoint = "https://api.anthropic.com/v1/models"
+            headers = {
+                "x-api-key": api_key,
+                "anthropic-version": "2023-06-01",
+                "User-Agent": "PRIVACY68/1.0",
+            }
+        elif provider == "groq":
             endpoint = "https://api.groq.com/openai/v1/models"
+        elif provider in ("gemini", "google"):
+            endpoint = "https://generativelanguage.googleapis.com/v1beta/openai/models"
+        elif provider == "openrouter":
+            endpoint = "https://openrouter.ai/api/v1/models"
         elif provider == "openai":
             endpoint = "https://api.openai.com/v1/models"
         else:
@@ -88,11 +103,8 @@ class DashboardAPI:
 
         req = urllib.request.Request(
             endpoint,
-            headers={
-                "Authorization": f"Bearer {api_key}",
-                "User-Agent": "PRIVACY68/1.0"
-            },
-            method="GET"
+            headers=headers,
+            method="GET",
         )
 
         try:

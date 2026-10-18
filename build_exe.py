@@ -2,7 +2,7 @@ import os
 import sys
 import subprocess
 
-APP_VERSION = "1.2.0"
+APP_VERSION = "1.3.0"
 
 def build():
     print("=" * 50)
@@ -26,7 +26,7 @@ def build():
         print("[*] Building Slim Lightweight Package (CUDA downloaded on-demand in-app)")
 
     # Collect data directories that exist
-    data_dirs = ["plugins", "actions", "computer_use", "speech", "server", "ui", "utils", "assets"]
+    data_dirs = ["plugins", "extra_plugins", "actions", "computer_use", "speech", "server", "ui", "utils", "assets"]
     add_data_args = []
     for d in data_dirs:
         if os.path.isdir(d):
@@ -57,6 +57,7 @@ def build():
         "--collect-all=webview",
         "--collect-all=pyautogui",
         "--collect-all=qrcode",
+        "--collect-all=sklearn",
         "--hidden-import=pystray._win32",
         "--hidden-import=scipy.special.cython_special",
         "app.py"

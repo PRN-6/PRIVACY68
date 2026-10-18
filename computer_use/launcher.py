@@ -1,8 +1,10 @@
 import logging
 import os
 import re
+import shutil
 import subprocess
 import time
+import winreg
 from typing import Dict, List, Optional
 
 logger = logging.getLogger("PRIVACY68.ComputerUse.Launcher")
@@ -49,141 +51,92 @@ KNOWN_SYSTEM_APPS: Dict[str, Dict[str, str]] = {
     "alarms": {"protocol": "ms-clock:", "window_title": "Clock"},
 }
 
-# Alias resolution mapping — maps voice variations to canonical app names
+# Alias resolution mapping — maps genuine synonyms to canonical names
 APP_ALIASES: Dict[str, str] = {
     # Task Manager
-    "task manager": "task manager",
     "taskmanager": "task manager",
     "task mgr": "task manager",
     "taskmgr": "task manager",
     # Calculator
-    "calculator": "calculator",
     "calc": "calculator",
     # Notepad
-    "notepad": "notepad",
     "note pad": "notepad",
     "text editor": "notepad",
     # Browsers
-    "chrome": "chrome",
     "google chrome": "chrome",
-    "brave": "brave",
     "brave browser": "brave",
     "edge": "msedge",
     "microsoft edge": "msedge",
-    "firefox": "firefox",
     "mozilla firefox": "firefox",
     # VS Code
     "vscode": "vs code",
-    "vs code": "vs code",
     "visual studio code": "vs code",
     "code": "vs code",
     "code editor": "vs code",
     # Paint
-    "paint": "paint",
     "ms paint": "paint",
     "microsoft paint": "paint",
     # Snipping Tool
-    "snipping tool": "snipping tool",
     "snip": "snipping tool",
     "screenshot tool": "snipping tool",
     "screen capture": "snipping tool",
     # Terminal / Command Line
-    "terminal": "terminal",
     "windows terminal": "terminal",
     "cmd": "command prompt",
-    "command prompt": "command prompt",
     "command line": "command prompt",
-    "powershell": "powershell",
     "power shell": "powershell",
     # File Explorer
-    "file explorer": "file explorer",
     "explorer": "file explorer",
     "files": "file explorer",
     "my computer": "file explorer",
     "this pc": "file explorer",
     "file manager": "file explorer",
     # Communication & Social
-    "whatsapp": "whatsapp",
     "whats app": "whatsapp",
-    "discord": "discord",
-    "telegram": "telegram",
-    "slack": "slack",
-    "teams": "teams",
+    "whats": "whatsapp",
     "microsoft teams": "teams",
     "ms teams": "teams",
-    "zoom": "zoom",
-    "skype": "skype",
     # Office Suite
-    "word": "word",
     "ms word": "word",
     "microsoft word": "word",
     "winword": "word",
-    "excel": "excel",
     "ms excel": "excel",
     "microsoft excel": "excel",
     "spreadsheet": "excel",
     "ppt": "powerpoint",
-    "powerpoint": "powerpoint",
     "ms powerpoint": "powerpoint",
     "power point": "powerpoint",
     "presentation": "powerpoint",
-    "outlook": "outlook",
     "ms outlook": "outlook",
     "email": "outlook",
-    "onenote": "onenote",
     "one note": "onenote",
     # Media & Entertainment
-    "spotify": "spotify",
     "music": "spotify",
-    "vlc": "vlc",
     "vlc player": "vlc",
     "media player": "vlc",
-    "obs": "obs studio",
-    "obs studio": "obs studio",
     # System & Settings
-    "store": "store",
     "microsoft store": "store",
     "app store": "store",
-    "settings": "settings",
     "windows settings": "settings",
-    "camera": "camera",
-    "photos": "photos",
-    "weather": "weather",
-    "clock": "clock",
-    "alarms": "alarms",
     "timer": "clock",
-    "sticky notes": "sticky notes",
     "notes": "sticky notes",
     # System Utilities
-    "control panel": "control panel",
-    "device manager": "device manager",
-    "disk management": "disk management",
-    "resource monitor": "resource monitor",
     "system info": "system information",
-    "system information": "system information",
-    "registry editor": "registry editor",
     "regedit": "registry editor",
-    "event viewer": "event viewer",
-    "remote desktop": "remote desktop",
-    "disk cleanup": "disk cleanup",
-    "on screen keyboard": "on screen keyboard",
     "osk": "on screen keyboard",
-    "magnifier": "magnifier",
-    "character map": "character map",
-    # Creative & Dev Tools
-    "antigravity": "antigravity",
+    # Dev & Creative Tools
     "anti gravity": "antigravity",
     "andtygravity": "antigravity",
     "anti-gravity": "antigravity",
     "antigravity ide": "antigravity",
-    "gimp": "gimp",
-    "blender": "blender",
-    "figma": "figma",
-    "postman": "postman",
-    "android studio": "android studio",
-    "steam": "steam",
-    "epic games": "epic games",
 }
+
+_PREFIX_RE = re.compile(r"\b(open|launch|start|switch\s+to|app|the|program|an)\b", re.IGNORECASE)
+_LOCATION_RE = re.compile(
+    r"\b(in|on|from|inside)\s+(?:my\s+|this\s+)?(?:computer|conputer|pc|laptop|machine|system|device)\b",
+    re.IGNORECASE,
+)
+_WHITESPACE_RE = re.compile(r"\s+")
 
 
 class AppLauncher:
@@ -192,24 +145,21 @@ class AppLauncher:
     Launches system tools and user installed applications reliably
     without depending on hardcoded file paths.
     """
+    _exe_cache: Dict[str, Optional[str]] = {}
 
-    @staticmethod
-    def resolve_app_name(raw_name: str) -> str:
+    @classmethod
+    def resolve_app_name(cls, raw_name: str) -> str:
         """Normalizes voice command text to a standard application name."""
-        clean = raw_name.lower().strip()
-        # Strip common trigger prefixes
-        clean = re.sub(r"\b(open|launch|start|switch\s+to|app|the|program|an)\b", " ", clean)
-        # Strip trailing locational phrases ("in my computer", "on my pc", etc.)
-        clean = re.sub(r"\b(in|on|from|inside)\s+(?:my\s+|this\s+)?(?:computer|conputer|pc|laptop|machine|system|device)\b", " ", clean)
-        clean = re.sub(r"\s+", " ", clean).strip(" .!?,_-")
-
+        clean = _PREFIX_RE.sub(" ", raw_name.lower().strip())
+        clean = _LOCATION_RE.sub(" ", clean)
+        clean = _WHITESPACE_RE.sub(" ", clean).strip(" .!?,_-")
         return APP_ALIASES.get(clean, clean)
 
-    @staticmethod
-    def _find_app_exe(canonical_name: str) -> Optional[str]:
-        """Looks up the executable path via Windows Registry App Paths, common install paths, and PATH."""
-        import winreg
-        import shutil
+    @classmethod
+    def _find_app_exe(cls, canonical_name: str) -> Optional[str]:
+        """Looks up the executable path with caching via Registry, common paths, and PATH."""
+        if canonical_name in cls._exe_cache:
+            return cls._exe_cache[canonical_name]
 
         exe_names = {
             "chrome": ["chrome.exe"],
@@ -232,6 +182,7 @@ class AppLauncher:
                         if val:
                             cleaned_val = val.strip('"')
                             if os.path.exists(cleaned_val):
+                                cls._exe_cache[canonical_name] = cleaned_val
                                 return cleaned_val
                 except Exception:
                     pass
@@ -257,14 +208,17 @@ class AppLauncher:
                     or (canonical_name in ("edge", "msedge") and "msedge.exe" in p_low)
                     or (canonical_name == "vs code" and "code.exe" in p_low)
                 ):
+                    cls._exe_cache[canonical_name] = p
                     return p
 
         # 3. Check PATH
         for exe in exe_names:
             w = shutil.which(exe)
             if w and os.path.exists(w):
+                cls._exe_cache[canonical_name] = w
                 return w
 
+        cls._exe_cache[canonical_name] = None
         return None
 
     def launch(self, app_name: str) -> bool:

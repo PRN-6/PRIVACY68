@@ -384,28 +384,25 @@ class WhatsAppPlugin(BasePlugin):
         return None, None
 
     def _parse_contact_and_message(self, text: str) -> Tuple[Optional[str], Optional[str]]:
-        """Extracts (contact_name, message_body) using LLM first, with regex fallback."""
-        # 1. Try local LLM (Ollama)
-        contact, message = self._parse_with_llm(text)
-        if contact:
-            return contact, message
-
-        # 2. Fast Regex Fallback
+        """Extracts (contact_name, message_body) using Fast Regex first (zero LLM latency), with LLM fallback."""
+        # 1. Fast Regex Parser (Instant, works on 100% of computers)
         clean_contact = lambda s: re.sub(
-            r"\b(?:send|message|text|to|in|on|whatsapp|app|desktop|please|can|you|open|a|chat|with|and)\b",
+            r"\b(?:send|tell|message|text|to|in|on|whatsapp|app|desktop|please|can|you|open|a|chat|with|and)\b",
             "", s, flags=re.IGNORECASE
         ).strip(".!?, \t\n")
-
-        # Pattern: "tell [contact] [message]"
-        tell_match = re.match(r'\btell\s+(\w+(?:\s+\w+)?)\s+(.+)', text, re.IGNORECASE)
-        if tell_match:
-            return tell_match.group(1).strip(), tell_match.group(2).strip(".!?, \t\n")
 
         # Pattern: separator "saying that" / "saying" / "that"
         sep_match = re.search(r'\b(?:saying that|saying|that)\b', text, re.IGNORECASE)
         if sep_match:
             before_sep = text[:sep_match.start()]
-            return clean_contact(before_sep), text[sep_match.end():].strip(".!?, \t\n")
+            c_name = clean_contact(before_sep)
+            if c_name:
+                return c_name, text[sep_match.end():].strip(".!?, \t\n")
+
+        # Pattern: "tell [contact] [message]"
+        tell_match = re.match(r'\btell\s+(\w+(?:\s+\w+)?)\s+(.+)', text, re.IGNORECASE)
+        if tell_match:
+            return tell_match.group(1).strip(), tell_match.group(2).strip(".!?, \t\n")
 
         # Pattern: "send [body] to [contact]"
         send_match = re.match(r'\bsend\s+(.+?)\s+to\s+([\w\s]+?)(?:\s+(?:in|on|via)\s+\w+)?$', text, re.IGNORECASE)
@@ -416,8 +413,19 @@ class WhatsAppPlugin(BasePlugin):
                 return contact, None
             return contact, potential_msg
 
-        # Fallback
-        return clean_contact(text), None
+        # Pattern: "message [contact] [body]" or "send message to [contact]"
+        msg_match = re.match(r'\b(?:send\s+)?(?:a\s+)?message\s+to\s+([\w\s]+?)(?:\s+(?:saying|that)\s+(.+))?$', text, re.IGNORECASE)
+        if msg_match:
+            return msg_match.group(1).strip(".!?, \t\n"), (msg_match.group(2) or "").strip(".!?, \t\n") or None
+
+        # 2. Local LLM Fallback (if Ollama is installed and running)
+        contact, message = self._parse_with_llm(text)
+        if contact:
+            return contact, message
+
+        # 3. Fallback
+        c_cand = clean_contact(text)
+        return (c_cand if c_cand else None), None
 
     def send_message(self, text: str) -> bool:
         contact_name, message_body = self._parse_contact_and_message(text)

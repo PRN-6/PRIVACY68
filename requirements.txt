@@ -7,6 +7,10 @@ sounddevice
 scipy
 numpy
 
+# Local ML Intent Classification & Fast Lane Routing
+scikit-learn
+joblib
+
 # Local LLM Routing (Ollama)
 ollama
 

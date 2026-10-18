@@ -58,6 +58,8 @@ class PluginManager:
     def __init__(self):
         self.plugins: Dict[str, BasePlugin] = {}
         self._reload_listeners: List[Callable[[], None]] = []
+        self._fast_intents_cache: Optional[Dict[str, List[str]]] = None
+        self._fast_intents_phrase_map: Optional[Dict[str, str]] = None
         
         # Discover plugins from both sources
         self.discover_plugins()
@@ -86,7 +88,10 @@ class PluginManager:
         if not os.path.exists(folder_path):
             return
 
-        ignore_files = ["base_plugin.py", "manager.py", "profile_manager.py", "win_utils.py", "__init__.py"]
+        ignore_files = [
+            "base_plugin.py", "manager.py", "profile_manager.py", "win_utils.py",
+            "__init__.py", "boilerplate_plugin.py"
+        ]
 
         for filename in os.listdir(folder_path):
             if filename.endswith(".py") and not filename.startswith("__") and filename not in ignore_files:
@@ -163,19 +168,39 @@ class PluginManager:
 
     def notify_reload(self):
         """Notifies router and system components to re-index training phrases."""
+        self._fast_intents_cache = None
+        self._fast_intents_phrase_map = None
         for listener in self._reload_listeners:
             try:
                 listener()
             except Exception as e:
                 logger.error(f"Error in plugin reload listener: {e}")
 
-    def get_active_fast_intents(self) -> Dict[str, List[str]]:
-        """Aggregates all fast-lane training phrases from enabled plugins."""
+    def _rebuild_fast_intents_cache(self):
         intents = {}
+        phrase_map = {}
         for plugin in self.plugins.values():
             if plugin.is_enabled:
                 intents.update(plugin.fast_intents)
-        return intents
+                for action_name, phrases in plugin.fast_intents.items():
+                    for p in phrases:
+                        phrase_map[p.lower().strip()] = action_name
+        self._fast_intents_cache = intents
+        self._fast_intents_phrase_map = phrase_map
+
+    def get_active_fast_intents(self) -> Dict[str, List[str]]:
+        """Aggregates all fast-lane training phrases from enabled plugins (cached)."""
+        if self._fast_intents_cache is None:
+            self._rebuild_fast_intents_cache()
+        return self._fast_intents_cache
+
+    def match_fast_intent(self, phrase: str) -> Optional[str]:
+        """O(1) instant lookup for plugin fast-lane phrases."""
+        if not phrase:
+            return None
+        if self._fast_intents_phrase_map is None:
+            self._rebuild_fast_intents_cache()
+        return self._fast_intents_phrase_map.get(phrase.strip().lower())
 
     def get_active_system_descriptions(self) -> str:
         """Aggregates tool descriptions for Ollama AI system prompt."""

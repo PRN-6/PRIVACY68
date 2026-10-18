@@ -18,11 +18,14 @@ DEFAULT_PROFILE = {
     "wake_threshold": 0.50,
     "whisper_device": "cuda",
     "whisper_model": "small.en",
-    "llm_provider": "ollama",  # 'ollama', 'openai', 'groq', 'custom'
+    "llm_provider": "groq",  # 'groq', 'openai', 'ollama', 'custom'
     "llm_model": "qwen2.5:0.5b",
     "api_key": "",
     "api_base_url": "",
-    "cloud_model": "gpt-4o-mini",
+    "cloud_model": "llama-3.3-70b-versatile",
+    "enable_fast_lane": True,
+    "enable_api_lane": True,
+    "enable_local_llm": True,  # User decides whether to run Local Ollama
     "hud_enabled": True,
     "theme": "obsidian_red",
     "voice_lock_enabled": False,

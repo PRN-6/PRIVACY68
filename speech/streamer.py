@@ -74,7 +74,10 @@ def autocorrect_speech_command(text: str) -> str:
     for pattern, repl in substitutions:
         cleaned = re.sub(pattern, repl, cleaned, flags=re.IGNORECASE)
 
-    # 5. Collapse multiple spaces and clean punctuation
+    # 5. Strip conversational/filler prefixes at start of command (e.g. 'accept, go to...' -> 'go to...')
+    cleaned = re.sub(r'^(?:accept|please|kindly|hey|alexa|privacy68)[,\s]+', '', cleaned, flags=re.IGNORECASE)
+
+    # 6. Collapse multiple spaces and clean punctuation
     cleaned = re.sub(r'\s+', ' ', cleaned).strip(".!?, \t\n")
     return cleaned
 
@@ -83,8 +86,11 @@ class SpeechStreamer:
     @staticmethod
     def _build_wake_pattern(wake_input: str) -> re.Pattern:
         """
-        Builds a regex pattern from one or more custom wake words.
-        Supports any arbitrary unique word or phrase (e.g. 'Zephyr', 'Bumblebee', 'Kratos', 'Aegis').
+        Builds a robust regex pattern from one or more custom wake words.
+        Supports:
+        - Any arbitrary unique word or phrase (e.g. 'Zephyr', 'Bumblebee', 'Kratos', 'Aegis', 'Nova')
+        - Phonetic variations of digits (e.g. 'privacy68' -> 'privacy 68', 'privacy sixty eight', 'privacy sixty-eight', 'privacy six eight', 'privacy 6 8')
+        - Optional natural conversational greetings (e.g. 'hey privacy 68', 'ok privacy', 'hi nova')
         """
         if not wake_input:
             wake_input = "privacy68"
@@ -95,52 +101,84 @@ class SpeechStreamer:
 
         aliases = set()
         for w in words:
-            clean = re.sub(r'[^a-zA-Z0-9\s]', '', w).lower().strip()
-            if not clean:
-                continue
-            aliases.add(clean)
+            # Separate letters and numbers: e.g. 'privacy68' -> 'privacy 68'
+            spaced = re.sub(r'([a-zA-Z])(\d)', r'\1 \2', w)
+            spaced = re.sub(r'(\d)([a-zA-Z])', r'\1 \2', spaced)
+            for base in [w, spaced]:
+                clean = re.sub(r'[^a-zA-Z0-9\s\-]', ' ', base).lower().strip()
+                clean = re.sub(r'\s+', ' ', clean)
+                if not clean:
+                    continue
+                aliases.add(clean)
+                if '68' in clean:
+                    aliases.add(clean.replace('68', 'sixty eight').strip())
+                    aliases.add(clean.replace('68', 'sixty-eight').strip())
+                    aliases.add(clean.replace('68', 'six eight').strip())
+                    aliases.add(clean.replace('68', '6 8').strip())
+                    aliases.add(re.sub(r'\s*68\b', '', clean).strip())  # e.g. 'privacy'
+                if 'privacy' in clean:
+                    aliases.add('privacy')
+                    aliases.add('privacy 68')
+                    aliases.add('privacy68')
+                    aliases.add('privacy sixty eight')
+                    aliases.add('privacy sixty-eight')
+                    aliases.add('privacy six eight')
+                    aliases.add('privacy 6 8')
 
-        regex_parts = [r'\b' + re.escape(a) + r'\b' for a in sorted(aliases, key=len, reverse=True)]
-        pattern_str = "|".join(regex_parts)
+        # Convert aliases to regex parts, handling spaces and hyphens flexibly
+        escaped = [
+            re.escape(a).replace(r'\ ', r'\s+').replace(r'\-', r'[\s\-]+')
+            for a in sorted(aliases, key=len, reverse=True)
+            if a
+        ]
+        if not escaped:
+            escaped = [r'privacy68', r'privacy\s+68']
+
+        pattern_str = r'(?:\b(?:hey|hi|hello|ok|okay)\s+)?\b(' + '|'.join(escaped) + r')\b'
         return re.compile(pattern_str, re.IGNORECASE)
 
     def is_wake_word_detected(self, text: str) -> bool:
         """
-        Generic, dynamic detector for ANY unique wake word.
-        Uses exact regex matching + dynamic phonetic/fuzzy similarity (0.80 threshold)
-        so any unique custom name (e.g. 'Zephyros', 'Bumblebee', 'Valkyrie') matches
-        even if Whisper slightly mishears a single vowel or consonant.
+        Generic, dynamic detector for ANY wake word or phrase.
+        Uses regex matching (including phonetic number expansions and conversational greetings)
+        plus dynamic fuzzy matching for custom names so minor transcription variations match reliably.
         """
         if not text:
             return False
 
-        # 1. Direct Regex / Substring check
+        # 1. Direct Regex / Substring check (covers exact, phonetic numbers, and greetings)
         if self.wake_pattern.search(text):
             return True
 
-        # 2. Dynamic Fuzzy Matching for longer custom names (>= 5 chars)
+        # 2. Dynamic Fuzzy Matching for custom names (threshold 0.80)
         import difflib
         cleaned_words = [w.strip(".!?, \t\n").lower() for w in text.split()]
         target_wake_words = [w.strip().lower() for w in self.wake_word.replace("/", ",").split(",") if w.strip()]
 
         for target in target_wake_words:
-            if len(target) < 5:
-                # For short names like 'Nova', 'Leo', 'Alexa', require exact word match to avoid false triggers
-                continue
+            # Single word fuzzy match (e.g. 'novva' vs 'nova', 'zephyros' vs 'zephyr')
             for cw in cleaned_words:
-                if len(cw) < 4:
-                    continue
-                similarity = difflib.SequenceMatcher(None, target, cw).ratio()
-                if similarity >= 0.88:
-                    logger.info(f"Fuzzy wake word match: '{cw}' matches '{target}' (Similarity: {similarity:.2f})")
-                    return True
+                if len(cw) >= 3 and len(target) >= 4:
+                    similarity = difflib.SequenceMatcher(None, target, cw).ratio()
+                    if similarity >= 0.80:
+                        logger.info(f"Fuzzy wake word match: '{cw}' matches '{target}' (Similarity: {similarity:.2f})")
+                        return True
+            
+            # Multi-word 2-gram fuzzy match (e.g. 'hey nova', 'privacy sixty')
+            if " " in target and len(cleaned_words) >= 2:
+                for i in range(len(cleaned_words) - 1):
+                    two_gram = f"{cleaned_words[i]} {cleaned_words[i+1]}"
+                    similarity = difflib.SequenceMatcher(None, target, two_gram).ratio()
+                    if similarity >= 0.80:
+                        logger.info(f"Fuzzy 2-gram wake word match: '{two_gram}' matches '{target}' (Similarity: {similarity:.2f})")
+                        return True
 
         return False
 
     def strip_wake_word(self, text: str) -> str:
-        """Removes the wake word from one-shot inline commands for ANY unique name."""
+        """Removes the wake word and any conversational greeting prefixes from commands."""
         res = self.wake_pattern.sub('', text)
-        # Also clean leading 'hey', 'ok', etc.
+        # Also clean leading conversational greetings
         res = re.sub(r'^(hey|ok|okay|hi|hello)\s+', '', res, flags=re.IGNORECASE)
         return res.strip(".!?, \t\n")
 
@@ -299,9 +337,9 @@ class SpeechStreamer:
         has_spoken = False
         speech_chunks = 0
 
-        # Scan every 0.8 seconds (faster detection window)
-        IDLE_WINDOW_CHUNKS = int(self.sample_rate * 0.8 / config.BLOCK_SIZE)
-        # Overlap: keep last half of the buffer so wake word at window boundaries is never missed
+        # Scan window of 1.6 seconds to reliably capture multi-word wake phrases ("Privacy 68", "Hey Nova", etc.)
+        IDLE_WINDOW_CHUNKS = int(self.sample_rate * 1.6 / config.BLOCK_SIZE)
+        # 50% overlap: keep last half of the buffer so wake word at window boundaries is never missed
         IDLE_OVERLAP_CHUNKS = IDLE_WINDOW_CHUNKS // 2
 
         logger.info(f"PRIVACY68 Voice Assistant is online. Say '{self.wake_word}' to activate.")
@@ -335,30 +373,35 @@ class SpeechStreamer:
                             # Overlapping window — keep last half for next scan
                             idle_buffer = idle_buffer[IDLE_OVERLAP_CHUNKS:]
 
-                            # ── Energy gate: skip silence and quiet background noise ──
-                            # Raised thresholds to reject speaker bleed-through from
-                            # videos/music playing in the background.
+                            # ── Energy gate: skip absolute silence and quiet background hum ──
+                            # Adjusted to 0.005 RMS / 0.015 Peak so soft voices and distant/low-gain laptop mics are not dropped.
                             idle_rms  = float(np.sqrt(np.mean(idle_audio**2)))
                             idle_peak = float(np.max(np.abs(idle_audio)))
-                            if idle_rms < 0.018 or idle_peak < 0.06:
+                            if idle_rms < 0.005 or idle_peak < 0.015:
                                 continue
 
                             if self.model is None:
                                 continue
 
+                            # Normalize idle audio peak so Whisper receives clean, high-gain signal regardless of microphone hardware
+                            if idle_peak > 0.01:
+                                norm_idle_audio = (idle_audio / idle_peak) * 0.9
+                            else:
+                                norm_idle_audio = idle_audio
+
                             segments, info = self.model.transcribe(
-                                idle_audio,
+                                norm_idle_audio,
                                 beam_size=2,
                                 temperature=0.0,
                                 without_timestamps=True,
                                 language='en',
                                 vad_filter=True,
+                                initial_prompt=config.INITIAL_PROMPT,
                             )
 
                             # ── Discard if model is uncertain about speech ──
-                            # Tightened to 0.35 — medium.en is well-calibrated;
-                            # a score above 0.35 almost always means background noise.
-                            if info and getattr(info, "no_speech_prob", 0.0) > 0.35:
+                            # 0.55 threshold permits softer or accented speech while still filtering pure noise
+                            if info and getattr(info, "no_speech_prob", 0.0) > 0.55:
                                 continue
 
                             idle_text = " ".join([s.text.strip() for s in segments]).strip()
@@ -407,13 +450,10 @@ class SpeechStreamer:
                             except Exception:
                                 pass
 
-                            # Check if user said the custom wake word (ANY unique name)
-                            # CRITICAL: The wake word must be in the FIRST 3 words.
-                            # Background audio (videos/podcasts) may contain the wake word
-                            # mid-sentence (e.g. "...and alexa said..."). A real command
-                            # ALWAYS starts with the wake word.
-                            first_words = " ".join(idle_text.split()[:3])
-                            if self.is_wake_word_detected(idle_text) and self.is_wake_word_detected(first_words):
+                            # Check if user said the custom wake word (ANY unique name or phrase)
+                            # Checking within first 6 words allows natural leading greetings ("uh hey privacy 68")
+                            first_words = " ".join(idle_text.split()[:6])
+                            if self.is_wake_word_detected(first_words):
                                 logger.info(f"Wake word '{self.wake_word}' matched in: '{idle_text}'")
 
                                 if on_wake_word_callback:
@@ -574,8 +614,10 @@ class SpeechStreamer:
 
                         # ── Filter Out Standalone Wake Words / Empty Utterances ──
                         KNOWN_NON_COMMANDS = {
-                            "alexa", "nova", "privacy68", "jarvis", "friday", "leo", "serena",
-                            "hey alexa", "hey nova", "hey privacy68", "yes", "yeah", "okay", "hi", "hello"
+                            "alexa", "nova", "privacy68", "privacy 68", "privacy sixty eight", "privacy sixty-eight",
+                            "privacy six eight", "privacy", "jarvis", "friday", "leo", "serena",
+                            "hey alexa", "hey nova", "hey privacy", "hey privacy68", "hey privacy 68",
+                            "ok privacy", "ok privacy 68", "yes", "yeah", "okay", "hi", "hello"
                         }
                         if text.lower().strip(".!?, ") in KNOWN_NON_COMMANDS or len(text.strip()) <= 2:
                             logger.info(f"Wake word detected ('{text}'). Actively listening for your command...")

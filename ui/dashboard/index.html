@@ -581,9 +581,12 @@
                     <label class="text-[11px] text-slate-400 block mb-1">Cloud Provider</label>
                     <select id="cloud_provider_select" onchange="onCloudProviderChange()"
                       class="w-full px-3 py-1.5 rounded-lg bg-nova-surface border border-nova-border text-xs text-white focus:border-amber-500 focus:outline-none">
+                      <option value="groq" selected>Groq (100% Free • Ultra-Fast ~500 t/s)</option>
+                      <option value="gemini">Google Gemini (100% Free Tier)</option>
+                      <option value="openrouter">OpenRouter (Free Models Available)</option>
+                      <option value="claude">Anthropic Claude (Official API)</option>
                       <option value="openai">OpenAI (Official)</option>
-                      <option value="groq" selected>Groq (Ultra-Fast ~500 t/s)</option>
-                      <option value="custom">Custom OpenAI Compatible</option>
+                      <option value="custom">Custom (Astra / Together / vLLM)</option>
                     </select>
                   </div>
                   <div>
@@ -882,10 +885,19 @@
       if (!select) return;
 
       if (select.value === 'groq') {
-        if (modelInput && !modelInput.value) modelInput.value = 'llama-3.3-70b-versatile';
+        if (modelInput) modelInput.value = 'llama-3.3-70b-versatile';
+        if (baseContainer) baseContainer.classList.add('hidden');
+      } else if (select.value === 'gemini') {
+        if (modelInput) modelInput.value = 'gemini-2.0-flash';
+        if (baseContainer) baseContainer.classList.add('hidden');
+      } else if (select.value === 'openrouter') {
+        if (modelInput) modelInput.value = 'meta-llama/llama-3.3-70b-instruct:free';
+        if (baseContainer) baseContainer.classList.add('hidden');
+      } else if (select.value === 'claude') {
+        if (modelInput) modelInput.value = 'claude-3-5-haiku-20241022';
         if (baseContainer) baseContainer.classList.add('hidden');
       } else if (select.value === 'openai') {
-        if (modelInput && !modelInput.value) modelInput.value = 'gpt-4o-mini';
+        if (modelInput) modelInput.value = 'gpt-4o-mini';
         if (baseContainer) baseContainer.classList.add('hidden');
       } else {
         if (baseContainer) baseContainer.classList.remove('hidden');

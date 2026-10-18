@@ -1,5 +1,6 @@
 import json
 import logging
+import socket
 import threading
 import urllib.request
 import urllib.error
@@ -9,6 +10,19 @@ from plugins.manager import plugin_manager
 from plugins.profile_manager import profile_manager
 
 logger = logging.getLogger("PRIVACY68.LLMRouter")
+
+
+def is_ollama_alive(timeout_sec: float = 0.3) -> bool:
+    """
+    Rapid non-blocking probe to verify if local Ollama daemon is active.
+    Prevents hangs and connection timeouts on computers without Ollama.
+    """
+    try:
+        with socket.create_connection(("127.0.0.1", 11434), timeout=timeout_sec):
+            return True
+    except (socket.timeout, ConnectionRefusedError, OSError):
+        return False
+
 
 # ─── System prompt that tells the LLM what it is and how to behave ───────────
 SYSTEM_PROMPT = """\
@@ -34,12 +48,14 @@ class LLMRouter:
         self._lock = threading.Lock()
         self._tools = []
         self._tool_name_map = {}  # Maps 'plugin_chrome_open' -> 'chrome.open'
+        self._route_cache: Dict[str, Optional[str]] = {}
         self.reload()
         plugin_manager.register_reload_listener(self.reload)
 
     def reload(self):
         """Re-indexes tool definitions from all enabled plugins."""
         with self._lock:
+            self._route_cache.clear()
             self._tools = plugin_manager.get_active_tool_definitions()
             self._tool_name_map = {}
             for plugin in plugin_manager.get_all_plugins():
@@ -62,7 +78,10 @@ class LLMRouter:
         if not user_text or not user_text.strip():
             return None
 
+        cache_key = user_text.strip().lower()
         with self._lock:
+            if cache_key in self._route_cache:
+                return self._route_cache[cache_key]
             tools = list(self._tools)
             name_map = dict(self._tool_name_map)
 
@@ -76,14 +95,28 @@ class LLMRouter:
         if provider in ("openai", "groq", "custom") and profile_manager.get("api_key"):
             action = self._route_cloud(user_text, provider, tools, name_map)
             if action:
+                with self._lock:
+                    self._route_cache[cache_key] = action
                 return action
             logger.info("Cloud LLM did not match or failed. Falling back to local Ollama...")
 
         # 2. Local Air-Gapped Route (Ollama)
-        return self._route_ollama(user_text, tools, name_map)
+        action = self._route_ollama(user_text, tools, name_map)
+        if action:
+            with self._lock:
+                self._route_cache[cache_key] = action
+        return action
 
     def _route_ollama(self, user_text: str, tools: list, name_map: dict) -> Optional[str]:
-        """Routes through local Ollama server."""
+        """Routes through local Ollama server if active and enabled."""
+        if not profile_manager.get("enable_local_llm", True):
+            logger.info("Local LLM Lane is disabled in user profile. Skipping.")
+            return None
+
+        if not is_ollama_alive():
+            logger.info("Local Ollama is not active or reachable on port 11434. Skipping Local LLM Lane.")
+            return None
+
         try:
             import ollama
             model = profile_manager.get("llm_model", "qwen2.5:0.5b")
@@ -114,57 +147,10 @@ class LLMRouter:
             return None
 
     def _route_cloud(self, user_text: str, provider: str, tools: list, name_map: dict) -> Optional[str]:
-        """Routes through an OpenAI-compatible cloud REST API endpoint."""
+        """Routes through cloud API using the unified API Lane router."""
         api_key = profile_manager.get("api_key", "").strip()
         if not api_key:
             return None
 
-        # Determine endpoint and default model
-        if provider == "groq":
-            endpoint = "https://api.groq.com/openai/v1/chat/completions"
-            model = profile_manager.get("cloud_model", "llama-3.3-70b-versatile")
-        elif provider == "openai":
-            endpoint = "https://api.openai.com/v1/chat/completions"
-            model = profile_manager.get("cloud_model", "gpt-4o-mini")
-        else:
-            endpoint = profile_manager.get("api_base_url", "https://api.openai.com/v1/chat/completions").strip()
-            model = profile_manager.get("cloud_model", "gpt-4o-mini")
-
-        payload = {
-            "model": model,
-            "messages": [
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": user_text.strip()}
-            ],
-            "tools": tools,
-            "temperature": 0.0,
-            "max_tokens": 128
-        }
-
-        req = urllib.request.Request(
-            endpoint,
-            data=json.dumps(payload).encode("utf-8"),
-            headers={
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {api_key}",
-                "User-Agent": "PRIVACY68/1.0"
-            },
-            method="POST"
-        )
-
-        try:
-            with urllib.request.urlopen(req, timeout=8) as res:
-                body = json.loads(res.read().decode("utf-8"))
-                choice = body.get("choices", [{}])[0]
-                message = choice.get("message", {})
-                tool_calls = message.get("tool_calls", [])
-                if tool_calls:
-                    func_name = tool_calls[0].get("function", {}).get("name", "")
-                    action_name = name_map.get(func_name)
-                    if action_name:
-                        logger.info(f"Cloud [{provider.upper()}] matched '{action_name}' (tool: {func_name})")
-                        return action_name
-                return None
-        except Exception as e:
-            logger.warning(f"Cloud LLM call ({provider}) failed: {e}")
-            return None
+        from actions.api_lane import api_lane_router
+        return api_lane_router._call_cloud_endpoint(user_text, provider, api_key, tools, name_map)

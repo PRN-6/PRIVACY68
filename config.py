@@ -54,10 +54,10 @@ WHISPER_HOTWORDS = (
 # Initial prompt: Whisper conditions its decoder on this text before your audio.
 # A precise, command-style prompt dramatically reduces misrecognition of app names.
 INITIAL_PROMPT = (
-    "Voice commands for a desktop assistant. Commands always start with a wake word "
-    "like Alexa or Nova, followed by an action. Examples: 'Alexa open Chrome', "
-    "'Alexa search YouTube for music', 'Alexa open WhatsApp', "
-    "'Alexa send message to mom', 'Alexa take a screenshot', 'Alexa lock the screen'."
+    "Voice commands for a desktop assistant named Privacy68. Commands always start with a wake word "
+    "like Privacy 68, Privacy68, Nova, or Alexa, followed by an action. Examples: 'Privacy 68 open Chrome', "
+    "'Privacy 68 search YouTube for music', 'Privacy 68 open WhatsApp', "
+    "'Privacy 68 send message to mom', 'Privacy 68 take a screenshot', 'Privacy 68 lock the screen'."
 )
 
 # Wake word configuration

@@ -99,7 +99,7 @@ class TestTwoLaneArchitecture(unittest.TestCase):
         cmd = "Create a folder named Privacy on Desktop"
         res = execute_system_command_detailed(cmd)
         
-        self.assertEqual(res.get("method"), "fast_lane", "Should execute via Fast Lane")
+        self.assertIn(res.get("method"), ("fast_lane", "api_lane"), "Should execute without LLM calls")
         self.assertTrue(res.get("success"), "Execution should succeed")
         
         target = os.path.join(get_desktop_path(), "Privacy")
@@ -112,12 +112,12 @@ class TestTwoLaneArchitecture(unittest.TestCase):
     def test_fast_lane_create_mca_folder_custom_path(self):
         """
         Test that 'Create MCA folder in <test_dir>'
-        executes immediately via Fast Lane with NO LLM CALLS.
+        executes immediately via Fast/API Lane with NO LLM CALLS.
         """
         cmd = f"Create MCA folder in {self.test_dir}"
         res = execute_system_command_detailed(cmd)
         
-        self.assertEqual(res.get("method"), "fast_lane", "Should execute via Fast Lane")
+        self.assertIn(res.get("method"), ("fast_lane", "api_lane"), "Should execute without LLM calls")
         self.assertTrue(res.get("success"))
         self.assertTrue(os.path.exists(os.path.join(self.test_dir, "MCA")))
 

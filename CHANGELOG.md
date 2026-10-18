@@ -5,6 +5,31 @@ Versioning follows [Semantic Versioning](https://semver.org/) — `MAJOR.MINOR.P
 
 ---
 
+## [v1.3.0] — 2026-10-18
+
+### ✨ New Features & Architecture Upgrades
+
+#### ⚡ 3-Lane Command Architecture (`actions/router.py`, `actions/fast_lane.py`, `actions/api_lane.py`)
+- **Fast Lane (Deterministic)**: 100% local, zero-latency execution for all known system commands, application automations, and media controls without contacting an LLM.
+- **API Lane (Cloud Reasoning)**: Fast cloud intelligence using OpenAI or Groq when complex questions, coding tasks, or open-ended reasoning are requested.
+- **Local LLM Lane (Private Fallback)**: Full offline privacy via local Ollama models with automatic fallback.
+
+#### 🎯 ML Intent Classification & Parameter Extraction (`actions/intent_classifier.py`, `actions/param_extractor.py`)
+- Dedicated machine-learning intent classification pipeline with unified command mapping.
+- Dedicated parameter extractor trained to 100% accuracy on standard system entities (applications, URLs, paths, numbers).
+- Drastically streamlined Fast Lane codebase (-640 lines of brittle regex) in favor of high-speed vector models.
+
+#### 🎙️ Robust Wake Word & Speech-to-Text (`speech/streamer.py`, `config.py`)
+- **Phonetic Alias Matching**: Broad phonetic coverage for *"Privacy 68"*, *"Privacy sixty eight"*, *"Privacy six eight"*, *"Privacy 6 8"*, and digit-separated variations.
+- **2-Gram Multi-Word Fuzzy Matching**: Accommodates natural speaking cadence, varied accents, and different microphone responses.
+- **Audio Pre-processing Upgrades**: Audio peak normalization, lowered idle-scan RMS threshold (from 0.018 to 0.005), and relaxed VAD gating ensure quiet or low-gain microphones trigger reliably.
+- **Whisper Decoder Priming**: Expanded hotwords and initial prompts to prevent Whisper from dropping numeric/alphabetic variations.
+
+#### 📱 Mobile Web Remote Server (`server/remote_server.py`)
+- Built-in lightweight local web remote allowing mobile devices on the same Wi-Fi network to control PRIVACY68 with QR code pairing.
+
+---
+
 ## [v1.2.0] — 2026-10-12
 
 ### ✨ New Features
