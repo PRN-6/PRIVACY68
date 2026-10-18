@@ -74,8 +74,28 @@ def _handle_system_shortcuts(low: str) -> dict | None:
     if low in {"git pull", "pull latest changes", "pull repo", "pull from github"}:
         return {"success": True, "tool": "dev_tools_git_pull", "message": dev_tools.git_pull()}
 
-    if any(q in low for q in ("push my code", "push code", "push to my repo", "push to repo", "push to github", "git push", "push changes")):
-        return {"success": True, "tool": "dev_tools_git_push", "message": dev_tools.git_push_workflow(commit_message="Updated via Privacy68 voice assistant")}
+    if any(q in low for q in (
+        "push my current project changes to github",
+        "git push my current project changes to github",
+        "git push my changes to github",
+        "push changes to github",
+        "push my code to github",
+        "commit and push my changes to github",
+        "commit and push my changes",
+        "commit and push",
+        "git commit and push",
+        "push my code",
+        "push code to github",
+        "push to my repo",
+        "push to repo",
+        "push to github",
+        "git push",
+        "push changes",
+        "push current project",
+        "push project",
+    )):
+        res = dev_tools.smart_git_push_workflow()
+        return {"success": res.get("success", False), "tool": "dev_tools_smart_git_push", "message": res.get("message", "Pushed changes to GitHub.")}
 
     if low in {"git commit", "commit my code", "commit changes"}:
         c_res = dev_tools.git_commit("Committed via Privacy68 voice command")

@@ -179,6 +179,12 @@ class WindowManager:
             "spotify": {"processes": ["spotify.exe"], "titles": ["spotify"]},
             "discord": {"processes": ["discord.exe"], "titles": ["discord"]},
             "whatsapp": {"processes": ["whatsapp.exe"], "titles": ["whatsapp"]},
+            "antigravity": {"processes": ["antigravity ide.exe", "antigravity.exe"], "titles": ["antigravity"]},
+            "antigravity ide": {"processes": ["antigravity ide.exe", "antigravity.exe"], "titles": ["antigravity"]},
+            "cursor": {"processes": ["cursor.exe"], "titles": ["cursor"]},
+            "windsurf": {"processes": ["windsurf.exe"], "titles": ["windsurf"]},
+            "pycharm": {"processes": ["pycharm64.exe", "pycharm.exe"], "titles": ["pycharm"]},
+            "intellij": {"processes": ["idea64.exe", "idea.exe"], "titles": ["intellij"]},
         }
 
         # Check visible windows with app rules

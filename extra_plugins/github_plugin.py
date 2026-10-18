@@ -98,6 +98,11 @@ class GitHubPlugin(BasePlugin):
                 "push to github",
                 "push my code to github",
                 "push repo to github",
+                "git push",
+                "git commit and push",
+                "commit and push",
+                "git push my current project",
+                "git push my current project changes to github",
             ],
             "github.status": [
                 "github status",
@@ -158,10 +163,10 @@ class GitHubPlugin(BasePlugin):
         return webbrowser.open(url)
 
     def push_current_repo(self, text: str = "") -> bool:
-        logger.info("[GITHUB] Triggering git push workflow")
-        msg = dev_tools.git_push_workflow(commit_message="Updated via Privacy68 voice assistant")
-        logger.info(f"[GITHUB] Push result: {msg}")
-        return True
+        logger.info("[GITHUB] Triggering smart git push workflow")
+        res = dev_tools.smart_git_push_workflow()
+        logger.info(f"[GITHUB] Push result: {res}")
+        return res.get("success", False)
 
     def check_repo_status(self, text: str = "") -> bool:
         logger.info("[GITHUB] Checking repo status")
