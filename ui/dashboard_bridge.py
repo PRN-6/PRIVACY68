@@ -170,6 +170,8 @@ class DashboardAPI:
     def get_plugins(self) -> List[Dict[str, Any]]:
         """Returns a list of all installed plugins with complete command and category metadata."""
         try:
+            # Hot-detect any external plugins added, modified, or dropped into folders
+            plugin_manager.check_and_reload_if_changed()
             plugins = plugin_manager.get_all_plugins()
             result = []
             for p in plugins:
@@ -305,7 +307,8 @@ class DashboardAPI:
             if success:
                 return {"success": True, "message": f"Plugin installed successfully: {os.path.basename(file_path)}"}
             else:
-                return {"success": False, "message": "Could not install plugin file."}
+                err_msg = getattr(plugin_manager, "last_error", None) or "Could not install plugin file."
+                return {"success": False, "message": err_msg}
         except Exception as e:
             logger.error(f"Error installing plugin file: {e}")
             return {"success": False, "message": str(e)}

@@ -6,7 +6,7 @@ import ctypes
 import subprocess
 from typing import Callable, Dict, List, Optional
 from plugins.base_plugin import BasePlugin
-from plugins.win_keys import kill_process
+from plugins.win_utils import kill_process
 
 logger = logging.getLogger("PRIVACY68.Plugin.PPT")
 user32 = ctypes.windll.user32
@@ -132,11 +132,13 @@ def _find_ppt_window() -> Optional[int]:
                 t_lower = title.lower()
                 if "powerpoint" in t_lower or "slide show" in t_lower:
                     found_windows.append((hwnd, title))
-        return True
-
-    WNDENUMPROC = ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.c_int, ctypes.c_int)
-    proc = WNDENUMPROC(enum_windows_proc)
-    user32.EnumWindows(proc, 0)
+    try:
+        from ctypes import wintypes
+        WNDENUMPROC = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
+        proc = WNDENUMPROC(enum_windows_proc)
+        user32.EnumWindows(proc, 0)
+    except Exception as e:
+        logger.debug(f"EnumWindows error: {e}")
 
     # 1. Check for active full-screen Slide Show window first
     for hwnd, title in found_windows:
@@ -205,6 +207,8 @@ class PPTPlugin(BasePlugin):
     version = "1.0.0"
     author = "PRIVACY68 Core"
     is_builtin = False
+    category = "Productivity"
+    plugin_type = "Office & Slides"
 
     @property
     def actions(self) -> Dict[str, Callable[[str], bool]]:

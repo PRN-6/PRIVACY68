@@ -60,12 +60,48 @@ class PluginManager:
         self._reload_listeners: List[Callable[[], None]] = []
         self._fast_intents_cache: Optional[Dict[str, List[str]]] = None
         self._fast_intents_phrase_map: Optional[Dict[str, str]] = None
+        self.last_error: str = ""
+        self._folder_snapshots: Dict[str, float] = {}
         
         # Discover plugins from both sources
         self.discover_plugins()
         
         # Load user configuration
         self._load_config()
+
+    def _get_snapshot(self) -> Dict[str, float]:
+        """Collects file modification timestamps across all scanned plugin directories."""
+        snapshot = {}
+        dirs_to_check = [BUILTIN_PLUGINS_DIR]
+        extra_plugins_dir = os.path.abspath(os.path.join(BUILTIN_PLUGINS_DIR, "..", "extra_plugins"))
+        if os.path.exists(extra_plugins_dir):
+            dirs_to_check.append(extra_plugins_dir)
+        if os.path.exists(USER_PLUGINS_DIR):
+            dirs_to_check.append(USER_PLUGINS_DIR)
+
+        for d in dirs_to_check:
+            try:
+                for f in os.listdir(d):
+                    if f.endswith(".py"):
+                        p = os.path.join(d, f)
+                        snapshot[p] = os.path.getmtime(p)
+            except Exception:
+                continue
+        return snapshot
+
+    def check_and_reload_if_changed(self) -> bool:
+        """
+        Hot-detects if any plugin files were added, deleted, or modified on disk.
+        Automatically re-indexes without requiring an application restart.
+        """
+        current_snapshot = self._get_snapshot()
+        if current_snapshot != self._folder_snapshots:
+            logger.info("Plugin directory modification detected. Hot-reloading all plugins...")
+            self.discover_plugins()
+            self._load_config()
+            self.notify_reload()
+            return True
+        return False
 
     def discover_plugins(self):
         """Discovers both Built-in and User AppData plugins."""
@@ -74,7 +110,7 @@ class PluginManager:
         # 1. Load Built-In Shipped Plugins
         self._scan_directory(BUILTIN_PLUGINS_DIR, is_builtin=True)
 
-        # 2. Load Extra Shipped Plugins (e.g. PowerPoint, WhatsApp, Notepad, Brave)
+        # 2. Load Extra Shipped Plugins (e.g. PowerPoint, WhatsApp, Notepad, Brave, GitHub)
         extra_plugins_dir = os.path.abspath(os.path.join(BUILTIN_PLUGINS_DIR, "..", "extra_plugins"))
         if os.path.exists(extra_plugins_dir):
             self._scan_directory(extra_plugins_dir, is_builtin=True)
@@ -83,6 +119,9 @@ class PluginManager:
         if os.path.exists(USER_PLUGINS_DIR):
             self._scan_directory(USER_PLUGINS_DIR, is_builtin=False)
 
+        # Update snapshot
+        self._folder_snapshots = self._get_snapshot()
+
     def _scan_directory(self, folder_path: str, is_builtin: bool = False):
         """Scans a directory for .py plugin files."""
         if not os.path.exists(folder_path):
@@ -90,7 +129,7 @@ class PluginManager:
 
         ignore_files = [
             "base_plugin.py", "manager.py", "profile_manager.py", "win_utils.py",
-            "__init__.py", "boilerplate_plugin.py"
+            "win_keys.py", "__init__.py", "boilerplate_plugin.py"
         ]
 
         for filename in os.listdir(folder_path):
@@ -99,7 +138,7 @@ class PluginManager:
                 file_path = os.path.join(folder_path, filename)
                 self._load_plugin_file(module_name, file_path, is_builtin=is_builtin)
 
-    def _load_plugin_file(self, module_name: str, file_path: str, is_builtin: bool = False):
+    def _load_plugin_file(self, module_name: str, file_path: str, is_builtin: bool = False) -> Optional[BasePlugin]:
         """Dynamically loads and registers a plugin class from a file."""
         try:
             prefix = "builtin" if is_builtin else "user"
@@ -118,8 +157,11 @@ class PluginManager:
                         plugin_instance.is_builtin = is_builtin
                         self.plugins[plugin_instance.id] = plugin_instance
                         logger.info(f"Loaded {'[Built-In]' if is_builtin else '[Custom]'} Plugin: '{plugin_instance.name}' ({plugin_instance.id})")
+                        return plugin_instance
         except Exception as e:
+            self.last_error = f"Error loading plugin from {os.path.basename(file_path)}: {e}"
             logger.error(f"Error loading plugin from {file_path}: {e}")
+        return None
 
     def _load_config(self):
         if os.path.exists(CONFIG_PATH):
@@ -230,17 +272,60 @@ class PluginManager:
         return False
 
     def install_plugin_from_file(self, source_path: str) -> bool:
-        """Installs a .py plugin or extracts a .zip into the User AppData folder."""
+        """Installs a .py plugin or extracts a .zip into the User AppData folder and validates activation."""
         try:
             if not os.path.exists(source_path):
+                self.last_error = f"Source file does not exist: {source_path}"
                 return False
 
+            base_name = os.path.basename(source_path)
+            dest_file = os.path.join(USER_PLUGINS_DIR, base_name)
+
             if source_path.endswith(".py"):
-                dest_file = os.path.join(USER_PLUGINS_DIR, os.path.basename(source_path))
+                # Snapshot existing plugin IDs
+                pre_plugins = set(self.plugins.keys())
+
                 shutil.copy2(source_path, dest_file)
                 self.discover_plugins()
                 self._load_config()
+
+                # Verify that the plugin actually loaded successfully
+                post_plugins = set(self.plugins.keys())
+                new_ids = post_plugins - pre_plugins
+
+                # If it updated an existing plugin ID or added a new one, verify file is registered
+                loaded = False
+                for pid, p in self.plugins.items():
+                    if not p.is_builtin and (pid in new_ids or pid in base_name.lower()):
+                        loaded = True
+                        p.is_enabled = True
+                        break
+
+                if not loaded and post_plugins == pre_plugins:
+                    # Test if any custom plugin in user directory matches
+                    module_name = base_name[:-3]
+                    p_inst = self._load_plugin_file(module_name, dest_file, is_builtin=False)
+                    if p_inst:
+                        p_inst.is_enabled = True
+                        self.plugins[p_inst.id] = p_inst
+                        loaded = True
+
+                if not loaded:
+                    # Installation failed to produce a valid working BasePlugin
+                    if os.path.exists(dest_file):
+                        try:
+                            os.remove(dest_file)
+                        except Exception:
+                            pass
+                    self.discover_plugins()
+                    if not self.last_error:
+                        self.last_error = f"File '{base_name}' did not define a valid BasePlugin subclass."
+                    logger.error(f"[PLUGIN_INSTALL] {self.last_error}")
+                    return False
+
+                self._save_config()
                 self.notify_reload()
+                logger.info(f"[PLUGIN_INSTALL] Successfully installed and activated plugin from {base_name}")
                 return True
 
             elif source_path.endswith(".zip"):
@@ -248,9 +333,11 @@ class PluginManager:
                     zip_ref.extractall(USER_PLUGINS_DIR)
                 self.discover_plugins()
                 self._load_config()
+                self._save_config()
                 self.notify_reload()
                 return True
         except Exception as e:
+            self.last_error = f"Installation error: {e}"
             logger.error(f"Failed to install plugin into AppData from {source_path}: {e}")
         return False
 
