@@ -124,9 +124,8 @@
         <section class="content-section" id="terminal">
             <div class="section-title-wrap">
                 <span class="section-index">[ 03 // LIVE TERMINAL SIMULATOR ]</span>
-                <h2 class="section-heading">Test Dual-Lane Intelligence</h2>
-                <p class="section-desc">Click any voice prompt to watch PRIVACY68 route between Fast-Lane (<2ms) and
-                        Ollama AI in real time.</p>
+                <h2 class="section-heading">Test 3-Lane Intelligence</h2>
+                <p class="section-desc">Click any voice prompt to watch PRIVACY68 route between Fast-Lane (<2ms), Cloud API, and Local Ollama AI in real time.</p>
             </div>
 
             <div class="terminal-container">
@@ -134,19 +133,22 @@
                 <div class="prompt-chips">
                     <span class="chips-label">&gt; SELECT VOICE INPUT:</span>
                     <button class="cmd-chip active" data-cmd="Privacy68, open Google Chrome" data-lane="FAST_LANE"
-                        data-action="Launching Chrome Browser (Native API)" data-conf="0.98">"Privacy68, open
+                        data-action="Launching Chrome Browser (Native Win32)" data-conf="1.00">"Privacy68, open
                         Chrome"</button>
                     <button class="cmd-chip" data-cmd="Privacy68, launch WhatsApp" data-lane="FAST_LANE"
-                        data-action="Executing WhatsApp Desktop Protocol" data-conf="0.99">"Privacy68, launch
+                        data-action="Executing WhatsApp Desktop Protocol" data-conf="1.00">"Privacy68, launch
                         WhatsApp"</button>
-                    <button class="cmd-chip" data-cmd="Privacy68, type meeting notes on notepad" data-lane="FAST_LANE"
-                        data-action="Simulating Direct Keyboard Input" data-conf="0.94">"Privacy68, type notes"</button>
+                    <button class="cmd-chip" data-cmd="Privacy68, explain how neural networks work" data-lane="API_LANE"
+                        data-action="Cloud Reasoning (OpenAI / Groq) → Spoken Synthesis" data-conf="0.99">"Privacy68, explain neural networks"</button>
                     <button class="cmd-chip" data-cmd="Privacy68, search what is quantum computing on google"
-                        data-lane="OLLAMA_AI" data-action="Ollama Qwen 2.5 → Resolved to WebSearchSkill"
-                        data-conf="0.96">"Privacy68, search quantum physics"</button>
+                        data-lane="API_LANE" data-action="Cloud WebSearch → Synthesized Live Summary"
+                        data-conf="0.98">"Privacy68, search quantum physics"</button>
                     <button class="cmd-chip" data-cmd="Privacy68, mute the system volume right now"
-                        data-lane="FAST_LANE" data-action="Win32 Audio API → Volume Set 0%" data-conf="0.97">"Privacy68,
+                        data-lane="FAST_LANE" data-action="Win32 Audio API → Volume Set 0%" data-conf="1.00">"Privacy68,
                         mute volume"</button>
+                    <button class="cmd-chip" data-cmd="Privacy68, write offline bash backup script"
+                        data-lane="OLLAMA_AI" data-action="Local Air-Gapped Ollama (Qwen2.5) → Code Generator"
+                        data-conf="0.95">"Privacy68, offline script generation"</button>
                 </div>
 
                 <!-- Retro CRT Terminal Window -->
@@ -221,10 +223,9 @@
                         <span class="spec-num">[ 03 ]</span>
                         <span class="spec-icon"><i data-lucide="git-branch"></i></span>
                     </div>
-                    <h3 class="spec-title">Dual-Lane Decision Core</h3>
-                    <p class="spec-body">TF-IDF vector matching resolves 80% of routine actions in &lt;2ms. Complex
-                        reasoning dynamically falls through to Ollama AI.</p>
-                    <div class="spec-tag">HYBRID ENGINE</div>
+                    <h3 class="spec-title">3-Lane Decision Engine</h3>
+                    <p class="spec-body">Fast-Lane (&lt;2ms, 0% AI), Cloud API Lane (OpenAI/Groq), and Local LLM (Ollama) with 100% accurate vector classification.</p>
+                    <div class="spec-tag">TRI-LANE CORE</div>
                 </div>
 
                 <!-- Spec Card 4 -->

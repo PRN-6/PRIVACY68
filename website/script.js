@@ -183,11 +183,14 @@ function initTerminalSimulator() {
             if (termInput) termInput.innerHTML = `&gt; [USER SPOKE] "${cmd}"`;
             
             if (lane === 'FAST_LANE') {
-                if (termLane) termLane.innerHTML = `&gt; [DUAL-LANE ROUTER] <span style="color:#10b981;">⚡ FAST LANE ROUTED</span> (Cosine Conf: ${conf} &gt;= 0.78)`;
+                if (termLane) termLane.innerHTML = `&gt; [3-LANE ROUTER] <span style="color:#10b981;">⚡ FAST LANE ROUTED</span> (100% ML Match, Zero AI)`;
                 if (termAction) termAction.innerHTML = `&gt; [ACTION SUCCESS] ⚡ ${action} in 1.2ms`;
+            } else if (lane === 'API_LANE') {
+                if (termLane) termLane.innerHTML = `&gt; [3-LANE ROUTER] <span style="color:#38bdf8;">☁️ CLOUD API LANE</span> (OpenAI / Groq Fast Cloud Intelligence)`;
+                if (termAction) termAction.innerHTML = `&gt; [ACTION SUCCESS] ☁️ ${action} in 420ms`;
             } else {
-                if (termLane) termLane.innerHTML = `&gt; [DUAL-LANE ROUTER] <span style="color:#f59e0b;">🧠 OLLAMA FALLTHROUGH</span> (Complex Request Routed to Local LLM)`;
-                if (termAction) termAction.innerHTML = `&gt; [ACTION SUCCESS] 🧠 ${action} in 42ms`;
+                if (termLane) termLane.innerHTML = `&gt; [3-LANE ROUTER] <span style="color:#f59e0b;">🔒 LOCAL OLLAMA AIR-GAP</span> (100% Private Offline Inference)`;
+                if (termAction) termAction.innerHTML = `&gt; [ACTION SUCCESS] 🧠 ${action} in 160ms`;
             }
 
             setTimeout(() => {

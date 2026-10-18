@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Documentation // PRIVACY68 Architecture & Manual</title>
     <meta name="description"
-        content="Complete documentation for PRIVACY68 autonomous local voice assistant, architecture details, voice commands, and configuration manual.">
+        content="Complete documentation for PRIVACY68 autonomous local voice assistant: 3-Lane architecture, voice biometrics, microphone diagnostics, hardware acceleration, and voice trigger reference.">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -63,10 +63,9 @@
         <!-- Main Documentation Section -->
         <main class="content-section">
             <div class="section-title-wrap">
-                <span class="section-index">[ 02 // SYSTEM DOCUMENTATION ]</span>
-                <h2 class="section-heading">PRIVACY68 Architecture & User Guide</h2>
-                <p class="section-desc">Technical specification, speech pipeline, semantic routing core, and complete
-                    voice trigger reference.</p>
+                <span class="section-index">[ 02 // SYSTEM SPECIFICATIONS & MANUAL ]</span>
+                <h2 class="section-heading">PRIVACY68 Comprehensive Guide</h2>
+                <p class="section-desc">Technical specification of the 3-Lane AI routing engine, biometric voice lock calibration, microphone diagnostics, and hardware acceleration.</p>
             </div>
 
             <div class="docs-wrapper">
@@ -74,13 +73,14 @@
                 <aside class="docs-sidebar">
                     <div class="docs-menu-title">// NAVIGATION INDEX</div>
                     <ul class="docs-nav-list">
-                        <li><a href="#arch-overview" class="docs-nav-link active">01. Architecture Overview</a></li>
-                        <li><a href="#speech-pipeline" class="docs-nav-link">02. Speech & VAD Pipeline</a></li>
-                        <li><a href="#dual-router" class="docs-nav-link">03. Dual-Lane Router</a></li>
-                        <li><a href="#voice-lock" class="docs-nav-link">04. CAM++ Voice Authentication</a></li>
-                        <li><a href="#plugin-system" class="docs-nav-link">05. Plugin Architecture</a></li>
-                        <li><a href="#command-reference" class="docs-nav-link">06. Voice Command Reference</a></li>
-                        <li><a href="#config-reference" class="docs-nav-link">07. Configuration File</a></li>
+                        <li><a href="#arch-overview" class="docs-nav-link active">01. 3-Lane Architecture</a></li>
+                        <li><a href="#speech-pipeline" class="docs-nav-link">02. Speech & VAD Engine</a></li>
+                        <li><a href="#mic-diagnostics" class="docs-nav-link">03. Microphone Setup & Testing</a></li>
+                        <li><a href="#voice-lock" class="docs-nav-link">04. Biometric Voice Auth</a></li>
+                        <li><a href="#performance-boost" class="docs-nav-link">05. Hardware & Performance</a></li>
+                        <li><a href="#plugin-system" class="docs-nav-link">06. Plugins & Mobile Remote</a></li>
+                        <li><a href="#command-reference" class="docs-nav-link">07. Voice Command Reference</a></li>
+                        <li><a href="#config-reference" class="docs-nav-link">08. Configuration File</a></li>
                     </ul>
                 </aside>
 
@@ -91,81 +91,102 @@
                     <div class="doc-block" id="arch-overview">
                         <div class="doc-block-header">
                             <i data-lucide="cpu" class="doc-block-icon"></i>
-                            <h3 class="doc-block-title">01 // Architecture Overview</h3>
+                            <h3 class="doc-block-title">01 // The 3-Lane Architecture Overview</h3>
                         </div>
                         <p class="doc-text">
-                            PRIVACY68 is a zero-latency, 100% offline autonomous voice assistant engineered specifically
-                            for Windows desktops. Unlike cloud-dependent voice interfaces, PRIVACY68 executes
-                            speech-to-text, neural speaker authorization, intent classification, and system automation
-                            entirely on local hardware (Nvidia CUDA float16 or CPU int8 fallback).
+                            PRIVACY68 v1.3.0 is built on a high-throughput, privacy-first <strong>3-Lane Command Router</strong>. Every voice command is analyzed locally in real time and directed to the optimal execution path based on complexity, required reasoning depth, and latency tolerance:
                         </p>
                         <div class="doc-code-preview">
-                            +-----------------------------------------------------------------------------------+
-                            | PRIVACY68 SPEECH PIPELINE |
-                            +-----------------------------------------------------------------------------------+
-                            | [Microphone Input 16kHz] --> [Silero VAD (ONNX)] --> [faster-whisper STT] |
-                            | | |
-                            | [Voice Authorized OK] <-- [CAM++ Speaker Verification (512-d)] <+ | | | | | [Semantic
-                                Router]===> (Conf >= 0.78) ==> [Fast-Lane Plugin Execution (<2ms)] | |===> (Conf <
-                                        0.78)==> [Ollama Qwen 2.5 Local AI Fallback] |
-                                        +-----------------------------------------------------------------------------------+
++-----------------------------------------------------------------------------------+
+|                        PRIVACY68 3-LANE DECISION ENGINE                           |
++-----------------------------------------------------------------------------------+
+|  [Microphone Input 16kHz] ---> [Silero Neural VAD] ---> [faster-whisper STT]     |
+|                                                                                   |
+|  [Voice Authorization OK] <--- [ECAPA-TDNN 512-d Speaker Verification]            |
+|                                       │                                           |
+|                     ┌─────────────────┴─────────────────┐                         |
+|                     ▼                                   ▼                         |
+|           [Deterministic Matcher]              [Intent Classifier ML]             |
+|                     │                                   │                         |
+|          ┌──────────┴───────────┬───────────────────────┴──────────┐              |
+|          ▼                      ▼                                  ▼              |
+|   [LANE 1: FAST LANE]   [LANE 2: API LANE]             [LANE 3: LOCAL LLM]        |
+|     Latency: &lt; 2.0ms      Latency: 300ms - 1.2s          Latency: 100ms - 400ms   |
+|     AI Overhead: 0%       OpenAI / Groq Cloud            Ollama Qwen2.5 Local     |
+|     Deterministic Win32   Coding &amp; Complex Reasoning     100% Air-Gapped Fallback |
++-----------------------------------------------------------------------------------+
                         </div>
+                        <p class="doc-text" style="margin-top: 15px;">
+                            This tri-tiered structure guarantees that routine desktop controls (volume, app launching, window management) execute with near-zero latency, while open-ended research questions and coding workflows leverage advanced reasoning engines.
+                        </p>
                     </div>
 
                     <!-- Section 02: Speech & VAD Pipeline -->
                     <div class="doc-block" id="speech-pipeline">
                         <div class="doc-block-header">
                             <i data-lucide="mic" class="doc-block-icon"></i>
-                            <h3 class="doc-block-title">02 // Speech & VAD Pipeline</h3>
+                            <h3 class="doc-block-title">02 // Speech &amp; VAD Pipeline Upgrades</h3>
                         </div>
                         <p class="doc-text">
-                            Audio capture utilizes a continuous 16kHz mono circular buffer streaming through Silero VAD
-                            (ONNX runtime). Non-speech acoustic frames are filtered out prior to triggering
-                            faster-whisper inference, reducing CPU usage to under 1.5% during background standby.
+                            Continuous audio capture operates via a high-performance 16kHz circular buffer managed by <code>sounddevice</code> and filtered in real time by <strong>Silero Neural VAD</strong>:
                         </p>
-                        <ul style="margin-left: 20px; color: var(--text-secondary); margin-bottom: 20px;">
-                            <li><strong>VAD Engine:</strong> Silero VAD (ONNX) with 32ms frame chunk processing.</li>
-                            <li><strong>Speech Recognition:</strong> CTranslate2 <code>faster-whisper-medium.en</code>
-                                loaded directly into CUDA GPU memory.</li>
-                            <li><strong>Wake Word Detector:</strong> Custom keyword regex scan ("Alexa" or custom
-                                keyword configured in <code>config.py</code>).</li>
-                            <li><strong>Auto-Correction:</strong> Natural language filter strips filler words (hmmm,
-                                ummm, stutters) prior to router classification.</li>
+                        <ul style="margin-left: 20px; color: var(--text-secondary); margin-bottom: 20px; line-height: 1.8;">
+                            <li><strong>Phonetic Wake Word Expansion:</strong> The engine automatically matches phonetic variations including <code>"Privacy 68"</code>, <code>"Privacy sixty eight"</code>, <code>"Privacy sixty-eight"</code>, <code>"Privacy six eight"</code>, and digit-separated aliases.</li>
+                            <li><strong>2-Gram Multi-Word Fuzzy Matching:</strong> Applies sliding Levenshtein distance across 2-word sequences, accommodating fast speech, regional pronunciation, and low-fidelity headsets.</li>
+                            <li><strong>Dynamic Peak Normalization:</strong> Every audio frame is normalized against its peak amplitude before transcription, ensuring quiet voices trigger as reliably as studio microphones.</li>
+                            <li><strong>Silero VAD Gating:</strong> 80ms audio frames are analyzed by the Silero neural network. Non-speech background noise is rejected, dropping CPU idle usage to under 1.5%.</li>
+                            <li><strong>Whisper Decoder Priming:</strong> Decoder token probabilities are primed with domain hotwords via <code>config.INITIAL_PROMPT</code> to prevent dropping numerical identifiers.</li>
                         </ul>
                     </div>
 
-                    <!-- Section 03: Dual-Lane Router -->
-                    <div class="doc-block" id="dual-router">
+                    <!-- Section 03: Microphone Setup & Testing -->
+                    <div class="doc-block" id="mic-diagnostics">
                         <div class="doc-block-header">
-                            <i data-lucide="git-merge" class="doc-block-icon"></i>
-                            <h3 class="doc-block-title">03 // Dual-Lane Router</h3>
+                            <i data-lucide="volume-2" class="doc-block-icon"></i>
+                            <h3 class="doc-block-title">03 // Microphone Setup &amp; Audio Diagnostics</h3>
                         </div>
                         <p class="doc-text">
-                            The Semantic Router matches incoming transcribed speech against indexed training phrases
-                            across active skills & plugins using TF-IDF vector embeddings:
+                            Proper microphone levels ensure 100% accurate wake word recognition. Follow these diagnostic steps:
                         </p>
+                        <h4 style="color: var(--accent-cyan); margin: 15px 0 8px 0; font-family: var(--font-retro);">1. Windows Privacy Permissions</h4>
+                        <p class="doc-text">
+                            Ensure Windows allows desktop apps access to the microphone: Navigate to <strong>Settings</strong> &rarr; <strong>Privacy &amp; Security</strong> &rarr; <strong>Microphone</strong>. Toggle <em>"Allow desktop apps to access your microphone"</em> to <strong>ON</strong>.
+                        </p>
+                        <h4 style="color: var(--accent-cyan); margin: 15px 0 8px 0; font-family: var(--font-retro);">2. Audio Level Benchmark</h4>
+                        <p class="doc-text">
+                            Test your microphone's live input sensitivity and background noise floor by running this test command in PowerShell:
+                        </p>
+                        <div class="code-block" style="margin-bottom: 15px;">
+                            <code>python -c "import sounddevice as sd, numpy as np; d=sd.rec(int(16000*3), 16000, 1, 'float32'); sd.wait(); print('Peak:', round(float(np.max(np.abs(d))), 4), 'RMS:', round(float(np.sqrt(np.mean(d**2))), 4))"</code>
+                        </div>
                         <div class="cmd-table-wrap">
                             <table class="cmd-table">
                                 <thead>
                                     <tr>
-                                        <th>ROUTER LANE</th>
-                                        <th>LATENCY</th>
-                                        <th>TRIGGER CRITERIA</th>
-                                        <th>TARGET EXECUTOR</th>
+                                        <th>ACOUSTIC STATE</th>
+                                        <th>ACCEPTABLE RMS</th>
+                                        <th>ACCEPTABLE PEAK</th>
+                                        <th>RECOMMENDED ACTION</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <tr>
-                                        <td><strong>FAST-LANE</strong></td>
-                                        <td><code>&lt; 2.0 ms</code></td>
-                                        <td>Cosine Similarity Score &gt;= 0.78</td>
-                                        <td>Direct Python Plugin Method Execution</td>
+                                        <td><strong>Room Silence</strong></td>
+                                        <td><code>&lt; 0.005</code></td>
+                                        <td><code>&lt; 0.015</code></td>
+                                        <td>Optimal noise floor. VAD will remain in low-power idle scan.</td>
                                     </tr>
                                     <tr>
-                                        <td><strong>OLLAMA AI</strong></td>
-                                        <td><code>~120.0 ms</code></td>
-                                        <td>Cosine Similarity Score &lt; 0.78 (Complex Intent)</td>
-                                        <td>Local LLM (Qwen2.5) Tool Selection & Parameter Extraction</td>
+                                        <td><strong>Normal Speech</strong></td>
+                                        <td><code>&gt; 0.020</code></td>
+                                        <td><code>&gt; 0.080</code></td>
+                                        <td>Ideal speech level. Whisper transcribes with 99%+ accuracy.</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Low Sensitivity</strong></td>
+                                        <td><code>&lt; 0.010</code></td>
+                                        <td><code>&lt; 0.030</code></td>
+                                        <td>Increase microphone volume to 85% in Windows Sound Control Panel.</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -176,114 +197,233 @@
                     <div class="doc-block" id="voice-lock">
                         <div class="doc-block-header">
                             <i data-lucide="shield-check" class="doc-block-icon"></i>
-                            <h3 class="doc-block-title">04 // CAM++ Voice Authentication</h3>
+                            <h3 class="doc-block-title">04 // Biometric Voice Authentication (Voice Lock)</h3>
                         </div>
                         <p class="doc-text">
-                            PRIVACY68 features an optional neural Voice Lock powered by ModelScope's CAM++ speaker
-                            embedding model (512-dimensional vector space). Voice commands are only executed if cosine
-                            similarity against your enrolled master voice profile meets the similarity threshold
-                            (default: 0.50).
+                            PRIVACY68 features biometric speaker authorization powered by <strong>ECAPA-TDNN / CAM++ neural embeddings</strong> (512-dimensional vector space). When activated, commands are only executed if vocal tract biometrics match the enrolled master profile.
+                        </p>
+                        <h4 style="color: var(--accent-cyan); margin: 15px 0 8px 0; font-family: var(--font-retro);">Enrollment Procedure</h4>
+                        <ol style="margin-left: 20px; color: var(--text-secondary); margin-bottom: 15px; line-height: 1.8;">
+                            <li>Open the PRIVACY68 Control Center (Right-click system tray icon &rarr; <strong>Open Dashboard</strong>).</li>
+                            <li>Navigate to the <strong>Voice Profile / Biometrics</strong> tab.</li>
+                            <li>Click <strong>"Enroll Master Voice"</strong> and recite the 3 calibration phrases clearly.</li>
+                            <li>The model extracts normalized 512-d acoustic embeddings, averages the vector cluster, and stores it in <code>%APPDATA%/PRIVACY68/voice_lock/</code>.</li>
+                        </ol>
+                        <h4 style="color: var(--accent-cyan); margin: 15px 0 8px 0; font-family: var(--font-retro);">Threshold Tuning</h4>
+                        <div class="cmd-table-wrap">
+                            <table class="cmd-table">
+                                <thead>
+                                    <tr>
+                                        <th>THRESHOLD</th>
+                                        <th>SECURITY PROFILE</th>
+                                        <th>BEHAVIOR &amp; ENVIRONMENT</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><code>0.40 – 0.45</code></td>
+                                        <td><strong>Relaxed</strong></td>
+                                        <td>Accommodates head colds, background music, or varying distances from mic.</td>
+                                    </tr>
+                                    <tr>
+                                        <td><code>0.50 (Default)</code></td>
+                                        <td><strong>Balanced</strong></td>
+                                        <td>Rejects unfamiliar speakers while reliably recognizing the owner.</td>
+                                    </tr>
+                                    <tr>
+                                        <td><code>0.65 – 0.75</code></td>
+                                        <td><strong>Strict Biometric</strong></td>
+                                        <td>High security mode. Rejects slight vocal variations and voice recordings.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <p class="doc-text" style="margin-top: 10px;">
+                            <em>Note: Adjusting the threshold in the dashboard takes effect dynamically in memory with zero app restarts.</em>
                         </p>
                     </div>
 
-                    <!-- Section 05: Plugin Architecture -->
+                    <!-- Section 05: Hardware Acceleration -->
+                    <div class="doc-block" id="performance-boost">
+                        <div class="doc-block-header">
+                            <i data-lucide="zap" class="doc-block-icon"></i>
+                            <h3 class="doc-block-title">05 // Hardware Acceleration &amp; Performance Boost</h3>
+                        </div>
+                        <p class="doc-text">
+                            PRIVACY68 automatically detects your host hardware on startup via <code>utils/cuda_manager.py</code> and configures optimal compute precision:
+                        </p>
+                        <div class="cmd-table-wrap">
+                            <table class="cmd-table">
+                                <thead>
+                                    <tr>
+                                        <th>HARDWARE SETUP</th>
+                                        <th>COMPUTE PRECISION</th>
+                                        <th>TRANSCRIPTION TIME</th>
+                                        <th>MEMORY USAGE</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><strong>NVIDIA GPU (CUDA 12)</strong></td>
+                                        <td><code>float16</code> (Tensor Cores)</td>
+                                        <td><code>~120ms – 160ms</code></td>
+                                        <td>~1.4 GB VRAM</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Standard Intel / AMD CPU</strong></td>
+                                        <td><code>int8</code> (AVX2 / AVX-512)</td>
+                                        <td><code>~350ms – 600ms</code></td>
+                                        <td>~1.5 GB RAM</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <h4 style="color: var(--accent-cyan); margin: 15px 0 8px 0; font-family: var(--font-retro);">Zero-Config CUDA Runtime Manager</h4>
+                        <p class="doc-text">
+                            For users with NVIDIA GPUs who do not have the complete CUDA toolkit installed, the built-in <strong>CUDA Manager</strong> allows one-click runtime installation. Simply click <em>"Download &amp; Register CUDA 12 Runtime"</em> in the Dashboard to download the isolated cuBLAS and cuDNN DLLs to your user profile.
+                        </p>
+                    </div>
+
+                    <!-- Section 06: Plugins & Remote Server -->
                     <div class="doc-block" id="plugin-system">
                         <div class="doc-block-header">
                             <i data-lucide="puzzle" class="doc-block-icon"></i>
-                            <h3 class="doc-block-title">05 // Plugin Architecture</h3>
+                            <h3 class="doc-block-title">06 // Plugin Architecture &amp; Mobile Web Remote</h3>
                         </div>
                         <p class="doc-text">
-                            Plugins inherit from <code>BasePlugin</code> and register intent phrases with action
-                            callbacks. Dropping any Python script into <code>%APPDATA%/PRIVACY68/plugins/</code>
-                            automatically re-indexes the Semantic Router without restarting the assistant.
+                            Extend PRIVACY68 with custom desktop automations by inheriting from <code>BasePlugin</code>. Dropping scripts into <code>%APPDATA%/PRIVACY68/plugins/</code> automatically registers new voice intents with hot-reloading:
                         </p>
                         <div class="doc-code-preview">
-                            # Sample PRIVACY68 Plugin structure
-                            from plugins.base_plugin import BasePlugin
+from plugins.base_plugin import BasePlugin
 
-                            class CustomPlugin(BasePlugin):
-                            name = "Custom Automation"
-                            icon = "⚡"
+class MediaControlPlugin(BasePlugin):
+    name = "Custom Media Controller"
+    version = "1.0.0"
 
-                            def register_intents(self) -> dict:
-                            return {
-                            "custom.action": self.execute_action
-                            }
+    def register_intents(self) -> dict:
+        return {"media.next": self.next_track}
 
-                            def get_intent_phrases(self) -> dict:
-                            return {
-                            "custom.action": ["run custom macro", "trigger automation"]
-                            }
+    def get_intent_phrases(self) -> dict:
+        return {"media.next": ["next song", "skip track", "play next"]}
                         </div>
+                        <h4 style="color: var(--accent-cyan); margin: 15px 0 8px 0; font-family: var(--font-retro);">Mobile Web Remote (Local Wi-Fi)</h4>
+                        <p class="doc-text">
+                            Control your computer from your smartphone or tablet! PRIVACY68 hosts an authenticated local server on port <code>8765</code>. Open Dashboard &rarr; <strong>Remote Server</strong>, scan the displayed QR code with your phone camera, and execute voice or text commands across your local network.
+                        </p>
                     </div>
 
-                    <!-- Section 06: Voice Command Reference -->
+                    <!-- Section 07: Voice Command Reference -->
                     <div class="doc-block" id="command-reference">
                         <div class="doc-block-header">
                             <i data-lucide="terminal" class="doc-block-icon"></i>
-                            <h3 class="doc-block-title">06 // Voice Command Reference</h3>
+                            <h3 class="doc-block-title">07 // Complete Voice Command Reference</h3>
                         </div>
-                        <p class="doc-text">Available out-of-the-box voice triggers included in PRIVACY68 core plugins:
-                        </p>
+                        <p class="doc-text">Common commands supported natively out of the box across each execution lane:</p>
                         <div class="table-responsive">
                             <table class="cmd-table">
                                 <thead>
                                     <tr>
-                                        <th>PLUGIN</th>
+                                        <th>CATEGORY</th>
                                         <th>EXAMPLE VOICE COMMANDS</th>
+                                        <th>ROUTING LANE</th>
                                         <th>ACTION PERFORMED</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <tr>
-                                        <td><strong>Google Chrome</strong></td>
-                                        <td><code>"Privacy68, open Google Chrome"</code>, <code>"open new tab"</code></td>
-                                        <td>Launches Chrome, manages tabs & browsing</td>
+                                        <td><strong>System Control</strong></td>
+                                        <td><code>"Privacy68, mute volume"</code>, <code>"set volume 75"</code></td>
+                                        <td><span class="badge-tag" style="background:rgba(0,255,255,0.1); color:var(--accent-cyan);">FAST LANE</span></td>
+                                        <td>Win32 endpoint volume adjustment (<2ms)</td>
                                     </tr>
                                     <tr>
-                                        <td><strong>Windows System</strong></td>
-                                        <td><code>"Privacy68, mute system volume"</code>, <code>"set volume 80%"</code></td>
-                                        <td>Win32 audio & system brightness control</td>
+                                        <td><strong>Display &amp; Power</strong></td>
+                                        <td><code>"Privacy68, lock screen"</code>, <code>"take screenshot"</code></td>
+                                        <td><span class="badge-tag" style="background:rgba(0,255,255,0.1); color:var(--accent-cyan);">FAST LANE</span></td>
+                                        <td>Calls Win32 LockWorkStation / captures screen</td>
                                     </tr>
                                     <tr>
-                                        <td><strong>Brave Browser</strong></td>
-                                        <td><code>"Privacy68, launch brave browser"</code></td>
-                                        <td>Starts private browsing session</td>
+                                        <td><strong>Applications</strong></td>
+                                        <td><code>"Privacy68, open Chrome"</code>, <code>"launch VS Code"</code></td>
+                                        <td><span class="badge-tag" style="background:rgba(0,255,255,0.1); color:var(--accent-cyan);">FAST LANE</span></td>
+                                        <td>Resolves binary path and launches process</td>
                                     </tr>
                                     <tr>
-                                        <td><strong>PowerPoint</strong></td>
-                                        <td><code>"next slide"</code>, <code>"previous slide"</code>,
-                                            <code>"start presentation"</code></td>
-                                        <td>Controls active PowerPoint slideshow</td>
+                                        <td><strong>Web Navigation</strong></td>
+                                        <td><code>"Privacy68, open YouTube"</code>, <code>"open GitHub"</code></td>
+                                        <td><span class="badge-tag" style="background:rgba(0,255,255,0.1); color:var(--accent-cyan);">FAST LANE</span></td>
+                                        <td>Opens URL directly in default web browser</td>
                                     </tr>
                                     <tr>
-                                        <td><strong>WhatsApp Desktop</strong></td>
-                                        <td><code>"open whatsapp"</code>, <code>"send message to Alex"</code></td>
-                                        <td>Automates desktop messaging</td>
+                                        <td><strong>Windows Settings</strong></td>
+                                        <td><code>"Privacy68, open bluetooth"</code>, <code>"open wifi settings"</code></td>
+                                        <td><span class="badge-tag" style="background:rgba(0,255,255,0.1); color:var(--accent-cyan);">FAST LANE</span></td>
+                                        <td>Direct protocol launch to Windows ms-settings</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Compound Browser</strong></td>
+                                        <td><code>"Privacy68, play Believer on YouTube"</code></td>
+                                        <td><span class="badge-tag" style="background:rgba(0,255,136,0.1); color:var(--accent-green);">FAST / API</span></td>
+                                        <td>Opens browser and triggers automated YouTube playback</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Messaging</strong></td>
+                                        <td><code>"Privacy68, send WhatsApp message to Mom"</code></td>
+                                        <td><span class="badge-tag" style="background:rgba(0,255,255,0.1); color:var(--accent-cyan);">PLUGIN</span></td>
+                                        <td>Resolves contact alias and navigates WhatsApp desktop</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Live Web Search</strong></td>
+                                        <td><code>"Privacy68, search latest space discoveries"</code></td>
+                                        <td><span class="badge-tag" style="background:rgba(255,0,85,0.1); color:var(--accent-magenta);">API LANE</span></td>
+                                        <td>Performs search and synthesizes spoken summary</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>General AI Reasoning</strong></td>
+                                        <td><code>"Privacy68, explain quantum computing simply"</code></td>
+                                        <td><span class="badge-tag" style="background:rgba(255,170,0,0.1); color:var(--accent-amber);">OLLAMA / API</span></td>
+                                        <td>Synthesizes natural spoken answer via LLM</td>
                                     </tr>
                                 </tbody>
                             </table>
                         </div>
                     </div>
 
-                    <!-- Section 07: Configuration Reference -->
+                    <!-- Section 08: Configuration Reference -->
                     <div class="doc-block" id="config-reference">
                         <div class="doc-block-header">
                             <i data-lucide="sliders" class="doc-block-icon"></i>
-                            <h3 class="doc-block-title">07 // Configuration Reference</h3>
+                            <h3 class="doc-block-title">08 // Configuration Reference (`config.py`)</h3>
                         </div>
                         <p class="doc-text">
-                            Modify <code>config.py</code> in the project root to customize hardware device targeting,
-                            wake words, and neural parameters:
+                            Core thresholds, model selections, and device parameters can be fine-tuned in <code>config.py</code>:
                         </p>
                         <div class="doc-code-preview">
-                            # config.py settings snippet
-                            WHISPER_MODEL_NAME = "medium.en" # whisper model size (tiny, base, small, medium, large-v3)
-                            WHISPER_DEVICE = "cuda" # "cuda" or "cpu"
-                            VAD_THRESHOLD = 0.50 # Silero VAD confidence threshold
-                            WAKE_WORD = "Alexa" # Wake word phrase
-                            FAST_LANE_THRESHOLD = 0.78 # Semantic Router similarity cutoff
-                            OLLAMA_MODEL = "qwen2.5:latest" # Local AI LLM model name
+# config.py settings reference
+
+# Audio Stream Settings (16kHz, 1280 samples = 80ms chunks)
+SAMPLE_RATE = 16000
+BLOCK_SIZE  = 1280
+CHANNELS    = 1
+DTYPE       = "float32"
+
+# Silence / Voice Activity Detection (Silero VAD)
+VAD_THRESHOLD           = 0.50      # Speech probability threshold (0.0 to 1.0)
+VAD_IDLE_THRESHOLD      = 0.30      # Lower threshold for wake-word scan gating
+SILENCE_DURATION_CHUNKS = 8         # 8 chunks * 80ms = 0.64s pause for speech cutoff
+SILENCE_THRESHOLD       = 0.008     # Fallback RMS noise floor gate
+
+# Whisper Model Configuration
+WHISPER_MODEL_SIZE   = "medium.en"  # "small.en", "medium.en"
+WHISPER_DEVICE       = "cuda" if _HAS_CUDA else "cpu"
+WHISPER_COMPUTE_TYPE = "float16" if _HAS_CUDA else "int8"
+WHISPER_BEAM_SIZE    = 8            # Wider beam = maximum command accuracy
+
+# Initial Prompt for Whisper Priming
+INITIAL_PROMPT = (
+    "Privacy 68, Privacy68, open chrome, launch vs code, mute volume, "
+    "take screenshot, lock screen, open youtube, next track, play music."
+)
                         </div>
                     </div>
 
@@ -298,14 +438,14 @@
                         data-lucide="github"></i></a>
                 <a href="https://linkedin.com" target="_blank" rel="noreferrer" class="social-icon"><i
                         data-lucide="linkedin"></i></a>
-                <a href="mailto:contact@prinson.dev" class="social-icon"><i data-lucide="mail"></i></a>
+                <a href="mailto:prinsonroyal1@gmail.com" class="social-icon"><i data-lucide="mail"></i></a>
                 <span class="bar-tag">© 2026 PRIVACY68 · PRINSON</span>
             </div>
             <div class="bar-right">
                 <span class="telemetry-item"><span class="dot-indicator"></span><span class="t-label">SYS:</span>
                     ONLINE</span>
                 <span class="telemetry-sep">·</span>
-                <span class="telemetry-item"><span class="t-label">DOCS:</span> v1.1.0</span>
+                <span class="telemetry-item"><span class="t-label">DOCS:</span> v1.3.0</span>
             </div>
         </footer>
 
