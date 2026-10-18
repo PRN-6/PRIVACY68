@@ -27,6 +27,22 @@ LEGACY_CONFIG_PATH = os.path.join(LEGACY_APPDATA_DIR, "plugins_config.json")
 os.makedirs(APPDATA_DIR, exist_ok=True)
 os.makedirs(USER_PLUGINS_DIR, exist_ok=True)
 
+# Ensure plugin paths are in sys.path for external dependencies and relative imports
+if USER_PLUGINS_DIR not in sys.path:
+    sys.path.append(USER_PLUGINS_DIR)
+if BUILTIN_PLUGINS_DIR not in sys.path:
+    sys.path.append(BUILTIN_PLUGINS_DIR)
+
+# Expose BasePlugin and win_utils in sys.modules so plugins importing either
+# `from plugins.base_plugin import BasePlugin` or `from base_plugin import BasePlugin` work seamlessly
+import plugins.base_plugin
+sys.modules["base_plugin"] = plugins.base_plugin
+try:
+    import plugins.win_utils
+    sys.modules["win_utils"] = plugins.win_utils
+except Exception:
+    pass
+
 
 def _migrate_legacy_data():
     """Migrates user plugins & config from the legacy %APPDATA%/SANA folder."""
@@ -141,18 +157,33 @@ class PluginManager:
     def _load_plugin_file(self, module_name: str, file_path: str, is_builtin: bool = False) -> Optional[BasePlugin]:
         """Dynamically loads and registers a plugin class from a file."""
         try:
+            import re
             prefix = "builtin" if is_builtin else "user"
-            unique_mod_name = f"privacy68_plugins_{prefix}_{module_name}"
+            clean_module_name = re.sub(r'[^a-zA-Z0-9_]', '_', module_name)
+            unique_mod_name = f"privacy68_plugins_{prefix}_{clean_module_name}"
             spec = importlib.util.spec_from_file_location(unique_mod_name, file_path)
             if spec and spec.loader:
                 module = importlib.util.module_from_spec(spec)
                 sys.modules[unique_mod_name] = module
                 spec.loader.exec_module(module)
 
+                def _is_base_plugin(cls):
+                    if not inspect.isclass(cls):
+                        return False
+                    if cls is BasePlugin or cls.__name__ == "BasePlugin":
+                        return False
+                    try:
+                        if issubclass(cls, BasePlugin):
+                            return True
+                    except Exception:
+                        pass
+                    # MRO inspection in case of duplicate or differently-imported BasePlugin definitions
+                    return any(b.__name__ == "BasePlugin" for b in getattr(cls, "__mro__", []))
+
                 # Find BasePlugin subclass
                 for attr_name in dir(module):
                     attr = getattr(module, attr_name)
-                    if inspect.isclass(attr) and issubclass(attr, BasePlugin) and attr is not BasePlugin:
+                    if _is_base_plugin(attr):
                         plugin_instance = attr()
                         plugin_instance.is_builtin = is_builtin
                         self.plugins[plugin_instance.id] = plugin_instance
@@ -193,9 +224,11 @@ class PluginManager:
         return actions
 
     def get_all_plugins(self) -> List[BasePlugin]:
+        self.check_and_reload_if_changed()
         return list(self.plugins.values())
 
     def get_plugin(self, plugin_id: str) -> Optional[BasePlugin]:
+        self.check_and_reload_if_changed()
         return self.plugins.get(plugin_id)
 
     def set_plugin_enabled(self, plugin_id: str, is_enabled: bool):
@@ -232,6 +265,7 @@ class PluginManager:
 
     def get_active_fast_intents(self) -> Dict[str, List[str]]:
         """Aggregates all fast-lane training phrases from enabled plugins (cached)."""
+        self.check_and_reload_if_changed()
         if self._fast_intents_cache is None:
             self._rebuild_fast_intents_cache()
         return self._fast_intents_cache
@@ -240,12 +274,14 @@ class PluginManager:
         """O(1) instant lookup for plugin fast-lane phrases."""
         if not phrase:
             return None
+        self.check_and_reload_if_changed()
         if self._fast_intents_phrase_map is None:
             self._rebuild_fast_intents_cache()
         return self._fast_intents_phrase_map.get(phrase.strip().lower())
 
     def get_active_system_descriptions(self) -> str:
         """Aggregates tool descriptions for Ollama AI system prompt."""
+        self.check_and_reload_if_changed()
         descriptions = []
         for plugin in self.plugins.values():
             if plugin.is_enabled:
@@ -255,6 +291,7 @@ class PluginManager:
 
     def get_active_tool_definitions(self) -> List[Dict[str, Any]]:
         """Aggregates all Hermes tool schemas from enabled plugins."""
+        self.check_and_reload_if_changed()
         tools = []
         for plugin in self.plugins.values():
             if plugin.is_enabled:
@@ -266,6 +303,7 @@ class PluginManager:
 
     def execute_action(self, action_name: str, text: str) -> bool:
         """Finds the plugin that owns this action and executes it."""
+        self.check_and_reload_if_changed()
         for plugin in self.plugins.values():
             if plugin.is_enabled and action_name in plugin.actions:
                 return plugin.execute(action_name, text)
