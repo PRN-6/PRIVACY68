@@ -1,4 +1,4 @@
-# 🌌 PRIVACY68 Voice Assistant v1.3.0
+# 🌌 PRIVACY68 Voice Assistant v1.4.0
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-yellow.svg)](LICENSE)
 [![Security Policy](https://img.shields.io/badge/security-Policy-blue.svg)](SECURITY.md)
@@ -6,7 +6,7 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-3776AB.svg?logo=python&logoColor=white)](https://www.python.org/)
 [![Platform: Windows 10/11](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-0078D6.svg?logo=windows&logoColor=white)](#)
 [![Privacy First](https://img.shields.io/badge/privacy-100%25%20Local-brightgreen.svg)](#)
-[![Release: v1.3.0](https://img.shields.io/badge/release-v1.3.0-blueviolet.svg)](https://github.com/PRN-6/PRIVACY68/releases)
+[![Release: v1.4.0](https://img.shields.io/badge/release-v1.4.0-blueviolet.svg)](https://github.com/PRN-6/PRIVACY68/releases)
 
 **PRIVACY68** is an ultra-fast, local-first AI voice assistant and autonomous desktop automation engine for Windows. Engineered for extreme speed, 100% zero-cloud voice privacy, and biometric security, it combines **faster-whisper (CTranslate2)**, **Silero Neural VAD**, and an intelligent **3-Lane Routing Architecture** to execute desktop automations in under 2 milliseconds.
 

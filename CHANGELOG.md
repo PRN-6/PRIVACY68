@@ -5,6 +5,25 @@ Versioning follows [Semantic Versioning](https://semver.org/) — `MAJOR.MINOR.P
 
 ---
 
+## [v1.4.0] — 2026-10-19
+
+### ✨ New Features & Ecosystem Upgrades
+
+#### 🔌 Dynamic Plugin Architecture & Hot-Reload (`plugins/manager.py`, `ui/dashboard_bridge.py`)
+- **Runtime Plugin Hot-Reload**: Install, enable, disable, and reload plugins dynamically without restarting the assistant.
+- **Robust External Plugin Resolution**: Added `sys.path` and `sys.modules` aliasing with MRO-based `BasePlugin` resolution to seamlessly support third-party and custom marketplace plugins.
+- **Enhanced Built-In & Marketplace Plugins**: Updated plugins for Google Chrome, Brave, WhatsApp Desktop, GitHub Manager, Notepad, VS Code, and PowerPoint with rich keyboard and window automation.
+
+#### 🛠️ Antigravity IDE Automation & Developer Tools (`computer_use/dev_tools.py`, `actions/executor.py`)
+- **Automated IDE DevTools**: Intelligent window detection, foreground elevation, and native terminal execution for Antigravity IDE and VS Code.
+- **Voice-Triggered Git Workflow**: Dedicated voice automation to launch terminal sessions, stage, commit, and push changes to GitHub directly from voice command (`"push to GitHub"`).
+
+#### 🎙️ Dynamic Wake Word Engine & Profile Reload (`speech/streamer.py`, `plugins/profile_manager.py`)
+- **Dynamic Wake Word Switching**: Switch active wake words (`Jarvis`, `Privacy68`, `Alexa`, `Nova`, `Friday`, etc.) dynamically via dashboard configuration without restarting the application.
+- **Phonetic Alias Expansion**: Added comprehensive phonetic alias matching for Jarvis and voice commands to eliminate transcription variances in noisy environments.
+
+---
+
 ## [v1.3.0] — 2026-10-18
 
 ### ✨ New Features & Architecture Upgrades
