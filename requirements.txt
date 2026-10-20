@@ -1,6 +1,7 @@
 # Speech & Wake Word Detection
 faster-whisper
 onnxruntime-gpu
+huggingface_hub
 
 # Audio Processing
 sounddevice
@@ -28,6 +29,12 @@ comtypes
 pywin32
 qrcode
 psutil
+
+# Clipboard (used for copy/paste automation; degrades gracefully if absent)
+pyperclip
+
+# Testing
+pytest
 
 # Distribution & Build
 pyinstaller

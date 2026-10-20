@@ -265,7 +265,11 @@ pip install -r requirements.txt
 ```
 
 ### 3. Run Tests
-Ensure all 64 automated tests pass:
+Ensure all 63 automated tests pass:
+```powershell
+python -m unittest discover tests
+```
+Or with pytest:
 ```powershell
 pytest
 ```
@@ -278,6 +282,12 @@ python build_exe.py
 Or run the complete two-step build and Inno Setup installer script:
 ```powershell
 .\build.bat
+```
+`build.bat` also syncs `website/downloads/plugins/` from the canonical plugin
+sources so the copies served to users on the website never drift. To sync
+manually:
+```powershell
+python sync_website_plugins.py
 ```
 
 ---

@@ -148,17 +148,27 @@ For users with existing AI subscriptions:
 | `plugins/profile_manager.py` | Manages user settings persisted in `%APPDATA%/PRIVACY68/user_profile.json`. |
 | `plugins/manager.py` | Loads and indexes built-in and custom plugins. |
 | `extra_plugins/whatsapp_plugin.py` | WhatsApp desktop automation (regex-first, zero-Ollama latency). |
-| `tests/test_three_lane_architecture.py` | Unit tests for the 3-lane system (all 30 tests pass). |
+| `tests/test_three_lane_architecture.py` | Unit tests for the 3-lane system. |
+| `sync_website_plugins.py` | Regenerates `website/downloads/plugins/*.py` from canonical plugin sources. |
 
 ---
 
 ## 6. Recent Verification Status
 
-- All **30 unit tests** pass with 0 failures:
+- All **63 unit tests** pass with 0 failures:
   ```powershell
   python -m unittest discover tests
-  # Ran 30 tests in 5.15s -> OK (0 failures)
+  # Ran 63 tests in 17.19s -> OK (0 failures)
   ```
+  `python -m pytest tests/` runs the same 63 tests. Both runners are kept in sync:
+  every test file uses `unittest.TestCase`, so neither runner silently skips a file.
+- **CI**: `.github/workflows/ci.yml` runs the test suite, the website-plugin sync
+  check, and a byte-compile pass on every push to `main`. The release workflow
+  runs the same checks before building.
+- **Website plugin sync**: `python sync_website_plugins.py` copies the canonical
+  plugin sources into `website/downloads/plugins/` so the copies served to end
+  users can never drift from `extra_plugins/` and `plugins/`. Run with
+  `--check` in CI to fail the build if they diverge.
 - **OpenClaw Architecture Cleanup**:
   - `actions/fast_lane.py`: Cut from 893 lines down to 470 lines (removed 420+ lines of brittle regex bloat). Now acts as a lean, deterministic Fast Dispatcher (<2ms).
   - `actions/api_lane.py`: Smart tool selector prunes definitions to top 40 relevant tools (~3,500 tokens), preventing Groq's 7,000 ITPM limit and 128-tool schema ceiling. Runs in ~150-200ms.
@@ -182,7 +192,7 @@ Key Context Summary:
    - Lane 2: API Lane (actions/api_lane.py) — High priority, direct app/web APIs and Cloud LLM Semantic Router (Groq, Gemini, Claude, OpenAI). Zero local RAM/GPU footprint, supports 100% free API keys (Groq/Gemini).
    - Lane 3: Local LLM Lane (actions/router.py) — Optional/opt-in local Ollama model with is_ollama_alive() probe (<1ms non-blocking check).
 2. Audio stream and Whisper STT run 100% locally on the device (privacy guaranteed).
-3. All 30 unit tests currently pass (python -m unittest discover tests).
+3. All 63 unit tests currently pass (python -m unittest discover tests).
 4. Goal: Keep the codebase clean, lean, and optimized. Avoid massive fragile regex or hardcoded word lists when APIs can handle natural language tool-calling effortlessly.
 
 Please acknowledge that you have reviewed the handover and let me know you are ready to continue.
