@@ -59,6 +59,17 @@ jobs:
           $code = $LASTEXITCODE
           $output | Tee-Object -FilePath ci-test-output.log
           Write-Output $output
+          if ($code -ne 0) {
+            # Surface each failing test as a workflow annotation so the
+            # failure is visible in the PR/commit view without downloading
+            # the log artifact.
+            $output | ForEach-Object { $_.ToString() } |
+              Select-String -Pattern '^(FAIL|ERROR):\s+(\S+)' -AllMatches |
+              ForEach-Object {
+                $name = $_.Matches[0].Groups[2].Value
+                Write-Output "::error file=tests/,title=Test failure::$name"
+              }
+          }
           exit $code
 
       # ── 7. Byte-compile every source file (catches syntax errors) ──────────────
