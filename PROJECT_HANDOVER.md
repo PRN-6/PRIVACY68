@@ -141,6 +141,7 @@ For users with existing AI subscriptions:
 | `app.py` | Main entry point for voice loop, tray, dashboard, and remote server. |
 | `config.py` | Audio streamer, VAD, and Whisper configuration. |
 | `actions/executor.py` | Master 3-lane dispatcher (`execute_system_command_detailed`). |
+| `actions/command_planner.py` | Compound Command Planner — splits multi-command utterances into ordered clauses. |
 | `actions/fast_lane.py` | Lane 1: Deterministic OS actions & plugin fast intents. |
 | `actions/api_lane.py` | Lane 2: Direct Web APIs + Cloud LLM Semantic Router (Groq/Gemini/Claude/OpenAI). |
 | `actions/router.py` | Lane 3: Local LLM Lane with non-blocking `is_ollama_alive` socket probe. |
@@ -149,18 +150,20 @@ For users with existing AI subscriptions:
 | `plugins/manager.py` | Loads and indexes built-in and custom plugins. |
 | `extra_plugins/whatsapp_plugin.py` | WhatsApp desktop automation (regex-first, zero-Ollama latency). |
 | `tests/test_three_lane_architecture.py` | Unit tests for the 3-lane system. |
+| `tests/test_command_planner.py` | Unit tests for the Compound Command Planner. |
+| `tests/test_security_guard_wiring.py` | Verifies the 3-tier security model is actually wired into execution. |
 | `sync_website_plugins.py` | Regenerates `website/downloads/plugins/*.py` from canonical plugin sources. |
 
 ---
 
 ## 6. Recent Verification Status
 
-- All **63 unit tests** pass with 0 failures:
+- All **77 unit tests** pass with 0 failures:
   ```powershell
   python -m unittest discover tests
-  # Ran 63 tests in 17.19s -> OK (0 failures)
+  # Ran 77 tests in 13.13s -> OK (0 failures)
   ```
-  `python -m pytest tests/` runs the same 63 tests. Both runners are kept in sync:
+  `python -m pytest tests/` runs the same 77 tests. Both runners are kept in sync:
   every test file uses `unittest.TestCase`, so neither runner silently skips a file.
 - **CI**: `.github/workflows/ci.yml` runs the test suite, the website-plugin sync
   check, and a byte-compile pass on every push to `main`. The release workflow
@@ -191,8 +194,9 @@ Key Context Summary:
    - Lane 1: Fast Lane (actions/fast_lane.py) — Highest priority, deterministic OS tools & plugin fast intents (<2ms, 0% AI, runs on any PC).
    - Lane 2: API Lane (actions/api_lane.py) — High priority, direct app/web APIs and Cloud LLM Semantic Router (Groq, Gemini, Claude, OpenAI). Zero local RAM/GPU footprint, supports 100% free API keys (Groq/Gemini).
    - Lane 3: Local LLM Lane (actions/router.py) — Optional/opt-in local Ollama model with is_ollama_alive() probe (<1ms non-blocking check).
+   - Compound Command Planner (actions/command_planner.py) — Splits multi-command utterances ("mute the volume and open chrome") into ordered clauses and runs each through the 3-lane path. Deterministic, no LLM, conservative: returns None (single command) whenever it is not certain.
 2. Audio stream and Whisper STT run 100% locally on the device (privacy guaranteed).
-3. All 63 unit tests currently pass (python -m unittest discover tests).
+3. All 77 unit tests currently pass (python -m unittest discover tests).
 4. Goal: Keep the codebase clean, lean, and optimized. Avoid massive fragile regex or hardcoded word lists when APIs can handle natural language tool-calling effortlessly.
 
 Please acknowledge that you have reviewed the handover and let me know you are ready to continue.

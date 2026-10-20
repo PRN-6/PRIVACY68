@@ -83,6 +83,44 @@ Unlike cloud-dependent voice assistants that transmit your speech to third-party
 
 ---
 
+## 🔗 Compound Command Planner
+
+The 3-lane classifier returns **one** intent for a whole utterance, so a request
+containing several commands used to collapse into a single action — the rest
+were silently dropped.
+
+The **Compound Command Planner** (`actions/command_planner.py`) splits a
+utterance into ordered clauses and runs each one through the normal 3-lane
+path:
+
+```
+"mute the volume and open chrome"     -> ["mute the volume", "open chrome"]
+"lock the screen, open notepad, and mute audio"
+                                      -> ["lock the screen", "open notepad", "mute audio"]
+"open chrome, brave, and edge"        -> ["open chrome", "open brave", "open edge"]
+```
+
+**How it decides** — English commands are imperative and verb-headed, so a
+conjunction only separates two commands when *both* sides read as a command on
+their own. This is deterministic, needs no LLM, and works offline.
+
+| Rule | Example | Result |
+|------|---------|--------|
+| Lead verb | *"search for cats and dogs"* | Not split — `dogs` is not a command |
+| Lead verb | *"mute the volume and open chrome"* | Split — both sides are commands |
+| Name guard | *"create a folder called Cats and Dogs"* | Not split — `Dogs` is part of the name |
+| Browser workflow | *"open chrome and search for X"* | Kept as one browser action (one window, one search) |
+| Destructive guard | *"delete tmp and build folders"* | Not split — the `and` belongs to the folder name |
+
+Anything the planner is not certain about returns `None` and is handled as a
+single command exactly as before — so ordinary commands are never affected.
+
+**Security**: a sensitive clause (file deletion) is still gated behind the
+3-tier security model's voice confirmation, even inside a compound command.
+The safe clauses run immediately; the destructive one waits for *"yes"*.
+
+---
+
 ## 🎙️ Speech Engine & Wake Word Recognition
 
 PRIVACY68 v1.3.0 features a completely overhauled audio pipeline designed to detect wake words accurately across diverse accents, microphone hardware, and background environments.
@@ -265,7 +303,7 @@ pip install -r requirements.txt
 ```
 
 ### 3. Run Tests
-Ensure all 63 automated tests pass:
+Ensure all 77 automated tests pass:
 ```powershell
 python -m unittest discover tests
 ```

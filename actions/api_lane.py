@@ -18,6 +18,8 @@ import time
 import urllib.request
 import urllib.error
 import urllib.parse
+
+from computer_use.security_guard import security_guard
 from typing import Any, Dict, Optional
 
 from plugins.manager import plugin_manager
@@ -188,14 +190,30 @@ class APILaneRouter:
                     "message": res.get("message", f"Renamed '{src}' to '{dst}'."),
                 }
 
-        # 4. Delete
+        # 4. Delete  (Level 2 SENSITIVE — requires voice confirmation)
         if "delete" in low or "remove" in low:
             slots = param_extractor.extract_slots(text, "delete_item")
             target = slots.get("name")
             path = slots.get("path")
             if target:
                 full_path = os.path.join(resolve_path(path), target) if path else resolve_path(target)
-                res = delete_file(path=full_path)
+                executed, message, details = security_guard.request_execution(
+                    "delete_file",
+                    delete_file,
+                    args=(full_path,),
+                    description=f"delete '{target}'",
+                )
+                if not executed:
+                    # Queued for confirmation — the user must say "yes" to proceed.
+                    return {
+                        "handled": True,
+                        "tool": "delete_file",
+                        "method": "security_guard",
+                        "success": False,
+                        "details": details,
+                        "message": message,
+                    }
+                res = details if isinstance(details, dict) else {}
                 return {
                     "handled": True,
                     "tool": "delete_file",

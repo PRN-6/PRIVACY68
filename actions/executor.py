@@ -38,6 +38,108 @@ def _notify(on_status_callback, on_action_callback, tool: str, success: bool, me
             on_action_callback(tool, success)
 
 
+def _execute_single_clause(clause: str) -> dict | None:
+    """
+    Runs one clause through the normal 3-lane path, without re-entering the
+    compound planner. Returns None if the clause was not handled at all.
+    """
+    fast_result = fast_lane_router.try_execute_fast(clause)
+    if fast_result is None:
+        fast_result = fast_lane_router.try_execute_plugin_fast(clause)
+    if fast_result is not None:
+        return {
+            "success": fast_result.get("success", False),
+            "tool": fast_result.get("tool", "fast_tool"),
+            "method": "fast_lane",
+            "message": fast_result.get("message", f"Executed '{fast_result.get('tool', 'fast_tool')}' via Fast Lane"),
+            "details": fast_result.get("details"),
+        }
+
+    api_result = api_lane_router.try_execute_api(clause)
+    if api_result is not None:
+        return {
+            "success": api_result.get("success", False),
+            "tool": api_result.get("tool", "api_tool"),
+            "method": api_result.get("method", "api_lane"),
+            "message": api_result.get("message", f"Executed '{api_result.get('tool', 'api_tool')}' via API Lane"),
+            "details": api_result.get("details"),
+        }
+
+    plugin_tool = llm_router.route(clause)
+    if plugin_tool:
+        success = manager.execute_skill(plugin_tool, clause)
+        return {
+            "success": success,
+            "tool": plugin_tool,
+            "method": "llm_lane",
+            "message": f"Executed '{plugin_tool}' via Local LLM" if success else f"Failed executing '{plugin_tool}'",
+        }
+
+    return None
+
+
+def _execute_compound_command(text: str, on_action_callback=None, on_status_callback=None) -> dict | None:
+    """
+    Detects and executes a compound utterance ("mute the volume and open
+    chrome") by running each clause in order through the normal 3-lane path.
+
+    Returns None when the utterance is NOT a compound command, so the caller
+    continues with single-command handling exactly as before.
+    """
+    from actions.command_planner import split_compound_command
+
+    clauses = split_compound_command(text)
+    if not clauses:
+        return None
+
+    logger.info(f"[COMPOUND] Executing {len(clauses)} clauses: {clauses}")
+
+    results = []
+    pending_confirmation = False
+    for clause in clauses:
+        result = _execute_single_clause(clause)
+        if result is None:
+            # One clause failed — report the whole thing as a partial success
+            # rather than silently pretending everything worked.
+            results.append({
+                "success": False,
+                "tool": "none",
+                "method": "none",
+                "message": f"Command not recognized: '{clause}'",
+            })
+        else:
+            results.append(result)
+            if result.get("method") == "security_guard":
+                # A sensitive action is queued for voice confirmation. The rest
+                # of the compound still runs — the sensitive one is gated.
+                pending_confirmation = True
+        _notify(
+            on_status_callback,
+            on_action_callback,
+            results[-1].get("tool", "none"),
+            results[-1].get("success", False),
+            results[-1].get("message", ""),
+        )
+
+    succeeded = [r for r in results if r.get("success")]
+    failed = [r for r in results if not r.get("success")]
+    summary = " | ".join(r.get("message", "") for r in results if r.get("message"))
+
+    return {
+        "success": not failed,
+        "tool": "compound_command" if not failed else "compound_command_partial",
+        "method": "compound_planner",
+        "message": summary,
+        "details": {
+            "clauses": clauses,
+            "results": results,
+            "succeeded": len(succeeded),
+            "failed": len(failed),
+            "awaiting_confirmation": pending_confirmation,
+        },
+    }
+
+
 def _handle_system_shortcuts(low: str) -> dict | None:
     """Handles context diagnostics, developer tools, and input controller shortcuts."""
     # RAM Usage
@@ -191,6 +293,16 @@ def execute_system_command_detailed(text: str, on_action_callback=None, on_statu
         }
 
     # ─────────────────────────────────────────────────────────────────────────
+    # 0E. COMPOUND COMMAND PLANNER
+    # "mute the volume and open chrome" -> runs BOTH actions, in order.
+    # Returns None (single command) for anything it is not certain about, so
+    # ordinary commands fall through to the normal 3-lane path unchanged.
+    # ─────────────────────────────────────────────────────────────────────────
+    compound_res = _execute_compound_command(cleaned, on_action_callback, on_status_callback)
+    if compound_res is not None:
+        return compound_res
+
+    # ─────────────────────────────────────────────────────────────────────────
     # LANE 1: FAST LANE (Deterministic OS Tools + Plugin Fast Intents — Instant)
     # Highest Priority! Runs 100% locally on ALL computers (<5ms, zero AI).
     # ─────────────────────────────────────────────────────────────────────────
@@ -225,7 +337,7 @@ def execute_system_command_detailed(text: str, on_action_callback=None, on_statu
         return {
             "success": success,
             "tool": tool_name,
-            "method": "api_lane",
+            "method": api_result.get("method", "api_lane"),
             "message": message,
             "details": api_result.get("details"),
         }
