@@ -12,7 +12,6 @@ import subprocess
 import logging
 import time
 import json
-import shutil
 from typing import Any, Dict, List, Optional
 
 import psutil
@@ -59,8 +58,8 @@ class DevToolsController:
                 if parent == curr:
                     break
                 curr = parent
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"_find_git_root: {e}")
         return None
 
     def detect_active_ide_and_repo(self) -> Optional[Dict[str, Any]]:

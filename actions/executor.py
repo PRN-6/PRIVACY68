@@ -4,7 +4,7 @@ from actions.router import LLMRouter
 from actions.fast_lane import fast_lane_router
 from actions.api_lane import api_lane_router
 from speech.streamer import autocorrect_speech_command
-from computer_use.security_guard import security_guard, ActionRiskLevel
+from computer_use.security_guard import security_guard
 from computer_use.context_inspector import context_inspector
 from computer_use.dev_tools import dev_tools
 from computer_use.macro_engine import macro_engine

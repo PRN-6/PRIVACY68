@@ -1,6 +1,5 @@
 import logging
 import os
-import sys
 from typing import Optional
 from ui.hud import FloatingHUD
 from ui.tray import SystemTray

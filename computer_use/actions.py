@@ -1,6 +1,6 @@
 import logging
 import time
-from typing import Any, Dict, List, Optional, Union
+from typing import Optional, Union
 
 from computer_use.launcher import app_launcher
 from computer_use.window_manager import window_manager

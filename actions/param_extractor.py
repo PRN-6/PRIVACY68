@@ -11,9 +11,8 @@ Replaces fragile multi-capture-group regex with a trained ML Sequence Tagger (Di
 import logging
 import os
 import pickle
-import re
 import sys
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Tuple
 
 _PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if _PROJECT_ROOT not in sys.path:

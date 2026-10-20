@@ -1,18 +1,20 @@
 import tkinter as tk
 import queue
-import threading
-import time
 import math
 import ctypes
+import logging
+
+logger = logging.getLogger("PRIVACY68.HUD")
 
 # Enable Windows DPI awareness for razor-sharp multi-monitor rendering
 try:
     ctypes.windll.shcore.SetProcessDpiAwareness(2)
-except Exception:
+except Exception as e:
+    logger.debug(f"SetProcessDpiAwareness unavailable: {e}")
     try:
         ctypes.windll.user32.SetProcessDPIAware()
-    except Exception:
-        pass
+    except Exception as e:
+        logger.debug(f"SetProcessDPIAware unavailable: {e}")
 
 
 class FloatingHUD:
@@ -96,8 +98,8 @@ class FloatingHUD:
         self.root.config(bg=self.transparent_color)
         try:
             self.root.wm_attributes("-transparentcolor", self.transparent_color)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"start_ui: {e}")
         
         # Full-screen canvas
         self.canvas = tk.Canvas(
@@ -163,8 +165,8 @@ class FloatingHUD:
             colorref = r | (g << 8) | (b << 16)
             
             ctypes.windll.user32.SetLayeredWindowAttributes(hwnd_parent, colorref, 0, LWA_COLORKEY)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"_enable_click_through: {e}")
 
     def _draw_rounded_rect(self, x1, y1, x2, y2, radius, **kwargs):
         """Draws a smooth rounded pill rectangle on the canvas."""
@@ -382,8 +384,8 @@ class FloatingHUD:
                 self._draw_hud()
                 
             self.root.after(30, self._animate_pulse)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"_animate_pulse: {e}")
 
     def _poll_events(self):
         """Polls thread-safe messages from background audio and executor threads."""
@@ -406,8 +408,8 @@ class FloatingHUD:
                         try:
                             self.root.quit()
                             self.root.destroy()
-                        except Exception:
-                            pass
+                        except Exception as e:
+                            logger.debug(f"_poll_events: {e}")
                         self.root = None
                     return
         except queue.Empty:
@@ -416,8 +418,8 @@ class FloatingHUD:
         try:
             if self.root:
                 self.root.after(25, self._poll_events)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"_poll_events: {e}")
 
     def _open_plugins_internal(self):
         from ui.plugin_window import PluginManagerWindow
@@ -453,8 +455,8 @@ class FloatingHUD:
             try:
                 if self.root:
                     self.root.after(2800, lambda: self._set_state_internal({"name": "idle"}))
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"_set_state_internal: {e}")
                 
         elif state == "error":
             self.status_icon = "⚠️"
@@ -463,8 +465,8 @@ class FloatingHUD:
             try:
                 if self.root:
                     self.root.after(2800, lambda: self._set_state_internal({"name": "idle"}))
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"_set_state_internal: {e}")
                 
         self._draw_hud()
 

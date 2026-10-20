@@ -9,7 +9,7 @@ import ctypes
 from ctypes import wintypes
 import time
 import logging
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, Optional, Tuple
 
 logger = logging.getLogger("PRIVACY68.InputController")
 user32 = ctypes.windll.user32

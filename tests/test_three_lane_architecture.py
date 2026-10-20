@@ -6,10 +6,8 @@ Tests for the Three-Lane Command Architecture:
 """
 
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 from actions.executor import execute_system_command_detailed
-from actions.fast_lane import fast_lane_router
-from actions.api_lane import api_lane_router
 from actions.router import is_ollama_alive, LLMRouter
 
 

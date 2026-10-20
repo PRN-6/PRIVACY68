@@ -5,19 +5,19 @@ import logging
 import numpy as np
 import onnxruntime as ort
 
+logger = logging.getLogger("PRIVACY68.VoiceAuth")
+
 # Fix for ONNX pybind API version mismatch on Windows
 try:
     from onnxruntime.capi import onnxruntime_inference_collection
     if hasattr(onnxruntime_inference_collection.InferenceSession, "_validate_graph_capture_run_api"):
         onnxruntime_inference_collection.InferenceSession._validate_graph_capture_run_api = lambda self, run_options: None
-except Exception:
-    pass
+except Exception as e:
+    logger.debug(f"ONNX graph-capture API patch skipped: {e}")
 
 from typing import Tuple, Optional, List, Dict
 from huggingface_hub import hf_hub_download
 import scipy.signal as signal
-
-logger = logging.getLogger("PRIVACY68.VoiceAuth")
 
 APPDATA_DIR = os.path.join(os.getenv("APPDATA", os.path.expanduser("~")), "PRIVACY68")
 MODELS_DIR = os.path.join(APPDATA_DIR, "models")
@@ -65,19 +65,6 @@ def preprocess_farfield_audio(audio: np.ndarray, sample_rate: int = 16000) -> np
         filtered = (filtered / max_peak) * 0.95
 
     return filtered.astype(np.float32)
-
-
-def normalize_audio(audio: np.ndarray, target_peak: float = 0.9) -> np.ndarray:
-    """
-    Normalizes audio waveform to a consistent target peak amplitude.
-    Ensures identical dynamic range across enrollment samples, testing modal,
-    and live microphone streaming.
-    """
-    waveform = audio.flatten().astype(np.float32)
-    max_peak = np.max(np.abs(waveform))
-    if max_peak > 0.002:
-        return (waveform / max_peak) * target_peak
-    return waveform
 
 
 def trim_speech(audio: np.ndarray, sample_rate: int = 16000) -> np.ndarray:
@@ -412,18 +399,19 @@ class VoiceAuthenticator:
         self.master_embedding = None
         self.enrolled_samples = None
         self.temp_enrollment_samples.clear()
-        try:
-            for p in [PROFILE_PATH, PROFILE_META_PATH, LEGACY_PROFILE_PATH, LEGACY_META_PATH]:
-                if os.path.exists(p):
-                    try:
-                        os.remove(p)
-                    except Exception:
-                        pass
-            logger.info("Voice profile cleared.")
-            return True
-        except Exception as e:
-            logger.error(f"Error clearing voice profile: {e}")
+        failed = False
+        for p in [PROFILE_PATH, PROFILE_META_PATH, LEGACY_PROFILE_PATH, LEGACY_META_PATH]:
+            if os.path.exists(p):
+                try:
+                    os.remove(p)
+                except OSError as e:
+                    logger.error(f"Failed to delete voice profile file '{p}': {e}")
+                    failed = True
+        if failed:
+            logger.error("Voice profile clear completed with errors.")
             return False
+        logger.info("Voice profile cleared.")
+        return True
 
     def verify_speaker(self, audio: np.ndarray, threshold: float = 0.50) -> Tuple[bool, float]:
         """
@@ -487,8 +475,8 @@ class VoiceAuthenticator:
             try:
                 with open(PROFILE_META_PATH, "r", encoding="utf-8") as f:
                     meta = json.load(f)
-            except Exception:
-                pass
+            except (OSError, ValueError) as e:
+                logger.warning(f"Could not read voice profile metadata: {e}")
 
         return {
             "model_ready": self.is_ready,

@@ -371,10 +371,10 @@ def _get_shell_folders() -> Dict[str, str]:
                     if os.path.exists(expanded):
                         for a in aliases:
                             folders[a] = expanded
-                except Exception:
-                    pass
-    except Exception:
-        pass
+                except Exception as e:
+                    logger.debug(f"_get_shell_folders: {e}")
+    except Exception as e:
+        logger.debug(f"_get_shell_folders: {e}")
     return folders
 
 # Root folder keywords -> real absolute paths
@@ -1266,8 +1266,8 @@ class WindowsPlugin(BasePlugin):
             pyautogui.hotkey("alt", access_char.lower())
             time.sleep(0.08)
             pyautogui.hotkey("ctrl", str(tab_digit))
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"_navigate_taskmgr_tab: {e}")
 
         return True
 
@@ -1314,8 +1314,8 @@ class WindowsPlugin(BasePlugin):
         try:
             import pyautogui
             pyautogui.press("delete")
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"taskmgr_end_task: {e}")
         return True
 
     def taskmgr_run_task(self, text: str = "") -> bool:
@@ -1326,8 +1326,8 @@ class WindowsPlugin(BasePlugin):
         try:
             import pyautogui
             pyautogui.hotkey("alt", "n")
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"taskmgr_run_task: {e}")
         return True
 
     # ────────────────────────── Windows System Control ──────────────────────────
@@ -1430,8 +1430,8 @@ class WindowsPlugin(BasePlugin):
                 presses=1 if single else steps, interval=0.03,
             )
             return True
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"volume_control: {e}")
         vkey = {"up": 175, "down": 174, "mute": 173, "unmute": 173}[intent]
         script = (
             "$ws = New-Object -ComObject WScript.Shell; "
@@ -1515,8 +1515,8 @@ class WindowsPlugin(BasePlugin):
                 import pyautogui
                 pyautogui.hotkey("win", "shift", "s")
                 return True
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"screenshot: {e}")
         try:
             subprocess.Popen("start ms-snippingtool:", shell=True)
             return True

@@ -2,7 +2,6 @@ import ctypes
 from ctypes import wintypes
 import logging
 import os
-import subprocess
 import time
 from typing import Dict, List, Optional, Union
 

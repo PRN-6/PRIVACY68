@@ -14,8 +14,6 @@ from computer_use.system_tools import (
     create_file,
     rename_item,
     delete_file,
-    move_item,
-    open_settings,
     open_web_or_search,
     SETTINGS_PAGES,
 )

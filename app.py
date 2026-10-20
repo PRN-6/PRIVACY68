@@ -34,8 +34,8 @@ except Exception:
                 try:
                     os.add_dll_directory(_candidate)
                     os.environ["PATH"] = _candidate + os.pathsep + os.environ["PATH"]
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.debug(f"module: {e}")
 
 
 import logging
@@ -48,14 +48,14 @@ import threading
 if sys.stdout is not None and hasattr(sys.stdout, "reconfigure"):
     try:
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-    except Exception:
-        pass
+    except Exception as e:
+        logger.debug(f"module: {e}")
 
 if sys.stderr is not None and hasattr(sys.stderr, "reconfigure"):
     try:
         sys.stderr.reconfigure(encoding="utf-8", errors="replace")
-    except Exception:
-        pass
+    except Exception as e:
+        logger.debug(f"module: {e}")
 
 log_handlers = [logging.FileHandler(LOG_FILE, encoding="utf-8")]
 if sys.stdout is not None:
@@ -84,7 +84,7 @@ def main() -> None:
     from speech.streamer import SpeechStreamer, set_speech_streamer
     from actions.executor import execute_system_command, execute_system_command_detailed
     from ui.manager import UIManager
-    from server.remote_server import start_remote_server, stop_remote_server, get_remote_url
+    from server.remote_server import start_remote_server, stop_remote_server
 
     logger.info("Initializing PRIVACY68 Assistant Services...")
 
@@ -97,8 +97,8 @@ def main() -> None:
             try:
                 sys.stdout.write(f"\r[User Input] {text}\n")
                 sys.stdout.flush()
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"on_text_transcribed: {e}")
 
         ui_manager.on_transcription(text)
         return execute_system_command(
@@ -114,8 +114,8 @@ def main() -> None:
             try:
                 sys.stdout.write(f"\r[Mobile Remote] {text}\n")
                 sys.stdout.flush()
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"on_remote_command: {e}")
 
         ui_manager.on_transcription(text)
         result = execute_system_command_detailed(

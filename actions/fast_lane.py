@@ -1,7 +1,6 @@
-import os
 import re
 import logging
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Optional
 
 from computer_use.system_tools import (
     open_settings,
@@ -227,7 +226,7 @@ class FastLaneRouter:
 
         # 3a. Settings navigation
         if intent == "open_settings":
-            logger.info(f"[ROUTER] Command classified as FAST via classifier: open_settings")
+            logger.info("[ROUTER] Command classified as FAST via classifier: open_settings")
             m_set = re.match(
                 r"^(?:please\s*)?(?:open|go\s+to|show|launch|switch\s+to)\s+(?:the\s+)?([a-zA-Z\s]+?)(?:\s+(?:settings|page|tab))?$",
                 low,
@@ -282,7 +281,7 @@ class FastLaneRouter:
             from actions.param_extractor import param_extractor
             slots = param_extractor.extract_slots(text, "type_text")
             typed_text = slots.get("content") or cleaned.split(" ", 1)[-1]
-            logger.info(f"[ROUTER] Command classified as FAST via classifier: type_text")
+            logger.info("[ROUTER] Command classified as FAST via classifier: type_text")
             res = type_text(typed_text)
             return {
                 "handled": True,

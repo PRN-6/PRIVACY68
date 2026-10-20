@@ -4,7 +4,7 @@ import shutil
 import logging
 import subprocess
 import time
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Optional
 
 logger = logging.getLogger("PRIVACY68.SystemTools")
 
@@ -97,10 +97,10 @@ def get_shell_folders() -> Dict[str, str]:
                     if os.path.exists(expanded):
                         for a in aliases:
                             folders[a] = expanded
-                except Exception:
-                    pass
-    except Exception:
-        pass
+                except Exception as e:
+                    logger.debug(f"get_shell_folders: {e}")
+    except Exception as e:
+        logger.debug(f"get_shell_folders: {e}")
     return folders
 
 SHELL_FOLDERS = get_shell_folders()
@@ -667,13 +667,6 @@ def get_active_window() -> Dict[str, Any]:
     from computer_use.window_manager import window_manager
     return window_manager.get_active_window()
 
-def observe_window() -> Dict[str, Any]:
-    """
-    Captures active window information and visible UI controls.
-    """
-    from computer_use.observer import desktop_observer
-    return desktop_observer.observe(inspect_controls=True)
-
 def find_ui_element(name: str, control_type: Optional[str] = None) -> Dict[str, Any]:
     """
     Searches for an interactive UI element by name / control type in the active window.
@@ -705,7 +698,7 @@ def type_text(text: str, target_field: Optional[str] = None) -> Dict[str, Any]:
     return {
         "success": success,
         "text": text,
-        "message": f"Typed text into active field." if success else "Failed to type text."
+        "message": "Typed text into active field." if success else "Failed to type text."
     }
 
 def press_key(key: str) -> Dict[str, Any]:
@@ -718,21 +711,6 @@ def press_key(key: str) -> Dict[str, Any]:
         "success": success,
         "key": key,
         "message": f"Pressed '{key}' key." if success else f"Failed to press key '{key}'."
-    }
-
-def verify_window(name: str) -> Dict[str, Any]:
-    """
-    Verifies whether a specific window title or application is open and active.
-    """
-    from computer_use.window_manager import window_manager
-    is_open = window_manager.is_window_open(name)
-    is_active = window_manager.is_window_active(name)
-    return {
-        "success": is_open,
-        "is_open": is_open,
-        "is_active": is_active,
-        "name": name,
-        "message": f"Window '{name}' is {'open' if is_open else 'not open'}."
     }
 
 def system_action(command: str, text: str = "") -> Dict[str, Any]:

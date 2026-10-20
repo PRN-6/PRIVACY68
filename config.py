@@ -2,9 +2,7 @@
     Configuration settings for Privacy68 Assistant
 """
 
-import os
 import ctypes
-import subprocess
 
 try:
     from utils.cuda_manager import register_cuda_dlls, get_cuda_status
@@ -14,7 +12,6 @@ try:
 except Exception:
     def _cuda_available() -> bool:
         try:
-            import ctypes
             ctypes.WinDLL("nvcuda.dll")
             return True
         except OSError:

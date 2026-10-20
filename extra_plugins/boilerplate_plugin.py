@@ -45,6 +45,10 @@ from plugins.win_utils import kill_process, type_text, press_enter, press_tab
 from computer_use.window_manager import window_manager    # focus, find, is_active
 from computer_use.actions import computer_actions          # click_element, select_tab, send_hotkey, type_text
 
+# NOTE: This is a starter template for plugin authors. Some imports above are
+# intentionally unused in the boilerplate body — they show the full set of
+# helpers available to a new plugin. Delete the ones your plugin does not use.
+
 
 logger = logging.getLogger("PRIVACY68.Plugin.Boilerplate")
 

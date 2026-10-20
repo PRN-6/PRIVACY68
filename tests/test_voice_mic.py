@@ -2,6 +2,11 @@
 Interactive Voice Lock Tester
 Run this script to speak into your microphone and test if PRIVACY68 verifies your voice!
 Usage: .venv\\Scripts\\python.exe test_voice_mic.py
+
+NOTE: This is a MANUAL interactive tool, not an automated test. It requires a
+microphone and an enrolled voice profile, so the function is deliberately NOT
+named `test_*` — otherwise pytest would collect it and it would silently pass
+without verifying anything.
 """
 import os
 import sys
@@ -13,12 +18,12 @@ import sounddevice as sd
 from plugins.profile_manager import profile_manager
 from speech.voice_auth import voice_authenticator
 
-def test_mic():
+def run_mic_test():
     print("=" * 60)
     print("      PRIVACY68 VOICE LOCK BIOMETRICS TESTER")
     print("=" * 60)
-    
-    if not voice_authenticator.master_embedding is not None:
+
+    if voice_authenticator.master_embedding is None:
         print("[ERROR] No master voice profile found on disk.")
         print("Please open the Dashboard and complete the 3-sample voice enrollment first.")
         return
@@ -55,8 +60,8 @@ def test_mic():
     if is_match:
         print(f" Result: ✅ [AUTHORIZED] Welcome back, {user_name}! Voice verified.")
     else:
-        print(f" Result: 🚨 [ACCESS DENIED] Voice did not match the enrolled owner profile.")
+        print(" Result: 🚨 [ACCESS DENIED] Voice did not match the enrolled owner profile.")
     print("-" * 60)
 
 if __name__ == "__main__":
-    test_mic()
+    run_mic_test()

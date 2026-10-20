@@ -35,24 +35,24 @@ class UIElementWrapper:
                 return str(self.raw.element_info.name or "").strip()
             if hasattr(self.raw, "name"):
                 return str(self.raw.name or "").strip()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"_extract_name: {e}")
         return ""
 
     def _extract_control_type(self) -> str:
         try:
             if hasattr(self.raw, "element_info") and hasattr(self.raw.element_info, "control_type"):
                 return str(self.raw.element_info.control_type or "").strip()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"_extract_control_type: {e}")
         return ""
 
     def _extract_automation_id(self) -> str:
         try:
             if hasattr(self.raw, "element_info") and hasattr(self.raw.element_info, "automation_id"):
                 return str(self.raw.element_info.automation_id or "").strip()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"_extract_automation_id: {e}")
         return ""
 
     # --------------------------------------------------------------------------
@@ -70,16 +70,16 @@ class UIElementWrapper:
             if hasattr(self.raw, "iface_invoke") and self.raw.iface_invoke:
                 self.raw.iface_invoke.Invoke()
                 return True
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"click: {e}")
 
         # 2. Try click_input
         try:
             if hasattr(self.raw, "click_input"):
                 self.raw.click_input()
                 return True
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"click: {e}")
 
         # 3. Fallback: PyAutoGUI click at element center coordinates
         try:
@@ -143,8 +143,8 @@ class UIElementWrapper:
             if hasattr(self.raw, "iface_selection_item") and self.raw.iface_selection_item:
                 self.raw.iface_selection_item.Select()
                 return True
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"select: {e}")
         return self.click()
 
     def is_selected(self) -> bool:
@@ -154,8 +154,8 @@ class UIElementWrapper:
                 return bool(self.raw.is_selected())
             if hasattr(self.raw, "iface_selection_item") and self.raw.iface_selection_item:
                 return bool(self.raw.iface_selection_item.CurrentIsSelected)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"is_selected: {e}")
         return False
 
     # --------------------------------------------------------------------------
@@ -183,8 +183,8 @@ class UIElementWrapper:
             if hasattr(self.raw, "iface_toggle") and self.raw.iface_toggle:
                 self.raw.iface_toggle.Toggle()
                 return True
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"toggle: {e}")
 
         # 2. Fallback: Click the toggle control
         return self.click()
@@ -206,8 +206,8 @@ class UIElementWrapper:
                 return bool(s == 1 or s is True or str(s).lower() in ("on", "1", "true"))
             if hasattr(self.raw, "is_selected"):
                 return bool(self.raw.is_selected())
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"get_toggle_state: {e}")
         return None
 
     # --------------------------------------------------------------------------
@@ -228,16 +228,16 @@ class UIElementWrapper:
             if hasattr(self.raw, "set_value"):
                 self.raw.set_value(float(value))
                 return True
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"set_value: {e}")
 
         # 2. ValuePattern (Text/Edit fields)
         try:
             if hasattr(self.raw, "iface_value") and self.raw.iface_value:
                 self.raw.iface_value.SetValue(str(value))
                 return True
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"set_value: {e}")
 
         # 3. Fallback to text input
         return self.set_text(str(value))
@@ -249,8 +249,8 @@ class UIElementWrapper:
                 return float(self.raw.iface_range_value.CurrentValue)
             if hasattr(self.raw, "iface_value") and self.raw.iface_value:
                 return str(self.raw.iface_value.CurrentValue)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"get_value: {e}")
         return self.name
 
     def set_text(self, text: str) -> bool:
@@ -263,8 +263,8 @@ class UIElementWrapper:
             if hasattr(self.raw, "type_keys"):
                 self.raw.type_keys(text, with_spaces=True)
                 return True
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"set_text: {e}")
 
         # Fallback: click element then type
         try:
@@ -291,8 +291,8 @@ class UIElementWrapper:
             if hasattr(self.raw, "iface_expand_collapse") and self.raw.iface_expand_collapse:
                 self.raw.iface_expand_collapse.Expand()
                 return True
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"expand: {e}")
         return self.click()
 
     def collapse(self) -> bool:
@@ -305,8 +305,8 @@ class UIElementWrapper:
             if hasattr(self.raw, "iface_expand_collapse") and self.raw.iface_expand_collapse:
                 self.raw.iface_expand_collapse.Collapse()
                 return True
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"collapse: {e}")
         return False
 
     def is_expanded(self) -> Optional[bool]:
@@ -317,8 +317,8 @@ class UIElementWrapper:
             if hasattr(self.raw, "iface_expand_collapse") and self.raw.iface_expand_collapse:
                 # 0 = Collapsed, 1 = Expanded, 2 = PartiallyExpanded, 3 = LeafNode
                 return bool(self.raw.iface_expand_collapse.CurrentExpandCollapseState == 1)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"is_expanded: {e}")
         return None
 
     # --------------------------------------------------------------------------
@@ -332,8 +332,8 @@ class UIElementWrapper:
             if hasattr(self.raw, "iface_scroll_item") and self.raw.iface_scroll_item:
                 self.raw.iface_scroll_item.ScrollIntoView()
                 return True
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"scroll_into_view: {e}")
         return False
 
     def scroll(self, direction: str = "down", amount: str = "normal") -> bool:
@@ -343,8 +343,8 @@ class UIElementWrapper:
             if hasattr(self.raw, "scroll"):
                 self.raw.scroll(direction=direction, amount=amount)
                 return True
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"scroll: {e}")
         # Fallback: PyAutoGUI scroll
         try:
             rect = self.get_rectangle()
@@ -369,8 +369,8 @@ class UIElementWrapper:
             if hasattr(self.raw, "set_focus"):
                 self.raw.set_focus()
                 return True
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"set_focus: {e}")
         return False
 
     def has_keyboard_focus(self) -> bool:
@@ -378,8 +378,8 @@ class UIElementWrapper:
         try:
             if hasattr(self.raw, "has_keyboard_focus"):
                 return bool(self.raw.has_keyboard_focus())
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"has_keyboard_focus: {e}")
         return False
 
     def is_enabled(self) -> bool:
@@ -387,8 +387,8 @@ class UIElementWrapper:
         try:
             if hasattr(self.raw, "is_enabled"):
                 return bool(self.raw.is_enabled())
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"is_enabled: {e}")
         return True
 
     def is_visible(self) -> bool:
@@ -396,8 +396,8 @@ class UIElementWrapper:
         try:
             if hasattr(self.raw, "is_visible"):
                 return bool(self.raw.is_visible())
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"is_visible: {e}")
         return True
 
     def get_rectangle(self) -> Optional[Dict[str, int]]:
@@ -411,8 +411,8 @@ class UIElementWrapper:
                     "right": int(rect.right),
                     "bottom": int(rect.bottom),
                 }
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"get_rectangle: {e}")
         return None
 
     def to_dict(self) -> Dict[str, Any]:

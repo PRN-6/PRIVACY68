@@ -10,8 +10,6 @@ Provides situational awareness of the current desktop state:
 
 import ctypes
 from ctypes import wintypes
-import os
-import subprocess
 import logging
 from typing import Any, Dict, List, Optional
 
@@ -69,8 +67,8 @@ class ContextInspector:
             try:
                 p = psutil.Process(pid.value)
                 proc_name = p.name()
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"get_foreground_window_info: {e}")
 
         return {
             "hwnd": hwnd,
@@ -103,8 +101,8 @@ class ContextInspector:
                     data = win32clipboard.GetClipboardData(win32clipboard.CF_UNICODETEXT)
                 win32clipboard.CloseClipboard()
                 return data
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"get_clipboard_text: {e}")
 
         # Native ctypes fallback
         CF_UNICODETEXT = 13
@@ -132,8 +130,8 @@ class ContextInspector:
                         info = p.info
                         if info['name'] and info['name'].lower() not in ['system idle process', 'system']:
                             procs.append(info)
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        logger.debug(f"get_top_resource_consumers: {e}")
 
                 top_cpu = sorted(procs, key=lambda x: x.get('cpu_percent') or 0, reverse=True)[:count]
                 top_ram = sorted(procs, key=lambda x: (x.get('memory_info').rss if x.get('memory_info') else 0), reverse=True)[:count]

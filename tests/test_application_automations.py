@@ -11,7 +11,7 @@ import os
 import sys
 import unittest
 import tempfile
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 # Add project root to sys.path
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -23,7 +23,7 @@ from extra_plugins.whatsapp_plugin import WhatsAppPlugin
 from extra_plugins.ppt_plugin import PPTPlugin, _extract_slide_number
 from extra_plugins.brave_plugin import BravePlugin
 from plugins.chrome_plugin import ChromePlugin
-from computer_use.launcher import AppLauncher, KNOWN_SYSTEM_APPS, APP_ALIASES
+from computer_use.launcher import AppLauncher, KNOWN_SYSTEM_APPS
 
 
 # =============================================================================

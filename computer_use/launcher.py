@@ -5,7 +5,7 @@ import shutil
 import subprocess
 import time
 import winreg
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 
 logger = logging.getLogger("PRIVACY68.ComputerUse.Launcher")
 
@@ -184,8 +184,8 @@ class AppLauncher:
                             if os.path.exists(cleaned_val):
                                 cls._exe_cache[canonical_name] = cleaned_val
                                 return cleaned_val
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.debug(f"_find_app_exe: {e}")
 
         # 2. Check standard installation directories
         common_dirs = [
@@ -264,29 +264,29 @@ class AppLauncher:
             try:
                 subprocess.Popen("start chrome", shell=True)
                 return True
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"launch: {e}")
 
         elif canonical == "brave":
             try:
                 subprocess.Popen("start brave", shell=True)
                 return True
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"launch: {e}")
 
         elif canonical == "vs code":
             try:
                 subprocess.Popen("code", shell=True)
                 return True
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"launch: {e}")
 
         elif canonical == "whatsapp":
             try:
                 subprocess.Popen("start whatsapp:", shell=True)
                 return True
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"launch: {e}")
 
         # 5. Search Windows Start Menu (UWP & Win32 installed apps)
         return self._launch_from_start_menu(canonical)

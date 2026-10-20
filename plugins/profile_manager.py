@@ -53,8 +53,8 @@ class ProfileManager:
                 mtime = os.path.getmtime(PROFILE_PATH)
                 if mtime > self._last_mtime:
                     self.load()
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"_check_and_reload: {e}")
 
     def load(self):
         if os.path.exists(PROFILE_PATH):

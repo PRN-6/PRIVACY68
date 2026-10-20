@@ -224,9 +224,9 @@ class Privacy68RemoteHandler(SimpleHTTPRequestHandler):
 
         self.send_error(404, "Unknown API endpoint")
 
-    def log_message(self, format, *args):
+    def log_message(self, fmt, *args):
         """Redirect HTTP server logging to Privacy68's logger (debug level)."""
-        logger.debug(f"{self.address_string()} - - {format % args}")
+        logger.debug(f"{self.address_string()} - - {fmt % args}")
 
 
 class RemoteServerManager:

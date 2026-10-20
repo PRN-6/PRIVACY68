@@ -18,7 +18,7 @@ import os
 import pickle
 import re
 import sys
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Dict, Optional, Tuple
 
 # Ensure project root is in sys.path
 _PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))

@@ -6,12 +6,9 @@ import logging
 from computer_use.system_tools import (
     get_desktop_path,
     get_documents_path,
-    resolve_path,
     create_folder,
     create_file,
-    delete_file,
     list_directory,
-    verify_path_exists,
 )
 from actions.fast_lane import fast_lane_router
 from actions.executor import execute_system_command_detailed
@@ -37,8 +34,8 @@ class TestTwoLaneArchitecture(unittest.TestCase):
         if os.path.exists(self.test_dir):
             try:
                 shutil.rmtree(self.test_dir)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"tearDown: {e}")
 
     # ─────────────────────────────────────────────────────────────────────────
     # 1. Generic Tools Tests

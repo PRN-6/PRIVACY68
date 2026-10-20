@@ -1,4 +1,8 @@
+import logging
 from typing import Callable, Dict, List, Any
+
+logger = logging.getLogger("PRIVACY68.BasePlugin")
+
 
 class BasePlugin:
     """
@@ -129,5 +133,5 @@ class BasePlugin:
         try:
             import pyautogui
             pyautogui.hotkey(*[str(k).lower() for k in key_names])
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"send_keys: {e}")

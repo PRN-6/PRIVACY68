@@ -1,10 +1,7 @@
-import json
 import logging
 import socket
 import threading
-import urllib.request
-import urllib.error
-from typing import Optional, Dict, Any
+from typing import Optional, Dict
 
 from plugins.manager import plugin_manager
 from plugins.profile_manager import profile_manager

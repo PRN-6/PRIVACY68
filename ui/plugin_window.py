@@ -2,7 +2,6 @@ import logging
 import os
 import sys
 import subprocess
-import tkinter as tk
 from tkinter import messagebox
 
 logger = logging.getLogger("PRIVACY68.DashboardWindow")

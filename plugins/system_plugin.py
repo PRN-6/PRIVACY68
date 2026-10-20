@@ -175,8 +175,8 @@ class SystemPlugin(BasePlugin):
             hwnd = window_manager.find_window(target)
             if hwnd:
                 return hwnd
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"_find_window_by_app_name: {e}")
 
         import ctypes
         from ctypes import wintypes

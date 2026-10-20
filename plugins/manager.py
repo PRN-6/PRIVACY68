@@ -40,8 +40,8 @@ sys.modules["base_plugin"] = plugins.base_plugin
 try:
     import plugins.win_utils
     sys.modules["win_utils"] = plugins.win_utils
-except Exception:
-    pass
+except Exception as e:
+    logger.debug(f"module: {e}")
 
 
 def _migrate_legacy_data():
@@ -175,8 +175,8 @@ class PluginManager:
                     try:
                         if issubclass(cls, BasePlugin):
                             return True
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        logger.debug(f"_is_base_plugin: {e}")
                     # MRO inspection in case of duplicate or differently-imported BasePlugin definitions
                     return any(b.__name__ == "BasePlugin" for b in getattr(cls, "__mro__", []))
 
@@ -353,8 +353,8 @@ class PluginManager:
                     if os.path.exists(dest_file):
                         try:
                             os.remove(dest_file)
-                        except Exception:
-                            pass
+                        except Exception as e:
+                            logger.debug(f"install_plugin_from_file: {e}")
                     self.discover_plugins()
                     if not self.last_error:
                         self.last_error = f"File '{base_name}' did not define a valid BasePlugin subclass."

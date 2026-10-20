@@ -64,8 +64,8 @@ def get_gpu_info() -> Dict[str, Any]:
             info["total_memory"] = parts[1] if len(parts) > 1 else "?"
             info["free_memory"] = parts[2] if len(parts) > 2 else "?"
             info["driver_version"] = parts[3] if len(parts) > 3 else "?"
-    except Exception:
-        pass
+    except Exception as e:
+        logger.debug(f"get_gpu_info: {e}")
 
     return info
 
@@ -102,15 +102,15 @@ def get_candidate_cuda_dirs() -> List[str]:
         if callable(_getsitepackages):
             try:
                 site_pkgs.update(_getsitepackages())
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"get_candidate_cuda_dirs: {e}")
         for sp in site_pkgs:
             if not sp:
                 continue
             for pkg in ["cublas", "cudnn", "cuda_nvrtc"]:
                 candidates.append(os.path.join(sp, "nvidia", pkg, "bin"))
-    except Exception:
-        pass
+    except Exception as e:
+        logger.debug(f"get_candidate_cuda_dirs: {e}")
     finally:
         pass
 
@@ -308,8 +308,8 @@ def start_cuda_runtime_download(
                 # Cleanup temp file
                 try:
                     os.remove(temp_whl)
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.debug(f"_worker: {e}")
 
             # Register DLLs immediately into runtime
             register_cuda_dlls()

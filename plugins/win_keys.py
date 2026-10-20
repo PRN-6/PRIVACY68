@@ -7,7 +7,6 @@ and provides universal window/browser tab keystroke helpers.
 """
 
 import logging
-import time
 
 try:
     import pyautogui

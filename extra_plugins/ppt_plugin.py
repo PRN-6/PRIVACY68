@@ -99,8 +99,8 @@ def _get_powerpoint_exe() -> Optional[str]:
             val, _ = winreg.QueryValueEx(key, "")
             if val and os.path.exists(val):
                 return val
-    except Exception:
-        pass
+    except Exception as e:
+        logger.debug(f"_get_powerpoint_exe: {e}")
 
     candidates = [
         r"C:\Program Files\Microsoft Office\Root\Office16\POWERPNT.EXE",

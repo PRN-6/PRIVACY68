@@ -1,11 +1,14 @@
 try:
     from utils.cuda_manager import register_cuda_dlls
     register_cuda_dlls()
-except Exception:
-    pass
+except Exception as e:
+    import logging as _logging
+    _logging.getLogger("PRIVACY68.SpeechStreamer").debug(
+        f"CUDA DLL registration skipped: {e}"
+    )
 
 # openWakeWord replaced by Whisper-based wake detection
-from typing import Callable, List, Dict, Any, Optional
+from typing import Callable
 import logging
 import re
 import threading
@@ -454,8 +457,8 @@ class SpeechStreamer:
                                     p_wake = profile_manager.get("wake_word")
                                     if p_wake and p_wake.strip().lower() != self.wake_word.lower():
                                         self.set_wake_word(p_wake)
-                            except Exception:
-                                pass
+                            except Exception as e:
+                                logger.debug(f"Wake word sync from profile failed: {e}")
 
                             # Check if user said the custom wake word (ANY unique name or phrase)
                             # Checking within first 6 words allows natural leading greetings ("uh hey privacy 68")
@@ -471,8 +474,8 @@ class SpeechStreamer:
                                     try:
                                         import winsound
                                         threading.Thread(target=lambda: winsound.MessageBeep(winsound.MB_ICONASTERISK), daemon=True).start()
-                                    except Exception:
-                                        pass
+                                    except Exception as e:
+                                        logger.debug(f"Activation beep failed: {e}")
 
                                 # Activate listening mode and carry over recent audio chunks
                                 # so continuous command words spoken right after wake word in one breath are preserved

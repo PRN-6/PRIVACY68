@@ -1,6 +1,5 @@
 import logging
-import re
-from typing import Any, Dict, List, Optional
+from typing import Dict, List
 from plugins.manager import plugin_manager
 
 logger = logging.getLogger("PRIVACY68.PluginActionManager")
