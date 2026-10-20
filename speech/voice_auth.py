@@ -1,4 +1,5 @@
 import os
+import sys
 import time
 import json
 import logging
@@ -28,6 +29,18 @@ PROFILE_META_PATH = os.path.join(APPDATA_DIR, "voice_profile_meta.json")
 LEGACY_APPDATA_DIR = os.path.join(os.getenv("APPDATA", os.path.expanduser("~")), "SANA")
 LEGACY_PROFILE_PATH = os.path.join(LEGACY_APPDATA_DIR, "voice_profile.npy")
 LEGACY_META_PATH = os.path.join(LEGACY_APPDATA_DIR, "voice_profile_meta.json")
+
+# Model bundled with the repository. Using it first means the speaker
+# recogniser works offline and on a clean CI runner, where the Hugging Face
+# download below may be blocked or rate-limited.
+# sys._MEIPASS is set when running as a compiled .exe — use it as the base.
+IS_FROZEN = getattr(sys, "frozen", False)
+_PROJECT_ROOT = (
+    getattr(sys, "_MEIPASS", "")
+    if IS_FROZEN
+    else os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+)
+BUNDLED_MODEL_PATH = os.path.join(_PROJECT_ROOT, "assets", "models", "speaker_model.onnx")
 
 os.makedirs(MODELS_DIR, exist_ok=True)
 
@@ -166,32 +179,51 @@ class VoiceAuthenticator:
     def _init_model(self):
         """Loads SOTA CAM++ (Context-Aware Masking) Speaker Recognition ONNX model (512-d)."""
         try:
-            model_path = os.path.join(MODELS_DIR, "voxceleb_CAM++_LM.onnx")
-            if not os.path.exists(model_path):
-                logger.info("Downloading SOTA CAM++ Speaker Recognition ONNX model (~29MB)...")
-                downloaded_path = hf_hub_download(
-                    repo_id="Wespeaker/wespeaker-voxceleb-campplus-LM",
-                    filename="voxceleb_CAM++_LM.onnx",
-                    local_dir=MODELS_DIR
-                )
-                if os.path.exists(downloaded_path) and downloaded_path != model_path:
-                    try:
-                        import shutil
-                        shutil.copy2(downloaded_path, model_path)
-                    except Exception:
-                        model_path = downloaded_path
+            model_path = self._resolve_model_path()
+            if model_path is None:
+                raise FileNotFoundError("No speaker recognition model available.")
 
             opts = ort.SessionOptions()
             opts.inter_op_num_threads = 1
             opts.intra_op_num_threads = 2
             opts.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
-            
+
             self.session = ort.InferenceSession(model_path, sess_options=opts, providers=['CPUExecutionProvider'])
             self.is_ready = True
-            logger.info("CAM++ Speaker Authenticator initialized successfully (512-d).")
+            logger.info(f"CAM++ Speaker Authenticator initialized successfully (512-d) from '{model_path}'.")
         except Exception as e:
             logger.error(f"Failed to initialize Voice Authenticator model: {e}")
             self.is_ready = False
+
+    @staticmethod
+    def _resolve_model_path() -> Optional[str]:
+        """
+        Finds a usable speaker-recognition model, in order of preference:
+
+          1. The model bundled in the repository (works offline and on CI).
+          2. The model already cached in %APPDATA%.
+          3. A fresh download from Hugging Face.
+        """
+        if os.path.exists(BUNDLED_MODEL_PATH):
+            return BUNDLED_MODEL_PATH
+
+        cached_path = os.path.join(MODELS_DIR, "voxceleb_CAM++_LM.onnx")
+        if os.path.exists(cached_path):
+            return cached_path
+
+        logger.info("Downloading SOTA CAM++ Speaker Recognition ONNX model (~29MB)...")
+        downloaded_path = hf_hub_download(
+            repo_id="Wespeaker/wespeaker-voxceleb-campplus-LM",
+            filename="voxceleb_CAM++_LM.onnx",
+            local_dir=MODELS_DIR
+        )
+        if os.path.exists(downloaded_path) and downloaded_path != cached_path:
+            try:
+                import shutil
+                shutil.copy2(downloaded_path, cached_path)
+            except Exception:
+                pass
+        return downloaded_path if os.path.exists(downloaded_path) else None
 
     def compute_fbank(self, audio: np.ndarray) -> np.ndarray:
         """

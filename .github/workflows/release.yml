@@ -40,28 +40,37 @@ jobs:
       - name: Check website plugin sync
         run: python sync_website_plugins.py --check
 
-      # ── 5. Run the test suite ────────────────────────────────────────────────
+      # ── 5. Verify the bundled speaker model is present ───────────────────────
+      - name: Check bundled speaker model
+        run: |
+          if (-not (Test-Path "assets/models/speaker_model.onnx")) {
+            Write-Error "Missing assets/models/speaker_model.onnx — the voice-auth tests need it."
+            exit 1
+          }
+          Write-Host "Bundled speaker model present."
+
+      # ── 6. Run the test suite ────────────────────────────────────────────────
       - name: Run unit tests
         run: python -m unittest discover tests -v
 
-      # ── 6. Build EXE with PyInstaller ─────────────────────────────────────────
+      # ── 7. Build EXE with PyInstaller ─────────────────────────────────────────
       - name: Build EXE (PyInstaller)
         run: python build_exe.py
 
-      # ── 7. Determine version from tag ─────────────────────────────────────────
+      # ── 8. Determine version from tag ─────────────────────────────────────────
       - name: Extract version from tag
         id: version
         shell: bash
         run: echo "VERSION=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
 
-      # ── 8. Build Inno Setup Installer ─────────────────────────────────────────
+      # ── 9. Build Inno Setup Installer ─────────────────────────────────────────
       - name: Build Inno Setup Installer
         shell: pwsh
         run: |
           choco install innosetup -y
           & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss
 
-      # ── 9. Zip the dist folder ────────────────────────────────────────────────
+      # ── 10. Zip the dist folder ────────────────────────────────────────────────
       - name: Zip dist output
         shell: pwsh
         run: |
@@ -70,7 +79,7 @@ jobs:
           Compress-Archive -Path dist\PRIVACY68\* -DestinationPath $zipName
           echo "ZIP_NAME=$zipName" >> $env:GITHUB_ENV
 
-      # ── 10. Create GitHub Release and upload assets ───────────────────────────
+      # ── 11. Create GitHub Release and upload assets ───────────────────────────
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:

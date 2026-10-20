@@ -31,6 +31,10 @@ class TestVoiceAuthUnit(unittest.TestCase):
         # 2. Test Multi-Window Embedding Extraction
         embs = voice_authenticator.extract_multi_window_embeddings(test_audio)
         print(f"  [Multi-Window] Extracted {len(embs)} embeddings (shape: {embs[0].shape if embs else 'None'})")
+        self.assertTrue(
+            voice_authenticator.is_ready,
+            "Speaker model unavailable — assets/models/speaker_model.onnx must be present and loadable.",
+        )
         self.assertGreater(len(embs), 0, "Failed to extract embeddings")
         self.assertEqual(embs[0].shape, (512,), f"Expected 512-d CAM++ embedding, got {embs[0].shape}")
 

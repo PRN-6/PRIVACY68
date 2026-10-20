@@ -39,11 +39,23 @@ jobs:
       - name: Check website plugin sync
         run: python sync_website_plugins.py --check
 
-      # ── 5. Run the test suite ──────────────────────────────────────────────────
+      # ── 5. Verify the bundled speaker model is present ─────────────────────────
+      # The voice-auth tests need the CAM++ ONNX model. It is committed to the
+      # repository so the suite runs offline; this step fails fast with a clear
+      # message instead of a confusing IndexError further down.
+      - name: Check bundled speaker model
+        run: |
+          if (-not (Test-Path "assets/models/speaker_model.onnx")) {
+            Write-Error "Missing assets/models/speaker_model.onnx — the voice-auth tests need it."
+            exit 1
+          }
+          Write-Host "Bundled speaker model present."
+
+      # ── 6. Run the test suite ──────────────────────────────────────────────────
       - name: Run unit tests
         run: python -m unittest discover tests -v
 
-      # ── 6. Byte-compile every source file (catches syntax errors) ──────────────
+      # ── 7. Byte-compile every source file (catches syntax errors) ──────────────
       - name: Byte-compile sources
         run: |
           python -m compileall -q actions plugins computer_use speech ui utils server tests app.py config.py
