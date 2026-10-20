@@ -53,9 +53,24 @@ jobs:
 
       # ── 6. Run the test suite ──────────────────────────────────────────────────
       - name: Run unit tests
-        run: python -m unittest discover tests -v
+        shell: pwsh
+        run: |
+          $output = python -m unittest discover tests -v 2>&1
+          $code = $LASTEXITCODE
+          $output | Tee-Object -FilePath ci-test-output.log
+          Write-Output $output
+          exit $code
 
       # ── 7. Byte-compile every source file (catches syntax errors) ──────────────
       - name: Byte-compile sources
         run: |
           python -m compileall -q actions plugins computer_use speech ui utils server tests app.py config.py
+
+      # ── 8. Upload the test log when the suite fails ────────────────────────────
+      - name: Upload test log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-test-log
+          path: ci-test-output.log
+          if-no-files-found: ignore
