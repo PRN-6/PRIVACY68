@@ -1,10 +1,10 @@
 @echo off
 setlocal EnableDelayedExpansion
-title PRIVACY68 v1.4.0 Release Build Pipeline
+title PRIVACY68 v1.4.1 Release Build Pipeline
 
 echo.
 echo =====================================================
-echo       PRIVACY68  v1.4.0  -  Release Build Pipeline
+echo       PRIVACY68  v1.4.1  -  Release Build Pipeline
 echo =====================================================
 echo.
 
@@ -59,15 +59,15 @@ if !ISCC!=="" (
         exit /b 1
     )
     echo.
-    echo [3/3] Installer created: installer\PRIVACY68-Setup-v1.4.0.exe
+    echo [3/3] Installer created: installer\PRIVACY68-Setup-v1.4.1.exe
 )
 
 echo.
 echo =====================================================
-echo  [DONE] PRIVACY68 v1.4.0 Release Build Complete!
+echo  [DONE] PRIVACY68 v1.4.1 Release Build Complete!
 echo.
 echo  EXE output : dist\PRIVACY68\
-echo  Installer  : installer\PRIVACY68-Setup-v1.4.0.exe
+echo  Installer  : installer\PRIVACY68-Setup-v1.4.1.exe
 echo =====================================================
 echo.
 pause

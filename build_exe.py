@@ -2,7 +2,7 @@ import os
 import sys
 import subprocess
 
-APP_VERSION = "1.4.0"
+APP_VERSION = "1.4.1"
 
 def build():
     print("=" * 50)

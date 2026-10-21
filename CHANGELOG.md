@@ -5,6 +5,23 @@ Versioning follows [Semantic Versioning](https://semver.org/) — `MAJOR.MINOR.P
 
 ---
 
+## [v1.4.1] — 2026-10-21
+
+### ✨ New Features & Improvements
+
+#### 🪟 App-Context Command Routing (`computer_use/app_focus.py`, `actions/fast_lane.py`)
+- **Active App Window Context Awareness**: Fast Lane commands automatically resolve context and target the active foreground application (e.g. Chrome, WhatsApp, VS Code, Notepad).
+- **Targeted Application Actions**: Context-aware routing for actions like closing tabs, navigating, search, and message sending directly mapped to the currently active application.
+
+#### 💬 Enhanced WhatsApp Desktop Automation (`extra_plugins/whatsapp_plugin.py`, `plugins/base_plugin.py`)
+- **Robust Message Automation**: Extended WhatsApp Desktop plugin with improved contact resolution, UI navigation, and message dispatch.
+- **Enhanced Plugin Base & Manager**: Improved plugin management lifecycle and hook callbacks.
+
+#### 🔗 Compound Command Planner (`actions/planner.py`)
+- **Multi-Command Parsing**: Seamlessly plan and execute multi-intent composite voice utterances sequentially.
+
+---
+
 ## [v1.4.0] — 2026-10-19
 
 ### ✨ New Features & Ecosystem Upgrades
