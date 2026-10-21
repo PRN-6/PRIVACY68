@@ -177,7 +177,7 @@ class WindowManager:
             "explorer": {"processes": ["explorer.exe"], "classes": ["cabinetwclass", "explorewclass"], "titles": ["file explorer"]},
             "spotify": {"processes": ["spotify.exe"], "titles": ["spotify"]},
             "discord": {"processes": ["discord.exe"], "titles": ["discord"]},
-            "whatsapp": {"processes": ["whatsapp.exe"], "titles": ["whatsapp"]},
+            "whatsapp": {"processes": ["whatsapp.exe", "whatsapp.root.exe"], "titles": ["whatsapp"]},
             "antigravity": {"processes": ["antigravity ide.exe", "antigravity.exe"], "titles": ["antigravity"]},
             "antigravity ide": {"processes": ["antigravity ide.exe", "antigravity.exe"], "titles": ["antigravity"]},
             "cursor": {"processes": ["cursor.exe"], "titles": ["cursor"]},

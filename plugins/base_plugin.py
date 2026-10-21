@@ -38,6 +38,30 @@ class BasePlugin:
         raise NotImplementedError
 
     @property
+    def pattern_intents(self) -> Dict[str, List[str]]:
+        """
+        Dictionary mapping action names to REGEX patterns that match the shape
+        of a command rather than one exact wording.
+
+        `fast_intents` is an exact-phrase map: it only fires on the literal
+        strings a plugin lists. That is fast and precise, but it cannot cover
+        the open-ended set of ways a person actually speaks — "send message to
+        mom saying hi", "tell dad I'll be late" and "message mom on whatsapp"
+        are three phrasings of one intent, and listing every combination is
+        not possible.
+
+        `pattern_intents` closes that gap. Each pattern is a Python regex
+        matched against the normalised command text, and the first pattern
+        that matches wins. Patterns should be written to capture the WHOLE
+        utterance, because the action still receives the original text and
+        does its own parameter extraction.
+
+        Kept deliberately small and general: a handful of sentence shapes
+        per action, not a phrase list.
+        """
+        return {}
+
+    @property
     def descriptions(self) -> Dict[str, str]:
         """Dictionary mapping action names to Ollama AI system prompt descriptions."""
         raise NotImplementedError

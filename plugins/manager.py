@@ -1,13 +1,14 @@
 import json
 import logging
 import os
+import re
 import sys
 import shutil
 import zipfile
 import importlib
 import importlib.util
 import inspect
-from typing import Callable, Dict, List, Optional, Any
+from typing import Any, Callable, Dict, List, Optional, Tuple
 from plugins.base_plugin import BasePlugin
 
 logger = logging.getLogger("PRIVACY68.PluginManager")
@@ -76,6 +77,7 @@ class PluginManager:
         self._reload_listeners: List[Callable[[], None]] = []
         self._fast_intents_cache: Optional[Dict[str, List[str]]] = None
         self._fast_intents_phrase_map: Optional[Dict[str, str]] = None
+        self._pattern_intents_cache: Optional[List[Tuple[str, Any]]] = None
         self.last_error: str = ""
         self._folder_snapshots: Dict[str, float] = {}
         
@@ -120,7 +122,18 @@ class PluginManager:
         return False
 
     def discover_plugins(self):
-        """Discovers both Built-in and User AppData plugins."""
+        """
+        Discovers built-in shipped plugins and user AppData plugins.
+
+        Precedence: a plugin SHIPPED with the application always wins over a
+        file of the same name in %APPDATA%. A user copy is only a fallback
+        for a plugin the application does not ship.
+
+        This matters in practice: a user who downloaded a plugin from the
+        website keeps a copy in %APPDATA%. When a later release ships an
+        improved version of that same plugin, the stale download must not
+        shadow the shipped one — otherwise the fix never reaches the user.
+        """
         self.plugins.clear()
 
         # 1. Load Built-In Shipped Plugins
@@ -131,15 +144,21 @@ class PluginManager:
         if os.path.exists(extra_plugins_dir):
             self._scan_directory(extra_plugins_dir, is_builtin=True)
 
-        # 3. Load User Custom Plugins from AppData
+        # 3. Load User Custom Plugins from AppData, EXCEPT those already
+        #    provided by a shipped plugin (a shipped version is newer).
         if os.path.exists(USER_PLUGINS_DIR):
-            self._scan_directory(USER_PLUGINS_DIR, is_builtin=False)
+            self._scan_directory(USER_PLUGINS_DIR, is_builtin=False, skip_ids=set(self.plugins.keys()))
 
         # Update snapshot
         self._folder_snapshots = self._get_snapshot()
 
-    def _scan_directory(self, folder_path: str, is_builtin: bool = False):
-        """Scans a directory for .py plugin files."""
+    def _scan_directory(self, folder_path: str, is_builtin: bool = False, skip_ids: Optional[set] = None):
+        """
+        Scans a directory for .py plugin files.
+
+        `skip_ids` names plugin IDs that are already registered, so a user
+        copy cannot replace a shipped plugin of the same ID.
+        """
         if not os.path.exists(folder_path):
             return
 
@@ -152,10 +171,21 @@ class PluginManager:
             if filename.endswith(".py") and not filename.startswith("__") and filename not in ignore_files:
                 module_name = filename[:-3]
                 file_path = os.path.join(folder_path, filename)
-                self._load_plugin_file(module_name, file_path, is_builtin=is_builtin)
+                self._load_plugin_file(module_name, file_path, is_builtin=is_builtin, skip_ids=skip_ids)
 
-    def _load_plugin_file(self, module_name: str, file_path: str, is_builtin: bool = False) -> Optional[BasePlugin]:
-        """Dynamically loads and registers a plugin class from a file."""
+    def _load_plugin_file(
+        self,
+        module_name: str,
+        file_path: str,
+        is_builtin: bool = False,
+        skip_ids: Optional[set] = None,
+    ) -> Optional[BasePlugin]:
+        """
+        Dynamically loads and registers a plugin class from a file.
+
+        When `skip_ids` contains the plugin's ID, the file is loaded but NOT
+        registered — a shipped plugin of that ID already won.
+        """
         try:
             import re
             prefix = "builtin" if is_builtin else "user"
@@ -186,6 +216,14 @@ class PluginManager:
                     if _is_base_plugin(attr):
                         plugin_instance = attr()
                         plugin_instance.is_builtin = is_builtin
+
+                        if skip_ids and plugin_instance.id in skip_ids:
+                            logger.info(
+                                f"Skipped user copy of plugin '{plugin_instance.id}' "
+                                f"({os.path.basename(file_path)}) — a shipped version takes precedence."
+                            )
+                            return None
+
                         self.plugins[plugin_instance.id] = plugin_instance
                         logger.info(f"Loaded {'[Built-In]' if is_builtin else '[Custom]'} Plugin: '{plugin_instance.name}' ({plugin_instance.id})")
                         return plugin_instance
@@ -245,6 +283,7 @@ class PluginManager:
         """Notifies router and system components to re-index training phrases."""
         self._fast_intents_cache = None
         self._fast_intents_phrase_map = None
+        self._pattern_intents_cache = None
         for listener in self._reload_listeners:
             try:
                 listener()
@@ -263,6 +302,34 @@ class PluginManager:
         self._fast_intents_cache = intents
         self._fast_intents_phrase_map = phrase_map
 
+    def _rebuild_pattern_intents_cache(self):
+        """
+        Compiles every enabled plugin's `pattern_intents` into one ordered
+        list of (action_name, compiled_regex) pairs.
+
+        Order follows plugin registration order, and within a plugin the
+        order the patterns are declared. That matters: the first match wins,
+        so a plugin must list its most specific pattern first.
+        """
+        compiled: List[Tuple[str, Any]] = []
+        for plugin in self.plugins.values():
+            if not plugin.is_enabled:
+                continue
+            try:
+                patterns = plugin.pattern_intents
+            except Exception as e:
+                logger.warning(f"Could not read pattern_intents from plugin '{plugin.id}': {e}")
+                continue
+            for action_name, raw_patterns in (patterns or {}).items():
+                for raw in raw_patterns:
+                    try:
+                        compiled.append((action_name, re.compile(raw, re.IGNORECASE)))
+                    except re.error as e:
+                        logger.warning(
+                            f"Invalid pattern for '{action_name}' in plugin '{plugin.id}': {e}"
+                        )
+        self._pattern_intents_cache = compiled
+
     def get_active_fast_intents(self) -> Dict[str, List[str]]:
         """Aggregates all fast-lane training phrases from enabled plugins (cached)."""
         self.check_and_reload_if_changed()
@@ -278,6 +345,29 @@ class PluginManager:
         if self._fast_intents_phrase_map is None:
             self._rebuild_fast_intents_cache()
         return self._fast_intents_phrase_map.get(phrase.strip().lower())
+
+    def match_pattern_intent(self, phrase: str) -> Optional[str]:
+        """
+        Matches a command against the enabled plugins' `pattern_intents`.
+
+        Returns the action name of the first plugin whose pattern matches, or
+        None when nothing matches. The exact-phrase map is tried first by the
+        caller; this is the generalisation step that catches phrasings a
+        plugin could not enumerate.
+        """
+        if not phrase or not phrase.strip():
+            return None
+        self.check_and_reload_if_changed()
+        if self._pattern_intents_cache is None:
+            self._rebuild_pattern_intents_cache()
+        if not self._pattern_intents_cache:
+            return None
+
+        text = phrase.strip().lower()
+        for action_name, regex in self._pattern_intents_cache:
+            if regex.search(text):
+                return action_name
+        return None
 
     def get_active_system_descriptions(self) -> str:
         """Aggregates tool descriptions for Ollama AI system prompt."""

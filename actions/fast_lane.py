@@ -316,6 +316,13 @@ class FastLaneRouter:
         """
         Fast Lane Plugin Intent Dispatcher:
         Directly checks fast_intents from active plugins (<2ms latency, 0% AI).
+
+        Two matching tiers:
+          1. EXACT PHRASE — the plugin's `fast_intents` map (O(1) dictionary
+             lookup, 100% precise).
+          2. PATTERN — the plugin's `pattern_intents` regexes, which cover the
+             many ways one intent can be phrased without enumerating every
+             combination.
         """
         if not text or not text.strip():
             return None
@@ -330,8 +337,14 @@ class FastLaneRouter:
         cleaned = re.sub(r'^(?:please\s*)?(?:can\s+you\s*)?', '', low).strip()
 
         action_name = plugin_manager.match_fast_intent(cleaned) or plugin_manager.match_fast_intent(low)
+
+        if not action_name:
+            # Exact phrasing missed — fall back to the plugins' sentence-shape
+            # patterns so open-ended phrasings still route without an LLM.
+            action_name = plugin_manager.match_pattern_intent(cleaned) or plugin_manager.match_pattern_intent(low)
+
         if action_name:
-            logger.info(f"[FAST LANE] Matched plugin fast intent '{action_name}' for '{text}'")
+            logger.info(f"[FAST LANE] Matched plugin intent '{action_name}' for '{text}'")
             success = manager.execute_skill(action_name, text)
             return {
                 "handled": True,
