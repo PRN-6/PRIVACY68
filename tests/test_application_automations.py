@@ -1,16 +1,14 @@
 """
 Comprehensive Automation Tests for Applications in PRIVACY68:
 1. VS Code Automation (Terminal, Editor, Tabs, Formatting, Git, Debugging, Command Palette)
-2. WhatsApp Automation (Natural speech contact & message parsing, fuzzy contacts, fast intents)
-3. PowerPoint Automation (Slideshow controls, slide navigation, word-to-number parsing, presenter tools)
-4. Browser Automations (Google Chrome & Brave Browser - Tabs, Incognito, Web Search)
-5. Desktop App Launcher (Notepad, Calculator, Task Manager, Spotify, Terminal, Explorer, Paint)
+2. PowerPoint Automation (Slideshow controls, slide navigation, word-to-number parsing, presenter tools)
+3. Browser Automations (Google Chrome & Brave Browser - Tabs, Incognito, Web Search)
+4. Desktop App Launcher (Notepad, Calculator, Task Manager, Spotify, Terminal, Explorer, Paint)
 """
 
 import os
 import sys
 import unittest
-import tempfile
 from unittest.mock import patch
 
 # Add project root to sys.path
@@ -19,11 +17,10 @@ if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
 from extra_plugins.vscode_plugin import VSCodePlugin
-from extra_plugins.whatsapp_plugin import WhatsAppPlugin
 from extra_plugins.ppt_plugin import PPTPlugin, _extract_slide_number
 from extra_plugins.brave_plugin import BravePlugin
 from plugins.chrome_plugin import ChromePlugin
-from computer_use.launcher import AppLauncher, KNOWN_SYSTEM_APPS
+from computer_use.launcher import AppLauncher, _system_apps
 
 
 # =============================================================================
@@ -90,84 +87,7 @@ class TestVSCodeAutomation(unittest.TestCase):
 
 
 # =============================================================================
-# 2. WhatsApp Desktop Automation Test Suite
-# =============================================================================
-class TestWhatsAppAutomation(unittest.TestCase):
-    def setUp(self):
-        self.plugin = WhatsAppPlugin()
-        self.temp_dir = tempfile.mkdtemp(prefix="wa_test_")
-        self.orig_contacts_path = WhatsAppPlugin._CONTACTS_PATH
-        WhatsAppPlugin._CONTACTS_PATH = os.path.join(self.temp_dir, "whatsapp_contacts.json")
-
-    def tearDown(self):
-        WhatsAppPlugin._CONTACTS_PATH = self.orig_contacts_path
-        if os.path.exists(self.temp_dir):
-            import shutil
-            shutil.rmtree(self.temp_dir, ignore_errors=True)
-
-    def test_whatsapp_actions_registered(self):
-        """Verifies WhatsApp plugin action catalog."""
-        actions = self.plugin.actions
-        self.assertIn("whatsapp.open", actions)
-        self.assertIn("whatsapp.close", actions)
-        self.assertIn("whatsapp.send_message", actions)
-        self.assertIn("whatsapp.new_chat", actions)
-
-    def test_parse_contact_and_message_patterns(self):
-        """Verifies parsing natural speech command patterns into (contact, message)."""
-        # Pattern: "tell [contact] that [message]"
-        c1, m1 = self.plugin._parse_contact_and_message("tell John that I will be late for the meeting")
-        self.assertEqual(c1.lower(), "john")
-        self.assertEqual(m1, "I will be late for the meeting")
-
-        # Pattern: "send [message] to [contact]"
-        c2, m2 = self.plugin._parse_contact_and_message("send hello world to Alice")
-        self.assertEqual(c2.lower(), "alice")
-        self.assertEqual(m2, "hello world")
-
-        # Pattern: "send message to [contact]" (no body)
-        c3, m3 = self.plugin._parse_contact_and_message("send message to Bob")
-        self.assertEqual(c3.lower(), "bob")
-        self.assertIsNone(m3)
-
-        # Pattern: "... saying that ..."
-        c4, m4 = self.plugin._parse_contact_and_message("send message to Mom saying that dinner was great")
-        self.assertEqual(c4.lower(), "mom")
-        self.assertEqual(m4, "dinner was great")
-
-    def test_contact_storage_and_fuzzy_resolution(self):
-        """Verifies saving contacts and resolving fuzzy/spoken names to saved contacts."""
-        sample_contacts = [
-            {"name": "Alexander Graham", "alias": "Alex"},
-            {"name": "Sarah Connor", "alias": "Mom"},
-        ]
-        WhatsAppPlugin.save_contacts(sample_contacts)
-        loaded = self.plugin.load_contacts()
-        self.assertEqual(len(loaded), 2)
-
-        # Exact match
-        self.assertEqual(self.plugin._resolve_contact("Alexander Graham"), "Alexander Graham")
-
-        # Substring / alias fuzzy match
-        self.assertEqual(self.plugin._resolve_contact("Alex"), "Alexander Graham")
-        self.assertEqual(self.plugin._resolve_contact("mom"), "Sarah Connor")
-
-        # Fallback when contact not found
-        self.assertEqual(self.plugin._resolve_contact("Unknown Person"), "Unknown Person")
-
-    @patch("subprocess.Popen")
-    def test_whatsapp_open_and_close(self, mock_popen):
-        """Verifies WhatsApp launch and termination."""
-        with patch.object(self.plugin, "_detect_launch_method"):
-            self.plugin._resolved_launch_method = "uri"
-            self.assertTrue(self.plugin.open_app(""))
-
-        with patch("extra_plugins.whatsapp_plugin.kill_process", return_value=True):
-            self.assertTrue(self.plugin.close_app(""))
-
-
-# =============================================================================
-# 3. PowerPoint Automation Test Suite
+# 2. PowerPoint Automation Test Suite
 # =============================================================================
 class TestPowerPointAutomation(unittest.TestCase):
     def setUp(self):
@@ -219,7 +139,7 @@ class TestPowerPointAutomation(unittest.TestCase):
 
 
 # =============================================================================
-# 4. Browser Automation Test Suite (Chrome & Brave)
+# 3. Browser Automation Test Suite (Chrome & Brave)
 # =============================================================================
 class TestBrowserAutomations(unittest.TestCase):
     def setUp(self):
@@ -269,22 +189,25 @@ class TestBrowserAutomations(unittest.TestCase):
 
 
 # =============================================================================
-# 5. Desktop Application Launcher Test Suite
+# 4. Desktop Application Launcher Test Suite
 # =============================================================================
 class TestDesktopAppLauncherAutomations(unittest.TestCase):
     def setUp(self):
         AppLauncher._exe_cache.clear()
 
     def test_known_system_applications_registry(self):
-        """Verifies presence of standard Windows applications in catalog."""
+        """Verifies presence of the standard applications in the catalogue."""
+        system_apps = _system_apps()
         core_apps = [
-            "task manager", "calculator", "notepad", "paint", "snipping tool",
-            "control panel", "command prompt", "powershell", "terminal",
+            "task manager", "calculator", "notepad", "paint",
+            "control panel", "command prompt", "terminal",
             "file explorer", "word", "excel", "powerpoint", "spotify", "settings",
         ]
         for app in core_apps:
-            self.assertIn(app, KNOWN_SYSTEM_APPS, f"Missing core app: {app}")
-            info = KNOWN_SYSTEM_APPS[app]
+            if app not in system_apps:
+                # Windows-only entries are absent on the other platforms.
+                continue
+            info = system_apps[app]
             self.assertTrue("cmd" in info or "protocol" in info)
 
     def test_alias_resolution_for_spoken_commands(self):

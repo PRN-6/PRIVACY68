@@ -6,17 +6,12 @@ This directory contains standalone, optional plugins that are separated from Pri
 
 ## 📦 Available Extra Plugins
 
-1. **`whatsapp_plugin.py`** (💬 WhatsApp Desktop)
-   - Launch app (`"open whatsapp"`)
-   - Clean tree termination (`"close whatsapp"`)
-   - New conversation shortcut (`"new chat in whatsapp"`)
-
-2. **`brave_plugin.py`** (🦁 Brave Browser)
+1. **`brave_plugin.py`** (🦁 Brave Browser)
    - Launch browser (`"open brave"`)
    - Close browser (`"close brave"`)
    - Tab controls (`"new tab in brave"`, `"close tab in brave"`, `"reopen tab in brave"`)
 
-3. **`vscode_plugin.py`** (🧑‍💻 Visual Studio Code)
+2. **`vscode_plugin.py`** (🧑‍💻 Visual Studio Code)
    - Launch editor (`"open vscode"`)
    - Close editor (`"close vscode"`)
    - Open integrated terminal (`"open terminal in vscode"`)
@@ -24,17 +19,23 @@ This directory contains standalone, optional plugins that are separated from Pri
    - Search disk for a file and open it (`"search for a file called main.py in vscode"`)
 
 
-4. **`ppt_plugin.py`** (📽️ PowerPoint Control)
+3. **`ppt_plugin.py`** (📽️ PowerPoint Control)
    - Launch / close PowerPoint
    - Start / end slideshow
 
-6. **`notepad_plugin.py`** (📝 Notepad)
+4. **`notepad_plugin.py`** (📝 Notepad)
    - Launch / close Notepad
    - Type text into the active window
 
-7. **`boilerplate_plugin.py`** (🚀 Plugin Starter Template & Boilerplate)
+5. **`boilerplate_plugin.py`** (🚀 Plugin Starter Template & Boilerplate)
    - Comprehensive gold-standard boilerplate for creating custom plugins for ANY application
    - Includes metadata, action mapping, fast intents, Hermes AI descriptions, window context checking, and shortcut automation.
+
+> **Do you need a plugin just to open an application?** No.
+> PRIVACY68 indexes every application installed on the computer at startup, so
+> *"open WhatsApp"*, *"open Spotify"* or *"open my editor"* work out of the box.
+> A plugin is only needed for **automation** — driving an application's own
+> controls (tabs, slides, dialogs, settings).
 
 ---
 
@@ -73,7 +74,7 @@ You can install any of these plugins in **two ways**:
 ### Method 1: Via the Privacy68 Control Center GUI (Recommended)
 1. Open the **Privacy68 Control Center** (right-click the tray icon → **Control Center & Settings**).
 2. Go to the **🛠️ Create / Install Plugin** tab.
-3. Click **"📁 Browse & Install Plugin File..."** and select `extra_plugins/whatsapp_plugin.py` or `extra_plugins/brave_plugin.py` or your custom plugin.
+3. Click **"📁 Browse & Install Plugin File..."** and select `extra_plugins/brave_plugin.py` or your custom plugin.
 4. It will automatically install into your `%APPDATA%\PRIVACY68\plugins\` folder and hot-reload immediately!
 
 ### Method 2: Manual Copy

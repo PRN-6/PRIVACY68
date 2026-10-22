@@ -192,7 +192,14 @@ class SpeechStreamer:
         res = re.sub(r'^(hey|ok|okay|hi|hello)\s+', '', res, flags=re.IGNORECASE)
         return res.strip(".!?, \t\n")
 
-    def __init__(self, wake_word: str = None) -> None:
+    def __init__(self, wake_word: str = None, capture_only: bool = False) -> None:
+        """
+        `capture_only=True` builds the identical input stream (same device, gain
+        and block size as live verification) but skips loading the Whisper
+        model. The Control Center uses it for speaker enrollment only — loading
+        a second copy of the Whisper model there cost hundreds of megabytes
+        and tens of seconds on every dashboard launch.
+        """
         self.sample_rate = config.SAMPLE_RATE
         self.silence_threshold = getattr(config, "SILENCE_THRESHOLD", 0.008)
         self.silence_duration_chunks = config.SILENCE_DURATION_CHUNKS
@@ -213,8 +220,10 @@ class SpeechStreamer:
         logger.info(f"Custom Wake Word initialized: '{self.wake_word}' (Patterns: {self.wake_pattern.pattern})")
 
         self.model = None
-        WM = get_whisper_model_class()
-        if WM is not None:
+        WM = None if capture_only else get_whisper_model_class()
+        if capture_only:
+            logger.info("Capture-only streamer ready (no Whisper model loaded).")
+        elif WM is not None:
             try:
                 self.model = WM(
                     config.WHISPER_MODEL_SIZE,

@@ -1,0 +1,14 @@
+# PRIVACY68 — Linux extras
+#
+#   pip install -r requirements-linux.txt
+#
+# Most of the work on Linux is done by the operating system itself, which
+# needs a few system packages. Install them once with:
+#
+#   sudo apt install python3-tk python3-gi gir1.2-gtk-3.0 \
+#       gir1.2-webkit2-4.0 python3-xlib scrot libnotify-bin \
+#       libgirepository1.0-dev wmctrl xdotool
+#
+# Wayland: set QT_QPA_PLATFORM=xcb or run the assistant under XWayland.
+
+-r requirements.txt

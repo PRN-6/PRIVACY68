@@ -2,7 +2,7 @@
 win_utils.py — Minimal OS-level utilities for PRIVACY68 plugins.
 
 Contains only what UIA cannot replace:
-  - kill_process   : subprocess taskkill (OS-level, no UIA equivalent)
+  - kill_process   : process termination (OS-level, no UIA equivalent)
   - type_text      : clipboard paste (text input helper)
   - press_enter    : pyautogui enter key
   - press_tab      : pyautogui tab key
@@ -11,20 +11,31 @@ All window focus / element interaction goes through:
   computer_use.window_manager  → WindowManager
   computer_use.windows_uia     → WindowsUIA / UIElementWrapper
   computer_use.actions         → ComputerActions
+
+Despite the historical name the module is platform agnostic: the process
+handling is delegated to `core.platform`, so the same plugin code works on
+Windows, Linux and macOS.
 """
 
 import logging
 import subprocess
 import time
 
+from core.platform import IS_WINDOWS, kill_process as _platform_kill_process
+
 logger = logging.getLogger("PRIVACY68.WinUtils")
 
 
 def kill_process(exe_name: str) -> bool:
     """
-    Terminates an application process and its child tree cleanly on Windows.
-    Uses taskkill /F /T /IM; falls back to PowerShell Stop-Process.
+    Terminates an application process and its child tree.
+
+    Windows uses `taskkill /F /T /IM` (falling back to PowerShell
+    Stop-Process); Linux uses `pkill`/`killall`; macOS uses `pkill`.
     """
+    if not IS_WINDOWS:
+        return _platform_kill_process(exe_name)
+
     try:
         target = (
             exe_name

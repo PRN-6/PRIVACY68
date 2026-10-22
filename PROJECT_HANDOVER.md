@@ -59,6 +59,13 @@
 - Instant Win32 / UIA / filesystem actions (`volume_up`, `volume_mute`, `lock_screen`, `screenshot`, `type_text`, `open_application`).
 - Direct Plugin Fast Intents (`chrome.new_tab`, `chrome.incognito`, `system.maximize_window`, `github.notifications`).
 - Zero network, zero LLM, `<2ms` latency.
+- The lane does not decide what a command *is* — the **command catalogue** does. The lane asks the registry for a match and runs it.
+
+### The Command Registry (`actions/registry.py` + `actions/catalog.py`)
+- Every command is one `CommandSpec`: id, lane, intent, matchers, examples, slot extractor, handler.
+- Adding a command = adding one spec. Nothing else has to change.
+- The classifier, the slot extractor and both lanes read the same specs, so the taxonomy can never drift.
+- Retrain the fallback classifier with `python actions/intent_classifier.py --train`.
 
 ### Lane 2: API Lane (`actions/api_lane.py`)
 - **Direct Web & Utility APIs**: Public weather API (via wttr.in, no key required), public IP info (`api.ipify.org`), search URLs.
@@ -140,30 +147,41 @@ For users with existing AI subscriptions:
 | :--- | :--- |
 | `app.py` | Main entry point for voice loop, tray, dashboard, and remote server. |
 | `config.py` | Audio streamer, VAD, and Whisper configuration. |
-| `actions/executor.py` | Master 3-lane dispatcher (`execute_system_command_detailed`). |
+| `actions/executor.py` | Master dispatcher — the pipeline every command travels through. |
+| `actions/registry.py` | The Command Registry: `CommandSpec`, `Matcher`, and the lookup indexes. |
+| `actions/catalog.py` | The command catalogue — every built-in command, declared once. |
+| `actions/dispatch.py` | Shared resolve/execute path used by Lane 1 and Lane 2. |
 | `actions/command_planner.py` | Compound Command Planner — splits multi-command utterances into ordered clauses. |
 | `actions/fast_lane.py` | Lane 1: Deterministic OS actions & plugin fast intents. |
 | `actions/api_lane.py` | Lane 2: Direct Web APIs + Cloud LLM Semantic Router (Groq/Gemini/Claude/OpenAI). |
 | `actions/router.py` | Lane 3: Local LLM Lane with non-blocking `is_ollama_alive` socket probe. |
+| `actions/intent_classifier.py` | Catalogue-driven intent classifier; retrains with `--train`. |
+| `actions/param_extractor.py` | Rule-driven slot extraction (name, path, query, city, content). |
 | `actions/skill_manager.py` | Action coordinator for dynamic plugins. |
 | `plugins/profile_manager.py` | Manages user settings persisted in `%APPDATA%/PRIVACY68/user_profile.json`. |
 | `plugins/manager.py` | Loads and indexes built-in and custom plugins. |
-| `extra_plugins/whatsapp_plugin.py` | WhatsApp desktop automation (regex-first, zero-Ollama latency). |
+| `core/platform/` | The platform abstraction layer — one backend per OS (Windows / Linux / macOS). |
+| `core/apps.py` | Application discovery — indexes everything installed on this computer. |
+| `extra_plugins/` | Downloadable plugin marketplace entries (PowerPoint, Notepad, Brave, GitHub). |
 | `tests/test_three_lane_architecture.py` | Unit tests for the 3-lane system. |
+| `tests/test_command_registry.py` | Unit tests for the command registry and the catalogue. |
 | `tests/test_command_planner.py` | Unit tests for the Compound Command Planner. |
 | `tests/test_security_guard_wiring.py` | Verifies the 3-tier security model is actually wired into execution. |
 | `sync_website_plugins.py` | Regenerates `website/downloads/plugins/*.py` from canonical plugin sources. |
+| `requirements.txt` / `requirements-windows.txt` / `requirements-linux.txt` | Common, Windows and Linux dependency sets. |
+| `build_exe.py` / `build.bat` / `build.sh` | Standalone builds: Windows executable + installer, Linux folder + tarball. |
+| `install.sh` | Linux installer: virtual environment, `privacy68` launcher, desktop menu entry. |
 
 ---
 
 ## 6. Recent Verification Status
 
-- All **77 unit tests** pass with 0 failures:
+- All **135 unit tests** pass with 0 failures:
   ```powershell
   python -m unittest discover tests
-  # Ran 77 tests in 13.13s -> OK (0 failures)
+  # Ran 135 tests in 15.2s -> OK (0 failures)
   ```
-  `python -m pytest tests/` runs the same 77 tests. Both runners are kept in sync:
+  `python -m pytest tests/` runs the same 135 tests. Both runners are kept in sync:
   every test file uses `unittest.TestCase`, so neither runner silently skips a file.
 - **CI**: `.github/workflows/ci.yml` runs the test suite, the website-plugin sync
   check, and a byte-compile pass on every push to `main`. The release workflow
@@ -172,6 +190,19 @@ For users with existing AI subscriptions:
   plugin sources into `website/downloads/plugins/` so the copies served to end
   users can never drift from `extra_plugins/` and `plugins/`. Run with
   `--check` in CI to fail the build if they diverge.
+- **Command Registry Rebuild**:
+  - `actions/registry.py` + `actions/catalog.py`: every command is one declarative
+    spec (matchers, slot extractor, handler). Adding a command no longer means
+    editing a dispatcher branch, a keyword table and a slot regex.
+  - `actions/dispatch.py`: Lane 1 and Lane 2 resolve commands through the same
+    path, so a command behaves identically whichever lane owns it.
+  - `actions/intent_classifier.py`: the intent taxonomy is derived from the
+    registry; the catalogue resolves commands exactly and the trained model is
+    only the fallback for unseen phrasings. Retrain with
+    `python actions/intent_classifier.py --train`.
+  - `actions/param_extractor.py`: rule-driven slot extraction replaces the token
+    tagger, which could not tell "Cats and Dogs" (one name) from "tmp and build
+    folders" (one delete).
 - **OpenClaw Architecture Cleanup**:
   - `actions/fast_lane.py`: Cut from 893 lines down to 470 lines (removed 420+ lines of brittle regex bloat). Now acts as a lean, deterministic Fast Dispatcher (<2ms).
   - `actions/api_lane.py`: Smart tool selector prunes definitions to top 40 relevant tools (~3,500 tokens), preventing Groq's 7,000 ITPM limit and 128-tool schema ceiling. Runs in ~150-200ms.
@@ -196,7 +227,7 @@ Key Context Summary:
    - Lane 3: Local LLM Lane (actions/router.py) — Optional/opt-in local Ollama model with is_ollama_alive() probe (<1ms non-blocking check).
    - Compound Command Planner (actions/command_planner.py) — Splits multi-command utterances ("mute the volume and open chrome") into ordered clauses and runs each through the 3-lane path. Deterministic, no LLM, conservative: returns None (single command) whenever it is not certain.
 2. Audio stream and Whisper STT run 100% locally on the device (privacy guaranteed).
-3. All 77 unit tests currently pass (python -m unittest discover tests).
+3. All 134 unit tests currently pass (python -m unittest discover tests).
 4. Goal: Keep the codebase clean, lean, and optimized. Avoid massive fragile regex or hardcoded word lists when APIs can handle natural language tool-calling effortlessly.
 
 Please acknowledge that you have reviewed the handover and let me know you are ready to continue.

@@ -48,7 +48,7 @@ exactly as before.
 
 import logging
 import re
-from typing import List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 logger = logging.getLogger("PRIVACY68.CommandPlanner")
 
@@ -93,7 +93,7 @@ COMMAND_VERBS = frozenset({
     "show", "hide", "close", "take", "screen", "save", "play",
     # apps / navigation
     "open", "launch", "start", "go", "switch", "navigate", "visit", "browse",
-    "install", "uninstall", "run", "execute", "build",
+    "install", "uninstall", "run", "execute",
     # files & folders
     "create", "make", "add", "new", "rename", "change", "delete", "remove",
     "clear", "copy", "paste", "move", "export", "import",
@@ -107,6 +107,14 @@ COMMAND_VERBS = frozenset({
     "push", "pull", "commit", "merge", "rebase", "enable", "disable", "configure",
     "deploy", "test", "debug",
 })
+
+# Verbs that are only a command when a specific kind of object follows.
+# "new folder assets" creates a folder; "new and final.txt" is the tail of
+# a file name, not a command.
+_VERB_REQUIRES_OBJECT: Dict[str, frozenset] = {
+    "new": frozenset({"folder", "file", "document", "window", "tab", "note", "project"}),
+    "add": frozenset({"file", "folder", "note", "tab", "item", "text", "project"}),
+}
 
 # The classifier must be reasonably sure of a clause before it is executed on
 # its own. Below this the planner declines to split and the whole utterance is
@@ -187,7 +195,17 @@ def _lead_verb(clause: str) -> Optional[str]:
     if idx + 1 < len(words) and (words[idx], words[idx + 1]) in _NON_IMPERATIVE_BIGRAMS:
         return None
     verb = words[idx]
-    return verb if verb in COMMAND_VERBS else None
+    if verb not in COMMAND_VERBS:
+        return None
+
+    # A few verbs only head a command when the right kind of object follows.
+    required = _VERB_REQUIRES_OBJECT.get(verb)
+    if required:
+        following = words[idx + 1] if idx + 1 < len(words) else ""
+        if not any(following.startswith(noun) for noun in required):
+            return None
+
+    return verb
 
 
 def _candidate_split(text: str) -> List[str]:

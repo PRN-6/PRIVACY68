@@ -3,16 +3,28 @@ PRIVACY68 Hardware-Level Keyboard & Mouse Controller.
 
 Provides native Windows input simulation using Win32 user32 APIs (SendInput, keybd_event, mouse_event)
 without external third-party GUI dependencies.
+
+On Linux and macOS the Win32 binding is not available; the controller then
+falls back to `pyautogui`, which drives X11/Wayland and the macOS event
+taps respectively.
 """
 
 import ctypes
-from ctypes import wintypes
 import time
 import logging
 from typing import Dict, Optional, Tuple
 
+from core.platform import IS_WINDOWS
+
 logger = logging.getLogger("PRIVACY68.InputController")
-user32 = ctypes.windll.user32
+
+if IS_WINDOWS:
+    from ctypes import wintypes
+
+    user32 = ctypes.windll.user32
+else:
+    wintypes = None
+    user32 = None
 
 # Win32 Virtual Key Codes
 VK_CODES: Dict[str, int] = {
@@ -82,6 +94,18 @@ class InputController:
     """
 
     @staticmethod
+    def _pyautogui():
+        """Returns the pyautogui module, or None when it is unavailable."""
+        try:
+            import pyautogui
+
+            pyautogui.FAILSAFE = False
+            return pyautogui
+        except Exception as e:
+            logger.debug(f"[INPUT] pyautogui unavailable: {e}")
+            return None
+
+    @staticmethod
     def _get_vk(key: str) -> int:
         """Translates a key name or single character to its Win32 VK code."""
         k = key.lower().strip()
@@ -97,6 +121,17 @@ class InputController:
     @classmethod
     def press_key(cls, key: str, hold_duration: float = 0.05) -> bool:
         """Presses and releases a single key."""
+        if not IS_WINDOWS:
+            gui = cls._pyautogui()
+            if not gui:
+                return False
+            try:
+                gui.press(key)
+                return True
+            except Exception as e:
+                logger.error(f"[INPUT] press_key failed: {e}")
+                return False
+
         vk = cls._get_vk(key)
         if not vk:
             logger.warning(f"[INPUT] Unknown key: '{key}'")
@@ -112,6 +147,17 @@ class InputController:
         Presses a sequence of keys simultaneously and releases in reverse order.
         Example: press_hotkey('ctrl', 'shift', 'escape')
         """
+        if not IS_WINDOWS:
+            gui = cls._pyautogui()
+            if not gui:
+                return False
+            try:
+                gui.hotkey(*[str(k).lower() for k in keys])
+                return True
+            except Exception as e:
+                logger.error(f"[INPUT] Hotkey error {keys}: {e}")
+                return False
+
         vks = [cls._get_vk(k) for k in keys if cls._get_vk(k) != 0]
         if not vks:
             return False
@@ -134,6 +180,17 @@ class InputController:
     @classmethod
     def type_text(cls, text: str, delay_per_char: float = 0.01) -> bool:
         """Types unicode text character-by-character."""
+        if not IS_WINDOWS:
+            gui = cls._pyautogui()
+            if not gui:
+                return False
+            try:
+                gui.write(text, interval=delay_per_char)
+                return True
+            except Exception as e:
+                logger.error(f"[INPUT] Type text error: {e}")
+                return False
+
         try:
             for char in text:
                 user32.keybd_event(0, ord(char), KEYEVENTF_UNICODE, 0)
@@ -182,30 +239,55 @@ class InputController:
 
     @classmethod
     def show_desktop(cls) -> bool:
-        return cls.press_hotkey("win", "d")
+        return cls.press_hotkey("win" if IS_WINDOWS else "super", "d")
 
     @classmethod
     def open_task_manager(cls) -> bool:
-        return cls.press_hotkey("ctrl", "shift", "escape")
+        if IS_WINDOWS:
+            return cls.press_hotkey("ctrl", "shift", "escape")
+        from computer_use.launcher import app_launcher
+
+        return app_launcher.launch("system monitor")
 
     @classmethod
     def lock_workstation(cls) -> bool:
+        if not IS_WINDOWS:
+            from core.platform import lock_screen
+
+            return lock_screen()
         return user32.LockWorkStation() != 0
 
     @classmethod
     def open_settings_shortcut(cls) -> bool:
+        if not IS_WINDOWS:
+            from core.platform import open_settings
+
+            return open_settings()
         return cls.press_hotkey("win", "i")
 
     @classmethod
     def open_file_explorer_shortcut(cls) -> bool:
+        if not IS_WINDOWS:
+            import os
+
+            from core.platform import open_path
+
+            return open_path(os.path.expanduser("~"))
         return cls.press_hotkey("win", "e")
 
     @classmethod
     def open_run_dialog(cls) -> bool:
+        if not IS_WINDOWS:
+            logger.info("[INPUT] The Run dialog has no Linux equivalent; ignoring")
+            return False
         return cls.press_hotkey("win", "r")
 
     @classmethod
     def take_screenshot_shortcut(cls) -> bool:
+        if not IS_WINDOWS:
+            from core.platform import take_screenshot
+
+            return take_screenshot() is not None
         return cls.press_hotkey("win", "shift", "s")
 
     @classmethod
@@ -222,6 +304,16 @@ class InputController:
     @classmethod
     def get_cursor_pos(cls) -> Tuple[int, int]:
         """Returns the current (x, y) mouse coordinates."""
+        if not IS_WINDOWS:
+            gui = cls._pyautogui()
+            if not gui:
+                return (0, 0)
+            try:
+                return tuple(int(v) for v in gui.position())  # type: ignore[return-value]
+            except Exception as e:
+                logger.debug(f"[INPUT] get_cursor_pos failed: {e}")
+                return (0, 0)
+
         point = wintypes.POINT()
         user32.GetCursorPos(ctypes.byref(point))
         return point.x, point.y
@@ -229,6 +321,16 @@ class InputController:
     @classmethod
     def set_cursor_pos(cls, x: int, y: int) -> bool:
         """Sets the mouse cursor to absolute pixel coordinates (x, y)."""
+        if not IS_WINDOWS:
+            gui = cls._pyautogui()
+            if not gui:
+                return False
+            try:
+                gui.moveTo(int(x), int(y))
+                return True
+            except Exception as e:
+                logger.debug(f"[INPUT] set_cursor_pos failed: {e}")
+                return False
         return user32.SetCursorPos(int(x), int(y)) != 0
 
     @classmethod
@@ -237,6 +339,19 @@ class InputController:
         if x is not None and y is not None:
             cls.set_cursor_pos(x, y)
             time.sleep(0.02)
+
+        if not IS_WINDOWS:
+            gui = cls._pyautogui()
+            if not gui:
+                return False
+            try:
+                gui.click(x=int(x) if x is not None else None,
+                          y=int(y) if y is not None else None,
+                          button=button, clicks=clicks)
+                return True
+            except Exception as e:
+                logger.error(f"[INPUT] click failed: {e}")
+                return False
 
         down_flag = MOUSEEVENTF_LEFTDOWN
         up_flag = MOUSEEVENTF_LEFTUP
@@ -267,6 +382,17 @@ class InputController:
     @classmethod
     def scroll(cls, clicks: int = 3, direction: str = "down") -> bool:
         """Scrolls the mouse wheel up or down."""
+        if not IS_WINDOWS:
+            gui = cls._pyautogui()
+            if not gui:
+                return False
+            try:
+                gui.scroll(clicks if direction == "down" else -clicks)
+                return True
+            except Exception as e:
+                logger.error(f"[INPUT] scroll failed: {e}")
+                return False
+
         delta = -120 * clicks if direction == "down" else 120 * clicks
         user32.mouse_event(MOUSEEVENTF_WHEEL, 0, 0, delta, 0)
         return True

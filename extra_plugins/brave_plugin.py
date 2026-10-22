@@ -1,13 +1,31 @@
 import logging
-import subprocess
 import re
 import time
 import urllib.parse
 from typing import Callable, Dict, List
+from core.platform import IS_WINDOWS, run_detached
 from plugins.base_plugin import BasePlugin
 from plugins.win_utils import kill_process
 
 logger = logging.getLogger("PRIVACY68.Plugin.Brave")
+
+#: The process Brave runs as — "brave.exe" on Windows, "brave" elsewhere.
+BRAVE_PROCESS = "brave.exe" if IS_WINDOWS else "brave"
+
+
+def _brave(*args: str) -> bool:
+    """
+    Starts Brave with the given flags, on any operating system.
+
+    The application index knows where Brave is installed, so it is started
+    from its real path instead of a Windows-only shell trick.
+    """
+    from core.apps import command_for
+
+    command = command_for("brave", *args)
+    if command:
+        return run_detached(command)
+    return run_detached(["brave-browser", *args]) or run_detached(["brave", *args])
 
 class BravePlugin(BasePlugin):
     """
@@ -87,20 +105,18 @@ class BravePlugin(BasePlugin):
 
     def open_browser(self, text: str) -> bool:
         logger.info("Plugin Action: Launching Brave Browser")
-        subprocess.Popen("start brave", shell=True)
-        return True
+        return _brave()
 
     def close_browser(self, text: str) -> bool:
         logger.info("Plugin Action: Closing Brave Browser")
-        kill_process("brave.exe")
-        return True
+        return kill_process(BRAVE_PROCESS)
 
     def _ensure_focused(self) -> bool:
         """Ensures Brave is the focused foreground window before sending hotkeys."""
         from computer_use.window_manager import window_manager
         active = window_manager.get_active_window()
         proc = str(active.get("process_name", "")).lower()
-        if proc == "brave.exe":
+        if "brave" in proc:
             return True
         # Brave is not focused — try to find and focus it
         hwnd = window_manager.find_window("brave")
@@ -111,7 +127,7 @@ class BravePlugin(BasePlugin):
             return True
         # Brave not open at all — launch it
         logger.info("Brave not running — launching Brave")
-        subprocess.Popen("start brave", shell=True)
+        _brave()
         time.sleep(1.0)
         return True
 
@@ -149,5 +165,4 @@ class BravePlugin(BasePlugin):
             logger.info(f"Plugin Action: Searching Brave for '{cleaned}'")
             url = f"https://search.brave.com/search?q={urllib.parse.quote_plus(cleaned)}"
             
-        subprocess.Popen(f'start brave "{url}"', shell=True)
-        return True
+        return _brave(url)

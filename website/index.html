@@ -136,7 +136,7 @@
                         data-action="Launching Chrome Browser (Native Win32)" data-conf="1.00">"Privacy68, open
                         Chrome"</button>
                     <button class="cmd-chip" data-cmd="Privacy68, launch WhatsApp" data-lane="FAST_LANE"
-                        data-action="Executing WhatsApp Desktop Protocol" data-conf="1.00">"Privacy68, launch
+                        data-action="Opening the installed application" data-conf="1.00">"Privacy68, launch
                         WhatsApp"</button>
                     <button class="cmd-chip" data-cmd="Privacy68, explain how neural networks work" data-lane="API_LANE"
                         data-action="Cloud Reasoning (OpenAI / Groq) → Spoken Synthesis" data-conf="0.99">"Privacy68, explain neural networks"</button>
@@ -292,9 +292,14 @@
                     <div class="step-detail">
                         <h4>Install Dependencies</h4>
                         <div class="code-block">
-                            <code>pip install -r requirements.txt</code>
+                            <code>pip install -r requirements-windows.txt</code>
                             <button class="copy-btn"
-                                onclick="copyCode(this, 'pip install -r requirements.txt')">COPY</button>
+                                onclick="copyCode(this, 'pip install -r requirements-windows.txt')">COPY</button>
+                        </div>
+                        <div class="code-block">
+                            <code>pip install -r requirements-linux.txt</code>
+                            <button class="copy-btn"
+                                onclick="copyCode(this, 'pip install -r requirements-linux.txt')">COPY</button>
                         </div>
                     </div>
                 </div>

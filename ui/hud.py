@@ -99,7 +99,13 @@ class FloatingHUD:
         try:
             self.root.wm_attributes("-transparentcolor", self.transparent_color)
         except Exception as e:
-            logger.debug(f"start_ui: {e}")
+            # "-transparentcolor" is a Windows-only Tk extension. On Linux the
+            # overlay is composited instead, using a window alpha.
+            logger.debug(f"start_ui: colour-key transparency unavailable ({e})")
+            try:
+                self.root.wm_attributes("-alpha", "0.90")
+            except Exception as inner:
+                logger.debug(f"start_ui: alpha transparency unavailable ({inner})")
         
         # Full-screen canvas
         self.canvas = tk.Canvas(

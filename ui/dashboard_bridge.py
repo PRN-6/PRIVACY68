@@ -4,14 +4,39 @@ import platform
 import shutil
 import subprocess
 from typing import Dict, Any, List
-import sounddevice as sd
-import numpy as np
-
-from plugins.manager import plugin_manager
-from plugins.profile_manager import profile_manager
-from speech.voice_auth import voice_authenticator
 
 logger = logging.getLogger("PRIVACY68.DashboardBridge")
+
+
+class _LazyProxy:
+    """
+    Defers importing a module until one of its attributes is first touched.
+
+    The Control Center used to import the whole speech stack (ONNX Runtime,
+    SciPy, HuggingFace Hub, faster-whisper) plus the plugin catalogue at
+    import time, which added seconds to every dashboard launch even though
+    none of it is needed until the user opens a specific tab.
+    """
+
+    def __init__(self, module_path: str, attribute: str):
+        self._module_path = module_path
+        self._attribute = attribute
+        self._resolved = None
+
+    def _resolve(self):
+        if self._resolved is None:
+            import importlib
+            self._resolved = getattr(importlib.import_module(self._module_path), self._attribute)
+        return self._resolved
+
+    def __getattr__(self, item):
+        return getattr(self._resolve(), item)
+
+
+plugin_manager = _LazyProxy("plugins.manager", "plugin_manager")
+profile_manager = _LazyProxy("plugins.profile_manager", "profile_manager")
+voice_authenticator = _LazyProxy("speech.voice_auth", "voice_authenticator")
+
 
 class DashboardAPI:
     """
@@ -21,6 +46,7 @@ class DashboardAPI:
     """
     def __init__(self, window=None):
         self._window = window
+        self._capture_streamer = None
 
     def set_window(self, window):
         self._window = window
@@ -311,31 +337,34 @@ class DashboardAPI:
             logger.error(f"Error installing plugin file: {e}")
             return {"success": False, "message": str(e)}
 
-    # ---------------- WhatsApp Contacts ---------------- #
+    # ---------------- Installed Applications ---------------- #
 
-    def get_whatsapp_contacts(self) -> List[Dict]:
-        """Returns the saved WhatsApp contacts list for the plugin config UI."""
-        try:
-            from plugins.manager import plugin_manager
-            plugin = plugin_manager.get_plugin("whatsapp")
-            if plugin and hasattr(plugin, "load_contacts"):
-                return plugin.load_contacts()
-        except Exception as e:
-            logger.error(f"Error loading WhatsApp contacts: {e}")
-        return []
+    def get_installed_apps(self, rescan: bool = False) -> List[Dict[str, str]]:
+        """
+        Returns the applications discovered on this computer.
 
-    def save_whatsapp_contacts(self, contacts: List[Dict]) -> Dict:
-        """Saves the WhatsApp contacts list from the plugin config UI."""
+        These are the applications the assistant can open by name, so the
+        user can check that a program is actually there before saying
+        "open <name>".
+        """
         try:
-            from plugins.manager import plugin_manager
-            plugin = plugin_manager.get_plugin("whatsapp")
-            if plugin and hasattr(plugin, "save_contacts"):
-                success = plugin.save_contacts(contacts)
-                return {"success": success, "message": f"Saved {len(contacts)} contacts." if success else "Save failed."}
-            return {"success": False, "message": "WhatsApp plugin not found or not loaded."}
+            from core.apps import app_index
+
+            if rescan:
+                app_index.refresh()
+                # Teach the fast lane about anything installed since startup.
+                from actions.catalog import register_installed_apps
+
+                added = register_installed_apps()
+                logger.info(f"Rescan found {added} new applications.")
+
+            return [
+                {"name": e.name, "source": e.source, "command": e.command}
+                for e in sorted(app_index.all(), key=lambda e: e.name.lower())
+            ]
         except Exception as e:
-            logger.error(f"Error saving WhatsApp contacts: {e}")
-            return {"success": False, "message": str(e)}
+            logger.error(f"Error listing installed applications: {e}")
+            return []
 
     # ---------------- System Diagnostics & Telemetry ---------------- #
 
@@ -382,16 +411,19 @@ class DashboardAPI:
                 "link": "https://ollama.com/download"
             })
 
-        # faster-whisper
+        # faster-whisper — the version is read from the installed distribution
+        # metadata so the check stays cheap; importing the package itself pulls
+        # in ctranslate2 and costs seconds.
         try:
-            import faster_whisper
+            from importlib.metadata import version as _pkg_version
+            whisper_version = _pkg_version("faster-whisper")
             ai_checks.append({
                 "name": "faster-whisper (ASR)",
                 "status": "ok",
-                "detail": f"Loaded v{getattr(faster_whisper, '__version__', '1.0+')} • High-speed Whisper Engine",
+                "detail": f"Installed v{whisper_version} • High-speed Whisper Engine",
                 "link": None
             })
-        except ImportError:
+        except Exception:
             ai_checks.append({
                 "name": "faster-whisper (ASR)",
                 "status": "fail",
@@ -400,6 +432,29 @@ class DashboardAPI:
             })
 
         sections.append({"title": "Core AI & Speech Engines", "icon": "cpu", "items": ai_checks})
+
+        # 1b. Control Center runtime — the WebView2 runtime is what renders
+        #     this very window, so a missing one is worth surfacing.
+        try:
+            from utils.webview2 import get_webview2_status
+            webview2 = get_webview2_status()
+            if webview2["installed"]:
+                ui_checks = [{
+                    "name": "Edge WebView2 Runtime",
+                    "status": "ok",
+                    "detail": f"Installed • Version {webview2['version']}",
+                    "link": None
+                }]
+            else:
+                ui_checks = [{
+                    "name": "Edge WebView2 Runtime",
+                    "status": "fail",
+                    "detail": "Not installed — the Control Center needs it to render.",
+                    "link": webview2["download_url"]
+                }]
+            sections.append({"title": "Control Center Runtime", "icon": "monitor", "items": ui_checks})
+        except Exception as e:
+            logger.debug(f"WebView2 diagnostics unavailable: {e}")
 
         # 2. NVIDIA GPU & CUDA Acceleration
         gpu_checks = []
@@ -453,6 +508,7 @@ class DashboardAPI:
         # 3. Audio & Hardware Input
         hw_checks = []
         try:
+            import sounddevice as sd
             devices = sd.query_devices()
             input_devs = [d for d in devices if d['max_input_channels'] > 0]
             if input_devs:
@@ -492,6 +548,8 @@ class DashboardAPI:
     def test_microphone(self) -> Dict[str, Any]:
         """Records a 0.4s audio slice to measure current mic volume/energy."""
         try:
+            import numpy as np
+            import sounddevice as sd
             duration = 0.4
             sr = 16000
             recording = sd.rec(int(duration * sr), samplerate=sr, channels=1, dtype="float32")
@@ -534,11 +592,67 @@ class DashboardAPI:
         except Exception as e:
             return {"success": False, "message": str(e)}
 
-    def _get_enrollment_audio(self, duration: float) -> np.ndarray:
+    # ---------------- Enrollment Microphone Capture ---------------- #
+
+    def start_enrollment_capture(self) -> Dict[str, Any]:
+        """
+        Opens the enrollment capture stream on demand.
+
+        The microphone is deliberately NOT opened when the Control Center
+        starts: the assistant process already holds the input device, and
+        opening a second stream on machines whose audio driver runs in
+        exclusive mode blocks the dashboard indefinitely. The stream is
+        therefore created only when the user actually visits the Voice
+        Enrollment tab.
+        """
+        if self._capture_streamer is not None:
+            return {"success": True, "already_active": True}
+
+        try:
+            from speech.streamer import SpeechStreamer, set_speech_streamer
+
+            # capture_only=True: identical device/gain/blocksize as live
+            # verification, but no second copy of the Whisper model.
+            streamer = SpeechStreamer(capture_only=True)
+            set_speech_streamer(streamer)
+            streamer.stream.start()
+            self._capture_streamer = streamer
+            logger.info("Dashboard enrollment capture stream started (lazy).")
+            return {"success": True, "already_active": False}
+        except Exception as e:
+            logger.warning(f"Could not start the enrollment capture stream: {e}")
+            self._capture_streamer = None
+            return {
+                "success": False,
+                "message": (
+                    "Could not open the microphone. Another application may be "
+                    "using it exclusively — close other recording apps and try again."
+                ),
+            }
+
+    def stop_enrollment_capture(self) -> Dict[str, Any]:
+        """Releases the enrollment capture stream when the user leaves the tab."""
+        streamer = self._capture_streamer
+        if streamer is None:
+            return {"success": True, "active": False}
+        try:
+            stream = getattr(streamer, "stream", None)
+            if stream is not None:
+                stream.stop()
+                stream.close()
+        except Exception as e:
+            logger.debug(f"stop_enrollment_capture: {e}")
+        finally:
+            self._capture_streamer = None
+            logger.info("Dashboard enrollment capture stream stopped.")
+        return {"success": True, "active": False}
+
+    def _get_enrollment_audio(self, duration: float) -> "np.ndarray":
         """
         Captures audio via the running SpeechStreamer (same device/gain as live
         verification) if available, otherwise falls back to sd.rec().
         """
+        import numpy as np
         try:
             # Prefer the already-running InputStream so enrollment and
             # live verification share an identical audio path.
@@ -549,6 +663,7 @@ class DashboardAPI:
         except Exception as e:
             logger.warning(f"Streamer capture unavailable, falling back to sd.rec(): {e}")
         # Fallback: direct mic recording
+        import sounddevice as sd
         logger.info(f"Capturing enrollment via sd.rec ({duration}s)...")
         recording = sd.rec(int(duration * 16000), samplerate=16000, channels=1, dtype='float32')
         sd.wait()
@@ -559,7 +674,18 @@ class DashboardAPI:
         Records 3.0 seconds from the microphone (using the same audio path as live
         speaker verification) and extracts a voice embedding enrollment sample.
         """
+        import numpy as np
         try:
+            # Make sure the capture stream exists before recording.
+            if self._capture_streamer is None:
+                started = self.start_enrollment_capture()
+                if not started.get("success"):
+                    return {
+                        "success": False,
+                        "message": started.get("message", "Microphone is unavailable."),
+                        "count": len(voice_authenticator.temp_enrollment_samples),
+                    }
+
             audio = self._get_enrollment_audio(duration=3.0)
             rms = float(np.sqrt(np.mean(audio**2)))
             if rms < 0.005:
@@ -611,6 +737,7 @@ class DashboardAPI:
         and computes real-time similarity score against the master voice profile.
         """
         try:
+            import numpy as np
             audio = self._get_enrollment_audio(duration=3.0)
             rms = float(np.sqrt(np.mean(audio**2)))
             if rms < 0.005:
@@ -640,8 +767,9 @@ class DashboardAPI:
         """Safely opens an external URL in the default browser."""
         try:
             if url.startswith("http://") or url.startswith("https://"):
-                os.startfile(url)
-                return True
+                from core.platform import open_uri
+
+                return open_uri(url)
         except Exception as e:
             logger.error(f"Failed to open URL {url}: {e}")
         return False

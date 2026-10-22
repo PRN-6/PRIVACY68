@@ -10,10 +10,12 @@ import json
 import subprocess
 from typing import Dict, Any, List, Optional, Callable
 
+from core.platform import IS_WINDOWS, app_data_dir
+
 logger = logging.getLogger("PRIVACY68.CUDAManager")
 
 # User AppData directory for persistent external CUDA runtime storage
-APPDATA_DIR = os.path.join(os.getenv("APPDATA", os.path.expanduser("~")), "PRIVACY68")
+APPDATA_DIR = app_data_dir()
 APPDATA_CUDA_DIR = os.path.join(APPDATA_DIR, "cuda")
 APPDATA_CUDA_BIN = os.path.join(APPDATA_CUDA_DIR, "bin")
 
@@ -44,11 +46,12 @@ def get_gpu_info() -> Dict[str, Any]:
         "driver_version": "None"
     }
 
-    # Method 1: Check driver DLL
+    # Method 1: Check driver DLL (Windows only)
     try:
         ctypes.WinDLL("nvcuda.dll")
         info["has_nvidia_gpu"] = True
-    except OSError:
+    except (OSError, AttributeError):
+        # AttributeError: ctypes.WinDLL only exists on Windows.
         pass
 
     # Method 2: Detailed query via nvidia-smi
@@ -85,9 +88,18 @@ def get_candidate_cuda_dirs() -> List[str]:
 
     # Virtual environment site-packages
     project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    venv_nvidia = os.path.join(project_root, ".venv", "Lib", "site-packages", "nvidia")
-    for pkg in ["cublas", "cudnn", "cuda_nvrtc"]:
-        candidates.append(os.path.join(venv_nvidia, pkg, "bin"))
+    if IS_WINDOWS:
+        venv_nvidia = os.path.join(project_root, ".venv", "Lib", "site-packages", "nvidia")
+        for pkg in ["cublas", "cudnn", "cuda_nvrtc"]:
+            candidates.append(os.path.join(venv_nvidia, pkg, "bin"))
+    else:
+        # The Linux nvidia wheels unpack into .venv/lib/pythonX.Y/site-packages
+        venv_lib = os.path.join(project_root, ".venv", "lib")
+        if os.path.isdir(venv_lib):
+            for python_dir in os.listdir(venv_lib):
+                nvidia_root = os.path.join(venv_lib, python_dir, "site-packages", "nvidia")
+                for pkg in ["cublas", "cudnn", "cuda_nvrtc"]:
+                    candidates.append(os.path.join(nvidia_root, pkg, "lib"))
 
     # Running interpreter's site-packages (covers venv AND system installs, incl. pip nvidia-* wheels)
     try:
@@ -109,6 +121,8 @@ def get_candidate_cuda_dirs() -> List[str]:
                 continue
             for pkg in ["cublas", "cudnn", "cuda_nvrtc"]:
                 candidates.append(os.path.join(sp, "nvidia", pkg, "bin"))
+                if not IS_WINDOWS:
+                    candidates.append(os.path.join(sp, "nvidia", pkg, "lib"))
     except Exception as e:
         logger.debug(f"get_candidate_cuda_dirs: {e}")
     finally:
@@ -123,12 +137,17 @@ def get_candidate_cuda_dirs() -> List[str]:
 
 
 def find_cuda_dlls() -> List[str]:
-    """Locates any existing CUDA 12 runtime DLLs on the machine."""
+    """Locates any existing CUDA 12 runtime libraries on the machine."""
+    # Windows ships .dll files, Linux .so shared objects.
+    suffixes = (".dll", ".so") if not IS_WINDOWS else (".dll",)
     found_dlls = []
     for d in get_candidate_cuda_dirs():
         try:
             for f in os.listdir(d):
-                if f.lower().endswith(".dll") and ("cublas" in f.lower() or "cudnn" in f.lower() or "nvrtc" in f.lower()):
+                low = f.lower()
+                if low.endswith(suffixes) and (
+                    "cublas" in low or "cudnn" in low or "nvrtc" in low
+                ):
                     found_dlls.append(os.path.join(d, f))
         except Exception:
             continue
@@ -204,8 +223,27 @@ def start_cuda_runtime_download(
     """
     Starts asynchronous download and extraction of CUDA 12 runtime DLLs
     into AppData/PRIVACY68/cuda/bin.
+
+    The bundled downloader ships the Windows AMD64 wheels. On Linux and macOS
+    the CUDA runtime is installed with pip instead, so the function reports
+    that rather than downloading a binary that cannot be used.
     """
     global _download_state
+
+    if not IS_WINDOWS:
+        message = (
+            "On this platform the CUDA runtime is installed with pip:\n"
+            "  pip install nvidia-cublas-cu12 nvidia-cudnn-cu12\n"
+            "The assistant will then detect the GPU automatically."
+        )
+        logger.info(f"CUDA runtime download skipped: {message}")
+        with _download_lock:
+            _download_state["status"] = "Use pip to install the CUDA runtime on this platform."
+            _download_state["error"] = message
+        if on_complete:
+            on_complete(False, message)
+        return {"success": False, "message": message}
+
     with _download_lock:
         if _download_state["is_downloading"]:
             return {"success": False, "message": "Download is already in progress."}

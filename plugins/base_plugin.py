@@ -24,8 +24,19 @@ class BasePlugin:
     category: str = "General"
     plugin_type: str = "General Automation"
 
+    #: Operating systems this plugin can run on. Use the identifiers from
+    #: `core.platform` ("windows", "linux", "macos"). An empty tuple means
+    #: the plugin works everywhere.
+    supported_platforms: tuple = ("windows", "linux", "macos")
+
     def __init__(self, is_enabled: bool = True):
         self.is_enabled = is_enabled
+
+    def is_supported_on(self, platform_id: str) -> bool:
+        """True when this plugin can run on the given platform."""
+        if not self.supported_platforms:
+            return True
+        return platform_id in self.supported_platforms
 
     @property
     def actions(self) -> Dict[str, Callable[[str], bool]]:

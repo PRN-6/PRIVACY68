@@ -3,14 +3,18 @@ import os
 import re
 import shutil
 import subprocess
-import time
-import winreg
 from typing import Dict, Optional
+
+from core.platform import IS_MACOS, IS_WINDOWS
 
 logger = logging.getLogger("PRIVACY68.ComputerUse.Launcher")
 
+# ─────────────────────────────────────────────────────────────────────────────
+# 1. Platform specific application tables
+# ─────────────────────────────────────────────────────────────────────────────
+
 # Standard Windows Built-In Application Launch Targets
-KNOWN_SYSTEM_APPS: Dict[str, Dict[str, str]] = {
+WINDOWS_SYSTEM_APPS: Dict[str, Dict[str, str]] = {
     "task manager": {"cmd": "taskmgr.exe", "window_title": "Task Manager"},
     "calculator": {"cmd": "calc.exe", "protocol": "calculator:", "window_title": "Calculator"},
     "notepad": {"cmd": "notepad.exe", "window_title": "Notepad"},
@@ -51,23 +55,85 @@ KNOWN_SYSTEM_APPS: Dict[str, Dict[str, str]] = {
     "alarms": {"protocol": "ms-clock:", "window_title": "Clock"},
 }
 
+# Linux equivalents — resolved through PATH or the installed .desktop files.
+LINUX_SYSTEM_APPS: Dict[str, Dict[str, str]] = {
+    "task manager": {"cmd": "gnome-system-monitor", "window_title": "System Monitor"},
+    "system monitor": {"cmd": "gnome-system-monitor", "window_title": "System Monitor"},
+    "calculator": {"cmd": "gnome-calculator", "window_title": "Calculator"},
+    "notepad": {"cmd": "gedit", "window_title": "Text Editor"},
+    "text editor": {"cmd": "gedit", "window_title": "Text Editor"},
+    "paint": {"cmd": "pinta", "window_title": "Paint"},
+    "control panel": {"cmd": "gnome-control-center", "window_title": "Settings"},
+    "settings": {"cmd": "gnome-control-center", "window_title": "Settings"},
+    "command prompt": {"cmd": "gnome-terminal", "window_title": "Terminal"},
+    "terminal": {"cmd": "gnome-terminal", "window_title": "Terminal"},
+    "file explorer": {"cmd": "nautilus", "window_title": "Files"},
+    "file manager": {"cmd": "nautilus", "window_title": "Files"},
+    "files": {"cmd": "nautilus", "window_title": "Files"},
+    "spotify": {"cmd": "spotify", "window_title": "Spotify"},
+    "camera": {"cmd": "cheese", "window_title": "Cheese"},
+    "photos": {"cmd": "shotwell", "window_title": "Photos"},
+    "clock": {"cmd": "gnome-clocks", "window_title": "Clocks"},
+    "store": {"cmd": "gnome-software", "window_title": "Software"},
+    "maps": {"cmd": "gnome-maps", "window_title": "Maps"},
+    "mail": {"cmd": "thunderbird", "window_title": "Thunderbird"},
+    "screen recorder": {"cmd": "gnome-screen-recorder", "window_title": "Screen Recorder"},
+    "vlc": {"cmd": "vlc", "window_title": "VLC media player"},
+    "word processor": {"cmd": "libreoffice", "window_title": "LibreOffice Writer"},
+    "spreadsheet": {"cmd": "libreoffice", "window_title": "LibreOffice Calc"},
+    "presentation": {"cmd": "libreoffice", "window_title": "LibreOffice Impress"},
+}
+
+# macOS equivalents.
+MACOS_SYSTEM_APPS: Dict[str, Dict[str, str]] = {
+    "task manager": {"cmd": "Activity Monitor", "window_title": "Activity Monitor"},
+    "calculator": {"cmd": "Calculator", "window_title": "Calculator"},
+    "notepad": {"cmd": "TextEdit", "window_title": "TextEdit"},
+    "text editor": {"cmd": "TextEdit", "window_title": "TextEdit"},
+    "settings": {"cmd": "System Settings", "window_title": "System Settings"},
+    "terminal": {"cmd": "Terminal", "window_title": "Terminal"},
+    "file explorer": {"cmd": "Finder", "window_title": "Finder"},
+    "file manager": {"cmd": "Finder", "window_title": "Finder"},
+    "mail": {"cmd": "Mail", "window_title": "Mail"},
+    "maps": {"cmd": "Maps", "window_title": "Maps"},
+    "photos": {"cmd": "Photos", "window_title": "Photos"},
+    "clock": {"cmd": "Clock", "window_title": "Clock"},
+    "store": {"cmd": "App Store", "window_title": "App Store"},
+    "camera": {"cmd": "Photo Booth", "window_title": "Photo Booth"},
+    "voice memos": {"cmd": "Voice Memos", "window_title": "Voice Memos"},
+}
+
+
+def _system_apps() -> Dict[str, Dict[str, str]]:
+    """Returns the built-in application table for the host platform."""
+    if IS_WINDOWS:
+        return WINDOWS_SYSTEM_APPS
+    if IS_MACOS:
+        return MACOS_SYSTEM_APPS
+    return LINUX_SYSTEM_APPS
+
+
 # Alias resolution mapping — maps genuine synonyms to canonical names
 APP_ALIASES: Dict[str, str] = {
     # Task Manager
     "taskmanager": "task manager",
     "task mgr": "task manager",
     "taskmgr": "task manager",
+    "system monitor": "task manager",
+    "activity monitor": "task manager",
     # Calculator
     "calc": "calculator",
     # Notepad
     "note pad": "notepad",
     "text editor": "notepad",
+    "gedit": "notepad",
     # Browsers
     "google chrome": "chrome",
     "brave browser": "brave",
     "edge": "msedge",
     "microsoft edge": "msedge",
     "mozilla firefox": "firefox",
+    "chromium": "chrome",
     # VS Code
     "vscode": "vs code",
     "visual studio code": "vs code",
@@ -76,6 +142,7 @@ APP_ALIASES: Dict[str, str] = {
     # Paint
     "ms paint": "paint",
     "microsoft paint": "paint",
+    "pinta": "paint",
     # Snipping Tool
     "snip": "snipping tool",
     "screenshot tool": "snipping tool",
@@ -85,12 +152,16 @@ APP_ALIASES: Dict[str, str] = {
     "cmd": "command prompt",
     "command line": "command prompt",
     "power shell": "powershell",
+    "gnome terminal": "terminal",
+    "konsole": "terminal",
+    "xterm": "terminal",
     # File Explorer
     "explorer": "file explorer",
     "files": "file explorer",
     "my computer": "file explorer",
     "this pc": "file explorer",
     "file manager": "file explorer",
+    "nautilus": "file explorer",
     # Communication & Social
     "whats app": "whatsapp",
     "whats": "whatsapp",
@@ -110,6 +181,9 @@ APP_ALIASES: Dict[str, str] = {
     "ms outlook": "outlook",
     "email": "outlook",
     "one note": "onenote",
+    "libreoffice writer": "word processor",
+    "libreoffice calc": "spreadsheet",
+    "libreoffice impress": "presentation",
     # Media & Entertainment
     "music": "spotify",
     "vlc player": "vlc",
@@ -117,7 +191,10 @@ APP_ALIASES: Dict[str, str] = {
     # System & Settings
     "microsoft store": "store",
     "app store": "store",
+    "gnome software": "store",
     "windows settings": "settings",
+    "system settings": "settings",
+    "control panel": "settings",
     "timer": "clock",
     "notes": "sticky notes",
     # System Utilities
@@ -141,10 +218,14 @@ _WHITESPACE_RE = re.compile(r"\s+")
 
 class AppLauncher:
     """
-    Deterministic & Alias-Aware Windows Application Launcher.
-    Launches system tools and user installed applications reliably
-    without depending on hardcoded file paths.
+    Deterministic & Alias-Aware Application Launcher.
+
+    Launches system tools and user installed applications reliably without
+    depending on hardcoded file paths. The lookup strategy differs per
+    platform: the Windows registry and Start Menu on Windows, the installed
+    `.desktop` entries on Linux and the application bundle on macOS.
     """
+
     _exe_cache: Dict[str, Optional[str]] = {}
 
     @classmethod
@@ -162,16 +243,38 @@ class AppLauncher:
             return cls._exe_cache[canonical_name]
 
         exe_names = {
-            "chrome": ["chrome.exe"],
-            "brave": ["brave.exe"],
-            "msedge": ["msedge.exe"],
-            "firefox": ["firefox.exe"],
-            "vs code": ["Code.exe", "code.cmd"],
-            "notepad": ["notepad.exe"],
-            "spotify": ["spotify.exe", "Spotify.exe"],
-            "discord": ["Discord.exe"],
-            "vlc": ["vlc.exe"],
-        }.get(canonical_name, [f"{canonical_name}.exe"])
+            "chrome": ["chrome.exe", "google-chrome", "chromium", "chromium-browser"],
+            "brave": ["brave.exe", "brave-browser"],
+            "msedge": ["msedge.exe", "microsoft-edge"],
+            "firefox": ["firefox.exe", "firefox"],
+            "vs code": ["Code.exe", "code.cmd", "code"],
+            "notepad": ["notepad.exe", "gedit", "gnome-text-editor"],
+            "spotify": ["spotify.exe", "Spotify.exe", "spotify"],
+            "discord": ["Discord.exe", "discord"],
+            "vlc": ["vlc.exe", "vlc"],
+            "whatsapp": ["whatsapp.exe", "whatsapp"],
+        }.get(canonical_name, [f"{canonical_name}.exe", canonical_name, canonical_name.replace(" ", "-")])
+
+        path = cls._find_app_exe_platform(canonical_name, exe_names)
+        cls._exe_cache[canonical_name] = path
+        return path
+
+    @classmethod
+    def _find_app_exe_platform(cls, canonical_name: str, exe_names: list) -> Optional[str]:
+        """Platform specific executable resolution."""
+        if IS_WINDOWS:
+            return cls._find_app_exe_windows(canonical_name, exe_names)
+        # POSIX: an executable of the same name on PATH is the primary route.
+        for exe in exe_names:
+            found = shutil.which(exe)
+            if found and os.path.exists(found):
+                return found
+        return None
+
+    @classmethod
+    def _find_app_exe_windows(cls, canonical_name: str, exe_names: list) -> Optional[str]:
+        """Registry, standard folders and PATH lookup on Windows."""
+        import winreg
 
         # 1. Check App Paths registry (HKLM & HKCU)
         for exe in exe_names:
@@ -182,7 +285,6 @@ class AppLauncher:
                         if val:
                             cleaned_val = val.strip('"')
                             if os.path.exists(cleaned_val):
-                                cls._exe_cache[canonical_name] = cleaned_val
                                 return cleaned_val
                 except Exception as e:
                     logger.debug(f"_find_app_exe: {e}")
@@ -197,7 +299,6 @@ class AppLauncher:
             r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
             r"C:\Program Files\Microsoft VS Code\Code.exe",
             os.path.expandvars(r"%LOCALAPPDATA%\Programs\Microsoft VS Code\Code.exe"),
-            r"E:\Microsoft VS Code\Code.exe",
         ]
         for p in common_dirs:
             if os.path.exists(p):
@@ -208,17 +309,13 @@ class AppLauncher:
                     or (canonical_name in ("edge", "msedge") and "msedge.exe" in p_low)
                     or (canonical_name == "vs code" and "code.exe" in p_low)
                 ):
-                    cls._exe_cache[canonical_name] = p
                     return p
 
         # 3. Check PATH
         for exe in exe_names:
             w = shutil.which(exe)
             if w and os.path.exists(w):
-                cls._exe_cache[canonical_name] = w
                 return w
-
-        cls._exe_cache[canonical_name] = None
         return None
 
     def launch(self, app_name: str) -> bool:
@@ -237,13 +334,13 @@ class AppLauncher:
             return True
 
         # 2. Check known system applications
-        if canonical in KNOWN_SYSTEM_APPS:
-            info = KNOWN_SYSTEM_APPS[canonical]
+        if canonical in _system_apps():
+            info = _system_apps()[canonical]
             try:
                 if "protocol" in info and self._launch_protocol(info["protocol"]):
                     return True
                 if "cmd" in info:
-                    subprocess.Popen(f"start {info['cmd']}", shell=True)
+                    self._spawn(info["cmd"])
                     logger.info(f"Launcher: Launched system app via '{info['cmd']}'")
                     return True
             except Exception as e:
@@ -259,46 +356,37 @@ class AppLauncher:
             except Exception as e:
                 logger.warning(f"Launcher: Failed to launch direct exe '{exe_path}': {e}")
 
-        # 4. Fallback shell start commands
+        # 4. The installed-application index: every application the user has
+        #    on this machine is here, so no plugin is needed to open it.
+        from core.apps import app_index
+
+        entry = app_index.find(canonical)
+        if entry and entry.launch():
+            return True
+
+        # 5. Last resort: the protocol handler of the platform.
+        if canonical == "whatsapp" and IS_WINDOWS:
+            return self._launch_protocol("whatsapp:")
         if canonical == "chrome":
-            try:
-                subprocess.Popen("start chrome", shell=True)
-                return True
-            except Exception as e:
-                logger.debug(f"launch: {e}")
+            return self._spawn("google-chrome") or self._spawn("chromium") or self._spawn("chrome")
+        if canonical == "brave":
+            return self._spawn("brave-browser") or self._spawn("brave")
+        if canonical == "vs code":
+            return self._spawn("code")
 
-        elif canonical == "brave":
-            try:
-                subprocess.Popen("start brave", shell=True)
-                return True
-            except Exception as e:
-                logger.debug(f"launch: {e}")
-
-        elif canonical == "vs code":
-            try:
-                subprocess.Popen("code", shell=True)
-                return True
-            except Exception as e:
-                logger.debug(f"launch: {e}")
-
-        elif canonical == "whatsapp":
-            try:
-                subprocess.Popen("start whatsapp:", shell=True)
-                return True
-            except Exception as e:
-                logger.debug(f"launch: {e}")
-
-        # 5. Search Windows Start Menu (UWP & Win32 installed apps)
-        return self._launch_from_start_menu(canonical)
+        return False
 
     def launch_and_wait(self, app_name: str, timeout: float = 4.0) -> bool:
         """Launches application and waits until its window appears and gains focus."""
+        import time
+
         canonical = self.resolve_app_name(app_name)
         success = self.launch(canonical)
         if not success:
             return False
 
         from computer_use.window_manager import window_manager
+
         start_time = time.time()
         while time.time() - start_time < timeout:
             if window_manager.is_window_open(canonical):
@@ -310,34 +398,46 @@ class AppLauncher:
         return window_manager.is_window_open(canonical)
 
     @staticmethod
-    def _launch_protocol(uri: str) -> bool:
+    def _spawn(command: str) -> bool:
+        """Starts a detached process, resolving the binary on PATH first."""
+        binary = shutil.which(command)
         try:
-            subprocess.Popen(f"start {uri}", shell=True)
+            if binary:
+                subprocess.Popen(
+                    [binary],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    start_new_session=True,
+                )
+            elif IS_WINDOWS:
+                subprocess.Popen(f'start "" "{command}"', shell=True)
+            else:
+                subprocess.Popen(
+                    [command],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    start_new_session=True,
+                )
             return True
-        except Exception:
+        except Exception as e:
+            logger.debug(f"_spawn failed for '{command}': {e}")
             return False
 
     @staticmethod
-    def _launch_from_start_menu(query: str) -> bool:
-        """Finds and launches an app from Windows Start Menu Apps index."""
-        safe_query = query.replace("'", "''")
-        ps_cmd = (
-            f"$app = Get-StartApps | Where-Object {{ $_.Name -like '*{safe_query}*' }} | Select-Object -First 1; "
-            f"if ($app) {{ "
-            f"  if ($app.AppID -like '*\\*' -or $app.AppID -like '*.exe') {{ Start-Process $app.AppID }} "
-            f"  else {{ explorer.exe ('shell:AppsFolder\\' + $app.AppID) }}; "
-            f"  exit 0; "
-            f"}} else {{ exit 1 }}"
-        )
+    def _launch_protocol(uri: str) -> bool:
+        """Opens a URI through the desktop's default handler."""
         try:
-            res = subprocess.run(
-                ["powershell", "-NoProfile", "-NonInteractive", "-Command", ps_cmd],
-                capture_output=True, text=True, timeout=8
-            )
-            return res.returncode == 0
-        except Exception as e:
-            logger.error(f"Launcher: Start Menu search failed for '{query}': {e}")
+            if IS_WINDOWS:
+                subprocess.Popen(f'start "" "{uri}"', shell=True)
+            else:
+                subprocess.Popen(
+                    ["xdg-open", uri],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    start_new_session=True,
+                )
+            return True
+        except Exception:
             return False
-
 
 app_launcher = AppLauncher()

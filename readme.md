@@ -4,11 +4,11 @@
 [![Security Policy](https://img.shields.io/badge/security-Policy-blue.svg)](SECURITY.md)
 [![Contributing](https://img.shields.io/badge/contributing-Guide-orange.svg)](CONTRIBUTING.md)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-3776AB.svg?logo=python&logoColor=white)](https://www.python.org/)
-[![Platform: Windows 10/11](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-0078D6.svg?logo=windows&logoColor=white)](#)
+[![Platform: Windows | Linux](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-0078D6.svg?logo=linux&logoColor=white)](#)
 [![Privacy First](https://img.shields.io/badge/privacy-100%25%20Local-brightgreen.svg)](#)
 [![Release: v1.4.1](https://img.shields.io/badge/release-v1.4.1-blueviolet.svg)](https://github.com/PRN-6/PRIVACY68/releases)
 
-**PRIVACY68** is an ultra-fast, local-first AI voice assistant and autonomous desktop automation engine for Windows. Engineered for extreme speed, 100% zero-cloud voice privacy, and biometric security, it combines **faster-whisper (CTranslate2)**, **Silero Neural VAD**, and an intelligent **3-Lane Routing Architecture** to execute desktop automations in under 2 milliseconds.
+**PRIVACY68** is an ultra-fast, local-first AI voice assistant and autonomous desktop automation engine for Windows and Linux. Engineered for extreme speed, 100% zero-cloud voice privacy, and biometric security, it combines **faster-whisper (CTranslate2)**, **Silero Neural VAD**, and an intelligent **3-Lane Routing Architecture** to execute desktop automations in under 2 milliseconds.
 
 ---
 
@@ -44,7 +44,7 @@ Unlike cloud-dependent voice assistants that transmit your speech to third-party
                                   │                           │
                    ┌──────────────┴──────────────┐       [ Drop / Log ]
                    ▼                             ▼
-         [ Fast Lane Classifier ]      [ API / LLM Router ]
+         [ Command Registry ]            [ API / LLM Router ]
                    │                             │
     ┌──────────────┴──────────────┐       ┌──────┴──────┐
     ▼                             ▼       ▼             ▼
@@ -52,13 +52,45 @@ Unlike cloud-dependent voice assistants that transmit your speech to third-party
   (< 2ms, 0% AI, Local)   (Cloud Reasoning)     (Ollama Air-Gapped)
 ```
 
+### 🧩 The Command Registry (one place per command)
+
+Every command PRIVACY68 can run is described by a single `CommandSpec` in
+`actions/catalog.py`: its name, the lane that owns it, the intent it is
+classified as, the ways it can be recognised, how its arguments are pulled
+out of the sentence, and the handler that performs it.
+
+```
+        "create a folder named Privacy on Desktop"
+                          │
+                          ▼
+        ┌───────────────────────────────────────┐
+        │  Command Registry                     │
+        │  ├─ phrase match  (O(1) lookup)       │
+        │  ├─ pattern match (priority ordered)  │
+        │  └─ intent match  (ML fallback)       │
+        └───────────────┬───────────────────────┘
+                        ▼
+             spec.handler(context)  →  slots + result
+```
+
+- **Adding a command is one entry.** No dispatcher branch, no keyword table
+  to update, no slot regex to copy — the spec carries its own matchers,
+  its own examples and its own argument extraction.
+- **One source of truth.** The classifier, the slot extractor and both
+  lanes read the same specs, so they can never disagree about what a
+  command is called or which lane owns it.
+- **Retraining is one command.** `python actions/intent_classifier.py --train`
+  relearns the fallback classifier from the catalogue.
+
 ### 🏎️ Lane 1: Fast Lane (Deterministic Execution)
 - **Latency**: `< 2ms`
 - **AI Overhead**: 0% (Zero LLM inference, zero cloud communication)
-- **Engine**: Dual-layer vector classifier (`actions/intent_classifier.py` + `actions/param_extractor.py`) trained to **100% accuracy** on canonical system entities.
+- **Engine**: The command registry — exact phrase lookup, then a priority-ordered
+  pattern list, with a trained classifier as the fallback for phrasings the
+  catalogue does not spell out.
 - **Handles**: 
   - Direct app launching (*"open chrome"*, *"launch vs code"*, *"open brave"*)
-  - System hardware controls (*"volume up"*, *"mute"*, *"lock screen"*, *"take screenshot"*)
+  - System hardware controls (*"volume up"*, *"mute"*, *"unmute"*, *"lock screen"*, *"take screenshot"*)
   - Windows settings (*"open settings"*, *"bluetooth"*, *"wifi"*, *"display"*)
   - File/folder shortcuts (*"open downloads"*, *"open desktop"*)
   - Rapid media and typing macros (*"type hello world"*, *"next track"*)
@@ -267,6 +299,7 @@ Here is a quick cheat sheet of commands supported out-of-the-box:
 | **System Hardware** | *"Privacy68, take a screenshot"* | Fast Lane (<2ms) | Captures desktop to Pictures/Screenshots |
 | **System Hardware** | *"Privacy68, lock screen"* | Fast Lane (<2ms) | Calls Windows `LockWorkStation` |
 | **Applications** | *"Privacy68, open Chrome"* | Fast Lane (<2ms) | Launches Google Chrome |
+| **Applications** | *"Privacy68, open <any installed app>"* | Fast Lane (<2ms) | Uses the application index built at install time — no plugin needed |
 | **Applications** | *"Privacy68, launch VS Code"* | Fast Lane (<2ms) | Launches Visual Studio Code |
 | **Applications** | *"Privacy68, open calculator"* | Fast Lane (<2ms) | Launches Windows Calculator |
 | **Websites** | *"Privacy68, open YouTube"* | Fast Lane (<2ms) | Opens `youtube.com` in default browser |
@@ -274,7 +307,6 @@ Here is a quick cheat sheet of commands supported out-of-the-box:
 | **Windows Settings**| *"Privacy68, open bluetooth settings"* | Fast Lane (<2ms) | Opens `ms-settings:bluetooth` |
 | **File Management** | *"Privacy68, open downloads"* | Fast Lane (<2ms) | Opens Downloads folder in File Explorer |
 | **Compound Browser**| *"Privacy68, play Believer on YouTube"* | Fast Lane / API | Searches and auto-plays video on YouTube |
-| **WhatsApp Desktop**| *"Privacy68, send message to Mom"* | Plugin Lane | Resolves contact alias and opens chat |
 | **PowerPoint** | *"Privacy68, next slide"* | Plugin Lane | Sends slide navigation keypress |
 | **Live Web Search** | *"Privacy68, search latest news on AI"*| API Lane | Queries DuckDuckGo / Google API |
 | **AI Reasoning** | *"Privacy68, how do neural networks work?"* | API / Ollama Lane | Delivers synthesized spoken answer |
@@ -284,7 +316,8 @@ Here is a quick cheat sheet of commands supported out-of-the-box:
 ## 🛠️ Installation & Developer Setup
 
 ### Prerequisites
-- Windows 10 (Build 1809+) or Windows 11 (64-bit)
+- **Windows** 10 (Build 1809+) or Windows 11 (64-bit), or **Linux** with a
+  running desktop session (X11 or Wayland)
 - Python 3.10 or 3.11
 - *(Optional)* NVIDIA GPU with CUDA 12 drivers
 - *(Optional for offline LLM)* [Ollama](https://ollama.ai/) with `qwen2.5:0.5b`
@@ -296,37 +329,83 @@ cd PRIVACY68
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 ```
+```bash
+git clone https://github.com/PRN-6/PRIVACY68.git
+cd PRIVACY68
+python3 -m venv .venv
+source .venv/bin/activate
+```
 
 ### 2. Install Dependencies
 ```powershell
-pip install -r requirements.txt
+pip install -r requirements-windows.txt
+```
+```bash
+# The system packages the desktop environment needs
+sudo apt install python3-tk python3-gi gir1.2-gtk-3.0 gir1.2-webkit2-4.0 \
+    python3-xlib scrot libnotify-bin wmctrl xdotool
+pip install -r requirements-linux.txt
 ```
 
 ### 3. Run Tests
-Ensure all 77 automated tests pass:
+Ensure all 135 automated unit and integration tests pass:
 ```powershell
 python -m unittest discover tests
 ```
 Or with pytest:
-```powershell
-pytest
+```bash
+python -m pytest
 ```
 
-### 4. Build Standalone EXE
-To compile the standalone Windows executable:
+### 4. Build the Standalone Application
+**Windows** — standalone executable and Inno Setup installer (`dist/PRIVACY68/` and `installer/`):
 ```powershell
 python build_exe.py
-```
-Or run the complete two-step build and Inno Setup installer script:
-```powershell
 .\build.bat
 ```
-`build.bat` also syncs `website/downloads/plugins/` from the canonical plugin
-sources so the copies served to users on the website never drift. To sync
-manually:
+
+**Linux** — standalone application folder and distribution tarball (`dist/PRIVACY68/` and `dist/PRIVACY68-v1.4.1-linux.tar.gz`):
+```bash
+chmod +x build.sh
+./build.sh
+```
+
+`build.bat` also syncs `website/downloads/plugins/` from canonical plugin sources so copies served to users on the website never drift. To sync manually:
 ```powershell
 python sync_website_plugins.py
 ```
+
+### 5. Install & Run on Linux
+
+#### Option A: Automated Desktop Installer (Recommended)
+`install.sh` provisions an isolated virtual environment, installs all required packages, creates a launcher at `~/.local/bin/privacy68`, and registers a desktop application entry:
+```bash
+chmod +x install.sh
+./install.sh            # Install for the current user (in ~/.local/share/PRIVACY68)
+# Or install system-wide:
+# sudo ./install.sh     # System-wide in /opt/PRIVACY68 and /usr/local/bin/privacy68
+
+privacy68               # Start the assistant from terminal or your app launcher
+```
+
+#### Option B: Run Directly from Source
+```bash
+# 1. Install prerequisites
+sudo apt install python3-tk python3-gi gir1.2-gtk-3.0 gir1.2-webkit2-4.0 \
+    python3-xlib scrot libnotify-bin wmctrl xdotool
+
+# 2. Create and activate venv
+python3 -m venv .venv
+source .venv/bin/activate
+
+# 3. Install Linux dependencies
+pip install -r requirements-linux.txt
+
+# 4. Launch PRIVACY68
+python app.py
+```
+
+> **Note on Display Servers**: On Wayland desktop sessions, window manipulation (`xdotool` / `wmctrl`) runs via XWayland. If needed, launch with `QT_QPA_PLATFORM=xcb python app.py`.
 
 ---
 
@@ -358,9 +437,9 @@ INITIAL_PROMPT = (
 
 ## 🛡️ Security & Privacy Commitments
 - **Zero Cloud Audio Transmission**: Voice streams never leave your RAM. All STT and biometric verification models run strictly in local memory.
-- **Encrypted Local Storage**: Voice biometric vectors and cloud API keys are stored strictly on your local disk under `%APPDATA%\PRIVACY68\`.
+- **Encrypted Local Storage**: Voice biometric vectors and cloud API keys are stored strictly on your local disk under `%APPDATA%\PRIVACY68\` (Windows) or `~/.local/share/PRIVACY68/` (Linux).
 - **Open Source & Auditable**: Every line of code, automation hook, and router logic is transparent and freely auditable under the MIT License.
 
 ---
 
-*Crafted with precision for private, instant, and autonomous Windows intelligence.*
+*Crafted with precision for private, instant, and autonomous desktop intelligence.*

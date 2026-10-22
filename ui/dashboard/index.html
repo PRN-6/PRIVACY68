@@ -192,6 +192,14 @@
           <span>Voice & Wake Word</span>
         </button>
 
+        <button onclick="switchTab('tab-apps')" id="nav-tab-apps"
+          class="nav-btn w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all text-slate-400 hover:text-white hover:bg-nova-surface2">
+          <i data-lucide="layout-grid" class="w-4 h-4 text-rose-400"></i>
+          <span>Applications</span>
+          <span id="apps-count-badge"
+            class="ml-auto text-[10px] px-1.5 py-0.5 rounded bg-nova-surface2 text-slate-300 font-mono">...</span>
+        </button>
+
         <button onclick="switchTab('tab-diagnostics')" id="nav-tab-diagnostics"
           class="nav-btn w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all text-slate-400 hover:text-white hover:bg-nova-surface2">
           <i data-lucide="activity" class="w-4 h-4 text-rose-400"></i>
@@ -278,6 +286,42 @@
           <div class="col-span-full py-12 text-center text-slate-500">
             <i data-lucide="loader-2" class="w-6 h-6 animate-spin mx-auto mb-2 text-red-500"></i>
             Loading installed plugins...
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= TAB: INSTALLED APPLICATIONS ================= -->
+      <section id="tab-apps" class="tab-content hidden space-y-5">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-xl font-bold text-white tracking-tight flex items-center space-x-2">
+              <span>Installed Applications</span>
+              <span id="apps-total-count" class="text-xs px-2 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/20 font-mono">0 Found</span>
+            </h2>
+            <p class="text-xs text-slate-400 mt-0.5">
+              Discovered on this computer at startup. Say &quot;open &lt;name&gt;&quot; to launch any of them — no plugin needed.
+            </p>
+          </div>
+          <div class="relative w-full sm:w-72">
+            <i data-lucide="search" class="w-4 h-4 text-slate-500 absolute left-3 top-2.5"></i>
+            <input type="text" id="app-search" oninput="filterInstalledApps()" placeholder="Search installed applications..."
+              class="w-full bg-nova-surface border border-nova-border rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-red-500">
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button onclick="rescanInstalledApps()" id="rescan-apps-btn"
+            class="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-nova-surface2 text-slate-300 hover:text-white border border-nova-border transition-all cursor-pointer">
+            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+            <span>Rescan</span>
+          </button>
+          <span class="text-[11px] text-slate-500">Re-reads the installed application list from this computer.</span>
+        </div>
+
+        <div id="apps-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div class="col-span-full py-12 text-center text-slate-500">
+            <i data-lucide="loader-2" class="w-6 h-6 animate-spin mx-auto mb-2 text-red-500"></i>
+            Scanning installed applications...
           </div>
         </div>
       </section>
@@ -810,9 +854,36 @@
       }
 
       if (tabId === 'tab-plugins') loadPlugins();
-      if (tabId === 'tab-voice') loadProfile();
+      if (tabId === 'tab-apps') loadInstalledApps();
+      if (tabId === 'tab-voice') { loadProfile(); startEnrollmentCapture(); }
       if (tabId === 'tab-diagnostics') loadDiagnostics();
+      if (tabId !== 'tab-voice') stopEnrollmentCapture();
       lucide.createIcons();
+    }
+
+    // The microphone is opened only while the Voice Enrollment tab is open.
+    // The assistant process already holds the input device, so opening a
+    // second stream on a machine with an exclusive-mode audio driver would
+    // block the Control Center indefinitely.
+    async function startEnrollmentCapture() {
+      if (!window.pywebview || !window.pywebview.api) return;
+      try {
+        const res = await window.pywebview.api.start_enrollment_capture();
+        if (res && res.success === false) {
+          showToast(res.message || 'Microphone is unavailable', true);
+        }
+      } catch (err) {
+        console.warn('startEnrollmentCapture failed:', err);
+      }
+    }
+
+    async function stopEnrollmentCapture() {
+      if (!window.pywebview || !window.pywebview.api) return;
+      try {
+        await window.pywebview.api.stop_enrollment_capture();
+      } catch (err) {
+        console.warn('stopEnrollmentCapture failed:', err);
+      }
     }
 
     // Show toast notification
@@ -1174,6 +1245,9 @@ async function recordEnrollmentSample() {
 
   startLocalVisualization();
 
+  // Make sure the capture stream is live before recording.
+  await startEnrollmentCapture();
+
   try {
     const res = await window.pywebview.api.record_voice_enrollment_sample();
     if (res.success) {
@@ -1462,6 +1536,72 @@ async function recordEnrollmentSample() {
       }
     }
 
+    // Installed Applications (discovered on this computer at startup)
+    let allInstalledApps = [];
+
+    async function loadInstalledApps(rescan = false) {
+      const grid = document.getElementById('apps-grid');
+      if (!window.pywebview || !window.pywebview.api) return;
+      try {
+        allInstalledApps = await window.pywebview.api.get_installed_apps(rescan) || [];
+        const badge = document.getElementById('apps-count-badge');
+        if (badge) badge.innerText = allInstalledApps.length;
+        const total = document.getElementById('apps-total-count');
+        if (total) total.innerText = `${allInstalledApps.length} Found`;
+        filterInstalledApps();
+      } catch (err) {
+        console.error('Failed to load installed applications:', err);
+        if (grid) {
+          grid.innerHTML = `<div class="col-span-full py-12 text-center text-slate-500">
+            <i data-lucide="alert-triangle" class="w-6 h-6 mx-auto mb-2 opacity-50"></i>
+            Could not read the installed application list.
+          </div>`;
+          lucide.createIcons();
+        }
+      }
+    }
+
+    async function rescanInstalledApps() {
+      const btn = document.getElementById('rescan-apps-btn');
+      if (btn) btn.classList.add('animate-pulse');
+      await loadInstalledApps(true);
+      if (btn) btn.classList.remove('animate-pulse');
+      showToast('Application list refreshed.');
+    }
+
+    function filterInstalledApps() {
+      const grid = document.getElementById('apps-grid');
+      if (!grid) return;
+      const q = (document.getElementById('app-search')?.value || '').toLowerCase().trim();
+
+      const matches = q
+        ? allInstalledApps.filter(a => a.name.toLowerCase().includes(q))
+        : allInstalledApps;
+
+      if (!matches.length) {
+        grid.innerHTML = `<div class="col-span-full py-12 text-center text-slate-500">
+          <i data-lucide="search-x" class="w-6 h-6 mx-auto mb-2 opacity-30"></i>
+          <p class="text-xs">${q ? 'No installed application matches that name.' : 'No applications were discovered.'}</p>
+        </div>`;
+        lucide.createIcons();
+        return;
+      }
+
+      grid.innerHTML = matches.map(a => `
+        <div class="flex items-center gap-3 p-3 rounded-xl bg-nova-surface border border-nova-border/60 group">
+          <div class="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center shrink-0">
+            <i data-lucide="app-window" class="w-4 h-4 text-red-400"></i>
+          </div>
+          <div class="min-w-0 flex-1">
+            <p class="text-xs font-semibold text-white truncate" title="${a.name}">${a.name}</p>
+            <p class="text-[10px] text-slate-500 font-mono truncate" title="${a.command || ''}">${a.source || ''}</p>
+          </div>
+          <span class="text-[10px] text-slate-600 shrink-0">${a.command ? 'say &quot;open ${a.name}&quot;' : ''}</span>
+        </div>
+      `).join('');
+      lucide.createIcons();
+    }
+
     // Load Plugins & Category State
     let activePluginCategory = 'all';
 
@@ -1601,12 +1741,6 @@ async function recordEnrollmentSample() {
                   <i data-lucide="help-circle" class="w-3 h-3"></i>
                   <span>Commands ${cmdCount ? `(${cmdCount})` : ''}</span>
                 </button>
-                ${p.id === 'whatsapp' ? `
-                  <button onclick="openWhatsAppContacts()" class="flex items-center space-x-1 text-[11px] px-2 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 transition-all cursor-pointer" title="Manage Contacts">
-                    <i data-lucide="users" class="w-3 h-3"></i>
-                    <span>Contacts</span>
-                  </button>
-                ` : ''}
                 ${!isBuiltin ? `
                   <button onclick="uninstallPlugin('${p.id}', '${p.name}')" class="text-slate-400 hover:text-rose-400 transition-colors p-1 rounded-md hover:bg-nova-surface2 cursor-pointer" title="Uninstall plugin">
                     <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
@@ -1961,108 +2095,6 @@ async function recordEnrollmentSample() {
       }
     }
 
-    // =============================================
-    // WhatsApp Contacts Manager
-    // =============================================
-    let waContacts = [];
-
-    async function openWhatsAppContacts() {
-      // Load contacts from Python backend
-      if (window.pywebview && window.pywebview.api) {
-        try {
-          waContacts = await window.pywebview.api.get_whatsapp_contacts() || [];
-        } catch(e) {
-          waContacts = [];
-        }
-      }
-      renderWAContacts();
-      document.getElementById('wa-contacts-modal').classList.remove('hidden');
-    }
-
-    function closeWhatsAppContacts() {
-      document.getElementById('wa-contacts-modal').classList.add('hidden');
-    }
-
-    function renderWAContacts() {
-      const list = document.getElementById('wa-contacts-list');
-      if (!waContacts || waContacts.length === 0) {
-        list.innerHTML = `
-          <div class="py-10 text-center text-slate-500">
-            <i data-lucide="users" class="w-8 h-8 mx-auto mb-2 opacity-30"></i>
-            <p class="text-xs">No contacts saved yet.</p>
-            <p class="text-[11px] mt-1 text-slate-600">Add contacts below so the assistant can find them by voice.</p>
-          </div>`;
-        lucide.createIcons();
-        return;
-      }
-      list.innerHTML = waContacts.map((c, i) => `
-        <div class="flex items-center justify-between p-3 rounded-xl bg-nova-surface border border-nova-border/60 group">
-          <div class="flex items-center space-x-3 min-w-0">
-            <div class="w-8 h-8 rounded-full bg-emerald-500/15 flex items-center justify-center shrink-0">
-              <span class="text-emerald-400 text-sm font-bold">${(c.name||'?')[0].toUpperCase()}</span>
-            </div>
-            <div class="min-w-0">
-              <p class="text-xs font-semibold text-white truncate">${c.name || '—'}</p>
-              <p class="text-[11px] text-slate-500 truncate">
-                ${c.alias ? '<span class="text-cyan-400/80">Voice alias: &quot;' + c.alias + '&quot;</span>' : 'No voice alias'}
-                ${c.phone ? ' · ' + c.phone : ''}
-              </p>
-            </div>
-          </div>
-          <button onclick="deleteWAContact(${i})" class="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-rose-500/15 text-slate-500 hover:text-rose-400">
-            <i data-lucide="x" class="w-3.5 h-3.5"></i>
-          </button>
-        </div>
-      `).join('');
-      lucide.createIcons();
-    }
-
-    function deleteWAContact(index) {
-      waContacts.splice(index, 1);
-      renderWAContacts();
-    }
-
-    function addWAContact() {
-      const nameEl  = document.getElementById('wa-new-name');
-      const aliasEl = document.getElementById('wa-new-alias');
-      const phoneEl = document.getElementById('wa-new-phone');
-
-      const name  = nameEl.value.trim();
-      const alias = aliasEl.value.trim();
-      const phone = phoneEl.value.trim();
-
-      if (!name) {
-        nameEl.classList.add('border-rose-500');
-        nameEl.placeholder = 'Name is required!';
-        setTimeout(() => { nameEl.classList.remove('border-rose-500'); nameEl.placeholder = 'Full name (as in WhatsApp)'; }, 2000);
-        return;
-      }
-
-      waContacts.push({ name, alias, phone });
-      nameEl.value  = '';
-      aliasEl.value = '';
-      phoneEl.value = '';
-      renderWAContacts();
-    }
-
-    async function saveWAContacts() {
-      if (!window.pywebview || !window.pywebview.api) {
-        showToast('Not connected to assistant backend.', true);
-        return;
-      }
-      try {
-        const res = await window.pywebview.api.save_whatsapp_contacts(waContacts);
-        if (res.success) {
-          showToast('✅ ' + res.message);
-          closeWhatsAppContacts();
-        } else {
-          showToast(res.message || 'Save failed.', true);
-        }
-      } catch(e) {
-        showToast(e.toString(), true);
-      }
-    }
-
     // ===== PowerPoint Commands Reference =====
     const PPT_COMMAND_CATEGORIES = [
       {
@@ -2285,69 +2317,6 @@ async function recordEnrollmentSample() {
       lucide.createIcons();
     }, 500);
   </script>
-
-  <!-- ===== WhatsApp Contacts Manager Modal ===== -->
-  <div id="wa-contacts-modal" class="hidden fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-    <div class="bg-nova-card border border-nova-border rounded-2xl w-full max-w-lg shadow-2xl flex flex-col" style="max-height:88vh;">
-
-      <!-- Header -->
-      <div class="flex items-center justify-between px-5 py-4 border-b border-nova-border shrink-0">
-        <div class="flex items-center space-x-3">
-          <div class="w-9 h-9 rounded-xl bg-emerald-500/15 flex items-center justify-center">
-            <span class="text-xl">💬</span>
-          </div>
-          <div>
-            <h3 class="text-sm font-bold text-white">WhatsApp Contacts</h3>
-            <p class="text-[11px] text-slate-400">Saved contacts improve voice name recognition accuracy</p>
-          </div>
-        </div>
-        <button onclick="closeWhatsAppContacts()" class="p-1.5 rounded-lg hover:bg-nova-surface2 text-slate-400 hover:text-white transition-colors">
-          <i data-lucide="x" class="w-4 h-4"></i>
-        </button>
-      </div>
-
-      <!-- How it works tip -->
-      <div class="mx-5 mt-4 px-3.5 py-2.5 rounded-xl bg-cyan-500/5 border border-cyan-500/20 text-[11px] text-cyan-300/80 shrink-0">
-        <span class="font-semibold text-cyan-300">How it works:</span>
-        Add your contacts with their <span class="font-semibold">full WhatsApp name</span> and a
-        <span class="font-semibold">voice alias</span> (how you say it). Example: name = <em>"Prinson Kumar"</em>,
-        alias = <em>"prinson"</em>. Then say <em>"Alexa send message to prinson"</em> and the assistant will search
-        for <em>"Prinson Kumar"</em> exactly.
-      </div>
-
-      <!-- Contact list -->
-      <div id="wa-contacts-list" class="flex-1 overflow-y-auto px-5 py-3 space-y-2 min-h-0">
-      </div>
-
-      <!-- Add new contact form -->
-      <div class="px-5 py-4 border-t border-nova-border/60 space-y-3 shrink-0">
-        <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Add New Contact</p>
-        <div class="grid grid-cols-2 gap-2">
-          <input id="wa-new-name" type="text" placeholder="Full name (as in WhatsApp)"
-            class="col-span-2 px-3 py-2 rounded-xl bg-nova-surface border border-nova-border text-xs text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500/60 transition-colors" />
-          <input id="wa-new-alias" type="text" placeholder='Voice alias (how you say it)'
-            class="px-3 py-2 rounded-xl bg-nova-surface border border-nova-border text-xs text-white placeholder-slate-600 focus:outline-none focus:border-cyan-500/60 transition-colors" />
-          <input id="wa-new-phone" type="text" placeholder="Phone (optional)"
-            class="px-3 py-2 rounded-xl bg-nova-surface border border-nova-border text-xs text-white placeholder-slate-600 focus:outline-none focus:border-nova-borderHover transition-colors" />
-        </div>
-        <button onclick="addWAContact()" class="w-full py-2 rounded-xl bg-nova-surface hover:bg-nova-surface2 border border-nova-border text-xs text-slate-300 hover:text-white font-medium transition-all flex items-center justify-center space-x-1.5">
-          <i data-lucide="plus" class="w-3.5 h-3.5"></i>
-          <span>Add Contact</span>
-        </button>
-      </div>
-
-      <!-- Footer actions -->
-      <div class="px-5 pb-4 flex items-center justify-end space-x-2 shrink-0">
-        <button onclick="closeWhatsAppContacts()" class="px-4 py-2 rounded-xl bg-nova-surface hover:bg-nova-surface2 border border-nova-border text-xs text-slate-300 font-medium transition-all">
-          Cancel
-        </button>
-        <button onclick="saveWAContacts()" class="px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white font-bold text-xs transition-all shadow-lg shadow-emerald-600/20 flex items-center space-x-1.5">
-          <i data-lucide="save" class="w-3.5 h-3.5"></i>
-          <span>Save Contacts</span>
-        </button>
-      </div>
-    </div>
-  </div>
 
   <!-- ===== PowerPoint Commands Modal ===== -->
   <div id="ppt-commands-modal" class="hidden fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center z-50 p-4">

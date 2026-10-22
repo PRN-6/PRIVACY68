@@ -404,6 +404,11 @@ class WindowsPlugin(BasePlugin):
     category = "System"
     plugin_type = "System & Automation"
 
+    #: The Windows Settings deep links, `ms-settings:` URIs and the Windows
+    #: shell commands this plugin drives only exist on Windows. The Linux
+    #: build ships `plugins/linux_plugin.py` instead.
+    supported_platforms = ("windows",)
+
     @property
     def actions(self) -> Dict[str, Callable[[str], bool]]:
         return {
@@ -703,7 +708,6 @@ class WindowsPlugin(BasePlugin):
                 "check battery", "battery level", "how much battery",
                 "how much storage", "check disk space", "storage left",
                 "how much ram", "how much memory", "check memory",
-                "what is my ip", "show ip address", "check ip address",
                 "system uptime", "how long has the pc been on",
                 "windows version", "check windows version",
                 "what is my wifi network", "which wifi am i on",

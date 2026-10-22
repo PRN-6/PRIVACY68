@@ -6,16 +6,29 @@ Provides situational awareness of the current desktop state:
   - Resolution of contextual references ("this window", "this app", "current file")
   - System performance diagnostics (CPU / RAM hogs, battery status)
   - Native Win32 / ctypes clipboard inspection without external dependencies
+
+The Win32 bindings are only available on Windows. On other platforms the
+module still imports and the cross-platform implementations from
+`core.platform` are used instead.
 """
 
 import ctypes
-from ctypes import wintypes
 import logging
 from typing import Any, Dict, List, Optional
 
+from core.platform import IS_WINDOWS
+
+if IS_WINDOWS:
+    from ctypes import wintypes
+
+    user32 = ctypes.windll.user32
+    kernel32 = ctypes.windll.kernel32
+else:
+    wintypes = None
+    user32 = None
+    kernel32 = None
+
 logger = logging.getLogger("PRIVACY68.ContextInspector")
-user32 = ctypes.windll.user32
-kernel32 = ctypes.windll.kernel32
 
 try:
     import psutil
@@ -39,6 +52,50 @@ class SYSTEM_POWER_STATUS(ctypes.Structure):
     ]
 
 
+def _read_battery_sysfs() -> Dict[str, Any]:
+    """
+    Reads the battery state from /sys/class/power_supply (Linux).
+
+    Returns the same shape as the Win32 implementation so the rest of the
+    code does not need to know which platform produced it.
+    """
+    import os
+
+    base = "/sys/class/power_supply"
+    percent = None
+    ac_online = False
+    has_battery = False
+    try:
+        for entry in os.listdir(base):
+            path = os.path.join(base, entry)
+            cap_file = os.path.join(path, "capacity")
+            if os.path.exists(cap_file):
+                has_battery = True
+                try:
+                    with open(cap_file, "r", encoding="utf-8") as handle:
+                        percent = int(handle.read().strip())
+                except (OSError, ValueError):
+                    percent = None
+            online_file = os.path.join(path, "online")
+            if os.path.exists(online_file):
+                try:
+                    with open(online_file, "r", encoding="utf-8") as handle:
+                        ac_online = handle.read().strip() == "1"
+                except OSError:
+                    pass
+    except OSError:
+        pass
+
+    if has_battery and percent is not None:
+        return {
+            "has_battery": True,
+            "percent": percent,
+            "power_plugged": ac_online,
+            "message": f"Battery is at {percent}% ({'Plugged in / Charging' if ac_online else 'On battery'}).",
+        }
+    return {"has_battery": False, "message": "Desktop computer (AC mains power)."}
+
+
 class ContextInspector:
     """
     Inspects and retains dynamic OS context for context-aware voice commands.
@@ -50,6 +107,17 @@ class ContextInspector:
 
     def get_foreground_window_info(self) -> Dict[str, Any]:
         """Returns details about the currently active foreground window."""
+        if not IS_WINDOWS:
+            from computer_use.window_manager import window_manager
+
+            active = window_manager.get_active_window()
+            return {
+                "hwnd": int(active.get("hwnd", 0) or 0),
+                "title": active.get("title", ""),
+                "process_name": active.get("process_name", ""),
+                "pid": 0,
+            }
+
         hwnd = user32.GetForegroundWindow()
         if not hwnd:
             return {"hwnd": 0, "title": "", "process_name": "", "pid": 0}
@@ -92,7 +160,12 @@ class ContextInspector:
         return None
 
     def get_clipboard_text(self) -> str:
-        """Safely reads plaintext from the Windows clipboard using native Win32 APIs."""
+        """Safely reads plaintext from the system clipboard."""
+        if not IS_WINDOWS:
+            from core.platform import clipboard_get_text
+
+            return clipboard_get_text()
+
         if win32clipboard:
             try:
                 win32clipboard.OpenClipboard()
@@ -146,7 +219,10 @@ class ContextInspector:
         return {"top_cpu": [], "top_ram": []}
 
     def get_battery_and_power_info(self) -> Dict[str, Any]:
-        """Returns battery percentage, plugged status, and time remaining using native Win32 API."""
+        """Returns battery percentage, plugged status, and time remaining."""
+        if not IS_WINDOWS:
+            return _read_battery_sysfs()
+
         status = SYSTEM_POWER_STATUS()
         if kernel32.GetSystemPowerStatus(ctypes.byref(status)):
             percent = status.BatteryLifePercent

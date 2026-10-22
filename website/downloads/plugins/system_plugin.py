@@ -1,17 +1,22 @@
 import logging
-import pyautogui
 from typing import Callable, Dict, List
 from plugins.base_plugin import BasePlugin
 from plugins.win_utils import type_text, press_enter, press_tab
+from core.platform import IS_WINDOWS
+
+try:
+    import pyautogui
+except Exception:  # pragma: no cover - no display / no Xlib
+    pyautogui = None
 
 logger = logging.getLogger("PRIVACY68.Plugin.System")
 
 class SystemPlugin(BasePlugin):
     id = "system"
-    name = "Windows System"
+    name = "System Controls"
     icon = "⚙️"
-    description = "Control Windows OS: volume, screen lock, screenshot, enter, close, maximize, and minimize windows."
-    version = "1.3.0"
+    description = "Control the operating system: volume, screen lock, screenshot, enter, close, maximize, and minimize windows."
+    version = "1.4.0"
     author = "Privacy68 Team"
     category = "System"
     plugin_type = "OS Controls"
@@ -178,51 +183,48 @@ class SystemPlugin(BasePlugin):
         except Exception as e:
             logger.debug(f"_find_window_by_app_name: {e}")
 
-        import ctypes
-        from ctypes import wintypes
-        user32 = ctypes.windll.user32
-        result = [0]
-        WNDENUMPROC = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
-        def enum_cb(hwnd, lparam):
-            if user32.IsWindowVisible(hwnd):
-                length = user32.GetWindowTextLengthW(hwnd)
-                if length > 0:
-                    buff = ctypes.create_unicode_buffer(length + 1)
-                    user32.GetWindowTextW(hwnd, buff, length + 1)
-                    if target in buff.value.lower():
-                        result[0] = hwnd
-                        return False
-            return True
-        user32.EnumWindows(WNDENUMPROC(enum_cb), 0)
-        return result[0]
+        # Fall back to a title search on the running platform.
+        try:
+            from computer_use.window_manager import window_manager
+
+            for win in window_manager.list_visible_windows():
+                if target in str(win.get("title", "")).lower():
+                    return int(win.get("hwnd", 0))
+        except Exception as e:
+            logger.debug(f"_find_window_by_app_name (title scan): {e}")
+        return 0
 
     def maximize_window(self, text: str) -> bool:
         logger.info("Plugin Action: Maximizing window")
+        from computer_use.window_manager import window_manager
+
         hwnd = self._find_window_by_app_name(text)
         if hwnd:
-            import ctypes
-            user32 = ctypes.windll.user32
-            user32.ShowWindow(hwnd, 3)  # SW_MAXIMIZE
-            user32.SetForegroundWindow(hwnd)
+            window_manager.maximize_window(hwnd)
+            window_manager.focus_window(hwnd)
             return True
-        pyautogui.hotkey("win", "up")
+        window_manager.maximize_window()
         return True
 
     def minimize_window(self, text: str) -> bool:
         logger.info("Plugin Action: Minimizing window")
+        from computer_use.window_manager import window_manager
+
         hwnd = self._find_window_by_app_name(text)
         if hwnd:
-            import ctypes
-            user32 = ctypes.windll.user32
-            user32.ShowWindow(hwnd, 6)  # SW_MINIMIZE
+            window_manager.minimize_window(hwnd)
             return True
-        pyautogui.hotkey("win", "down")
+        window_manager.minimize_window()
         return True
 
     def close_window(self, text: str) -> bool:
         logger.info("Plugin Action: Closing active window (Alt+F4)")
-        pyautogui.hotkey("alt", "f4")
-        return True
+        from computer_use.window_manager import window_manager
+
+        hwnd = self._find_window_by_app_name(text)
+        if hwnd:
+            return window_manager.close_window(hwnd)
+        return window_manager.close_window()
 
     def type_text(self, text: str) -> bool:
         import re
@@ -261,28 +263,40 @@ class SystemPlugin(BasePlugin):
 
     def volume_up(self, text: str) -> bool:
         logger.info("Plugin Action: Volume Up")
-        for _ in range(5):
-            pyautogui.press("volumeup")
-        return True
+        from core.platform import volume_up
+
+        return volume_up()
 
     def volume_down(self, text: str) -> bool:
         logger.info("Plugin Action: Volume Down")
-        for _ in range(5):
-            pyautogui.press("volumedown")
-        return True
+        from core.platform import volume_down
+
+        return volume_down()
 
     def volume_mute(self, text: str) -> bool:
         logger.info("Plugin Action: Toggle Volume Mute")
-        pyautogui.press("volumemute")
-        return True
+        from core.platform import volume_mute
+
+        return volume_mute()
 
     def lock_screen(self, text: str) -> bool:
         logger.info("Plugin Action: Locking Computer Screen")
-        import ctypes
-        ctypes.windll.user32.LockWorkStation()
-        return True
+        from core.platform import lock_screen
+
+        return lock_screen()
 
     def take_screenshot(self, text: str) -> bool:
         logger.info("Plugin Action: Taking Screenshot")
-        pyautogui.hotkey("win", "shift", "s")
+        if IS_WINDOWS:
+            # Windows opens the Snipping Tool so the user can annotate.
+            pyautogui.hotkey("win", "shift", "s")
+            return True
+
+        from core.platform import take_screenshot
+
+        path = take_screenshot()
+        if not path:
+            logger.warning("Plugin Action: Screenshot could not be captured")
+            return False
+        logger.info(f"Plugin Action: Screenshot saved to {path}")
         return True

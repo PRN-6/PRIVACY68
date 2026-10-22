@@ -6,6 +6,12 @@ import subprocess
 import time
 from typing import Any, Dict, Optional
 
+from core.platform import (
+    IS_LINUX,
+    IS_WINDOWS,
+    shell_folders,
+)
+
 logger = logging.getLogger("PRIVACY68.SystemTools")
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -58,50 +64,30 @@ SETTINGS_PAGES: Dict[str, str] = {
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 2. Dynamic Windows Special Path Resolvers (OneDrive & Registry Safe)
+# 2. Special path resolvers
+#
+#    Windows resolves the real locations from the registry (OneDrive aware);
+#    Linux follows the XDG user directories; macOS uses ~/Documents etc.
 # ─────────────────────────────────────────────────────────────────────────────
 
 def get_shell_folders() -> Dict[str, str]:
-    """Dynamically resolves real Windows special folders from User Shell Folders registry
-    (handling OneDrive redirection, relocated user directories, etc.)."""
-    folders = {
-        "desktop": os.path.expanduser("~/Desktop"),
-        "documents": os.path.expanduser("~/Documents"),
-        "downloads": os.path.expanduser("~/Downloads"),
-        "pictures": os.path.expanduser("~/Pictures"),
-        "images": os.path.expanduser("~/Pictures"),
-        "music": os.path.expanduser("~/Music"),
-        "videos": os.path.expanduser("~/Videos"),
-        "home": os.path.expanduser("~"),
-        "user": os.path.expanduser("~"),
-    }
+    """Resolves the user's special folders (desktop, documents, downloads …)."""
     try:
-        import winreg
-        with winreg.OpenKey(
-            winreg.HKEY_CURRENT_USER,
-            r"Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders"
-        ) as key:
-            reg_map = {
-                "Desktop": ["desktop"],
-                "Personal": ["documents"],
-                "{374DE290-123F-4565-9164-39C4925E467B}": ["downloads"],
-                "{7D83EE9B-2244-4E70-B1F5-5393042AF1E4}": ["downloads"],
-                "My Pictures": ["pictures", "images"],
-                "My Music": ["music"],
-                "My Video": ["videos"],
-            }
-            for reg_name, aliases in reg_map.items():
-                try:
-                    val, _ = winreg.QueryValueEx(key, reg_name)
-                    expanded = os.path.expandvars(val)
-                    if os.path.exists(expanded):
-                        for a in aliases:
-                            folders[a] = expanded
-                except Exception as e:
-                    logger.debug(f"get_shell_folders: {e}")
+        return shell_folders()
     except Exception as e:
         logger.debug(f"get_shell_folders: {e}")
-    return folders
+        home = os.path.expanduser("~")
+        return {
+            "desktop": os.path.join(home, "Desktop"),
+            "documents": os.path.join(home, "Documents"),
+            "downloads": os.path.join(home, "Downloads"),
+            "pictures": os.path.join(home, "Pictures"),
+            "images": os.path.join(home, "Pictures"),
+            "music": os.path.join(home, "Music"),
+            "videos": os.path.join(home, "Videos"),
+            "home": home,
+            "user": home,
+        }
 
 SHELL_FOLDERS = get_shell_folders()
 
@@ -125,8 +111,8 @@ def resolve_path(location_str: str, default_root: Optional[str] = None) -> str:
     """
     Resolves a natural language location string or path into an absolute file system path.
     Supports:
-      - Absolute paths: 'D:\\Projects', 'E:\\my_code\\test'
-      - Drive letters: 'd drive', 'on e drive', 'c:'
+      - Absolute paths: 'D:\\Projects', 'E:\\my_code\\test', '/home/me/Projects'
+      - Drive letters: 'd drive', 'on e drive', 'c:'   (Windows only)
       - Special folders: 'desktop', 'documents', 'downloads', 'pictures'
       - Relative clauses: 'inside projects folder on e drive'
     """
@@ -139,12 +125,16 @@ def resolve_path(location_str: str, default_root: Optional[str] = None) -> str:
     if re.match(r'^[a-zA-Z]:[\\/]', cleaned):
         return os.path.abspath(cleaned)
 
-    # 2. Extract drive letter if present
+    # 2. POSIX absolute path (e.g. '/home/me/Projects' or '~/Projects')
+    if cleaned.startswith(("~", "/")):
+        return os.path.abspath(os.path.expanduser(cleaned))
+
+    # 3. Extract drive letter if present
     base = None
     sub_phrase = cleaned
 
     dm = re.search(r'\b([a-zA-Z])\s*(?:drive|colon)\b|\bdrive\s+([a-zA-Z])\b|\b([a-zA-Z]):', cleaned, re.IGNORECASE)
-    if dm:
+    if dm and IS_WINDOWS:
         drive_letter = (dm.group(1) or dm.group(2) or dm.group(3) or "").upper()
         base = f"{drive_letter}:\\"
         sub_phrase = re.sub(r'\b[a-zA-Z]\s*(?:drive|colon)\b|\bdrive\s+[a-zA-Z]\b|\b[a-zA-Z]:', ' ', sub_phrase, flags=re.IGNORECASE)
@@ -323,9 +313,12 @@ def open_path(path: str) -> Dict[str, Any]:
                 return {"success": False, "error": "Path does not exist", "message": f"Folder or path '{path}' does not exist."}
 
     try:
-        os.startfile(target)
-        logger.info(f"[FAST] open_path path={target} verification=SUCCESS")
-        return {"success": True, "path": target, "message": f"Opened '{target}'."}
+        from core.platform import open_path as _open_path
+
+        if _open_path(target):
+            logger.info(f"[FAST] open_path path={target} verification=SUCCESS")
+            return {"success": True, "path": target, "message": f"Opened '{target}'."}
+        raise OSError("no handler available for this path")
     except Exception as e:
         logger.error(f"[FAST] open_path error: {e}")
         return {"success": False, "error": str(e), "message": f"Failed to open '{target}': {e}"}
@@ -479,35 +472,103 @@ def move_item(source_path: str, destination_dir: str, base_directory: Optional[s
 
 def open_settings(page_name: str = "") -> Dict[str, Any]:
     """
-    Opens Windows Settings directly using ms-settings: deep links.
+    Opens the operating system's settings application.
+
+    Windows uses `ms-settings:` deep links, Linux opens the control centre of
+    the running desktop environment and macOS opens System Settings.
     """
+    from core.platform import open_settings as _open_settings
+
     clean = page_name.lower().strip(" .!?,_-")
     if not clean or clean in ("settings", "windows settings", "system settings", "settings app"):
-        target_uri = "ms-settings:"
-        label = "Windows Settings"
+        label = "Settings"
+        panel = ""
     else:
-        target_uri = "ms-settings:"
         label = clean
-        # Match longest key first
+        panel = clean
+        # Match the longest known key first ("lock screen" before "lock").
         sorted_keys = sorted(SETTINGS_PAGES.keys(), key=lambda k: -len(k))
         for key in sorted_keys:
             if re.search(rf"\b{re.escape(key)}\b", clean, re.IGNORECASE):
-                target_uri = SETTINGS_PAGES[key]
                 label = f"{key.title()} Settings"
+                panel = key
                 break
 
     try:
-        subprocess.Popen(f"start {target_uri}", shell=True)
-        logger.info(f"[FAST] open_settings uri={target_uri} label={label}")
+        ok = _open_settings(panel)
+        logger.info(f"[FAST] open_settings panel={panel!r} label={label} success={ok}")
         return {
-            "success": True,
-            "uri": target_uri,
+            "success": ok,
+            "uri": f"ms-settings:{panel}" if IS_WINDOWS else panel,
             "label": label,
-            "message": f"Opened {label}."
+            "message": f"Opened {label}." if ok else f"Could not open {label}.",
         }
     except Exception as e:
         logger.error(f"[FAST] open_settings error: {e}")
         return {"success": False, "error": str(e), "message": f"Failed to open {label}: {e}"}
+
+def _running_browser() -> str:
+    """
+    Returns the command line of a browser that is already running, or "".
+
+    Used so that a search opens in the window the user already has open
+    instead of a second, separate browser instance.
+    """
+    if IS_WINDOWS:
+        try:
+            task_list = subprocess.check_output(
+                'tasklist /FI "STATUS eq RUNNING"', shell=True, text=True
+            ).lower()
+            for exe, name in (
+                ("brave.exe", "brave"),
+                ("chrome.exe", "chrome"),
+                ("msedge.exe", "msedge"),
+                ("firefox.exe", "firefox"),
+            ):
+                if exe in task_list:
+                    return name
+        except Exception:
+            return ""
+        return ""
+
+    try:
+        result = subprocess.run(
+            ["pgrep", "-a"], capture_output=True, text=True, timeout=4
+        )
+        running = (result.stdout or "").lower()
+    except Exception:
+        return ""
+
+    for pattern, name in (
+        ("brave", "brave"),
+        ("google-chrome", "chrome"),
+        ("chromium", "chrome"),
+        ("microsoft-edge", "msedge"),
+        ("firefox", "firefox"),
+    ):
+        if pattern in running:
+            return name
+    return ""
+
+
+#: Maps the assistant's browser names to the executable on each platform.
+_BROWSER_BINARIES = {
+    "chrome": {"windows": "chrome", "posix": "google-chrome"},
+    "brave": {"windows": "brave", "posix": "brave-browser"},
+    "msedge": {"windows": "msedge", "posix": "microsoft-edge"},
+    "firefox": {"windows": "firefox", "posix": "firefox"},
+}
+
+
+def _browser_binary(browser_name: str) -> str:
+    """Resolves a canonical browser name to an executable for this platform."""
+    entry = _BROWSER_BINARIES.get(browser_name)
+    if not entry:
+        return browser_name
+    if IS_WINDOWS:
+        return entry["windows"]
+    return entry["posix"]
+
 
 def open_web_or_search(query: str = "", site_target: Optional[str] = None, browser: Optional[str] = None) -> Dict[str, Any]:
     """
@@ -618,23 +679,20 @@ def open_web_or_search(query: str = "", site_target: Optional[str] = None, brows
         browser_name = "msedge"
     elif browser_name == "edge":
         browser_name = "msedge"
+    browser_name = _browser_binary(browser_name)
 
     try:
+        from core.platform import open_url as _open_url
+
         if browser_name:
-            subprocess.Popen(f'start {browser_name} "{final_url}"', shell=True)
+            _open_url(final_url, browser=browser_name)
         else:
-            # Check if running browser exists (Brave or Chrome or Edge), otherwise default webbrowser
-            try:
-                task_list = subprocess.check_output('tasklist /FI "STATUS eq RUNNING"', shell=True, text=True).lower()
-                if "brave.exe" in task_list:
-                    subprocess.Popen(f'start brave "{final_url}"', shell=True)
-                elif "chrome.exe" in task_list:
-                    subprocess.Popen(f'start chrome "{final_url}"', shell=True)
-                elif "msedge.exe" in task_list:
-                    subprocess.Popen(f'start msedge "{final_url}"', shell=True)
-                else:
-                    webbrowser.open(final_url)
-            except Exception:
+            # Prefer a browser that is already running so the URL opens in the
+            # window the user is looking at instead of spawning a new one.
+            running = _running_browser()
+            if running:
+                _open_url(final_url, browser=running)
+            else:
                 webbrowser.open(final_url)
 
         logger.info(f"[FAST] open_web_or_search url={final_url} desc={action_desc}")
@@ -715,47 +773,67 @@ def press_key(key: str) -> Dict[str, Any]:
 
 def system_action(command: str, text: str = "") -> Dict[str, Any]:
     """
-    Executes standard Windows OS system commands (volume, lock, screenshot, window state).
+    Executes standard OS system commands (volume, lock, screenshot, window state).
+
+    Every action is delegated to the platform layer, so the same command
+    works on Windows, Linux and macOS.
     """
-    import pyautogui
-    pyautogui.FAILSAFE = False
+    from core.platform import (
+        close_window,
+        lock_screen,
+        maximize_window,
+        minimize_window,
+        take_screenshot,
+        volume_down,
+        volume_mute,
+        volume_up,
+    )
+
     cmd = command.lower().strip()
     try:
         if cmd in ("volume_up", "volume up", "increase volume", "louder"):
-            for _ in range(5):
-                pyautogui.press("volumeup")
-            return {"success": True, "command": "volume_up", "message": "Increased volume."}
+            ok = volume_up()
+            return {"success": ok, "command": "volume_up", "message": "Increased volume." if ok else "Could not change the volume."}
         elif cmd in ("volume_down", "volume down", "decrease volume", "quieter"):
-            for _ in range(5):
-                pyautogui.press("volumedown")
-            return {"success": True, "command": "volume_down", "message": "Decreased volume."}
+            ok = volume_down()
+            return {"success": ok, "command": "volume_down", "message": "Decreased volume." if ok else "Could not change the volume."}
         elif cmd in ("volume_mute", "mute", "unmute", "mute volume"):
-            pyautogui.press("volumemute")
-            return {"success": True, "command": "volume_mute", "message": "Toggled volume mute."}
+            ok = volume_mute()
+            return {"success": ok, "command": "volume_mute", "message": "Toggled volume mute." if ok else "Could not toggle mute."}
         elif cmd in ("lock", "lock_screen", "lock computer", "lock the computer"):
-            import ctypes
-            ctypes.windll.user32.LockWorkStation()
-            return {"success": True, "command": "lock", "message": "Locked computer."}
+            ok = lock_screen()
+            return {"success": ok, "command": "lock", "message": "Locked computer." if ok else "Could not lock the screen."}
         elif cmd in ("screenshot", "take screenshot", "take a screenshot"):
             save_dir = get_pictures_path()
             os.makedirs(save_dir, exist_ok=True)
             filename = f"Screenshot_{int(time.time())}.png"
             file_path = os.path.join(save_dir, filename)
-            pyautogui.screenshot(file_path)
-            return {"success": True, "command": "screenshot", "path": file_path, "message": f"Screenshot saved to {file_path}."}
+            saved = take_screenshot(file_path)
+            if not saved:
+                return {"success": False, "command": "screenshot", "message": "Could not capture the screen."}
+            return {"success": True, "command": "screenshot", "path": saved, "message": f"Screenshot saved to {saved}."}
         elif cmd in ("close_window", "close this window", "close current window", "close active window", "close app"):
-            pyautogui.hotkey("alt", "f4")
-            return {"success": True, "command": "close_window", "message": "Closed active window."}
+            ok = close_window()
+            return {"success": ok, "command": "close_window", "message": "Closed active window." if ok else "Could not close the window."}
         elif cmd in ("maximize", "maximize_window", "maximize this window", "maximize window", "full screen"):
-            pyautogui.hotkey("win", "up")
-            return {"success": True, "command": "maximize", "message": "Maximized active window."}
+            ok = maximize_window()
+            return {"success": ok, "command": "maximize", "message": "Maximized active window." if ok else "Could not maximize the window."}
         elif cmd in ("minimize", "minimize_window", "minimize this window", "minimize window"):
-            pyautogui.hotkey("win", "down")
-            return {"success": True, "command": "minimize", "message": "Minimized active window."}
+            ok = minimize_window()
+            return {"success": ok, "command": "minimize", "message": "Minimized active window." if ok else "Could not minimize the window."}
+        elif cmd in ("restore", "restore_window", "unmaximize"):
+            from core.platform import restore_window
+
+            ok = restore_window()
+            return {"success": ok, "command": "restore", "message": "Restored the active window." if ok else "Could not restore the window."}
         elif cmd in ("enter", "press enter", "hit enter"):
+            import pyautogui
+
             pyautogui.press("enter")
             return {"success": True, "command": "enter", "message": "Pressed Enter."}
         elif cmd in ("tab", "press tab", "hit tab"):
+            import pyautogui
+
             pyautogui.press("tab")
             return {"success": True, "command": "tab", "message": "Pressed Tab."}
         else:

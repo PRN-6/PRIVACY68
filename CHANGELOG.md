@@ -5,6 +5,156 @@ Versioning follows [Semantic Versioning](https://semver.org/) — `MAJOR.MINOR.P
 
 ---
 
+## [Unreleased]
+
+### 🧭 Application discovery: the assistant knows what is installed
+
+Before, only a hard-coded list of application names could be opened by voice,
+and everything else needed a plugin. Now the assistant finds out for itself
+what is on the computer.
+
+- **New `core/apps.py`** — an index of the installed applications:
+  - Linux: the freedesktop `.desktop` entries (system, user, Flatpak, Snap)
+    plus every executable on `PATH`
+  - Windows: the `App Paths` registry keys and the Start Menu shortcuts
+  - macOS: the `.app` bundles of the Applications folders
+- **`app.py`** indexes the machine at startup and hands the names to the
+  command catalogue, so *"open <anything that is installed>"* works by voice.
+- **`actions/catalog.py`** merges those names into the existing application
+  command — one intent keeps one owner, so the taxonomy never forks.
+- **`core/apps.py` → `command_for()`** resolves an application to a real
+  command line, which is what the browser plugins now use to start Chrome
+  and Brave on any operating system.
+- **The Control Center** gained an **Applications** tab: the list of what was
+  found, a search box and a rescan button.
+
+### 🧹 The plugin system is for automation only
+
+A plugin is no longer needed to open an application — that is what the index
+above is for. A plugin is for *driving* an application: its tabs, slides,
+dialogs and settings.
+
+- The **WhatsApp plugin is deleted** (source, website copy and tests). Opening
+  WhatsApp still works: the assistant finds the installed app by name.
+- The WhatsApp contacts UI, its bridge methods and its training phrases are
+  gone as well.
+
+### 🐧 Linux support
+
+- **`requirements.txt`** is now the common dependency set; the Windows-only
+  packages moved to `requirements-windows.txt` and **`requirements-linux.txt`**
+  documents the system packages the desktop environment needs.
+- **`build_exe.py`** builds on any operating system and now ships the `core`
+  package with the application; `build.sh` builds and packages the Linux
+  release, and `install.sh` installs it with a launcher and a menu entry.
+- The Chrome and Brave plugins start their browser from its real path instead
+  of the Windows-only `start` shell command, and the VS Code plugin searches
+  files with `find` on Linux.
+
+### 🐛 Fixes: The Control Center no longer stalls on launch
+
+The Control Center (the WebView2 dashboard opened from the system tray) was
+slow to appear on many machines, and on some it never appeared at all. Four
+separate causes were behind it, and all four are fixed.
+
+#### 1. Missing Microsoft Edge WebView2 Runtime
+- **New `utils/webview2.py`** — detects the Evergreen WebView2 runtime through
+  the EdgeUpdate registry (with a filesystem fallback for machines where group
+  policy hides the registry entries) and reports the installed version.
+- The Control Center now checks the runtime **before** opening a window. When
+  it is missing, the user gets an immediate dialog with a download link
+  instead of a 30-60 second stall followed by a blank page — pywebview
+  silently falls back to the deprecated MSHTML engine, which cannot render
+  the Tailwind bundle.
+- The same runtime is now reported in the Diagnostics tab, and
+  **`installer.iss`** detects it and installs the official Evergreen
+  bootstrapper after setup when it is missing.
+
+#### 2. The Control Center booted the whole application
+- The dashboard process paid for the assistant's entire startup: CUDA DLL
+  registration, an `nvidia-smi` probe, `import config`, the plugin catalogue
+  and the ONNX/Whisper stack. It now starts in **~0.2 s** instead of ~2.8 s.
+- **`app.py`** dispatches `--dashboard`/`--settings` before any of that work,
+  and the CUDA registration only runs for the assistant.
+- **`config.py`** no longer shells out to `nvidia-smi` at import time. The
+  CUDA-dependent Whisper settings resolve lazily on first access, so
+  `import config` is instant again.
+- **`ui/dashboard_bridge.py`** imports the plugin catalogue, the profile store
+  and the voice authenticator lazily, through a small proxy, so the heavy
+  stack is only loaded when a tab actually needs it.
+
+#### 3. The microphone was opened on dashboard startup
+- The dashboard used to construct a full `SpeechStreamer` at launch, which
+  loads a **second copy of the Whisper model** and grabs the input device
+  that the assistant already holds. On machines whose audio driver runs in
+  exclusive mode, that second stream blocked the window indefinitely.
+- **`speech/streamer.py`** gained a `capture_only` mode that builds the same
+  input stream without loading Whisper.
+- The microphone is now opened **only while the Voice Enrollment tab is
+  open**, and released when the user leaves it.
+
+#### 4. A failed launch looked like a slow one
+- The dashboard now writes a readiness file when its window is actually on
+  screen, and **`ui/plugin_window.py`** watches it. A launch that dies
+  immediately is reported with its exit code and a pointer to the log file,
+  rather than leaving the user waiting in silence.
+
+### 🏗️ Architecture: The Command Registry
+
+The command pipeline was rebuilt around a declarative command catalogue
+instead of a chain of `if`/`else` branches. Every command is now one
+`CommandSpec` that carries its own matchers, its own argument extraction
+and its own handler.
+
+#### 🧩 New modules
+- **`actions/registry.py`** — the registry itself: `CommandSpec`, `Matcher`,
+  `CommandContext` and the lookup indexes (exact phrase → O(1), patterns →
+  priority ordered, intent → command).
+- **`actions/catalog.py`** — the catalogue: every built-in command, its
+  vocabulary (sites, apps, folders), its command tables and its handlers.
+- **`actions/dispatch.py`** — the shared resolve/execute path used by both
+  lanes, so Lane 1 and Lane 2 behave identically.
+
+#### 🔁 Rewritten modules
+- **`actions/executor.py`** — now a readable pipeline: interceptors →
+  macros → compound planner → Lane 1 → Lane 2 → Lane 3.
+- **`actions/fast_lane.py`** — no longer decides what a command is; it asks
+  the registry and runs what it finds.
+- **`actions/api_lane.py`** — the direct-API part is catalogue-driven; the
+  cloud LLM part keeps its own plumbing, with the double tool-pruning
+  removed and the rate-limit backoff preserved.
+- **`actions/intent_classifier.py`** — the taxonomy is now derived from the
+  registry, and layer 1 (the catalogue) resolves commands exactly. The
+  trained model is the fallback for unseen phrasings.
+- **`actions/param_extractor.py`** — rule-driven slot extraction. The token
+  tagger could not tell *"create a folder called Cats and Dogs"* (one name)
+  from *"delete tmp and build folders"* (one delete); the rules can, and
+  they never guess.
+
+#### 🐛 Fixed
+- **"unmute" muted instead of unmuting** — it was mapped onto the same
+  action as "mute".
+- **"unmute", "restore window" and the brightness commands did nothing** —
+  they were classified but had no handler.
+- **"what is my ip" was answered by the Windows system-info bridge** in
+  Lane 1 instead of the public IP API in Lane 2.
+- **Absolute paths were dropped** — *"create MCA folder in C:\Users\..."*
+  lost its folder and landed on the Desktop.
+- **The rename command lost its target folder** — the new name was renamed
+  in the wrong directory.
+- **"open task manager" and "check battery" were claimed by two commands**
+  at once; the shortcut now wins, as before.
+- **Dev tools, diagnostics and clipboard shortcuts could not be used inside
+  a compound command** — they now live in Lane 1, so
+  *"copy this and paste it"* runs both clauses.
+
+#### ➕ Added
+- `tests/test_command_registry.py` — pins the registry guarantees down,
+  including a test that registers a brand new command and runs it end to
+  end without touching another file.
+
+---
+
 ## [v1.4.1] — 2026-10-21
 
 ### ✨ New Features & Improvements

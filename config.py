@@ -3,20 +3,43 @@
 """
 
 import ctypes
+from typing import Optional
 
 try:
-    from utils.cuda_manager import register_cuda_dlls, get_cuda_status
+    from utils.cuda_manager import register_cuda_dlls
     register_cuda_dlls()
-    _status = get_cuda_status()
-    _HAS_CUDA = _status["is_ready"]
 except Exception:
-    def _cuda_available() -> bool:
+    pass
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# CUDA capability detection is deferred to first use.
+#
+# `get_cuda_status()` shells out to nvidia-smi, which can take several seconds
+# on cold or busy machines. Importing `config` therefore used to add that cost
+# to *every* cold start — including the Control Center, which never touches
+# Whisper at all. The Whisper settings below are now resolved lazily through
+# the module-level __getattr__ hook at the bottom of this file.
+# ─────────────────────────────────────────────────────────────────────────────
+_CUDA_AVAILABLE: Optional[bool] = None
+
+
+def cuda_is_available() -> bool:
+    """Detects (once) whether CUDA acceleration can be used."""
+    global _CUDA_AVAILABLE
+    if _CUDA_AVAILABLE is None:
         try:
-            ctypes.WinDLL("nvcuda.dll")
-            return True
-        except OSError:
-            return False
-    _HAS_CUDA = _cuda_available()
+            from utils.cuda_manager import get_cuda_status
+            _CUDA_AVAILABLE = bool(get_cuda_status()["is_ready"])
+        except Exception:
+            _CUDA_AVAILABLE = False
+            try:
+                ctypes.WinDLL("nvcuda.dll")
+                _CUDA_AVAILABLE = True
+            except (OSError, AttributeError):
+                # AttributeError: ctypes.WinDLL only exists on Windows.
+                _CUDA_AVAILABLE = False
+    return _CUDA_AVAILABLE
 
 
 # Audio Stream Settings (16kHz, 1280 samples = 80ms frames required by openWakeWord)
@@ -35,8 +58,8 @@ SILENCE_THRESHOLD = 0.008        # Fallback RMS noise floor
 # medium.en: ~30% better word accuracy over small.en for short commands.
 # On CUDA this runs at ~120-160ms per transcription — imperceptible to the user.
 WHISPER_MODEL_SIZE   = "medium.en"
-WHISPER_DEVICE       = "cuda"     if _HAS_CUDA else "cpu"      # auto-detected
-WHISPER_COMPUTE_TYPE = "float16"  if _HAS_CUDA else "int8"     # float16=GPU, int8=CPU
+# WHISPER_DEVICE / WHISPER_COMPUTE_TYPE are resolved lazily by the module
+# __getattr__ hook at the bottom of this file.
 WHISPER_BEAM_SIZE    = 8          # wider beam = higher accuracy (was 5)
 
 # Hotwords: Whisper boosts log-probability for these tokens during decoding.
@@ -68,3 +91,18 @@ ENABLE_BEEP = False
 ENABLE_REMOTE_SERVER = True
 REMOTE_SERVER_HOST = "0.0.0.0"
 REMOTE_SERVER_PORT = 8765
+
+
+def __getattr__(name: str):
+    """
+    Resolves the CUDA-dependent Whisper settings on first access (PEP 562).
+
+    Kept as module attributes for backwards compatibility: `config.WHISPER_DEVICE`
+    and `from config import WHISPER_DEVICE` both keep working, but the CUDA
+    probe only runs when a caller actually needs the answer.
+    """
+    if name == "WHISPER_DEVICE":
+        return "cuda" if cuda_is_available() else "cpu"
+    if name == "WHISPER_COMPUTE_TYPE":
+        return "float16" if cuda_is_available() else "int8"
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

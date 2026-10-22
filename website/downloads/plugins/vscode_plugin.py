@@ -483,7 +483,13 @@ class VSCodePlugin(BasePlugin):
             if exe:
                 subprocess.Popen([exe], shell=False)
             else:
-                subprocess.Popen("start code", shell=True)
+                from core.apps import command_for
+                from core.platform import run_detached
+
+                command = command_for("visual studio code") or command_for("code")
+                if not command:
+                    return False
+                run_detached(command)
             logger.info("Plugin Action: VS Code launched.")
             return True
         except Exception as e:
@@ -826,28 +832,48 @@ class VSCodePlugin(BasePlugin):
             return self.find_file("")
         logger.info(f"Plugin Action: Searching disk for '{query}'")
         pattern = query if "*" in query else f"*{query}*"
-        safe_pattern = pattern.replace("'", "''")
-        ps_cmd = (
-            f"Get-ChildItem -Path $HOME -Recurse -File -Filter '{safe_pattern}' "
-            "-ErrorAction SilentlyContinue "
-            "| Sort-Object LastWriteTime -Descending "
-            "| Select-Object -First 1 -ExpandProperty FullName"
-        )
         try:
-            result = subprocess.run(
-                ["powershell", "-NoProfile", "-NonInteractive", "-Command", ps_cmd],
-                capture_output=True,
-                text=True,
-                timeout=25,
-            )
-            path = result.stdout.strip()
+            path = self._newest_file(pattern)
             if path:
                 logger.info(f"Plugin Action: Found '{path}' — opening in VS Code.")
+                from core.apps import command_for
+                from core.platform import run_detached
+
+                command = command_for("visual studio code", path) or command_for("code", path)
+                if command:
+                    return run_detached(command)
                 subprocess.Popen(f'code "{path}"', shell=True)
                 return True
         except Exception as e:
             logger.error(f"Plugin Action: File search failed: {e}")
         return False
+
+    @staticmethod
+    def _newest_file(pattern: str) -> str:
+        """The most recently modified file matching the pattern."""
+        from core.platform import IS_WINDOWS
+
+        if IS_WINDOWS:
+            safe_pattern = pattern.replace("'", "''")
+            command = (
+                f"Get-ChildItem -Path $HOME -Recurse -File -Filter '{safe_pattern}' "
+                "-ErrorAction SilentlyContinue "
+                "| Sort-Object LastWriteTime -Descending "
+                "| Select-Object -First 1 -ExpandProperty FullName"
+            )
+            result = subprocess.run(
+                ["powershell", "-NoProfile", "-NonInteractive", "-Command", command],
+                capture_output=True, text=True, timeout=25,
+            )
+            return result.stdout.strip()
+
+        result = subprocess.run(
+            ["find", os.path.expanduser("~"), "-type", "f", "-name", pattern,
+             "-printf", "%T@ %p\n"],
+            capture_output=True, text=True, timeout=25,
+        )
+        lines = sorted(result.stdout.splitlines(), reverse=True)
+        return lines[0].split(" ", 1)[1] if lines else ""
 
     # --- Debugging & Execution ---
 

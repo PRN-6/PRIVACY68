@@ -10,17 +10,18 @@ import importlib.util
 import inspect
 from typing import Any, Callable, Dict, List, Optional, Tuple
 from plugins.base_plugin import BasePlugin
+from core.platform import PLATFORM_ID, app_data_dir
 
 logger = logging.getLogger("PRIVACY68.PluginManager")
 
 # 1. Paths Configuration
-APPDATA_DIR = os.path.join(os.getenv("APPDATA", os.path.expanduser("~")), "PRIVACY68")
+APPDATA_DIR = app_data_dir()
 USER_PLUGINS_DIR = os.path.join(APPDATA_DIR, "plugins")
 CONFIG_PATH = os.path.join(APPDATA_DIR, "plugins_config.json")
 BUILTIN_PLUGINS_DIR = os.path.dirname(__file__)
 
 # Legacy AppData path (older builds stored user plugins under %APPDATA%/SANA)
-LEGACY_APPDATA_DIR = os.path.join(os.getenv("APPDATA", os.path.expanduser("~")), "SANA")
+LEGACY_APPDATA_DIR = os.path.join(os.path.dirname(APPDATA_DIR), "SANA")
 LEGACY_USER_PLUGINS_DIR = os.path.join(LEGACY_APPDATA_DIR, "plugins")
 LEGACY_CONFIG_PATH = os.path.join(LEGACY_APPDATA_DIR, "plugins_config.json")
 
@@ -139,7 +140,7 @@ class PluginManager:
         # 1. Load Built-In Shipped Plugins
         self._scan_directory(BUILTIN_PLUGINS_DIR, is_builtin=True)
 
-        # 2. Load Extra Shipped Plugins (e.g. PowerPoint, WhatsApp, Notepad, Brave, GitHub)
+        # 2. Load Extra Shipped Plugins (e.g. PowerPoint, Notepad, Brave, GitHub)
         extra_plugins_dir = os.path.abspath(os.path.join(BUILTIN_PLUGINS_DIR, "..", "extra_plugins"))
         if os.path.exists(extra_plugins_dir):
             self._scan_directory(extra_plugins_dir, is_builtin=True)
@@ -221,6 +222,15 @@ class PluginManager:
                             logger.info(
                                 f"Skipped user copy of plugin '{plugin_instance.id}' "
                                 f"({os.path.basename(file_path)}) — a shipped version takes precedence."
+                            )
+                            return None
+
+                        # A plugin that only works on another operating system is
+                        # not registered here — the platform specific variant
+                        # (e.g. linux_plugin) takes its place.
+                        if not plugin_instance.is_supported_on(PLATFORM_ID):
+                            logger.info(
+                                f"Skipped plugin '{plugin_instance.id}' — it does not support {PLATFORM_ID}."
                             )
                             return None
 

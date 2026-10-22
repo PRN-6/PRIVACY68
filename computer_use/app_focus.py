@@ -15,7 +15,7 @@ The answers decide what the command should do:
   * The app is running but in the background -> raise it. No launch needed.
   * The app is not running -> launch it, wait for its window, then raise it.
 
-This is exactly the "open whatsapp ... then send a message to mom" flow: the
+This is exactly the "open the app ... then use it" flow: the
 first command launches the app, and the second one must notice the app is
 already up and just use it.
 
@@ -26,14 +26,16 @@ what is already open" behaviour.
 Usage:
     from computer_use.app_focus import AppState, ensure_active, get_state
 
-    state = get_state("whatsapp", process_hints=("whatsapp.exe",))
+    state = get_state("vscode", process_hints=("code",))
     if state != AppState.ACTIVE:
-        ensure_active("whatsapp", launch=self._launch_whatsapp_exe)
+        ensure_active("vscode", launch=self._launch_vscode)
 """
 
 import logging
 import time
 from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple
+
+from core.platform import IS_WINDOWS
 
 logger = logging.getLogger("PRIVACY68.AppFocus")
 
@@ -91,6 +93,24 @@ _HOST_PROCESSES = (
     "explorer.exe",
     "python.exe",
     "pythonw.exe",
+    # POSIX shells, terminal emulators and the file manager.
+    "sh",
+    "bash",
+    "zsh",
+    "fish",
+    "dash",
+    "gnome-terminal-server",
+    "konsole",
+    "xfce4-terminal",
+    "alacritty",
+    "kitty",
+    "wezterm-gui",
+    "terminator",
+    "tilix",
+    "nautilus",
+    "dolphin",
+    "thunar",
+    "pcmanfm",
 )
 
 
@@ -134,7 +154,7 @@ def _is_helper_window(title: str) -> bool:
 
 def _enumerate_windows(include_hidden: bool = True) -> List[Dict[str, Any]]:
     """
-    Enumerates top-level windows, INCLUDING hidden ones.
+    Enumerates top-level windows, INCLUDING hidden ones on Windows.
 
     `WindowManager.list_visible_windows` filters on IsWindowVisible, which
     hides a real problem: a Microsoft Store app (UWP) such as WhatsApp
@@ -142,7 +162,24 @@ def _enumerate_windows(include_hidden: bool = True) -> List[Dict[str, Any]]:
     IsWindowVisible == False until the frame host raises it. A visible-only
     scan therefore reports the Store build of WhatsApp as "not running" even
     while it is running, which is exactly the bug this layer fixes.
+
+    On Linux and macOS the platform layer provides the window list, so the
+    same matching logic works everywhere.
     """
+    if not IS_WINDOWS:
+        from core.platform import list_windows
+
+        return [
+            {
+                "hwnd": int(w.get("hwnd", 0) or 0),
+                "title": str(w.get("title", "")),
+                "process_name": str(w.get("process_name", "")),
+                "is_visible": True,
+                "is_helper": _is_helper_window(str(w.get("title", ""))),
+            }
+            for w in list_windows()
+        ]
+
     import ctypes
     from ctypes import wintypes
 

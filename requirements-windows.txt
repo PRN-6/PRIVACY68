@@ -1,0 +1,13 @@
+# PRIVACY68 — Windows extras
+#
+#   pip install -r requirements-windows.txt
+#
+# These packages drive the Win32 surface of the assistant (UI Automation,
+# COM automation, the Windows shell). They are not available on Linux.
+
+-r requirements.txt
+
+# UI Automation & COM automation
+pywinauto
+comtypes
+pywin32

@@ -1,13 +1,43 @@
 import logging
 import re
-import subprocess
+import shutil
 import time
 import urllib.parse
 from typing import Callable, Dict, List
+from core.platform import IS_MACOS, IS_WINDOWS, run_detached
 from plugins.base_plugin import BasePlugin
 from plugins.win_utils import kill_process
 
 logger = logging.getLogger("PRIVACY68.Plugin.Chrome")
+
+#: The process Chrome runs as — "chrome.exe" on Windows, "chrome" elsewhere.
+CHROME_PROCESS = "chrome.exe" if IS_WINDOWS else "chrome"
+
+#: The binaries a Linux distribution ships Chrome under.
+_CHROME_BINARIES = ("google-chrome", "google-chrome-stable", "chromium",
+                    "chromium-browser", "chrome")
+
+
+def _chrome(*args: str) -> bool:
+    """
+    Starts Chrome with the given flags, on any operating system.
+
+    The application index knows where Chrome lives — the registry on
+    Windows, the .desktop entry on Linux — so the browser is started from
+    its real path instead of a shell trick.
+    """
+    from core.apps import command_for
+
+    command = command_for("chrome", *args)
+    if command:
+        return run_detached(command)
+    if IS_MACOS:
+        return run_detached(["open", "-a", "Google Chrome", *args])
+    for binary in _CHROME_BINARIES:
+        path = shutil.which(binary)
+        if path:
+            return run_detached([path, *args])
+    return False
 
 class ChromePlugin(BasePlugin):
     id = "chrome"
@@ -129,20 +159,18 @@ class ChromePlugin(BasePlugin):
 
     def open_browser(self, text: str) -> bool:
         logger.info("Plugin Action: Launching Google Chrome")
-        subprocess.Popen("start chrome", shell=True)
-        return True
+        return _chrome()
 
     def close_browser(self, text: str) -> bool:
         logger.info("Plugin Action: Closing Google Chrome")
-        kill_process("chrome.exe")
-        return True
+        return kill_process(CHROME_PROCESS)
 
     def _ensure_focused(self) -> bool:
         """Ensures Chrome is the focused foreground window before sending hotkeys."""
         from computer_use.window_manager import window_manager
         active = window_manager.get_active_window()
         proc = str(active.get("process_name", "")).lower()
-        if proc == "chrome.exe":
+        if "chrome" in proc:
             return True
         # Chrome is not focused — try to find and focus it
         hwnd = window_manager.find_window("chrome")
@@ -153,7 +181,7 @@ class ChromePlugin(BasePlugin):
             return True
         # Chrome not open at all — launch it
         logger.info("Chrome not running — launching Chrome")
-        subprocess.Popen("start chrome", shell=True)
+        _chrome()
         time.sleep(1.0)
         return True
 
@@ -180,31 +208,28 @@ class ChromePlugin(BasePlugin):
 
     def open_incognito(self, text: str) -> bool:
         logger.info("Plugin Action: Opening Chrome Incognito window")
-        subprocess.Popen("start chrome --incognito", shell=True)
-        return True
+        return _chrome("--incognito")
 
     def search_web(self, text: str) -> bool:
         cleaned = re.sub(r"\b(?:search|in|on|using|with|chrome|browser|for|about|google)\b", "", text, flags=re.IGNORECASE).strip(".!?, \t\n")
         if not cleaned:
             cleaned = "Google"
-        
+
         logger.info(f"Plugin Action: Searching Chrome for '{cleaned}'")
         url = f"https://www.google.com/search?q={urllib.parse.quote_plus(cleaned)}"
-        subprocess.Popen(f'start chrome "{url}"', shell=True)
-        return True
-        
+        return _chrome(url)
+
     def open_website(self, text: str) -> bool:
         cleaned = re.sub(r"\b(?:open|go to|navigate to|visit|website|domain|in|on|chrome|browser)\b", "", text, flags=re.IGNORECASE).strip(".!?, \t\n")
         if not cleaned:
             return False
-            
+
         url = cleaned if cleaned.startswith("http") else f"https://{cleaned}"
         # Strip spaces that might have been accidentally transcribed in domain names
         url = url.replace(" ", "")
-        
+
         logger.info(f"Plugin Action: Opening website directly: '{url}'")
-        subprocess.Popen(f'start chrome "{url}"', shell=True)
-        return True
+        return _chrome(url)
 
     def select_profile(self, text: str) -> bool:
         """Parses the text for a profile number and launches Chrome natively with that profile."""
@@ -225,7 +250,6 @@ class ChromePlugin(BasePlugin):
         if profile_id:
             logger.info(f"Plugin Action: Launching Chrome with {profile_id}")
             # Launch chrome directly forcing a specific profile bypassing the profile picker
-            subprocess.Popen(f'start chrome --profile-directory="{profile_id}"', shell=True)
-            return True
-            
+            return _chrome(f"--profile-directory={profile_id}")
+
         return False
