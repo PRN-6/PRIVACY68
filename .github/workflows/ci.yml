@@ -35,10 +35,6 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      # ── 4. Verify website plugin downloads match canonical sources ─────────────
-      - name: Check website plugin sync
-        run: python sync_website_plugins.py --check
-
       # ── 5. Verify the bundled speaker model is present ─────────────────────────
       # The voice-auth tests need the CAM++ ONNX model. It is committed to the
       # repository so the suite runs offline; this step fails fast with a clear

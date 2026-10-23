@@ -71,9 +71,13 @@ class SystemTray:
         self._on_open_mobile_remote()
 
     def _on_open_mobile_remote(self):
-        # Try to open the local web remote
+        """Opens the local web remote using the dynamic project URL."""
         try:
-            webbrowser.open("http://localhost:5000")
+            from server.remote_server import get_remote_url
+            # Get the correct IP and port (default 8765)
+            url = get_remote_url()
+            webbrowser.open(url)
+            logger.info(f"Opening mobile remote at: {url}")
         except Exception as e:
             logger.error(f"Could not open remote: {e}")
 
