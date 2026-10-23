@@ -1,161 +1,28 @@
 import logging
-from typing import Callable, Dict, List, Any
+from abc import ABC, abstractmethod
 
-logger = logging.getLogger("PRIVACY68.BasePlugin")
+logger = logging.getLogger("PRIVACY68.Plugins")
 
-
-class BasePlugin:
+class BasePlugin(ABC):
     """
-    Abstract base class for modular app plugins in Privacy68.
-    Each plugin can expose multiple in-app voice commands and skills.
-
-    Window interaction helpers delegate to:
-      computer_use.window_manager  -- Win32-level focus/find (lightweight)
-      computer_use.windows_uia     -- UIA element search (pywinauto backend)
-      computer_use.actions         -- High-level UIA actions (click, type, hotkey)
+    Abstract Base Class for all PRIVACY68 plugins.
+    Ensures a consistent interface for the Agentic Brain to interact with.
     """
-    id: str = "base"
-    name: str = "Base Plugin"
-    icon: str = "??"
-    description: str = "Base plugin description"
-    version: str = "1.0.0"
-    author: str = "Privacy68 Team"
-    is_builtin: bool = False
-    category: str = "General"
-    plugin_type: str = "General Automation"
 
-    def __init__(self, is_enabled: bool = True):
-        self.is_enabled = is_enabled
+    def __init__(self):
+        self.name = "Base Plugin"
+        self.version = "1.0.0"
+        self.description = "Abstract base for OS automation."
 
-    @property
-    def actions(self) -> Dict[str, Callable[[str], bool]]:
-        """Dictionary mapping action names to executable functions."""
-        raise NotImplementedError
-
-    @property
-    def fast_intents(self) -> Dict[str, List[str]]:
-        """Dictionary mapping action names to fast-lane training phrases."""
-        raise NotImplementedError
-
-    @property
-    def pattern_intents(self) -> Dict[str, List[str]]:
+    @abstractmethod
+    def execute(self, action: str, **kwargs) -> bool:
         """
-        Dictionary mapping action names to REGEX patterns that match the shape
-        of a command rather than one exact wording.
-
-        `fast_intents` is an exact-phrase map: it only fires on the literal
-        strings a plugin lists. That is fast and precise, but it cannot cover
-        the open-ended set of ways a person actually speaks — "send message to
-        mom saying hi", "tell dad I'll be late" and "message mom on whatsapp"
-        are three phrasings of one intent, and listing every combination is
-        not possible.
-
-        `pattern_intents` closes that gap. Each pattern is a Python regex
-        matched against the normalised command text, and the first pattern
-        that matches wins. Patterns should be written to capture the WHOLE
-        utterance, because the action still receives the original text and
-        does its own parameter extraction.
-
-        Kept deliberately small and general: a handful of sentence shapes
-        per action, not a phrase list.
+        Main execution entry point.
+        :param action: The specific action name (e.g., 'open_url').
+        :param kwargs: Parameters for the action.
+        :return: True if successful, False otherwise.
         """
-        return {}
+        pass
 
-    @property
-    def descriptions(self) -> Dict[str, str]:
-        """Dictionary mapping action names to Ollama AI system prompt descriptions."""
-        raise NotImplementedError
-
-    def execute(self, action_name: str, text: str) -> bool:
-        """Executes the specific action if available in this plugin."""
-        if not self.is_enabled:
-            return False
-        action = self.actions.get(action_name)
-        if action:
-            return action(text)
-        return False
-
-    def get_tool_definitions(self) -> List[Dict[str, Any]]:
-        """Returns Ollama-compatible JSON Schema tool specifications for this plugin."""
-        tools = []
-        try:
-            for action_name, desc in self.descriptions.items():
-                clean_name = action_name.replace(".", "_")
-                tools.append({
-                    "type": "function",
-                    "function": {
-                        "name": f"plugin_{clean_name}",
-                        "description": f"[{self.name}] {desc}",
-                        "parameters": {
-                            "type": "object",
-                            "properties": {
-                                "input_text": {
-                                    "type": "string",
-                                    "description": f"Voice command or parameter for {action_name}"
-                                }
-                            },
-                            "required": []
-                        }
-                    }
-                })
-        except Exception:
-            tools.append({
-                "type": "function",
-                "function": {
-                    "name": f"plugin_{self.id}",
-                    "description": f"[{self.name}] {self.description}",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "command": {
-                                "type": "string",
-                                "description": f"Command or instruction for {self.name}"
-                            }
-                        },
-                        "required": ["command"]
-                    }
-                }
-            })
-        return tools
-
-    # -------------------------- Context & Window Helpers (UIA Stack) --------------------------
-
-    @staticmethod
-    def get_active_window_title() -> str:
-        """Returns the title of the currently focused foreground window."""
-        try:
-            from computer_use.window_manager import window_manager
-            info = window_manager.get_active_window()
-            return info.get("title", "")
-        except Exception:
-            return ""
-
-    @staticmethod
-    def is_active_window(keyword: str) -> bool:
-        """Checks if the currently active foreground window title contains keyword."""
-        try:
-            from computer_use.window_manager import window_manager
-            return window_manager.is_window_active(keyword)
-        except Exception:
-            return False
-
-    @staticmethod
-    def focus_window(target) -> bool:
-        """Brings a window matching the title keyword or HWND to the foreground."""
-        try:
-            from computer_use.window_manager import window_manager
-            return window_manager.focus_window(target)
-        except Exception:
-            return False
-
-    @staticmethod
-    def send_keys(*key_names: str):
-        """
-        Simulates a hotkey sequence on the active window via pyautogui.
-        Pass key names as strings e.g. send_keys('ctrl', 't').
-        """
-        try:
-            import pyautogui
-            pyautogui.hotkey(*[str(k).lower() for k in key_names])
-        except Exception as e:
-            logger.debug(f"send_keys: {e}")
+    def log_action(self, action: str, status: str):
+        logger.info(f"[{self.name}] Action: {action} | Status: {status}")

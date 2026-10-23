@@ -97,6 +97,18 @@ class UIManager:
         """Opens the visual Plugin Manager window."""
         self.hud.open_plugin_manager()
 
+    def open_dashboard(self):
+        """Launches the PRIVACY68 Control Center Dashboard."""
+        from ui.dashboard_runner import run_dashboard
+        logger.info("Requesting Control Center Dashboard launch...")
+        # We cannot run webview.start() in a background thread.
+        # Instead, we use a queue or a simple flag that the main thread can check,
+        # but for a quick professional fix, we launch it as a separate process.
+        import subprocess
+        import sys
+        subprocess.Popen([sys.executable, "-m", "ui.dashboard_runner"])
+
+
     def toggle_mute(self):
         """Toggles assistant listening state."""
         self.is_muted = not self.is_muted

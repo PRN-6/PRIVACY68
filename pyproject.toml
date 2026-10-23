@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "privacy68"
+version = "1.4.1"
+description = "A private, local AI voice assistant for Windows OS automation"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "faster-whisper",
+    "onnxruntime-gpu",
+    "sounddevice",
+    "soundfile",
+    "numpy",
+    "scipy",
+    "pyttsx3",
+    "litellm",
+    "open-interpreter",
+    "mcp",
+    "ollama",
+    "toml",
+    "platformdirs",
+    "requests",
+    "tqdm",
+    "click",
+    "pyautogui",
+    "pywinauto",
+    "pywin32",
+    "pystray",
+    "pillow",
+    "pywebview",
+    "psutil",
+    "pyperclip",
+]
+
+[project.scripts]
+privacy68 = "app:main"

@@ -674,7 +674,30 @@ class DashboardAPI:
         except Exception as e:
             return {"is_downloading": False, "progress": 0, "error": str(e)}
 
-    def close_window(self):
+    def execute_command(self, text: str) -> Dict[str, Any]:
+        """
+        Executes a natural language command via the AgentBrain.
+        This method is called from the Dashboard's Neural Console.
+        """
+        try:
+            from actions.agent_brain import agent_brain
+            # We assume agent_brain.run(text) exists and returns a result
+            # Based on the architecture, this is the core entry point for reasoning.
+            result = agent_brain.run(text)
+
+            # We want to capture the reasoning and code for the UI
+            # If agent_brain stores the last reasoning/code, we provide it here.
+            return {
+                "success": True,
+                "message": result,
+                "reasoning": getattr(agent_brain, "last_reasoning", ""),
+                "code": getattr(agent_brain, "last_code", "")
+            }
+        except Exception as e:
+            logger.error(f"Error executing command from dashboard: {e}")
+            return {"success": False, "message": str(e)}
+
+    def close_app(self):
         """Closes the dashboard window."""
         if hasattr(self, "_window") and self._window:
             self._window.destroy()

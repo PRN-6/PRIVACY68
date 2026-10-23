@@ -1,40 +1,38 @@
-# Speech & Wake Word Detection
+# ==============================================================================
+# PRIVACY68 - FULL DEPENDENCY LIST
+# ==============================================================================
+
+# --- Speech & Audio (STT/TTS) ---
 faster-whisper
 onnxruntime-gpu
-huggingface_hub
-
-# Audio Processing
 sounddevice
-scipy
+soundfile
 numpy
+scipy
+pyttsx3
 
-# Local ML Intent Classification & Fast Lane Routing
-scikit-learn
-joblib
-
-# Local LLM Routing (Ollama)
+# --- Agentic Brain & LLM Bridge ---
+litellm
+open-interpreter
+mcp
 ollama
 
-# NVIDIA CUDA Acceleration (for faster-whisper GPU)
-nvidia-cublas-cu12
-nvidia-cudnn-cu12
+# --- Open-Interpreter Hidden Dependencies (Crucial for Windows) ---
+toml
+platformdirs
+requests
+tqdm
+click
 
-# UI & System Tray
+# --- Windows Automation & System Control ---
+pyautogui
+pywinauto
+pywin32
 pystray
 pillow
 pywebview
-pyautogui
-pywinauto
-comtypes
-pywin32
-qrcode
 psutil
-
-# Clipboard (used for copy/paste automation; degrades gracefully if absent)
 pyperclip
 
-# Testing
-pytest
-
-# Distribution & Build
+# --- Infrastructure & Deployment ---
 pyinstaller

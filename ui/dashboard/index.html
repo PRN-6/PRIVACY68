@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PRIVACY68 Control Center</title>
+  <title>PRIVACY68 // Neural Command Center</title>
 
   <!-- Tailwind CSS & Fonts -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -45,2408 +45,315 @@
   <script src="https://unpkg.com/lucide@latest"></script>
 
   <style>
-    /* Custom sleek scrollbar */
-    ::-webkit-scrollbar {
-      width: 5px;
-      height: 5px;
-    }
-
-    ::-webkit-scrollbar-track {
-      background: #0A0A0D;
-    }
-
-    ::-webkit-scrollbar-thumb {
-      background: #242430;
-      border-radius: 9999px;
-    }
-
-    ::-webkit-scrollbar-thumb:hover {
-      background: #E11D48;
-    }
-
-    /* Glow utility */
-    .glow-red {
-      box-shadow: 0 0 25px -4px rgba(239, 68, 68, 0.3);
-    }
-
-    .glow-crimson {
-      box-shadow: 0 0 25px -4px rgba(225, 29, 72, 0.3);
-    }
-    
-    /* Waveform canvas */
-    .waveform {
-      background: rgba(255,255,255,0.05);
-      border-radius: .4rem;
-      width: 100%;
-      height: 80px;
-    }
-    
-    /* Energy meter */
-    .meter {
-      width: 100%;
-      height: .6rem;
-      background: hsl(210,15%,20%);
-      border-radius: .3rem;
-      overflow: hidden;
-    }
-    .meter .fill {
-      width: 0%;
-      height: 100%;
-      background: hsl(120,60%,45%);
-      transition: width .1s;
-    }
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: #0A0A0D; }
+    ::-webkit-scrollbar-thumb { background: #242430; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #E11D48; }
+    .glow-red { box-shadow: 0 0 25px -4px rgba(239, 68, 68, 0.3); }
+    .crt-screen { background: linear-gradient(rgba(18, 18, 23, 0) 50%, rgba(0, 0, 0, 0.1) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03)); background-size: 100% 2px, 3px 100%; }
   </style>
 </head>
 
-<body
-  class="bg-nova-bg text-slate-100 font-sans antialiased h-screen flex flex-col select-none overflow-hidden border border-nova-border/60">
+<body class="bg-nova-bg text-slate-100 font-sans antialiased h-screen flex flex-col select-none overflow-hidden border border-nova-border/60">
 
-  <!-- ================= TOP TITLE BAR ================= -->
-  <header
-    class="h-16 bg-nova-surface/90 backdrop-blur border-b border-nova-border px-6 flex items-center justify-between shrink-0">
+  <!-- TOP TITLE BAR -->
+  <header class="h-16 bg-nova-surface/90 backdrop-blur border-b border-nova-border px-6 flex items-center justify-between shrink-0">
     <div class="flex items-center space-x-3">
-      <!-- PRIVACY68 logo: glowing scarlet ruby orb + metallic red wordmark + badge -->
       <div class="flex items-center gap-2.5">
-        <!-- Glowing scarlet orb -->
-        <span style="
-          display: inline-block;
-          width: 11px; height: 11px;
-          border-radius: 50%;
-          background: #EF4444;
-          box-shadow: 0 0 10px #EF4444, 0 0 20px rgba(239, 68, 68, 0.5);
-          flex-shrink: 0;
-        "></span>
+        <span style="display: inline-block; width: 11px; height: 11px; border-radius: 50%; background: #EF4444; box-shadow: 0 0 10px #EF4444, 0 0 20px rgba(239, 68, 68, 0.5); flex-shrink: 0;"></span>
         <div class="flex items-center gap-2">
-          <h1 style="
-            font-family: 'Outfit', 'Inter', sans-serif;
-            font-weight: 800;
-            font-size: 1.15rem;
-            letter-spacing: 2.5px;
-            background: linear-gradient(90deg, #FFFFFF 0%, #FCA5A5 50%, #EF4444 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-          ">PRIVACY68</h1>
-          <span style="
-            font-size: 10px;
-            background: rgba(239, 68, 68, 0.12);
-            color: #F87171;
-            padding: 2px 8px;
-            border-radius: 20px;
-            border: 1px solid rgba(239, 68, 68, 0.35);
-            font-family: 'JetBrains Mono', monospace;
-            font-weight: 600;
-            letter-spacing: 0.5px;
-          ">v1.1.0</span>
+          <h1 style="font-family: 'Outfit', 'Inter', sans-serif; font-weight: 800; font-size: 1.15rem; letter-spacing: 2.5px; background: linear-gradient(90deg, #FFFFFF 0%, #FCA5A5 50%, #EF4444 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">PRIVACY68</h1>
+          <span style="font-size: 10px; background: rgba(239, 68, 68, 0.12); color: #F87171; padding: 2px 8px; border-radius: 20px; border: 1px solid rgba(239, 68, 68, 0.35); font-family: 'JetBrains Mono', monospace; font-weight: 600; letter-spacing: 0.5px;">v1.4.1</span>
         </div>
       </div>
       <div class="w-px h-8 bg-nova-border mx-1"></div>
-      <div>
-        <p class="text-xs font-semibold text-slate-200 tracking-wide">CONTROL CENTER</p>
-        <p class="text-[10px] text-slate-500">Autonomous Neural Voice Assistant</p>
+      <div class="hidden sm:block">
+        <p class="text-xs font-semibold text-slate-200 tracking-wide">NEURAL COMMAND CENTER</p>
+        <p class="text-[10px] text-slate-500">Agentic Reasoning Engine</p>
       </div>
     </div>
 
-    <!-- Right status pill & close -->
     <div class="flex items-center space-x-4">
-      <div
-        class="flex items-center space-x-2 px-3 py-1.5 rounded-full bg-nova-card border border-nova-border text-xs text-slate-300">
+      <div class="flex items-center space-x-2 px-3 py-1.5 rounded-full bg-nova-card border border-nova-border text-xs text-slate-300">
         <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
         <span class="font-medium" id="header-user-tag">User</span>
         <span class="text-slate-600">•</span>
         <span class="text-emerald-400 font-mono text-[11px]">ONLINE</span>
       </div>
-
-      <button onclick="closeApp()"
-        class="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-nova-surface2 transition-colors">
+      <button onclick="closeApp()" class="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-nova-surface2 transition-colors">
         <i data-lucide="x" class="w-4 h-4"></i>
       </button>
     </div>
   </header>
 
-  <!-- ================= MAIN LAYOUT (SIDEBAR + CONTENT) ================= -->
   <div class="flex flex-1 overflow-hidden">
+    <!-- LEFT SIDEBAR: SYSTEM TELEMETRY -->
+    <aside class="w-80 bg-nova-surface/50 border-r border-nova-border p-6 flex flex-col space-y-6 shrink-0 overflow-y-auto">
 
-    <!-- SIDEBAR NAVIGATION -->
-    <aside class="w-64 bg-nova-surface/50 border-r border-nova-border p-4 flex flex-col justify-between shrink-0">
-      <div class="space-y-1.5">
-        <div class="px-3 py-2 text-[11px] font-semibold tracking-wider text-slate-500 uppercase">Navigation</div>
-
-        <button onclick="switchTab('tab-plugins')" id="nav-tab-plugins"
-          class="nav-btn active w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all text-white bg-gradient-to-r from-red-500/20 to-transparent border-l-2 border-red-500">
-          <i data-lucide="puzzle" class="w-4 h-4 text-red-400"></i>
-          <span>Plugin Hub</span>
-          <span id="plugins-count-badge"
-            class="ml-auto text-[10px] px-1.5 py-0.5 rounded bg-nova-surface2 text-slate-300 font-mono">...</span>
-        </button>
-
-        <button onclick="switchTab('tab-creator')" id="nav-tab-creator"
-          class="nav-btn w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all text-slate-400 hover:text-white hover:bg-nova-surface2">
-          <i data-lucide="wrench" class="w-4 h-4 text-rose-400"></i>
-          <span>Plugin Studio</span>
-        </button>
-
-        <button onclick="switchTab('tab-voice')" id="nav-tab-voice"
-          class="nav-btn w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all text-slate-400 hover:text-white hover:bg-nova-surface2">
-          <i data-lucide="mic" class="w-4 h-4 text-red-400"></i>
-          <span>Voice & Wake Word</span>
-        </button>
-
-        <button onclick="switchTab('tab-diagnostics')" id="nav-tab-diagnostics"
-          class="nav-btn w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all text-slate-400 hover:text-white hover:bg-nova-surface2">
-          <i data-lucide="activity" class="w-4 h-4 text-rose-400"></i>
-          <span>Diagnostics</span>
-        </button>
+      <!-- AI ENGINE STATUS -->
+      <div class="p-4 rounded-2xl bg-nova-card border border-nova-border space-y-4">
+        <div class="flex items-center space-x-2 text-xs font-bold text-slate-400 uppercase tracking-wider">
+          <i data-lucide="cpu" class="w-3.5 h-3.5 text-red-400"></i>
+          <span>Neural Engine</span>
+        </div>
+        <div class="space-y-3">
+          <div class="flex justify-between items-center">
+            <span class="text-xs text-slate-500">Model</span>
+            <span id="quick-llm-model" class="text-xs font-mono text-red-400">gemma4:31b-cloud</span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-xs text-slate-500">Provider</span>
+            <span class="text-xs font-mono text-slate-300">Ollama (Local)</span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-xs text-slate-500">Privacy</span>
+            <span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 font-semibold">Air-Gapped</span>
+          </div>
+        </div>
       </div>
 
-      <!-- System Quick Card -->
-      <div class="p-3.5 rounded-xl bg-nova-card/80 border border-nova-border/70 space-y-2">
-        <div class="flex items-center justify-between text-xs">
-          <span class="text-slate-400">Wake Trigger</span>
-          <span id="quick-wake-word" class="font-mono text-red-400 uppercase font-semibold">PRIVACY68</span>
+      <!-- HARDWARE STATUS -->
+      <div class="p-4 rounded-2xl bg-nova-card border border-nova-border space-y-4">
+        <div class="flex items-center space-x-2 text-xs font-bold text-slate-400 uppercase tracking-wider">
+          <i data-lucide="zap" class="w-3.5 h-3.5 text-rose-400"></i>
+          <span>Hardware</span>
         </div>
-        <div class="flex items-center justify-between text-xs">
-          <span class="text-slate-400">Whisper Mode</span>
-          <span id="quick-whisper-model" class="font-mono text-slate-300">base.en</span>
+        <div class="space-y-3">
+          <div class="flex justify-between items-center">
+            <span class="text-xs text-slate-500">CUDA Cores</span>
+            <span id="cuda-status" class="text-xs font-mono text-emerald-400">Active</span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-xs text-slate-500">ASR Engine</span>
+            <span class="text-xs font-mono text-slate-300">Faster-Whisper</span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-xs text-slate-500">VAD Filter</span>
+            <span class="text-xs font-mono text-slate-300">Silero Neural</span>
+          </div>
         </div>
-        <div class="flex items-center justify-between text-xs">
-          <span class="text-slate-400">LLM Brain</span>
-          <span id="quick-llm-model" class="font-mono text-red-400 truncate max-w-[100px]" title="qwen2.5:0.5b">qwen2.5:0.5b</span>
+      </div>
+
+      <!-- MIC TELEMETRY -->
+      <div class="p-4 rounded-2xl bg-nova-card border border-nova-border space-y-3">
+        <div class="flex items-center space-x-2 text-xs font-bold text-slate-400 uppercase tracking-wider">
+          <i data-lucide="mic" class="w-3.5 h-3.5 text-red-400"></i>
+          <span>Audio Input</span>
         </div>
-        <div class="pt-1 border-t border-nova-border/50 flex items-center justify-between text-[11px] text-slate-500">
-          <span>Speech Engine</span>
-          <span class="text-emerald-400 font-medium">Ready</span>
+        <div class="w-full h-1.5 bg-nova-surface rounded-full overflow-hidden border border-nova-border">
+          <div id="mic-meter-bar" class="h-full bg-gradient-to-r from-red-500 to-rose-400 w-0 transition-all duration-150"></div>
         </div>
+        <div class="flex justify-between items-center">
+          <span class="text-[10px] text-slate-500">Live Sensitivity</span>
+          <span id="mic-level" class="text-[10px] font-mono text-slate-300">0%</span>
+        </div>
+      </div>
+
+      <!-- QUICK SETTINGS -->
+      <div class="p-4 rounded-2xl bg-nova-surface/50 border border-nova-border space-y-4">
+        <div class="space-y-2">
+          <label class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Wake Word</label>
+          <input type="text" id="wake_word" onchange="saveProfile()" class="w-full bg-nova-bg border border-nova-border rounded-lg px-3 py-1.5 text-xs text-white focus:border-red-500 focus:outline-none font-mono">
+        </div>
+        <div class="space-y-2">
+          <label class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Your Name</label>
+          <input type="text" id="user_name" onchange="saveProfile()" class="w-full bg-nova-bg border border-nova-border rounded-lg px-3 py-1.5 text-xs text-white focus:border-red-500 focus:outline-none">
+        </div>
+        <button onclick="saveProfile()" class="w-full py-2 rounded-lg bg-red-600 hover:bg-red-500 text-white text-xs font-bold transition-all active:scale-95">
+          Save Profile
+        </button>
       </div>
     </aside>
 
-    <!-- CONTENT AREA -->
-    <main class="flex-1 bg-nova-bg overflow-y-auto p-8 relative">
+    <!-- MAIN CONTENT: THE NEURAL TERMINAL -->
+    <main class="flex-1 bg-nova-bg overflow-hidden flex flex-col p-6 relative">
 
-      <!-- ================= TAB 1: PLUGIN HUB ================= -->
-      <section id="tab-plugins" class="tab-content space-y-5">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h2 class="text-xl font-bold text-white tracking-tight flex items-center space-x-2">
-              <span>Plugin Hub & Skills</span>
-              <span id="plugins-total-count" class="text-xs px-2 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/20 font-mono">0 Loaded</span>
-            </h2>
-            <p class="text-xs text-slate-400 mt-0.5">Modular action extensions equipped to execute voice commands and OS tasks.</p>
-          </div>
-          <div class="relative w-full sm:w-72">
-            <i data-lucide="search" class="w-4 h-4 text-slate-500 absolute left-3 top-2.5"></i>
-            <input type="text" id="plugin-search" oninput="filterPlugins()" placeholder="Search by name, action, or voice command..."
-              class="w-full bg-nova-surface border border-nova-border rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-red-500">
-          </div>
-        </div>
-
-        <!-- Category Filter Pills Bar -->
-        <div class="flex items-center gap-2 overflow-x-auto pb-1" id="plugin-category-filters">
-          <button onclick="setPluginCategoryFilter('all')" id="cat-filter-all"
-            class="cat-filter-btn px-3 py-1.5 rounded-xl text-xs font-semibold bg-gradient-to-r from-red-500/20 to-rose-500/20 text-white border border-red-500/50 transition-all cursor-pointer whitespace-nowrap shadow-sm">
-            All <span id="cat-count-all" class="ml-1 opacity-70 font-mono text-[10px]">(0)</span>
-          </button>
-          <button onclick="setPluginCategoryFilter('System')" id="cat-filter-System"
-            class="cat-filter-btn px-3 py-1.5 rounded-xl text-xs font-medium bg-nova-surface2 text-slate-400 hover:text-white border border-nova-border transition-all cursor-pointer whitespace-nowrap">
-            🖥️ System & OS <span id="cat-count-System" class="ml-1 opacity-70 font-mono text-[10px]">(0)</span>
-          </button>
-          <button onclick="setPluginCategoryFilter('Browser')" id="cat-filter-Browser"
-            class="cat-filter-btn px-3 py-1.5 rounded-xl text-xs font-medium bg-nova-surface2 text-slate-400 hover:text-white border border-nova-border transition-all cursor-pointer whitespace-nowrap">
-            🌐 Browsers <span id="cat-count-Browser" class="ml-1 opacity-70 font-mono text-[10px]">(0)</span>
-          </button>
-          <button onclick="setPluginCategoryFilter('Communication')" id="cat-filter-Communication"
-            class="cat-filter-btn px-3 py-1.5 rounded-xl text-xs font-medium bg-nova-surface2 text-slate-400 hover:text-white border border-nova-border transition-all cursor-pointer whitespace-nowrap">
-            💬 Messaging <span id="cat-count-Communication" class="ml-1 opacity-70 font-mono text-[10px]">(0)</span>
-          </button>
-          <button onclick="setPluginCategoryFilter('Developer')" id="cat-filter-Developer"
-            class="cat-filter-btn px-3 py-1.5 rounded-xl text-xs font-medium bg-nova-surface2 text-slate-400 hover:text-white border border-nova-border transition-all cursor-pointer whitespace-nowrap">
-            💻 Dev Tools <span id="cat-count-Developer" class="ml-1 opacity-70 font-mono text-[10px]">(0)</span>
-          </button>
-          <button onclick="setPluginCategoryFilter('Productivity')" id="cat-filter-Productivity"
-            class="cat-filter-btn px-3 py-1.5 rounded-xl text-xs font-medium bg-nova-surface2 text-slate-400 hover:text-white border border-nova-border transition-all cursor-pointer whitespace-nowrap">
-            ⚡ Productivity <span id="cat-count-Productivity" class="ml-1 opacity-70 font-mono text-[10px]">(0)</span>
-          </button>
-          <button onclick="setPluginCategoryFilter('Custom')" id="cat-filter-Custom"
-            class="cat-filter-btn px-3 py-1.5 rounded-xl text-xs font-medium bg-nova-surface2 text-slate-400 hover:text-white border border-nova-border transition-all cursor-pointer whitespace-nowrap">
-            🚀 Custom <span id="cat-count-Custom" class="ml-1 opacity-70 font-mono text-[10px]">(0)</span>
-          </button>
-        </div>
-
-        <!-- Cards Container -->
-        <div id="plugins-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch">
-          <!-- Loaded dynamically -->
-          <div class="col-span-full py-12 text-center text-slate-500">
-            <i data-lucide="loader-2" class="w-6 h-6 animate-spin mx-auto mb-2 text-red-500"></i>
-            Loading installed plugins...
-          </div>
-        </div>
-      </section>
-
-      <!-- ================= TAB 3: PLUGIN STUDIO / CREATOR ================= -->
-      <section id="tab-creator" class="tab-content hidden space-y-6 max-w-3xl">
+      <div class="flex items-center justify-between mb-6">
         <div>
-          <h2 class="text-xl font-bold text-white tracking-tight">Plugin Studio</h2>
-          <p class="text-sm text-slate-400">Generate custom voice-controlled automations or import community plugins.
-          </p>
+          <h2 class="text-2xl font-bold text-white tracking-tight flex items-center space-x-3">
+            <i data-lucide="terminal" class="w-6 h-6 text-red-500"></i>
+            <span>Neural Command Console</span>
+          </h2>
+          <p class="text-sm text-slate-400 mt-1">Direct interaction with the Agentic Brain. Type a command to see the reasoning flow.</p>
         </div>
+        <div class="flex items-center space-x-3">
+          <span class="flex items-center space-x-1.5 text-xs text-slate-500 font-mono">
+            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+            <span>BRAIN ACTIVE</span>
+          </span>
+        </div>
+      </div>
 
-        <!-- Section A: Template Wizard -->
-        <div class="p-6 rounded-2xl bg-nova-card border border-nova-border space-y-5">
-          <div class="flex items-center space-x-3 pb-3 border-b border-nova-border">
-            <div class="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
-              <i data-lucide="sparkles" class="w-4 h-4"></i>
-            </div>
-            <div>
-              <h3 class="font-semibold text-sm text-white">Create New Voice Plugin</h3>
-              <p class="text-xs text-slate-400">Scaffolds an autonomous skill script in your user plugins directory.</p>
-            </div>
+      <!-- THE CONSOLE GRID -->
+      <div class="grid grid-cols-12 gap-6 flex-1 overflow-hidden">
+
+        <!-- LEFT: THE INTERACTION LOG (Chat style) -->
+        <div class="col-span-5 flex flex-col h-full overflow-hidden bg-nova-surface/30 border border-nova-border rounded-3xl">
+          <div class="p-4 border-b border-nova-border bg-nova-surface/50 flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-300 uppercase tracking-widest">Session Log</span>
+            <button onclick="clearLog()" class="text-[10px] text-slate-500 hover:text-white transition-colors">Clear</button>
           </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label class="block text-xs font-semibold text-slate-400 mb-1.5">Plugin ID (lowercase)</label>
-              <input type="text" id="cr_id" placeholder="e.g. spotify"
-                class="w-full bg-nova-surface border border-nova-border rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-red-500">
-            </div>
-
-            <div>
-              <label class="block text-xs font-semibold text-slate-400 mb-1.5">Display Name</label>
-              <input type="text" id="cr_name" placeholder="e.g. Spotify Controller"
-                class="w-full bg-nova-surface border border-nova-border rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-red-500">
-            </div>
-
-            <div>
-              <label class="block text-xs font-semibold text-slate-400 mb-1.5">Emoji Icon</label>
-              <input type="text" id="cr_icon" value="🎵"
-                class="w-full bg-nova-surface border border-nova-border rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-red-500">
-            </div>
-
-            <div>
-              <label class="block text-xs font-semibold text-slate-400 mb-1.5">Sample Voice Command</label>
-              <input type="text" id="cr_cmd" placeholder="e.g. play songs on spotify"
-                class="w-full bg-nova-surface border border-nova-border rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-red-500">
-            </div>
-
-            <div class="col-span-full">
-              <label class="block text-xs font-semibold text-slate-400 mb-1.5">Description</label>
-              <input type="text" id="cr_desc" placeholder="Controls music playback and playlist search"
-                class="w-full bg-nova-surface border border-nova-border rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-red-500">
-            </div>
+          <div id="console-log" class="flex-1 overflow-y-auto p-4 space-y-4 font-mono text-xs">
+            <div class="text-slate-500 italic text-center py-4">Awaiting voice or text command...</div>
           </div>
 
-          <div class="flex justify-end pt-2">
-            <button onclick="createPlugin()"
-              class="flex items-center space-x-2 px-5 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white font-semibold text-xs transition-all shadow-lg shadow-red-600/25">
-              <i data-lucide="plus-circle" class="w-4 h-4"></i>
-              <span>Generate & Load Plugin</span>
-            </button>
+          <!-- INPUT AREA -->
+          <div class="p-4 border-t border-nova-border bg-nova-surface/50">
+            <div class="relative">
+              <input type="text" id="command-input" onkeypress="handleKeyPress(event)"
+                placeholder="Ask PRIVACY68 to do something..."
+                class="w-full bg-nova-bg border border-nova-border rounded-2xl pl-4 pr-12 py-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-red-500 transition-all">
+              <button onclick="sendTextCommand()" class="absolute right-2 top-1.5 p-1.5 rounded-xl bg-red-600 hover:bg-red-500 text-white transition-all active:scale-90">
+                <i data-lucide="send" class="w-4 h-4"></i>
+              </button>
+            </div>
           </div>
         </div>
 
-        <!-- Section B: File Installer -->
-        <div class="p-6 rounded-2xl bg-nova-card border border-nova-border space-y-4">
-          <div class="flex items-center space-x-3 pb-3 border-b border-nova-border">
-            <div class="w-8 h-8 rounded-lg bg-red-500/10 text-red-400 flex items-center justify-center">
-              <i data-lucide="folder-archive" class="w-4 h-4"></i>
+        <!-- RIGHT: THE REASONING ENGINE (Split View) -->
+        <div class="col-span-7 flex flex-col h-full space-y-6 overflow-hidden">
+
+          <!-- BOX 1: THOUGHT PROCESS (The "Why") -->
+          <div class="h-1/2 flex flex-col bg-nova-surface/30 border border-nova-border rounded-3xl overflow-hidden">
+            <div class="p-3 border-b border-nova-border bg-nova-surface/50 flex items-center space-x-2">
+              <i data-lucide="brain-circuit" class="w-4 h-4 text-red-400"></i>
+              <span class="text-xs font-bold text-slate-300 uppercase tracking-widest">Neural Reasoning</span>
             </div>
-            <div>
-              <h3 class="font-semibold text-sm text-white">Import External Plugin File</h3>
-              <p class="text-xs text-slate-400">Install standalone .py or packaged .zip plugins from community
-                repositories.</p>
-            </div>
-          </div>
-
-          <div
-            class="flex items-center justify-between bg-nova-surface border border-dashed border-nova-border hover:border-red-500/60 rounded-xl p-4 transition-colors">
-            <div class="flex items-center space-x-3">
-              <i data-lucide="file-code" class="w-6 h-6 text-red-400"></i>
-              <div>
-                <p class="text-xs text-slate-300 font-medium">Select a Python (.py) or Zip (.zip) plugin</p>
-                <p class="text-[11px] text-slate-500">Automatically validated and placed into User AppData.</p>
-              </div>
-            </div>
-            <button onclick="browseInstallPlugin()"
-              class="flex items-center space-x-2 px-4 py-2 rounded-xl bg-nova-surface2 hover:bg-nova-border text-white text-xs font-semibold border border-nova-border transition-all">
-              <i data-lucide="upload" class="w-3.5 h-3.5"></i>
-              <span>Browse File...</span>
-            </button>
-          </div>
-        </div>
-      </section>
-
-      <!-- ================= TAB 4: SYSTEM DIAGNOSTICS ================= -->
-      <section id="tab-diagnostics" class="tab-content hidden space-y-6 max-w-3xl">
-        <div class="flex items-center justify-between">
-          <div>
-            <h2 class="text-xl font-bold text-white tracking-tight">System Health & Telemetry</h2>
-            <p class="text-sm text-slate-400">Real-time inspection of CUDA, Ollama, Whisper models, and hardware
-              drivers.</p>
-          </div>
-          <button onclick="loadDiagnostics()"
-            class="flex items-center space-x-2 px-4 py-2 rounded-xl bg-nova-card hover:bg-nova-surface border border-nova-border text-xs text-red-400 hover:text-red-300 font-semibold transition-all">
-            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
-            <span>Re-Scan System</span>
-          </button>
-        </div>
-
-        <!-- Audio Input Live Meter Test -->
-        <div class="p-5 rounded-2xl bg-nova-card border border-nova-border space-y-3">
-          <div class="flex items-center justify-between">
-            <div class="flex items-center space-x-2.5">
-              <i data-lucide="mic" class="w-4 h-4 text-red-400"></i>
-              <span class="text-xs font-semibold text-slate-300 uppercase tracking-wider">Live Microphone Level
-                Test</span>
-            </div>
-            <button onclick="testMic()" id="mic-test-btn"
-              class="px-3 py-1 rounded-lg bg-nova-surface text-red-400 border border-nova-border hover:border-red-500 text-xs font-medium transition-all">
-              Test Audio Input
-            </button>
-          </div>
-          <div class="w-full h-3 bg-nova-surface rounded-full overflow-hidden border border-nova-border">
-            <div id="mic-meter-bar"
-              class="h-full bg-gradient-to-r from-red-500 to-rose-400 w-0 transition-all duration-300"></div>
-          </div>
-          <p id="mic-meter-status" class="text-[11px] text-slate-500">Click 'Test Audio Input' to record a quick audio
-            sample and verify sensitivity.</p>
-        </div>
-
-        <!-- Diagnostic Sections Container -->
-        <div id="diagnostics-container" class="space-y-4">
-          <div class="py-12 text-center text-slate-500">
-            <i data-lucide="loader-2" class="w-6 h-6 animate-spin mx-auto mb-2 text-red-500"></i>
-            Running environment health checks...
-          </div>
-        </div>
-      </section>
-
-      <!-- ================= TAB: VOICE & WAKE WORD SETTINGS ================= -->
-      <section id="tab-voice" class="tab-content hidden space-y-6">
-        <div>
-          <h2 class="text-xl font-bold text-white tracking-tight">Voice & Custom Wake Word</h2>
-          <p class="text-sm text-slate-400">Personalize your assistant's wake command, speech model, and identity.</p>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          
-          <!-- Wake Word Configuration Card -->
-          <div class="p-6 rounded-2xl bg-nova-card border border-nova-border space-y-5">
-            <div class="flex items-center space-x-3">
-              <div class="w-9 h-9 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 flex items-center justify-center">
-                <i data-lucide="sparkles" class="w-5 h-5"></i>
-              </div>
-              <div>
-                <h3 class="text-sm font-bold text-white">Custom Wake Word / Phrase</h3>
-                <p class="text-[11px] text-slate-400">Type any custom name or choose a preset below</p>
-              </div>
-            </div>
-
-            <!-- Custom Wake Word Input -->
-            <div class="space-y-2">
-              <label class="text-xs font-semibold text-slate-300">Active Wake Word(s)</label>
-              <input type="text" id="wake_word" placeholder="e.g. Alexa, Nova, Leo, Serena, Jarvis"
-                class="w-full px-4 py-2.5 rounded-xl bg-nova-surface border border-nova-border focus:border-red-500 focus:outline-none text-white font-mono text-sm tracking-wide transition-colors">
-              <p class="text-[11px] text-slate-500">You can also specify multiple comma-separated words (e.g. <span class="text-red-400 font-mono">Alexa, Nova, Jarvis</span>).</p>
-            </div>
-
-            <!-- Preset Pills -->
-            <div class="space-y-1.5">
-              <label class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Quick Presets</label>
-              <div class="flex flex-wrap gap-2">
-                <button type="button" onclick="setPresetWake('Alexa')" class="px-3 py-1.5 rounded-lg bg-nova-surface2 hover:bg-cyan-500/20 hover:border-cyan-500/40 border border-nova-border text-xs font-medium text-cyan-300 transition-all">🎙️ Alexa</button>
-                <button type="button" onclick="setPresetWake('Nova')" class="px-3 py-1.5 rounded-lg bg-nova-surface2 hover:bg-red-500/20 hover:border-red-500/40 border border-nova-border text-xs font-medium text-slate-200 transition-all">✨ Nova</button>
-                <button type="button" onclick="setPresetWake('Leo')" class="px-3 py-1.5 rounded-lg bg-nova-surface2 hover:bg-red-500/20 hover:border-red-500/40 border border-nova-border text-xs font-medium text-slate-200 transition-all">🦁 Leo</button>
-                <button type="button" onclick="setPresetWake('Serena')" class="px-3 py-1.5 rounded-lg bg-nova-surface2 hover:bg-red-500/20 hover:border-red-500/40 border border-nova-border text-xs font-medium text-slate-200 transition-all">🌙 Serena</button>
-                <button type="button" onclick="setPresetWake('Privacy68')" class="px-3 py-1.5 rounded-lg bg-nova-surface2 hover:bg-red-500/20 hover:border-red-500/40 border border-nova-border text-xs font-medium text-slate-200 transition-all">🛡️ Privacy68</button>
-                <button type="button" onclick="setPresetWake('Jarvis')" class="px-3 py-1.5 rounded-lg bg-nova-surface2 hover:bg-red-500/20 hover:border-red-500/40 border border-nova-border text-xs font-medium text-slate-200 transition-all">🤖 Jarvis</button>
-                <button type="button" onclick="setPresetWake('Friday')" class="px-3 py-1.5 rounded-lg bg-nova-surface2 hover:bg-red-500/20 hover:border-red-500/40 border border-nova-border text-xs font-medium text-slate-200 transition-all">💎 Friday</button>
-              </div>
-            </div>
-
-            <!-- Sensitivity slider -->
-            <div class="space-y-2 pt-2 border-t border-nova-border/50">
-              <div class="flex justify-between items-center text-xs">
-                <span class="font-semibold text-slate-300">VAD Speech Sensitivity</span>
-                <span id="sens_val" class="font-mono text-red-400 font-bold">0.50</span>
-              </div>
-              <input type="range" id="wake_threshold" min="0.20" max="0.80" step="0.05" value="0.50"
-                oninput="document.getElementById('sens_val').innerText = parseFloat(this.value).toFixed(2)"
-                class="w-full accent-red-500 bg-nova-surface rounded-lg cursor-pointer">
-              <div class="flex justify-between text-[10px] text-slate-500">
-                <span>More Sensitive (0.20)</span>
-                <span>Balanced (0.50)</span>
-                <span>Strict (0.80)</span>
-              </div>
+            <div id="reasoning-box" class="flex-1 p-4 font-mono text-xs text-slate-400 overflow-y-auto crt-screen">
+              <span class="opacity-50 italic">Reasoning logs will appear here during execution...</span>
             </div>
           </div>
 
-          <!-- Personality & Model Configuration Card -->
-          <div class="p-6 rounded-2xl bg-nova-card border border-nova-border space-y-5">
-            <div class="flex items-center space-x-3">
-              <div class="w-9 h-9 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center">
-                <i data-lucide="user" class="w-5 h-5"></i>
-              </div>
-              <div>
-                <h3 class="text-sm font-bold text-white">Identity & Neural Engine</h3>
-                <p class="text-[11px] text-slate-400">Configure your assistant profile and transcription model</p>
-              </div>
+          <!-- BOX 2: GENERATED CODE (The "How") -->
+          <div class="h-1/2 flex flex-col bg-nova-surface/30 border border-nova-border rounded-3xl overflow-hidden">
+            <div class="p-3 border-b border-nova-border bg-nova-surface/50 flex items-center space-x-2">
+              <i data-lucide="code" class="w-4 h-4 text-red-400"></i>
+              <span class="text-xs font-bold text-slate-300 uppercase tracking-widest">Generated Python Script</span>
             </div>
-
-            <div class="space-y-2">
-              <label class="text-xs font-semibold text-slate-300">Your Name (Owner)</label>
-              <input type="text" id="user_name" placeholder="User"
-                class="w-full px-4 py-2 rounded-xl bg-nova-surface border border-nova-border focus:border-red-500 focus:outline-none text-white text-sm">
+            <div id="code-box" class="flex-1 p-4 font-mono text-xs text-emerald-400 overflow-y-auto bg-black/40">
+              <span class="opacity-30 italic">No code generated yet.</span>
             </div>
-
-            <div class="space-y-2">
-              <label class="text-xs font-semibold text-slate-300">Assistant Display Name</label>
-              <input type="text" id="assistant_name" placeholder="Privacy68"
-                class="w-full px-4 py-2 rounded-xl bg-nova-surface border border-nova-border focus:border-red-500 focus:outline-none text-white text-sm">
-            </div>
-
-            <div class="space-y-2">
-              <label class="text-xs font-semibold text-slate-300">Whisper Neural Model</label>
-              <select id="whisper_model" onchange="saveProfile()"
-                class="w-full px-4 py-2 rounded-xl bg-nova-surface border border-nova-border focus:border-red-500 focus:outline-none text-white text-sm">
-                <option value="tiny.en">tiny.en (Ultralight ~40MB — Lowest RAM)</option>
-                <option value="base.en">base.en (Balanced ~140MB — Standard Speed)</option>
-                <option value="small.en" selected>small.en (High Accuracy ~460MB — Recommended)</option>
-              </select>
-            </div>
-
-            <!-- AI Engine & Privacy Mode (Dual-Mode: 100% Offline Ollama vs Cloud API Key) -->
-            <div class="space-y-3 pt-3 border-t border-nova-border/50">
-              <div class="flex items-center justify-between">
-                <label class="text-xs font-semibold text-slate-200 flex items-center space-x-1.5">
-                  <i data-lucide="brain" class="w-3.5 h-3.5 text-red-400"></i>
-                  <span>AI Semantic Router & Reasoning Engine</span>
-                </label>
-                <span id="privacy-mode-badge" class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 font-semibold border border-emerald-500/30 flex items-center space-x-1">
-                  <i data-lucide="shield-check" class="w-3 h-3"></i>
-                  <span>100% Offline Air-Gapped</span>
-                </span>
-              </div>
-
-              <!-- Provider Mode Switcher Buttons -->
-              <div class="grid grid-cols-2 gap-2 p-1 rounded-xl bg-nova-surface border border-nova-border">
-                <button type="button" id="btn-mode-local" onclick="switchLLMProvider('ollama')"
-                  class="py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center space-x-2 transition-all bg-gradient-to-r from-red-500/20 to-rose-500/20 text-white border border-red-500/50 shadow-sm">
-                  <i data-lucide="hard-drive" class="w-3.5 h-3.5 text-red-400"></i>
-                  <span>Local Air-Gapped (Ollama)</span>
-                </button>
-                <button type="button" id="btn-mode-cloud" onclick="switchLLMProvider('cloud')"
-                  class="py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center space-x-2 transition-all text-slate-400 hover:text-white hover:bg-nova-surface2">
-                  <i data-lucide="cloud-lightning" class="w-3.5 h-3.5 text-amber-400"></i>
-                  <span>Cloud API Key (BYO Key)</span>
-                </button>
-              </div>
-
-              <!-- 1. LOCAL OLLAMA PANEL -->
-              <div id="panel-local-llm" class="space-y-2">
-                <div class="flex items-center justify-between">
-                  <span class="text-[11px] text-slate-400">Local Model Selection</span>
-                  <button type="button" onclick="loadAvailableLLMModels()" class="text-[11px] text-red-400 hover:text-red-300 flex items-center space-x-1" title="Refresh local models from Ollama">
-                    <i data-lucide="refresh-cw" class="w-3 h-3"></i>
-                    <span>Refresh</span>
-                  </button>
-                </div>
-                <select id="llm_model" onchange="saveProfile()"
-                  class="w-full px-4 py-2 rounded-xl bg-nova-surface border border-nova-border focus:border-red-500 focus:outline-none text-white text-sm font-mono">
-                  <option value="qwen2.5:0.5b" selected>qwen2.5:0.5b (Fast & Lightweight ~397MB)</option>
-                  <option value="llama3.2:1b">llama3.2:1b (Fast Reasoning ~1.3GB)</option>
-                  <option value="llama3.2:3b">llama3.2:3b (High Capability ~2.0GB)</option>
-                  <option value="hermes3:8b">hermes3:8b (Agentic & Tool Calling)</option>
-                  <option value="deepseek-r1:1.5b">deepseek-r1:1.5b (Local Reasoning)</option>
-                </select>
-                
-                <!-- Quick Model Pull Input -->
-                <div class="pt-1 flex items-center space-x-2">
-                  <input type="text" id="custom_llm_input" placeholder="Pull model (e.g. qwen2.5:1.5b, mistral)"
-                    class="flex-1 px-3 py-1.5 rounded-lg bg-nova-surface border border-nova-border text-xs text-white placeholder-slate-500 focus:border-red-500 focus:outline-none">
-                  <button type="button" onclick="pullCustomLLMModel()" id="btn-pull-llm"
-                    class="px-3 py-1.5 rounded-lg bg-red-600/20 hover:bg-red-600/30 text-red-400 hover:text-red-300 border border-red-500/30 text-xs font-semibold flex items-center space-x-1 transition-all cursor-pointer">
-                    <i data-lucide="download" class="w-3 h-3"></i>
-                    <span id="btn-pull-llm-text">Pull</span>
-                  </button>
-                </div>
-                <p class="text-[10px] text-emerald-400/80 flex items-center space-x-1">
-                  <i data-lucide="lock" class="w-3 h-3"></i>
-                  <span>Zero telemetry. All prompts & function calls execute 100% locally.</span>
-                </p>
-              </div>
-
-              <!-- 2. CLOUD API KEY PANEL (Hidden by default) -->
-              <div id="panel-cloud-llm" class="space-y-3 hidden">
-                <div class="grid grid-cols-2 gap-2">
-                  <div>
-                    <label class="text-[11px] text-slate-400 block mb-1">Cloud Provider</label>
-                    <select id="cloud_provider_select" onchange="onCloudProviderChange()"
-                      class="w-full px-3 py-1.5 rounded-lg bg-nova-surface border border-nova-border text-xs text-white focus:border-amber-500 focus:outline-none">
-                      <option value="groq" selected>Groq (100% Free • Ultra-Fast ~500 t/s)</option>
-                      <option value="gemini">Google Gemini (100% Free Tier)</option>
-                      <option value="openrouter">OpenRouter (Free Models Available)</option>
-                      <option value="claude">Anthropic Claude (Official API)</option>
-                      <option value="openai">OpenAI (Official)</option>
-                      <option value="custom">Custom (Astra / Together / vLLM)</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label class="text-[11px] text-slate-400 block mb-1">Model Name</label>
-                    <input type="text" id="cloud_model_input" placeholder="gpt-4o-mini / llama-3.3-70b-versatile"
-                      class="w-full px-3 py-1.5 rounded-lg bg-nova-surface border border-nova-border text-xs text-white focus:border-amber-500 focus:outline-none font-mono">
-                  </div>
-                </div>
-
-                <div>
-                  <label class="text-[11px] text-slate-400 block mb-1">Your API Key (Stored locally in %APPDATA%)</label>
-                  <div class="relative">
-                    <input type="password" id="cloud_api_key" placeholder="gsk_... or sk-proj-..."
-                      class="w-full px-3 py-1.5 pr-10 rounded-lg bg-nova-surface border border-nova-border text-xs text-white focus:border-amber-500 focus:outline-none font-mono">
-                    <button type="button" onclick="toggleApiKeyVisibility()" class="absolute right-2.5 top-2 text-slate-400 hover:text-white" title="Toggle visibility">
-                      <i data-lucide="eye" id="eye-api-key" class="w-3.5 h-3.5"></i>
-                    </button>
-                  </div>
-                </div>
-
-                <div id="custom-base-url-container" class="hidden">
-                  <label class="text-[11px] text-slate-400 block mb-1">Custom API Base URL</label>
-                  <input type="text" id="cloud_base_url" placeholder="https://api.together.xyz/v1/chat/completions"
-                    class="w-full px-3 py-1.5 rounded-lg bg-nova-surface border border-nova-border text-xs text-white focus:border-amber-500 focus:outline-none font-mono">
-                </div>
-
-                <div class="flex items-center justify-between pt-1">
-                  <button type="button" onclick="testCloudLLMConnection()" id="btn-test-cloud-api"
-                    class="px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 text-xs font-semibold flex items-center space-x-1.5 transition-all cursor-pointer">
-                    <i data-lucide="plug" class="w-3.5 h-3.5"></i>
-                    <span>Test API Key</span>
-                  </button>
-                  <span id="cloud-api-test-result" class="text-[11px] text-slate-400"></span>
-                </div>
-
-                <p class="text-[10px] text-amber-400/80 flex items-center space-x-1">
-                  <i data-lucide="shield" class="w-3 h-3"></i>
-                  <span>Microphone audio & biometrics NEVER leave your PC. Only text is sent to your API key.</span>
-                </p>
-              </div>
-            </div>
-          </div>
-          <!-- Voice Lock (Biometric Speaker Recognition) Card -->
-          <div class="col-span-1 md:col-span-2 p-6 rounded-2xl bg-nova-card border border-nova-border space-y-5">
-            <div class="flex items-center justify-between">
-              <div class="flex items-center space-x-3">
-                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border border-indigo-500/30 text-indigo-400 flex items-center justify-center">
-                  <i data-lucide="fingerprint" class="w-5 h-5"></i>
-                </div>
-                <div>
-                  <div class="flex items-center space-x-2">
-                    <h3 class="text-sm font-bold text-white">Voice Lock (Biometric Speaker Verification)</h3>
-                    <span id="vl-enrolled-badge" class="text-[10px] px-2 py-0.5 rounded-full bg-slate-500/15 text-slate-400 font-semibold border border-slate-500/30">Not Enrolled</span>
-                  </div>
-                  <p class="text-[11px] text-slate-400">Powered by SpeechBrain ECAPA-TDNN neural voice embeddings (192-d)</p>
-                </div>
-              </div>
-
-              <!-- Master Toggle Switch -->
-              <label class="relative inline-flex items-center cursor-pointer shrink-0">
-                <input type="checkbox" id="voice_lock_toggle" onchange="onToggleVoiceLock(this.checked)" class="sr-only peer">
-                <div class="w-11 h-6 bg-nova-surface peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600 border border-nova-border"></div>
-              </label>
-            </div>
-
-            <!-- Enrollment & Status Container -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2">
-              
-              <!-- Left: 3-Step Enrollment Wizard -->
-              <div class="p-4 rounded-xl bg-nova-surface/60 border border-nova-border/60 space-y-3.5 flex flex-col justify-between">
-                <div>
-                  <div class="flex items-center justify-between">
-                    <span class="text-xs font-bold text-white flex items-center space-x-1.5">
-                      <i data-lucide="mic" class="w-3.5 h-3.5 text-indigo-400"></i>
-                      <span>Voice Enrollment Wizard</span>
-                    </span>
-                    <span id="vl-sample-count-text" class="text-[11px] font-mono text-indigo-300 font-semibold">0 / 3 Samples</span>
-                  </div>
-                  <p class="text-[11px] text-slate-400 mt-1">
-                    Record 3 short phrases (e.g. <em>"Alexa, authenticate my voice"</em>) to build your master voice profile.
-                  </p>
-                </div>
-
-                <!-- 3 Step progress dots -->
-                <div class="flex items-center space-x-2 py-1">
-                  <div id="dot-sample-1" class="flex-1 h-2 rounded-full bg-nova-surface2 border border-nova-border transition-all"></div>
-                  <div id="dot-sample-2" class="flex-1 h-2 rounded-full bg-nova-surface2 border border-nova-border transition-all"></div>
-                  <div id="dot-sample-3" class="flex-1 h-2 rounded-full bg-nova-surface2 border border-nova-border transition-all"></div>
-                </div>
-
-                <!-- Record / Action buttons -->
-                <div class="flex items-center space-x-2">
-                  <button id="vl-record-btn" onclick="recordEnrollmentSample()" type="button"
-                    class="flex-1 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs transition-all shadow-md shadow-indigo-600/20 flex items-center justify-center space-x-2">
-                    <i data-lucide="radio" class="w-3.5 h-3.5"></i>
-                    <span id="vl-record-btn-text">Record Sample 1</span>
-                  </button>
-                  <button onclick="resetVoiceLock()" type="button" title="Reset voice profile"
-                    class="p-2.5 rounded-xl bg-nova-surface hover:bg-rose-500/15 text-slate-400 hover:text-rose-400 border border-nova-border transition-all">
-                    <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
-                  </button>
-                </div>
-                <!-- Visual feedback for recording -->
-                <div class="mt-2 space-y-2">
-                  <canvas id="waveCanvas" width="380" height="80" class="waveform"></canvas>
-                  <div class="meter">
-                    <div id="energyBar" class="fill"></div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Right: Live Test & Sensitivity -->
-              <div class="p-4 rounded-xl bg-nova-surface/60 border border-nova-border/60 space-y-3.5 flex flex-col justify-between">
-                <div>
-                  <div class="flex items-center justify-between">
-                    <span class="text-xs font-bold text-white flex items-center space-x-1.5">
-                      <i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-400"></i>
-                      <span>Live Voice Match Verification</span>
-                    </span>
-                    <button onclick="testVoiceMatch()" id="vl-test-btn" type="button"
-                      class="px-2.5 py-1 rounded-lg bg-nova-surface2 hover:bg-nova-border text-[11px] font-semibold text-slate-300 hover:text-white border border-nova-border transition-all flex items-center space-x-1">
-                      <i data-lucide="play" class="w-3 h-3 text-emerald-400"></i>
-                      <span>Test Match</span>
-                    </button>
-                  </div>
-                  
-                  <!-- Live match gauge -->
-                  <div class="mt-2 space-y-1.5">
-                    <div class="flex items-center justify-between text-[11px]">
-                      <span id="vl-test-status" class="text-slate-400">Click 'Test Match' and speak</span>
-                      <span id="vl-test-score" class="font-mono font-bold text-slate-300">--%</span>
-                    </div>
-                    <div class="w-full h-2 rounded-full bg-nova-surface2 overflow-hidden border border-nova-border">
-                      <div id="vl-test-meter" class="h-full w-0 bg-gradient-to-r from-indigo-500 to-emerald-400 transition-all duration-500"></div>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Sensitivity cutoff slider -->
-                <div class="space-y-1.5 pt-2 border-t border-nova-border/40">
-                  <div class="flex justify-between items-center text-xs">
-                    <span class="text-[11px] font-semibold text-slate-300">Speaker Match Threshold</span>
-                    <span id="vl-thresh-val" class="font-mono text-indigo-400 font-bold">0.50</span>
-                  </div>
-                  <input type="range" id="vl_threshold_slider" min="0.35" max="0.80" step="0.05" value="0.50"
-                    oninput="onThresholdSliderChange(this.value)"
-                    class="w-full accent-indigo-500 bg-nova-surface rounded-lg cursor-pointer">
-                  <div class="flex justify-between text-[10px] text-slate-500">
-                    <span>Lenient (0.35)</span>
-                    <span class="text-indigo-400/80 font-medium">Recommended (0.50)</span>
-                    <span>Strict (0.75)</span>
-                  </div>
-                </div>
-              </div>
-
-            </div>
-          </div>
-
-          <!-- Save & Apply Changes Action Bar -->
-          <div class="col-span-1 md:col-span-2 flex flex-col sm:flex-row items-center justify-between gap-4 p-5 rounded-2xl bg-nova-card border border-red-500/20 shadow-lg shadow-red-950/20">
-            <div class="flex items-center space-x-3">
-              <div class="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
-                <i data-lucide="check-check" class="w-5 h-5"></i>
-              </div>
-              <div>
-                <h4 class="text-xs font-bold text-white">Save Changes</h4>
-                <p class="text-[11px] text-slate-400">Settings are automatically stored to your user profile and active immediately.</p>
-              </div>
-            </div>
-            <button type="button" onclick="saveProfile()"
-              class="w-full sm:w-auto flex items-center justify-center space-x-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white font-bold text-xs shadow-lg shadow-red-500/20 transition-all active:scale-95 cursor-pointer">
-              <i data-lucide="save" class="w-4 h-4"></i>
-              <span>Save & Apply Settings</span>
-            </button>
           </div>
 
         </div>
-      </section>
-
+      </div>
     </main>
   </div>
 
   <!-- Toast Notification -->
-  <div id="toast"
-    class="fixed bottom-6 right-6 px-4 py-3 rounded-xl bg-nova-surface border border-nova-border shadow-2xl text-xs font-medium text-white flex items-center space-x-2.5 translate-y-20 opacity-0 transition-all duration-300 z-50">
+  <div id="toast" class="fixed bottom-6 right-6 px-4 py-3 rounded-xl bg-nova-surface border border-nova-border shadow-2xl text-xs font-medium text-white flex items-center space-x-2.5 translate-y-20 opacity-0 transition-all duration-300 z-50">
     <i data-lucide="check-circle" class="w-4 h-4 text-emerald-400" id="toast-icon"></i>
     <span id="toast-msg">Preferences saved!</span>
   </div>
 
-  <!-- ================= JAVASCRIPT LOGIC ================= -->
   <script>
-    let allPlugins = [];
-    let enrollmentStep = 1;
-    const ENROLLMENT_PROMPTS = [
-      "\"Alexa, open my browser and search for YouTube\"",
-      "\"Alexa, what is my system status and battery level?\"",
-      "\"Alexa, take a screenshot and minimize all windows\""
-    ];
+    // Initialize Lucide
+    lucide.createIcons();
 
-    function setPresetWake(name) {
-      document.getElementById('wake_word').value = name;
-      document.getElementById('assistant_name').value = name;
-      saveProfile();
+    // --- UI State & Logic ---
+    async function handleKeyPress(e) {
+      if (e.key === 'Enter') sendTextCommand();
     }
 
-    // Tab switcher
-    function switchTab(tabId) {
-      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-      document.querySelectorAll('.nav-btn').forEach(el => {
-        el.classList.remove('active', 'text-white', 'bg-gradient-to-r', 'from-red-500/20', 'to-transparent', 'border-l-2', 'border-red-500');
-        el.classList.add('text-slate-400');
-      });
+    async function sendTextCommand() {
+      const input = document.getElementById('command-input');
+      const text = input.value.trim();
+      if (!text) return;
 
-      const target = document.getElementById(tabId);
-      if (target) target.classList.remove('hidden');
+      // 1. Add user message to log
+      appendLog('user', text);
+      input.value = '';
 
-      const navBtn = document.getElementById('nav-' + tabId);
-      if (navBtn) {
-        navBtn.classList.add('active', 'text-white', 'bg-gradient-to-r', 'from-red-500/20', 'to-transparent', 'border-l-2', 'border-red-500');
-        navBtn.classList.remove('text-slate-400');
-      }
-
-      if (tabId === 'tab-plugins') loadPlugins();
-      if (tabId === 'tab-voice') loadProfile();
-      if (tabId === 'tab-diagnostics') loadDiagnostics();
-      lucide.createIcons();
-    }
-
-    // Show toast notification
-    function showToast(msg, isError = false) {
-      const toast = document.getElementById('toast');
-      const toastMsg = document.getElementById('toast-msg');
-      const toastIcon = document.getElementById('toast-icon');
-
-      toastMsg.innerText = msg;
-      if (isError) {
-        toastIcon.setAttribute('data-lucide', 'alert-circle');
-        toastIcon.className = 'w-4 h-4 text-rose-400';
-      } else {
-        toastIcon.setAttribute('data-lucide', 'check-circle');
-        toastIcon.className = 'w-4 h-4 text-emerald-400';
-      }
-      lucide.createIcons();
-
-      toast.classList.remove('translate-y-20', 'opacity-0');
-      setTimeout(() => {
-        toast.classList.add('translate-y-20', 'opacity-0');
-      }, 3200);
-    }
-
-    let currentLLMProvider = 'ollama';
-
-    function switchLLMProvider(provider) {
-      currentLLMProvider = provider === 'cloud' ? (document.getElementById('cloud_provider_select') ? document.getElementById('cloud_provider_select').value : 'openai') : 'ollama';
-      
-      const btnLocal = document.getElementById('btn-mode-local');
-      const btnCloud = document.getElementById('btn-mode-cloud');
-      const panelLocal = document.getElementById('panel-local-llm');
-      const panelCloud = document.getElementById('panel-cloud-llm');
-      const badge = document.getElementById('privacy-mode-badge');
-
-      if (provider === 'ollama') {
-        if (btnLocal) {
-          btnLocal.className = 'py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center space-x-2 transition-all bg-gradient-to-r from-red-500/20 to-rose-500/20 text-white border border-red-500/50 shadow-sm';
-        }
-        if (btnCloud) {
-          btnCloud.className = 'py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center space-x-2 transition-all text-slate-400 hover:text-white hover:bg-nova-surface2';
-        }
-        if (panelLocal) panelLocal.classList.remove('hidden');
-        if (panelCloud) panelCloud.classList.add('hidden');
-        if (badge) {
-          badge.className = 'text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 font-semibold border border-emerald-500/30 flex items-center space-x-1';
-          badge.innerHTML = '<i data-lucide="shield-check" class="w-3 h-3"></i><span>100% Offline Air-Gapped</span>';
-        }
-      } else {
-        if (btnLocal) {
-          btnLocal.className = 'py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center space-x-2 transition-all text-slate-400 hover:text-white hover:bg-nova-surface2';
-        }
-        if (btnCloud) {
-          btnCloud.className = 'py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center space-x-2 transition-all bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-white border border-amber-500/50 shadow-sm';
-        }
-        if (panelLocal) panelLocal.classList.add('hidden');
-        if (panelCloud) panelCloud.classList.remove('hidden');
-        if (badge) {
-          badge.className = 'text-[10px] px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 font-semibold border border-amber-500/30 flex items-center space-x-1';
-          badge.innerHTML = '<i data-lucide="cloud" class="w-3 h-3"></i><span>Cloud API Mode (BYO Key)</span>';
-        }
-      }
-      lucide.createIcons();
-    }
-
-    function onCloudProviderChange() {
-      const select = document.getElementById('cloud_provider_select');
-      const modelInput = document.getElementById('cloud_model_input');
-      const baseContainer = document.getElementById('custom-base-url-container');
-      if (!select) return;
-
-      if (select.value === 'groq') {
-        if (modelInput) modelInput.value = 'llama-3.3-70b-versatile';
-        if (baseContainer) baseContainer.classList.add('hidden');
-      } else if (select.value === 'gemini') {
-        if (modelInput) modelInput.value = 'gemini-2.0-flash';
-        if (baseContainer) baseContainer.classList.add('hidden');
-      } else if (select.value === 'openrouter') {
-        if (modelInput) modelInput.value = 'meta-llama/llama-3.3-70b-instruct:free';
-        if (baseContainer) baseContainer.classList.add('hidden');
-      } else if (select.value === 'claude') {
-        if (modelInput) modelInput.value = 'claude-3-5-haiku-20241022';
-        if (baseContainer) baseContainer.classList.add('hidden');
-      } else if (select.value === 'openai') {
-        if (modelInput) modelInput.value = 'gpt-4o-mini';
-        if (baseContainer) baseContainer.classList.add('hidden');
-      } else {
-        if (baseContainer) baseContainer.classList.remove('hidden');
-      }
-    }
-
-    function toggleApiKeyVisibility() {
-      const input = document.getElementById('cloud_api_key');
-      const eye = document.getElementById('eye-api-key');
-      if (!input) return;
-      if (input.type === 'password') {
-        input.type = 'text';
-        if (eye) eye.setAttribute('data-lucide', 'eye-off');
-      } else {
-        input.type = 'password';
-        if (eye) eye.setAttribute('data-lucide', 'eye');
-      }
-      lucide.createIcons();
-    }
-
-    async function testCloudLLMConnection() {
-      const btn = document.getElementById('btn-test-cloud-api');
-      const resEl = document.getElementById('cloud-api-test-result');
-      const provider = document.getElementById('cloud_provider_select') ? document.getElementById('cloud_provider_select').value : 'openai';
-      const apiKey = document.getElementById('cloud_api_key') ? document.getElementById('cloud_api_key').value.trim() : '';
-      const model = document.getElementById('cloud_model_input') ? document.getElementById('cloud_model_input').value.trim() : '';
-      const baseUrl = document.getElementById('cloud_base_url') ? document.getElementById('cloud_base_url').value.trim() : '';
-
-      if (!apiKey) {
-        if (resEl) {
-          resEl.innerText = '⚠️ Please enter an API key.';
-          resEl.className = 'text-[11px] text-amber-400 font-semibold';
-        }
+      // 2. Call Python API
+      if (!window.pywebview || !window.pywebview.api) {
+        appendLog('system', 'Error: Bridge not connected');
         return;
       }
 
-      if (btn) btn.disabled = true;
-      if (resEl) {
-        resEl.innerText = 'Testing connection...';
-        resEl.className = 'text-[11px] text-slate-400';
-      }
-
       try {
-        const res = await window.pywebview.api.test_llm_connection({
-          provider: provider,
-          api_key: apiKey,
-          model: model,
-          base_url: baseUrl
-        });
+        // We call the execute_system_command via the API
+        // Note: In your current app.py, execute_system_command is a function.
+        // We assume the DashboardBridge exposes a method to trigger it.
+        const res = await window.pywebview.api.execute_command(text);
+
         if (res.success) {
-          if (resEl) {
-            resEl.innerText = '✅ ' + (res.message || 'Authenticated successfully!');
-            resEl.className = 'text-[11px] text-emerald-400 font-semibold';
-          }
+          appendLog('system', 'Task completed successfully.');
         } else {
-          if (resEl) {
-            resEl.innerText = '❌ ' + (res.message || 'Connection failed.');
-            resEl.className = 'text-[11px] text-rose-400 font-semibold';
-          }
+          appendLog('system', 'Error: ' + res.message);
         }
       } catch (err) {
-        if (resEl) {
-          resEl.innerText = 'Error: ' + err.toString();
-          resEl.className = 'text-[11px] text-rose-400 font-semibold';
-        }
-      } finally {
-        if (btn) btn.disabled = false;
+        appendLog('system', 'Critical Error: ' + err.toString());
       }
     }
 
-    // Load user profile
-    async function loadProfile() {
-      if (!window.pywebview || !window.pywebview.api) return;
-      try {
-        const p = await window.pywebview.api.get_profile();
-        if (!p) return;
+    function appendLog(role, text) {
+      const log = document.getElementById('console-log');
+      const div = document.createElement('div');
+      div.className = role === 'user' ? 'flex justify-end' : 'flex justify-start';
 
-        if (document.getElementById('user_name')) document.getElementById('user_name').value = p.user_name || '';
-        if (document.getElementById('assistant_name')) document.getElementById('assistant_name').value = p.assistant_name || 'Privacy68';
-        if (document.getElementById('wake_word')) document.getElementById('wake_word').value = p.wake_word || 'privacy68';
-        if (document.getElementById('whisper_model')) document.getElementById('whisper_model').value = p.whisper_model || 'small.en';
-        if (document.getElementById('wake_threshold')) document.getElementById('wake_threshold').value = p.wake_threshold || 0.50;
-        if (document.getElementById('sens_val')) document.getElementById('sens_val').innerText = parseFloat(p.wake_threshold || 0.50).toFixed(2);
-        if (document.getElementById('header-user-tag')) document.getElementById('header-user-tag').innerText = p.user_name || 'User';
-        if (document.getElementById('quick-wake-word')) document.getElementById('quick-wake-word').innerText = (p.wake_word || 'PRIVACY68').toUpperCase();
-        if (document.getElementById('quick-whisper-model')) document.getElementById('quick-whisper-model').innerText = p.whisper_model || 'small.en';
-        if (document.getElementById('quick-llm-model')) {
-          const providerTag = p.llm_provider && p.llm_provider !== 'ollama' ? `[${p.llm_provider.toUpperCase()}] ` : '';
-          const activeM = p.llm_provider && p.llm_provider !== 'ollama' ? (p.cloud_model || 'gpt-4o-mini') : (p.llm_model || 'qwen2.5:0.5b');
-          document.getElementById('quick-llm-model').innerText = `${providerTag}${activeM}`;
-          document.getElementById('quick-llm-model').title = `${providerTag}${activeM}`;
-        }
+      const msg = document.createElement('div');
+      msg.className = role === 'user'
+        ? 'bg-red-600 text-white px-3 py-2 rounded-2xl rounded-tr-none max-w-[80%] text-xs'
+        : 'bg-nova-surface text-slate-300 px-3 py-2 rounded-2xl rounded-tl-none max-w-[80%] border border-nova-border text-xs';
 
-        // Populate Cloud fields
-        if (document.getElementById('cloud_api_key')) document.getElementById('cloud_api_key').value = p.api_key || '';
-        if (document.getElementById('cloud_model_input')) document.getElementById('cloud_model_input').value = p.cloud_model || (p.llm_provider === 'groq' ? 'llama-3.3-70b-versatile' : 'gpt-4o-mini');
-        if (document.getElementById('cloud_base_url')) document.getElementById('cloud_base_url').value = p.api_base_url || '';
-        if (document.getElementById('cloud_provider_select') && p.llm_provider && p.llm_provider !== 'ollama') {
-          document.getElementById('cloud_provider_select').value = p.llm_provider;
-        }
-
-        // Switch to saved provider mode (Local vs Cloud)
-        if (p.llm_provider && p.llm_provider !== 'ollama') {
-          switchLLMProvider('cloud');
-        } else {
-          switchLLMProvider('ollama');
-        }
-
-        // Load dynamic Ollama models
-        await loadAvailableLLMModels(p.llm_model || 'qwen2.5:0.5b');
-
-        // Load Voice Lock Status
-        loadVoiceLockStatus();
-      } catch (err) {
-        console.error('Failed to load profile:', err);
-      }
+      msg.innerText = text;
+      div.appendChild(msg);
+      log.appendChild(div);
+      log.scrollTop = log.scrollHeight;
     }
 
-    // ===== Voice Lock Biometrics Logic =====
-    async function loadVoiceLockStatus() {
-      if (!window.pywebview || !window.pywebview.api) return;
-      try {
-        const status = await window.pywebview.api.get_voice_lock_status();
-        if (!status) return;
-
-        const toggle = document.getElementById('voice_lock_toggle');
-        if (toggle) toggle.checked = !!status.enabled;
-
-        const badge = document.getElementById('vl-enrolled-badge');
-        if (badge) {
-          if (status.is_enrolled) {
-            badge.innerText = `Enrolled (${status.owner_name || 'Owner'})`;
-            badge.className = 'text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 font-semibold border border-emerald-500/30';
-          } else {
-            badge.innerText = 'Not Enrolled';
-            badge.className = 'text-[10px] px-2 py-0.5 rounded-full bg-slate-500/15 text-slate-400 font-semibold border border-slate-500/30';
-          }
-        }
-
-        const slider = document.getElementById('vl_threshold_slider');
-        if (slider && status.threshold) {
-          slider.value = status.threshold;
-          document.getElementById('vl-thresh-val').innerText = parseFloat(status.threshold).toFixed(2);
-        }
-
-        updateEnrollmentDots(status.temp_samples_count || (status.is_enrolled ? 3 : 0));
-      } catch (err) {
-        console.error('Error loading voice lock status:', err);
-      }
+    function clearLog() {
+      document.getElementById('console-log').innerHTML = '<div class="text-slate-500 italic text-center py-4">Log cleared. Awaiting command...</div>';
     }
 
-    function updateEnrollmentDots(count) {
-      const dot1 = document.getElementById('dot-sample-1');
-      const dot2 = document.getElementById('dot-sample-2');
-      const dot3 = document.getElementById('dot-sample-3');
-      const text = document.getElementById('vl-sample-count-text');
-      const btnText = document.getElementById('vl-record-btn-text');
-
-      if (!dot1) return;
-
-      dot1.className = count >= 1 ? 'flex-1 h-2 rounded-full bg-indigo-500 shadow-sm shadow-indigo-500/50' : 'flex-1 h-2 rounded-full bg-nova-surface2 border border-nova-border';
-      dot2.className = count >= 2 ? 'flex-1 h-2 rounded-full bg-indigo-500 shadow-sm shadow-indigo-500/50' : 'flex-1 h-2 rounded-full bg-nova-surface2 border border-nova-border';
-      dot3.className = count >= 3 ? 'flex-1 h-2 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/50' : 'flex-1 h-2 rounded-full bg-nova-surface2 border border-nova-border';
-
-      if (text) text.innerText = `${count} / 3 Samples`;
-      if (btnText) {
-        if (count === 0) btnText.innerText = 'Record Sample 1';
-        else if (count === 1) btnText.innerText = 'Record Sample 2';
-        else if (count === 2) btnText.innerText = 'Record Sample 3';
-        else btnText.innerText = 'Re-Record Samples';
-      }
+    //-L_S_T_S (These are updated by the Python API via window.pywebview.api)
+    function updateReasoning(text) {
+      const box = document.getElementById('reasoning-box');
+      box.innerText = text;
+      box.scrollTop = box.scrollHeight;
     }
 
-    async function onToggleVoiceLock(enabled) {
-      if (!window.pywebview || !window.pywebview.api) return;
-      try {
-        const res = await window.pywebview.api.toggle_voice_lock(enabled);
-        if (res.success) {
-          showToast(`Voice Lock ${enabled ? 'ENABLED' : 'DISABLED'}`);
-        } else {
-          showToast(res.message || 'Failed to toggle Voice Lock', true);
-        }
-      } catch (err) {
-        showToast(err.toString(), true);
-      }
+    function updateCode(code) {
+      const box = document.getElementById('code-box');
+      box.innerText = code;
+      box.scrollTop = box.scrollHeight;
     }
 
-    async function onThresholdSliderChange(val) {
-      document.getElementById('vl-thresh-val').innerText = parseFloat(val).toFixed(2);
-      if (!window.pywebview || !window.pywebview.api) return;
-      try {
-        await window.pywebview.api.set_voice_lock_threshold(parseFloat(val));
-      } catch (err) {
-        console.error('Failed to set threshold:', err);
-      }
-    }
-
-    let localAudioCtx = null;
-let localAnalyser = null;
-let localMicStream = null;
-let localVisRAF = null;
-
-function startLocalVisualization() {
-  if (localAudioCtx) return; // already running
-  localAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  navigator.mediaDevices.getUserMedia({audio:true}).then(stream => {
-    localMicStream = stream;
-    const source = localAudioCtx.createMediaStreamSource(stream);
-    localAnalyser = localAudioCtx.createAnalyser();
-    localAnalyser.fftSize = 512;
-    source.connect(localAnalyser);
-    drawWave();
-  }).catch(err => console.error('Viz mic error', err));
-}
-
-function stopLocalVisualization() {
-  if (localVisRAF) cancelAnimationFrame(localVisRAF);
-  if (localMicStream) {
-    localMicStream.getTracks().forEach(t => t.stop());
-  }
-  if (localAudioCtx) {
-    localAudioCtx.close();
-    localAudioCtx = null;
-  }
-  const canvas = document.getElementById('waveCanvas');
-  if (canvas) canvas.getContext('2d').clearRect(0,0,canvas.width,canvas.height);
-  const bar = document.getElementById('energyBar');
-  if (bar) bar.style.width = '0%';
-}
-
-function drawWave() {
-  const canvas = document.getElementById('waveCanvas');
-  const ctx = canvas.getContext('2d');
-  const dataArray = new Uint8Array(localAnalyser.frequencyBinCount);
-  const bar = document.getElementById('energyBar');
-  function loop() {
-    localAnalyser.getByteTimeDomainData(dataArray);
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = 'hsl(200,80%,60%)';
-    ctx.beginPath();
-    const sliceWidth = canvas.width / dataArray.length;
-    let x = 0;
-    for(let i=0;i<dataArray.length;i++) {
-      const v = dataArray[i] / 128.0;
-      const y = v * canvas.height/2;
-      i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
-      x += sliceWidth;
-    }
-    ctx.lineTo(canvas.width, canvas.height/2);
-    ctx.stroke();
-    // RMS energy for bar
-    let sum = 0;
-    for(let i=0;i<dataArray.length;i++) {
-      const val = dataArray[i] - 128;
-      sum += val*val;
-    }
-    const rms = Math.sqrt(sum/dataArray.length);
-    const pct = Math.min(100, (rms/64)*100);
-    if (bar) bar.style.width = pct + '%';
-    localVisRAF = requestAnimationFrame(loop);
-  }
-  loop();
-}
-
-async function recordEnrollmentSample() {
-  if (!window.pywebview || !window.pywebview.api) return;
-  const btn = document.getElementById('vl-record-btn');
-  const btnText = document.getElementById('vl-record-btn-text');
-
-  btn.disabled = true;
-  btn.classList.add('animate-pulse', 'bg-red-600');
-  btnText.innerText = '🎙️ Speaking... (3s)';
-
-  startLocalVisualization();
-
-  try {
-    const res = await window.pywebview.api.record_voice_enrollment_sample();
-    if (res.success) {
-      updateEnrollmentDots(res.count);
-      showToast(`Sample ${res.count}/3 recorded!`);
-      if (res.count >= 3) {
-        btnText.innerText = 'Saving Profile...';
-        const saveRes = await window.pywebview.api.finalize_voice_enrollment();
-        if (saveRes.success) {
-          showToast('🎉 Voice Lock Profile Active!');
-          loadVoiceLockStatus();
-        } else {
-          showToast(saveRes.message || 'Could not save profile', true);
-        }
-      }
-    } else {
-      showToast(res.message || 'Recording failed', true);
-    }
-  } catch (err) {
-    showToast(err.toString(), true);
-  } finally {
-    btn.disabled = false;
-    btn.classList.remove('animate-pulse', 'bg-red-600');
-    stopLocalVisualization();
-    loadVoiceLockStatus();
-  }
-}
-
-    async function resetVoiceLock() {
-      if (!confirm('Are you sure you want to reset and delete your enrolled voice profile?')) return;
-      if (!window.pywebview || !window.pywebview.api) return;
-      try {
-        const res = await window.pywebview.api.reset_voice_enrollment();
-        if (res.success) {
-          showToast('Voice profile deleted.');
-          loadVoiceLockStatus();
-        }
-      } catch (err) {
-        showToast(err.toString(), true);
-      }
-    }
-
-    async function testVoiceMatch() {
-      if (!window.pywebview || !window.pywebview.api) return;
-      const testBtn = document.getElementById('vl-test-btn');
-      const statusEl = document.getElementById('vl-test-status');
-      const scoreEl = document.getElementById('vl-test-score');
-      const meter = document.getElementById('vl-test-meter');
-
-      testBtn.disabled = true;
-      statusEl.innerText = '🎙️ Listening... speak now';
-      statusEl.className = 'text-indigo-400 font-semibold animate-pulse';
-      meter.style.width = '30%';
-
-      try {
-        const res = await window.pywebview.api.test_voice_match();
-        if (res.success) {
-          const pct = Math.max(0, Math.min(100, Math.round(res.score * 100)));
-          meter.style.width = pct + '%';
-          scoreEl.innerText = pct + '%';
-
-          if (res.is_match) {
-            statusEl.innerText = '✅ Match: Owner Verified';
-            statusEl.className = 'text-emerald-400 font-semibold';
-            meter.className = 'h-full bg-emerald-500 transition-all duration-500';
-          } else {
-            statusEl.innerText = '❌ No Match: Access Denied';
-            statusEl.className = 'text-rose-400 font-semibold';
-            meter.className = 'h-full bg-rose-500 transition-all duration-500';
-          }
-        } else {
-          statusEl.innerText = res.message || 'Test failed';
-          statusEl.className = 'text-slate-400';
-          meter.style.width = '0%';
-        }
-      } catch (err) {
-        statusEl.innerText = 'Error: ' + err.toString();
-      } finally {
-        testBtn.disabled = false;
-      }
-    }
-
-    // Save user profile
     async function saveProfile() {
       if (!window.pywebview || !window.pywebview.api) return;
-      const cloudProvider = document.getElementById('cloud_provider_select') ? document.getElementById('cloud_provider_select').value : 'openai';
-      const effectiveProvider = currentLLMProvider === 'ollama' ? 'ollama' : cloudProvider;
-
       const data = {
         user_name: document.getElementById('user_name').value.trim() || 'User',
-        assistant_name: document.getElementById('assistant_name').value.trim() || 'Privacy68',
         wake_word: document.getElementById('wake_word').value.trim() || 'privacy68',
-        whisper_model: document.getElementById('whisper_model').value,
-        llm_provider: effectiveProvider,
-        llm_model: document.getElementById('llm_model') ? document.getElementById('llm_model').value : 'qwen2.5:0.5b',
-        api_key: document.getElementById('cloud_api_key') ? document.getElementById('cloud_api_key').value.trim() : '',
-        cloud_model: document.getElementById('cloud_model_input') ? document.getElementById('cloud_model_input').value.trim() : 'gpt-4o-mini',
-        api_base_url: document.getElementById('cloud_base_url') ? document.getElementById('cloud_base_url').value.trim() : '',
-        wake_threshold: parseFloat(document.getElementById('wake_threshold').value)
       };
-
       try {
-        const res = await window.pywebview.api.save_profile(data);
-        if (res.success) {
-          showToast('Preferences saved successfully!');
-          if (document.getElementById('header-user-tag')) document.getElementById('header-user-tag').innerText = data.user_name;
-          if (document.getElementById('quick-wake-word')) document.getElementById('quick-wake-word').innerText = data.wake_word.toUpperCase();
-          if (document.getElementById('quick-whisper-model')) document.getElementById('quick-whisper-model').innerText = data.whisper_model;
-          if (document.getElementById('quick-llm-model')) {
-            const providerTag = data.llm_provider && data.llm_provider !== 'ollama' ? `[${data.llm_provider.toUpperCase()}] ` : '';
-            const activeM = data.llm_provider && data.llm_provider !== 'ollama' ? data.cloud_model : data.llm_model;
-            document.getElementById('quick-llm-model').innerText = `${providerTag}${activeM}`;
-            document.getElementById('quick-llm-model').title = `${providerTag}${activeM}`;
-          }
-        } else {
-          showToast(res.message || 'Could not save profile.', true);
-        }
-      } catch (err) {
-        showToast(err.toString(), true);
+        await window.pywebview.api.save_profile(data);
+        showToast('Preferences saved!');
+      } catch (e) {
+        showToast('Save failed', true);
       }
     }
 
-    // Load available local LLM models dynamically from Ollama with Hardware Tier groupings
-    async function loadAvailableLLMModels(preferredModel) {
-      const select = document.getElementById('llm_model');
-      if (!select) return;
-
-      const currentVal = preferredModel || select.value || 'qwen2.5:0.5b';
-
-      if (!window.pywebview || !window.pywebview.api) {
-        select.value = currentVal;
-        return;
-      }
-
-      try {
-        const models = await window.pywebview.api.get_available_llm_models();
-        select.innerHTML = '';
-
-        const modelNames = new Set((models || []).map(m => m.name));
-
-        // Group 1: Installed & Ready on PC
-        const installedGroup = document.createElement('optgroup');
-        installedGroup.label = '🟢 Installed & Ready on this PC';
-        if (models && models.length > 0) {
-          models.forEach(m => {
-            const opt = document.createElement('option');
-            opt.value = m.name;
-            const sizeTag = m.size_mb ? ` (${m.size_mb} MB)` : '';
-            opt.innerText = `${m.name}${sizeTag} — Ready`;
-            installedGroup.appendChild(opt);
-          });
-        } else {
-          const opt = document.createElement('option');
-          opt.value = 'qwen2.5:0.5b';
-          opt.innerText = 'qwen2.5:0.5b (Default)';
-          installedGroup.appendChild(opt);
-        }
-        select.appendChild(installedGroup);
-
-        // Group 2: Low-End / Budget PC (4GB–8GB RAM, CPU Only)
-        const lowGroup = document.createElement('optgroup');
-        lowGroup.label = '⚡ Low-End PC (4GB–8GB RAM / CPU Only)';
-        const lowTier = [
-          { name: 'qwen2.5:0.5b', desc: 'qwen2.5:0.5b (~397 MB — Ultralight & Instant)' },
-          { name: 'qwen2.5:1.5b', desc: 'qwen2.5:1.5b (~986 MB — High Precision Budget)' },
-          { name: 'llama3.2:1b', desc: 'llama3.2:1b (~1.3 GB — Fast Meta Reasoning)' },
-          { name: 'deepseek-r1:1.5b', desc: 'deepseek-r1:1.5b (~1.1 GB — Fast Reasoning)' }
-        ];
-        lowTier.forEach(t => {
-          if (!modelNames.has(t.name)) {
-            const opt = document.createElement('option');
-            opt.value = t.name;
-            opt.innerText = `${t.desc} [Click Pull]`;
-            lowGroup.appendChild(opt);
-          }
-        });
-        select.appendChild(lowGroup);
-
-        // Group 3: Mid-Range PC (8GB–16GB RAM / 4GB VRAM GPU)
-        const midGroup = document.createElement('optgroup');
-        midGroup.label = '🚀 Mid-Range PC (8GB–16GB RAM / 4GB GPU)';
-        const midTier = [
-          { name: 'llama3.2:3b', desc: 'llama3.2:3b (~2.0 GB — Recommended Balanced)' },
-          { name: 'qwen2.5:3b', desc: 'qwen2.5:3b (~1.9 GB — Advanced Function Calling)' },
-          { name: 'phi3:mini', desc: 'phi3:mini (~2.2 GB — Microsoft Compact)' },
-          { name: 'gemma2:2b', desc: 'gemma2:2b (~1.6 GB — Google Lightweight)' }
-        ];
-        midTier.forEach(t => {
-          if (!modelNames.has(t.name)) {
-            const opt = document.createElement('option');
-            opt.value = t.name;
-            opt.innerText = `${t.desc} [Click Pull]`;
-            midGroup.appendChild(opt);
-          }
-        });
-        select.appendChild(midGroup);
-
-        // Group 4: High-End Workstation (16GB+ RAM / 6GB+ VRAM GPU)
-        const highGroup = document.createElement('optgroup');
-        highGroup.label = '👑 High-End Workstation (16GB+ RAM / GPU)';
-        const highTier = [
-          { name: 'qwen2.5:7b', desc: 'qwen2.5:7b (~4.7 GB — SOTA Desktop AI)' },
-          { name: 'llama3.1:8b', desc: 'llama3.1:8b (~4.7 GB — Enterprise Generalist)' },
-          { name: 'hermes3:8b', desc: 'hermes3:8b (~4.7 GB — Function Calling Master)' },
-          { name: 'mistral:7b', desc: 'mistral:7b (~4.1 GB — Powerful & Fast)' }
-        ];
-        highTier.forEach(t => {
-          if (!modelNames.has(t.name)) {
-            const opt = document.createElement('option');
-            opt.value = t.name;
-            opt.innerText = `${t.desc} [Click Pull]`;
-            highGroup.appendChild(opt);
-          }
-        });
-        select.appendChild(highGroup);
-
-        // Custom / legacy selection preservation
-        if (currentVal && !modelNames.has(currentVal)) {
-          const customGroup = document.createElement('optgroup');
-          customGroup.label = '⚙️ Custom Model';
-          const opt = document.createElement('option');
-          opt.value = currentVal;
-          opt.innerText = `${currentVal} (Custom)`;
-          customGroup.appendChild(opt);
-          select.appendChild(customGroup);
-        }
-
-        select.value = currentVal;
-
-        // Auto-populate pull input if selecting an uninstalled model
-        select.onchange = () => {
-          const chosen = select.value;
-          if (!modelNames.has(chosen)) {
-            const input = document.getElementById('custom_llm_input');
-            if (input) input.value = chosen;
-            showToast(`⚠️ ${chosen} is not installed yet. Click 'Pull' to download it!`, false);
-          }
-          saveProfile();
-        };
-
-      } catch (err) {
-        console.error('Failed to load local LLM models:', err);
-      }
+    function showToast(msg, isError = false) {
+      const toast = document.getElementById('toast');
+      document.getElementById('toast-msg').innerText = msg;
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      setTimeout(() => toast.classList.add('translate-y-20', 'opacity-0'), 3000);
     }
 
-    // Pull custom model via Ollama
-    async function pullCustomLLMModel() {
-      const input = document.getElementById('custom_llm_input');
-      const btn = document.getElementById('btn-pull-llm');
-      const btnText = document.getElementById('btn-pull-llm-text');
-      if (!input || !input.value.trim()) {
-        showToast('Please type a model name (e.g. hermes3:8b)', true);
-        return;
-      }
-
-      const modelName = input.value.trim();
-      if (!window.pywebview || !window.pywebview.api) {
-        showToast('IPC bridge not ready', true);
-        return;
-      }
-
-      btn.disabled = true;
-      btn.classList.add('animate-pulse');
-      btnText.innerText = 'Pulling...';
-      showToast(`Downloading ${modelName} via Ollama... Please wait.`);
-
-      try {
-        const res = await window.pywebview.api.pull_llm_model(modelName);
-        if (res.success) {
-          showToast(`🎉 ${modelName} downloaded successfully!`);
-          input.value = '';
-          await loadAvailableLLMModels(modelName);
-          const select = document.getElementById('llm_model');
-          if (select) select.value = modelName;
-          await saveProfile();
-        } else {
-          showToast(res.message || `Failed to pull ${modelName}`, true);
-        }
-      } catch (err) {
-        showToast(err.toString(), true);
-      } finally {
-        btn.disabled = false;
-        btn.classList.remove('animate-pulse');
-        btnText.innerText = 'Pull';
-        lucide.createIcons();
-      }
-    }
-
-    // Load Plugins & Category State
-    let activePluginCategory = 'all';
-
-    async function loadPlugins() {
-      if (!window.pywebview || !window.pywebview.api) return;
-      try {
-        allPlugins = await window.pywebview.api.get_plugins();
-        const countBadge = document.getElementById('plugins-count-badge');
-        if (countBadge) countBadge.innerText = allPlugins.length;
-        const totalCount = document.getElementById('plugins-total-count');
-        if (totalCount) totalCount.innerText = `${allPlugins.length} Loaded`;
-        
-        updatePluginCategoryCounts();
-        filterPlugins();
-      } catch (err) {
-        console.error('Failed to load plugins:', err);
-      }
-    }
-
-    function updatePluginCategoryCounts() {
-      if (!allPlugins) return;
-      const counts = { all: allPlugins.length, System: 0, Browser: 0, Communication: 0, Developer: 0, Productivity: 0, Custom: 0 };
-      allPlugins.forEach(p => {
-        const cat = p.category || (p.is_builtin ? 'System' : 'Custom');
-        if (counts[cat] !== undefined) counts[cat]++;
-        else counts.Custom++;
-      });
-
-      for (const [k, v] of Object.entries(counts)) {
-        const el = document.getElementById(`cat-count-${k}`);
-        if (el) el.innerText = `(${v})`;
-      }
-    }
-
-    function setPluginCategoryFilter(category) {
-      activePluginCategory = category;
-      document.querySelectorAll('.cat-filter-btn').forEach(btn => {
-        btn.classList.remove('bg-gradient-to-r', 'from-red-500/20', 'to-rose-500/20', 'text-white', 'border-red-500/50', 'shadow-sm', 'font-semibold');
-        btn.classList.add('bg-nova-surface2', 'text-slate-400', 'hover:text-white', 'border-nova-border', 'font-medium');
-      });
-
-      const activeBtn = document.getElementById(`cat-filter-${category}`);
-      if (activeBtn) {
-        activeBtn.classList.add('bg-gradient-to-r', 'from-red-500/20', 'to-rose-500/20', 'text-white', 'border-red-500/50', 'shadow-sm', 'font-semibold');
-        activeBtn.classList.remove('bg-nova-surface2', 'text-slate-400', 'border-nova-border', 'font-medium');
-      }
-
-      filterPlugins();
-    }
-
-    function getCategoryBadgeConfig(category) {
-      switch (category) {
-        case 'System':
-          return { label: 'System & OS', bg: 'bg-cyan-950/60 text-cyan-300 border-cyan-800/60' };
-        case 'Browser':
-          return { label: 'Browser', bg: 'bg-sky-950/60 text-sky-300 border-sky-800/60' };
-        case 'Communication':
-          return { label: 'Messaging', bg: 'bg-emerald-950/60 text-emerald-300 border-emerald-800/60' };
-        case 'Developer':
-          return { label: 'Developer', bg: 'bg-violet-950/60 text-violet-300 border-violet-800/60' };
-        case 'Productivity':
-          return { label: 'Productivity', bg: 'bg-amber-950/60 text-amber-300 border-amber-800/60' };
-        default:
-          return { label: 'Custom App', bg: 'bg-rose-950/60 text-rose-300 border-rose-800/60' };
-      }
-    }
-
-    function renderPluginCards(plugins) {
-      const container = document.getElementById('plugins-grid');
-      if (!plugins || plugins.length === 0) {
-        container.innerHTML = `
-          <div class="col-span-full py-16 text-center text-slate-500 bg-nova-card/50 rounded-2xl border border-nova-border/50">
-            <i data-lucide="package-open" class="w-10 h-10 mx-auto mb-3 opacity-40 text-slate-400"></i>
-            <p class="text-sm font-semibold text-slate-300">No matching plugins found</p>
-            <p class="text-xs text-slate-500 mt-1">Try switching category tabs or clearing your search query.</p>
-          </div>
-        `;
-        lucide.createIcons();
-        return;
-      }
-
-      container.innerHTML = plugins.map(p => {
-        const isBuiltin = p.is_builtin;
-        const originClass = isBuiltin ? 'bg-red-950/60 text-red-400 border-red-800/60' : 'bg-rose-950/60 text-rose-300 border-rose-800/60';
-        const originText = isBuiltin ? 'Core' : 'Custom';
-        
-        const catConfig = getCategoryBadgeConfig(p.category || (isBuiltin ? 'System' : 'Custom'));
-        const triggers = p.triggers || [];
-        const triggersHtml = triggers.map(t => `<span class="px-2 py-0.5 rounded-md bg-nova-surface2 text-slate-300 text-[10px] font-mono border border-nova-border">"${t}"</span>`).join(' ');
-
-        const cmdCount = p.total_commands || (p.commands ? p.commands.length : (p.triggers ? p.triggers.length : 0));
-        return `
-          <div class="p-5 rounded-2xl bg-nova-card border border-nova-border hover:border-nova-borderHover transition-all flex flex-col justify-between space-y-4 shadow-sm hover:shadow-md">
-            <div class="space-y-3">
-              <!-- Header -->
-              <div class="flex items-start justify-between">
-                <div class="flex items-center space-x-3 cursor-pointer group/title flex-1 mr-3" onclick="openPluginCommandsModal('${p.id}')">
-                  <div class="w-10 h-10 rounded-xl bg-nova-surface2 border border-nova-border flex items-center justify-center text-2xl group-hover/title:scale-105 transition-transform shrink-0">
-                    ${p.icon || '🔌'}
-                  </div>
-                  <div class="min-w-0 flex-1">
-                    <div class="flex items-center space-x-1.5 flex-wrap gap-y-1">
-                      <h4 class="font-bold text-sm text-white group-hover/title:text-red-400 transition-colors truncate">${p.name}</h4>
-                      <span class="text-[10px] font-mono text-slate-500">v${p.version || '1.0'}</span>
-                      <span class="text-[9px] px-1.5 py-0.2 rounded border font-medium ${catConfig.bg}">${catConfig.label}</span>
-                      <span class="text-[9px] px-1.5 py-0.2 rounded border font-medium ${originClass}">${originText}</span>
-                    </div>
-                    <p class="text-xs text-slate-400 mt-1 line-clamp-2" title="${p.description || ''}">${p.description || 'No description provided.'}</p>
-                  </div>
-                </div>
-                
-                <!-- Toggle switch -->
-                <label class="relative inline-flex items-center cursor-pointer shrink-0 mt-0.5">
-                  <input type="checkbox" onchange="togglePlugin('${p.id}', this.checked)" ${p.is_enabled ? 'checked' : ''} class="sr-only peer">
-                  <div class="w-9 h-5 bg-nova-surface peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500 border border-nova-border"></div>
-                </label>
-              </div>
-
-              <!-- Triggers preview (clickable) -->
-              <div class="pt-1">
-                <div class="flex flex-wrap gap-1.5 items-center cursor-pointer min-h-[28px]" onclick="openPluginCommandsModal('${p.id}')">
-                  <span class="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Triggers:</span>
-                  ${triggersHtml || `<span class="text-[10px] text-slate-500 italic">No triggers defined</span>`}
-                  ${cmdCount > triggers.length ? `<span class="text-[10px] text-red-400/90 font-mono hover:underline">+${cmdCount - triggers.length} more...</span>` : ''}
-                </div>
-              </div>
-            </div>
-
-            <!-- Actions footer -->
-            <div class="pt-3 border-t border-nova-border/50 flex items-center justify-between text-xs">
-              <span class="text-[11px] ${p.is_enabled ? 'text-emerald-400' : 'text-slate-500'} font-medium flex items-center space-x-1">
-                <span class="w-1.5 h-1.5 rounded-full ${p.is_enabled ? 'bg-emerald-400 animate-pulse' : 'bg-slate-500'}"></span>
-                <span>${p.is_enabled ? 'Active & Listening' : 'Disabled'}</span>
-              </span>
-              <div class="flex items-center space-x-1.5">
-                <button onclick="openPluginCommandsModal('${p.id}')" class="flex items-center space-x-1.5 text-[11px] px-2.5 py-1 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 transition-all shadow-sm font-medium cursor-pointer" title="View All Voice Commands">
-                  <i data-lucide="help-circle" class="w-3 h-3"></i>
-                  <span>Commands ${cmdCount ? `(${cmdCount})` : ''}</span>
-                </button>
-                ${p.id === 'whatsapp' ? `
-                  <button onclick="openWhatsAppContacts()" class="flex items-center space-x-1 text-[11px] px-2 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 transition-all cursor-pointer" title="Manage Contacts">
-                    <i data-lucide="users" class="w-3 h-3"></i>
-                    <span>Contacts</span>
-                  </button>
-                ` : ''}
-                ${!isBuiltin ? `
-                  <button onclick="uninstallPlugin('${p.id}', '${p.name}')" class="text-slate-400 hover:text-rose-400 transition-colors p-1 rounded-md hover:bg-nova-surface2 cursor-pointer" title="Uninstall plugin">
-                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-                  </button>
-                ` : ''}
-              </div>
-            </div>
-          </div>
-        `;
-      }).join('');
-
-      lucide.createIcons();
-    }
-
-    function filterPlugins() {
-      const q = (document.getElementById('plugin-search') ? document.getElementById('plugin-search').value : '').toLowerCase().trim();
-      let filtered = allPlugins;
-
-      // Filter by category
-      if (activePluginCategory !== 'all') {
-        filtered = filtered.filter(p => {
-          const cat = p.category || (p.is_builtin ? 'System' : 'Custom');
-          return cat.toLowerCase() === activePluginCategory.toLowerCase();
-        });
-      }
-
-      // Filter by search query
-      if (q) {
-        filtered = filtered.filter(p => 
-          (p.name && p.name.toLowerCase().includes(q)) || 
-          (p.description && p.description.toLowerCase().includes(q)) || 
-          (p.category && p.category.toLowerCase().includes(q)) ||
-          (p.plugin_type && p.plugin_type.toLowerCase().includes(q)) ||
-          (p.triggers && p.triggers.some(t => t.toLowerCase().includes(q))) ||
-          (p.commands && p.commands.some(c => c.action.toLowerCase().includes(q) || (c.triggers && c.triggers.some(t => t.toLowerCase().includes(q)))))
-        );
-      }
-
-      renderPluginCards(filtered);
-    }
-
-    async function togglePlugin(pluginId, enabled) {
-      if (!window.pywebview || !window.pywebview.api) return;
-      try {
-        const res = await window.pywebview.api.toggle_plugin(pluginId, enabled);
-        if (res.success) {
-          showToast(`Plugin ${enabled ? 'enabled' : 'disabled'}`);
-        } else {
-          showToast(res.message || 'Toggle failed', true);
-        }
-      } catch (err) {
-        showToast(err.toString(), true);
-      }
-    }
-
-    async function uninstallPlugin(pluginId, pluginName) {
-      if (!confirm(`Are you sure you want to uninstall and remove '${pluginName}'?`)) return;
-      if (!window.pywebview || !window.pywebview.api) return;
-      try {
-        const res = await window.pywebview.api.uninstall_plugin(pluginId);
-        if (res.success) {
-          showToast(`Plugin '${pluginName}' uninstalled.`);
-          loadPlugins();
-        } else {
-          showToast(res.message || 'Could not uninstall plugin.', true);
-        }
-      } catch (err) {
-        showToast(err.toString(), true);
-      }
-    }
-
-    // Create Plugin
-    async function createPlugin() {
-      if (!window.pywebview || !window.pywebview.api) return;
-      const data = {
-        id: document.getElementById('cr_id').value,
-        name: document.getElementById('cr_name').value,
-        icon: document.getElementById('cr_icon').value,
-        cmd: document.getElementById('cr_cmd').value,
-        desc: document.getElementById('cr_desc').value
-      };
-
-      if (!data.id || !data.name) {
-        showToast('Plugin ID and Name are required!', true);
-        return;
-      }
-
-      try {
-        const res = await window.pywebview.api.create_plugin(data);
-        if (res.success) {
-          showToast(res.message);
-          document.getElementById('cr_id').value = '';
-          document.getElementById('cr_name').value = '';
-          document.getElementById('cr_desc').value = '';
-          document.getElementById('cr_cmd').value = '';
-          switchTab('tab-plugins');
-        } else {
-          showToast(res.message || 'Creation failed.', true);
-        }
-      } catch (err) {
-        showToast(err.toString(), true);
-      }
-    }
-
-    // File Installer
-    async function browseInstallPlugin() {
-      if (!window.pywebview || !window.pywebview.api) return;
-      try {
-        const filePath = await window.pywebview.api.pick_plugin_file();
-        if (filePath) {
-          const res = await window.pywebview.api.install_plugin_file(filePath);
-          if (res.success) {
-            showToast(res.message);
-            switchTab('tab-plugins');
-          } else {
-            showToast(res.message || 'Installation failed.', true);
-          }
-        }
-      } catch (err) {
-        showToast(err.toString(), true);
-      }
-    }
-
-    // Load Diagnostics
-    async function loadDiagnostics() {
-      if (!window.pywebview || !window.pywebview.api) return;
-      const container = document.getElementById('diagnostics-container');
-      container.innerHTML = `<div class="py-12 text-center text-slate-500"><i data-lucide="loader-2" class="w-6 h-6 animate-spin mx-auto mb-2 text-cyan-400"></i>Re-evaluating system hardware & engines...</div>`;
-      lucide.createIcons();
-
-      try {
-        const sections = await window.pywebview.api.get_system_diagnostics();
-        container.innerHTML = sections.map(sec => {
-          const itemsHtml = sec.items.map(item => {
-            let statusColor = 'text-emerald-400 bg-emerald-950/60 border-emerald-800';
-            let dotColor = 'bg-emerald-400';
-            if (item.status === 'warn') {
-              statusColor = 'text-amber-400 bg-amber-950/60 border-amber-800';
-              dotColor = 'bg-amber-400';
-            } else if (item.status === 'fail') {
-              statusColor = 'text-rose-400 bg-rose-950/60 border-rose-800';
-              dotColor = 'bg-rose-400';
-            }
-
-            let actionBtn = '';
-            if (item.can_download) {
-              actionBtn = `
-                <div class="flex items-center space-x-2 shrink-0 ml-4">
-                  <button onclick="startCudaDownload()" id="cuda-dl-btn" class="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-bold text-xs transition-all shadow-md shadow-red-600/25">
-                    <i data-lucide="download" class="w-3.5 h-3.5"></i>
-                    <span>Download CUDA (~450MB)</span>
-                  </button>
-                  <button onclick="window.pywebview.api.open_external_url('${item.link}')" class="p-1.5 rounded-lg bg-nova-surface2 hover:bg-nova-border text-slate-400 hover:text-white text-xs" title="Download manually in browser">
-                    <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
-                  </button>
-                </div>
-              `;
-            } else if (item.link && item.status !== 'ok') {
-              actionBtn = `
-                <button onclick="window.pywebview.api.open_external_url('${item.link}')" class="px-2.5 py-1 rounded bg-nova-surface2 border border-nova-border text-red-400 hover:text-red-300 text-[11px] font-semibold shrink-0 ml-4">
-                  Install
-                </button>
-              `;
-            }
-
-            return `
-              <div class="flex items-start justify-between p-3.5 rounded-xl bg-nova-surface border border-nova-border/60">
-                <div class="flex items-start space-x-3">
-                  <div class="w-2.5 h-2.5 rounded-full ${dotColor} mt-1.5 shrink-0"></div>
-                  <div>
-                    <h5 class="text-xs font-bold text-white">${item.name}</h5>
-                    <p class="text-[11px] text-slate-400 mt-0.5">${item.detail}</p>
-                  </div>
-                </div>
-                ${actionBtn}
-              </div>
-            `;
-          }).join('');
-
-          return `
-            <div class="p-5 rounded-2xl bg-nova-card border border-nova-border space-y-3">
-              <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider">${sec.title}</h4>
-              <div class="space-y-2">
-                ${itemsHtml}
-              </div>
-            </div>
-          `;
-        }).join('');
-
-        lucide.createIcons();
-      } catch (err) {
-        container.innerHTML = `<div class="p-4 text-rose-400 text-xs">Error loading diagnostics: ${err.toString()}</div>`;
-      }
-    }
-
-    // CUDA Download Manager
-    let cudaPollTimer = null;
-    async function startCudaDownload() {
-      if (!window.pywebview || !window.pywebview.api) return;
-      const btn = document.getElementById('cuda-dl-btn');
-      if (btn) {
-        btn.disabled = true;
-        btn.innerHTML = `<i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin"></i><span>Starting...</span>`;
-        lucide.createIcons();
-      }
-
-      try {
-        const res = await window.pywebview.api.start_cuda_download();
-        if (res.success) {
-          showToast("CUDA Runtime download started!");
-          showCudaProgressModal();
-          pollCudaProgress();
-        } else {
-          showToast(res.message || "Failed to start download.", true);
-          if (btn) {
-            btn.disabled = false;
-            btn.innerHTML = `<i data-lucide="download" class="w-3.5 h-3.5"></i><span>Retry Download</span>`;
-            lucide.createIcons();
-          }
-        }
-      } catch (err) {
-        showToast(err.toString(), true);
-      }
-    }
-
-    function showCudaProgressModal() {
-      let modal = document.getElementById('cuda-progress-modal');
-      if (!modal) {
-        modal = document.createElement('div');
-        modal.id = 'cuda-progress-modal';
-        modal.className = 'fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4';
-        modal.innerHTML = `
-          <div class="bg-nova-card border border-nova-border rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4">
-            <div class="flex items-center justify-between">
-              <div class="flex items-center space-x-2.5">
-                <div class="w-8 h-8 rounded-lg bg-red-500/10 text-red-400 flex items-center justify-center">
-                  <i data-lucide="zap" class="w-4 h-4"></i>
-                </div>
-                <div>
-                  <h3 class="text-sm font-bold text-white">Installing CUDA 12 Runtime</h3>
-                  <p class="text-[11px] text-slate-400">Enables real-time NVIDIA GPU acceleration</p>
-                </div>
-              </div>
-              <span id="cuda-pct" class="text-xs font-mono font-bold text-red-400">0%</span>
-            </div>
-
-            <!-- Progress bar -->
-            <div class="w-full h-2.5 bg-nova-surface rounded-full overflow-hidden border border-nova-border">
-              <div id="cuda-bar" class="h-full bg-gradient-to-r from-red-600 to-rose-600 w-0 transition-all duration-300"></div>
-            </div>
-
-            <div class="flex items-center justify-between text-[11px] text-slate-400">
-              <span id="cuda-status-text">Connecting to download mirror...</span>
-              <span id="cuda-bytes" class="font-mono">0.0 MB / ~450 MB</span>
-            </div>
-
-            <div class="pt-2 border-t border-nova-border/50 flex justify-end space-x-2">
-              <button onclick="closeCudaModal()" id="cuda-modal-close" class="px-4 py-1.5 rounded-xl bg-nova-surface hover:bg-nova-surface2 border border-nova-border text-xs text-slate-300 font-medium transition-all">
-                Run in Background
-              </button>
-            </div>
-          </div>
-        `;
-        document.body.appendChild(modal);
-        lucide.createIcons();
-      }
-      modal.classList.remove('hidden');
-    }
-
-    function closeCudaModal() {
-      const modal = document.getElementById('cuda-progress-modal');
-      if (modal) modal.classList.add('hidden');
-    }
-
-    function pollCudaProgress() {
-      if (cudaPollTimer) clearInterval(cudaPollTimer);
-      cudaPollTimer = setInterval(async () => {
-        if (!window.pywebview || !window.pywebview.api) return;
-        try {
-          const prog = await window.pywebview.api.get_cuda_download_progress();
-          const bar = document.getElementById('cuda-bar');
-          const pct = document.getElementById('cuda-pct');
-          const status = document.getElementById('cuda-status-text');
-          const bytes = document.getElementById('cuda-bytes');
-
-          if (bar) bar.style.width = prog.progress + '%';
-          if (pct) pct.innerText = prog.progress + '%';
-          if (status) status.innerText = prog.status || 'Downloading...';
-          if (bytes) bytes.innerText = `${prog.downloaded_mb || 0} MB / ${prog.total_mb ? prog.total_mb + ' MB' : '~450 MB'}`;
-
-          if (!prog.is_downloading) {
-            clearInterval(cudaPollTimer);
-            cudaPollTimer = null;
-            if (prog.error) {
-              showToast("CUDA download failed: " + prog.error, true);
-              if (status) status.innerHTML = `<span class="text-rose-400">Error: ${prog.error}</span>`;
-            } else {
-              showToast("CUDA Runtime installed successfully!");
-              if (status) status.innerHTML = `<span class="text-emerald-400 font-semibold">Ready! Restart Privacy68 to activate GPU.</span>`;
-              const closeBtn = document.getElementById('cuda-modal-close');
-              if (closeBtn) {
-                closeBtn.innerText = 'Close & Refresh';
-                closeBtn.onclick = () => {
-                  closeCudaModal();
-                  loadDiagnostics();
-                };
-              }
-              loadDiagnostics();
-            }
-          }
-        } catch (e) {
-          console.error("Polling error:", e);
-        }
-      }, 600);
-    }
-
-
-    // Microphone Level Test
-    async function testMic() {
-      if (!window.pywebview || !window.pywebview.api) return;
-      const btn = document.getElementById('mic-test-btn');
-      const bar = document.getElementById('mic-meter-bar');
-      const status = document.getElementById('mic-meter-status');
-
-      btn.innerText = 'Listening...';
-      btn.classList.add('animate-pulse');
-      status.innerText = 'Recording a 0.4s sample — speak into your microphone!';
-
-      try {
-        const res = await window.pywebview.api.test_microphone();
-        btn.innerText = 'Test Audio Input';
-        btn.classList.remove('animate-pulse');
-
-        if (res.success) {
-          bar.style.width = res.level + '%';
-          status.innerHTML = `Measured Energy Level: <span class="text-cyan-400 font-bold font-mono">${res.level}%</span> (RMS: ${res.rms.toFixed(4)})`;
-        } else {
-          status.innerText = 'Audio measurement failed: ' + res.message;
-        }
-      } catch (err) {
-        btn.innerText = 'Test Audio Input';
-        btn.classList.remove('animate-pulse');
-        status.innerText = 'Error testing mic: ' + err.toString();
-      }
-    }
-
-    function closeApp() {
-      if (window.pywebview && window.pywebview.api) {
-        window.pywebview.api.close_window();
-      } else {
-        window.close();
-      }
-    }
-
-    // =============================================
-    // WhatsApp Contacts Manager
-    // =============================================
-    let waContacts = [];
-
-    async function openWhatsAppContacts() {
-      // Load contacts from Python backend
-      if (window.pywebview && window.pywebview.api) {
-        try {
-          waContacts = await window.pywebview.api.get_whatsapp_contacts() || [];
-        } catch(e) {
-          waContacts = [];
-        }
-      }
-      renderWAContacts();
-      document.getElementById('wa-contacts-modal').classList.remove('hidden');
-    }
-
-    function closeWhatsAppContacts() {
-      document.getElementById('wa-contacts-modal').classList.add('hidden');
-    }
-
-    function renderWAContacts() {
-      const list = document.getElementById('wa-contacts-list');
-      if (!waContacts || waContacts.length === 0) {
-        list.innerHTML = `
-          <div class="py-10 text-center text-slate-500">
-            <i data-lucide="users" class="w-8 h-8 mx-auto mb-2 opacity-30"></i>
-            <p class="text-xs">No contacts saved yet.</p>
-            <p class="text-[11px] mt-1 text-slate-600">Add contacts below so the assistant can find them by voice.</p>
-          </div>`;
-        lucide.createIcons();
-        return;
-      }
-      list.innerHTML = waContacts.map((c, i) => `
-        <div class="flex items-center justify-between p-3 rounded-xl bg-nova-surface border border-nova-border/60 group">
-          <div class="flex items-center space-x-3 min-w-0">
-            <div class="w-8 h-8 rounded-full bg-emerald-500/15 flex items-center justify-center shrink-0">
-              <span class="text-emerald-400 text-sm font-bold">${(c.name||'?')[0].toUpperCase()}</span>
-            </div>
-            <div class="min-w-0">
-              <p class="text-xs font-semibold text-white truncate">${c.name || '—'}</p>
-              <p class="text-[11px] text-slate-500 truncate">
-                ${c.alias ? '<span class="text-cyan-400/80">Voice alias: &quot;' + c.alias + '&quot;</span>' : 'No voice alias'}
-                ${c.phone ? ' · ' + c.phone : ''}
-              </p>
-            </div>
-          </div>
-          <button onclick="deleteWAContact(${i})" class="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-rose-500/15 text-slate-500 hover:text-rose-400">
-            <i data-lucide="x" class="w-3.5 h-3.5"></i>
-          </button>
-        </div>
-      `).join('');
-      lucide.createIcons();
-    }
-
-    function deleteWAContact(index) {
-      waContacts.splice(index, 1);
-      renderWAContacts();
-    }
-
-    function addWAContact() {
-      const nameEl  = document.getElementById('wa-new-name');
-      const aliasEl = document.getElementById('wa-new-alias');
-      const phoneEl = document.getElementById('wa-new-phone');
-
-      const name  = nameEl.value.trim();
-      const alias = aliasEl.value.trim();
-      const phone = phoneEl.value.trim();
-
-      if (!name) {
-        nameEl.classList.add('border-rose-500');
-        nameEl.placeholder = 'Name is required!';
-        setTimeout(() => { nameEl.classList.remove('border-rose-500'); nameEl.placeholder = 'Full name (as in WhatsApp)'; }, 2000);
-        return;
-      }
-
-      waContacts.push({ name, alias, phone });
-      nameEl.value  = '';
-      aliasEl.value = '';
-      phoneEl.value = '';
-      renderWAContacts();
-    }
-
-    async function saveWAContacts() {
-      if (!window.pywebview || !window.pywebview.api) {
-        showToast('Not connected to assistant backend.', true);
-        return;
-      }
-      try {
-        const res = await window.pywebview.api.save_whatsapp_contacts(waContacts);
-        if (res.success) {
-          showToast('✅ ' + res.message);
-          closeWhatsAppContacts();
-        } else {
-          showToast(res.message || 'Save failed.', true);
-        }
-      } catch(e) {
-        showToast(e.toString(), true);
-      }
-    }
-
-    // ===== PowerPoint Commands Reference =====
-    const PPT_COMMAND_CATEGORIES = [
-      {
-        category: "🚀 Slideshow Navigation & Control",
-        items: [
-          { name: "Start Slideshow (from start)", triggers: ["start presentation", "start slideshow", "begin presentation", "play presentation"], key: "F5" },
-          { name: "Present from Current Slide", triggers: ["present from current slide", "start from current slide", "present this slide"], key: "Shift + F5" },
-          { name: "Next Slide", triggers: ["next slide", "advance slide", "go forward", "next page"], key: "Right Arrow / PageDown" },
-          { name: "Previous Slide", triggers: ["previous slide", "go back slide", "back slide", "prior slide"], key: "Left Arrow / PageUp" },
-          { name: "Jump to Specific Slide", triggers: ["go to slide [number]", "jump to slide 5", "switch to slide 3"], key: "[Number] + Enter" },
-          { name: "First Slide", triggers: ["go to first slide", "jump to beginning", "start of presentation"], key: "Ctrl + Home" },
-          { name: "Last Slide", triggers: ["go to last slide", "jump to end", "final slide"], key: "Ctrl + End" },
-          { name: "End Slideshow", triggers: ["end presentation", "stop presentation", "exit slideshow", "stop presenting"], key: "Escape" },
-        ]
-      },
-      {
-        category: "🎯 Laser Pointer, Pen & Annotations",
-        items: [
-          { name: "Laser Pointer", triggers: ["laser pointer", "turn on laser pointer", "activate laser"], key: "Ctrl + L" },
-          { name: "Drawing Pen", triggers: ["turn on pen", "pen tool", "draw mode", "activate pen"], key: "Ctrl + P" },
-          { name: "Arrow Pointer (Normal)", triggers: ["arrow pointer", "normal pointer", "turn off laser", "mouse pointer"], key: "Ctrl + A" },
-          { name: "Erase All Ink Annotations", triggers: ["erase ink", "clear drawings", "erase annotations"], key: "E" },
-        ]
-      },
-      {
-        category: "🖥️ Screen Display & Live Captions",
-        items: [
-          { name: "Blackout / Blank Screen", triggers: ["black screen", "blank screen", "pause presentation screen"], key: "B" },
-          { name: "Whiteout Screen", triggers: ["white screen", "whiteout screen", "turn screen white"], key: "W" },
-          { name: "Live Subtitles / Captions", triggers: ["toggle subtitles", "turn on captions", "toggle captions"], key: "J" },
-          { name: "Play / Pause Slide Video", triggers: ["play slide video", "pause slide video", "pause presentation video"], key: "Alt + P" },
-        ]
-      },
-      {
-        category: "📝 Deck Editing & File Operations",
-        items: [
-          { name: "Open / Focus PowerPoint", triggers: ["open powerpoint", "launch powerpoint", "start ppt"], key: "Win App" },
-          { name: "Close PowerPoint", triggers: ["close powerpoint", "exit powerpoint", "quit powerpoint"], key: "Alt + F4 / Taskkill" },
-          { name: "New Blank Presentation", triggers: ["new presentation", "create new presentation", "new ppt"], key: "Ctrl + N" },
-          { name: "Insert New Slide", triggers: ["new slide", "insert slide", "add slide"], key: "Ctrl + M" },
-          { name: "Duplicate Slide", triggers: ["duplicate slide", "copy slide", "clone slide"], key: "Ctrl + D" },
-          { name: "Save Presentation", triggers: ["save presentation", "save ppt", "save slide"], key: "Ctrl + S" },
-          { name: "Save As Presentation", triggers: ["save presentation as", "save ppt as"], key: "F12" },
-          { name: "Open Presentation File", triggers: ["open presentation file", "open ppt file", "open slide file"], key: "Ctrl + O" },
-          { name: "Undo Action", triggers: ["undo slide", "undo ppt change"], key: "Ctrl + Z" },
-          { name: "Redo Action", triggers: ["redo slide", "redo ppt change"], key: "Ctrl + Y" },
-          { name: "Zoom In View", triggers: ["ppt zoom in", "zoom in slide"], key: "Ctrl + +" },
-          { name: "Zoom Out View", triggers: ["ppt zoom out", "zoom out slide"], key: "Ctrl + -" },
-        ]
-      }
-    ];
-
-    function openPPTCommands() {
-      const modal = document.getElementById('ppt-commands-modal');
-      modal.classList.remove('hidden');
-      renderPPTCommands(PPT_COMMAND_CATEGORIES);
-      lucide.createIcons();
-    }
-
-    function closePPTCommands() {
-      const modal = document.getElementById('ppt-commands-modal');
-      modal.classList.add('hidden');
-    }
-
-    function filterPPTCommands() {
-      const q = (document.getElementById('ppt-cmd-search').value || '').toLowerCase().trim();
-      if (!q) {
-        renderPPTCommands(PPT_COMMAND_CATEGORIES);
-        return;
-      }
-      const filtered = PPT_COMMAND_CATEGORIES.map(cat => {
-        const matchingItems = cat.items.filter(item => 
-          item.name.toLowerCase().includes(q) ||
-          item.key.toLowerCase().includes(q) ||
-          item.triggers.some(t => t.toLowerCase().includes(q))
-        );
-        return { category: cat.category, items: matchingItems };
-      }).filter(cat => cat.items.length > 0);
-
-      renderPPTCommands(filtered);
-    }
-
-    function renderPPTCommands(categories) {
-      const container = document.getElementById('ppt-commands-list');
-      if (!categories || categories.length === 0) {
-        container.innerHTML = `
-          <div class="py-12 text-center text-slate-500">
-            <i data-lucide="search-x" class="w-8 h-8 mx-auto mb-2 opacity-40"></i>
-            <p class="text-xs">No matching PowerPoint commands found.</p>
-          </div>
-        `;
-        lucide.createIcons();
-        return;
-      }
-
-      container.innerHTML = categories.map(cat => `
-        <div class="space-y-2">
-          <h4 class="text-xs font-bold text-orange-400/90 uppercase tracking-wider px-1 pt-1">${cat.category}</h4>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-            ${cat.items.map(item => `
-              <div class="p-3 rounded-xl bg-nova-surface border border-nova-border/60 hover:border-orange-500/40 transition-colors flex flex-col justify-between group">
-                <div>
-                  <div class="flex items-center justify-between mb-1.5">
-                    <span class="text-xs font-semibold text-white group-hover:text-orange-300 transition-colors">${item.name}</span>
-                    <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-orange-500/15 text-orange-300 border border-orange-500/30 shrink-0 ml-2">${item.key}</span>
-                  </div>
-                  <div class="flex flex-wrap gap-1 mt-1">
-                    ${item.triggers.map(t => `
-                      <span class="text-[10px] px-1.5 py-0.5 rounded bg-nova-surface2 text-slate-300 border border-nova-border/40 font-mono">
-                        "${t}"
-                      </span>
-                    `).join('')}
-                  </div>
-                </div>
-              </div>
-            `).join('')}
-          </div>
-        </div>
-      `).join('');
-
-      lucide.createIcons();
-    }
-
-    // =============================================
-    // Universal Plugin Commands Modal
-    // =============================================
-    let activeModalPlugin = null;
-
-    function openPluginCommandsModal(pluginId) {
-      if (pluginId === 'ppt') {
-        openPPTCommands();
-        return;
-      }
-      const plugin = allPlugins.find(p => p.id === pluginId);
-      if (!plugin) return;
-      activeModalPlugin = plugin;
-
-      // Populate header
-      document.getElementById('plugin-modal-icon').innerText = plugin.icon || '🔌';
-      document.getElementById('plugin-modal-title').innerText = `${plugin.name} Voice Commands`;
-      document.getElementById('plugin-modal-desc').innerText = plugin.description || 'Full list of available hands-free actions and trigger phrases.';
-      
-      const count = plugin.total_commands || (plugin.commands ? plugin.commands.length : (plugin.triggers ? plugin.triggers.length : 0));
-      document.getElementById('plugin-modal-count-badge').innerText = `${count} Commands`;
-      document.getElementById('plugin-modal-search').value = '';
-
-      renderPluginModalCommands(plugin.commands || []);
-      document.getElementById('plugin-commands-modal').classList.remove('hidden');
-      lucide.createIcons();
-    }
-
-    function closePluginCommandsModal() {
-      document.getElementById('plugin-commands-modal').classList.add('hidden');
-      activeModalPlugin = null;
-    }
-
-    function filterPluginModalCommands() {
-      if (!activeModalPlugin || !activeModalPlugin.commands) return;
-      const q = document.getElementById('plugin-modal-search').value.toLowerCase().trim();
-      if (!q) {
-        renderPluginModalCommands(activeModalPlugin.commands);
-        return;
-      }
-      const filtered = activeModalPlugin.commands.filter(c => 
-        (c.action && c.action.toLowerCase().includes(q)) ||
-        (c.description && c.description.toLowerCase().includes(q)) ||
-        (c.triggers && c.triggers.some(t => t.toLowerCase().includes(q)))
-      );
-      renderPluginModalCommands(filtered);
-    }
-
-    function renderPluginModalCommands(commands) {
-      const container = document.getElementById('plugin-modal-commands-list');
-      if (!commands || commands.length === 0) {
-        container.innerHTML = `
-          <div class="py-12 text-center text-slate-500">
-            <i data-lucide="search-x" class="w-8 h-8 mx-auto mb-2 opacity-40"></i>
-            <p class="text-xs">No matching voice commands found.</p>
-          </div>
-        `;
-        lucide.createIcons();
-        return;
-      }
-
-      container.innerHTML = `
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5">
-          ${commands.map(cmd => `
-            <div class="p-3.5 rounded-xl bg-nova-surface border border-nova-border/70 hover:border-red-500/40 transition-colors flex flex-col justify-between group space-y-2">
-              <div>
-                <div class="flex items-center justify-between mb-1">
-                  <span class="text-xs font-bold text-white group-hover:text-red-300 transition-colors">${cmd.description || cmd.action}</span>
-                  <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-red-500/15 text-red-300 border border-red-500/30 shrink-0 ml-2">${cmd.action}</span>
-                </div>
-                <div class="flex flex-wrap gap-1 mt-1.5">
-                  ${(cmd.triggers || []).map(t => `
-                    <span class="text-[10px] px-2 py-0.5 rounded-md bg-nova-surface2 text-slate-300 border border-nova-border/50 font-mono">
-                      "${t}"
-                    </span>
-                  `).join('')}
-                </div>
-              </div>
-            </div>
-          `).join('')}
-        </div>
-      `;
-
-      lucide.createIcons();
-    }
-
-    // Initialize when PyWebView is ready
+    // Hook into the API to update logs/reasoning live
     window.addEventListener('pywebviewready', () => {
-      loadPlugins();
+       // Initial load
+       if (window.pywebview && window.pywebview.api) {
+         // Load initial profile
+         window.pywebview.api.get_profile().then(p => {
+           if(p) {
+             document.getElementById('user_name').value = p.user_name;
+             document.getElementById('wake_word').value = p.wake_word;
+           }
+         });
+       }
     });
-
-    // Fallback if pywebviewready already fired
-    setTimeout(() => {
-      if (window.pywebview && window.pywebview.api) {
-        loadPlugins();
-      }
-      lucide.createIcons();
-    }, 500);
   </script>
-
-  <!-- ===== WhatsApp Contacts Manager Modal ===== -->
-  <div id="wa-contacts-modal" class="hidden fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-    <div class="bg-nova-card border border-nova-border rounded-2xl w-full max-w-lg shadow-2xl flex flex-col" style="max-height:88vh;">
-
-      <!-- Header -->
-      <div class="flex items-center justify-between px-5 py-4 border-b border-nova-border shrink-0">
-        <div class="flex items-center space-x-3">
-          <div class="w-9 h-9 rounded-xl bg-emerald-500/15 flex items-center justify-center">
-            <span class="text-xl">💬</span>
-          </div>
-          <div>
-            <h3 class="text-sm font-bold text-white">WhatsApp Contacts</h3>
-            <p class="text-[11px] text-slate-400">Saved contacts improve voice name recognition accuracy</p>
-          </div>
-        </div>
-        <button onclick="closeWhatsAppContacts()" class="p-1.5 rounded-lg hover:bg-nova-surface2 text-slate-400 hover:text-white transition-colors">
-          <i data-lucide="x" class="w-4 h-4"></i>
-        </button>
-      </div>
-
-      <!-- How it works tip -->
-      <div class="mx-5 mt-4 px-3.5 py-2.5 rounded-xl bg-cyan-500/5 border border-cyan-500/20 text-[11px] text-cyan-300/80 shrink-0">
-        <span class="font-semibold text-cyan-300">How it works:</span>
-        Add your contacts with their <span class="font-semibold">full WhatsApp name</span> and a
-        <span class="font-semibold">voice alias</span> (how you say it). Example: name = <em>"Prinson Kumar"</em>,
-        alias = <em>"prinson"</em>. Then say <em>"Alexa send message to prinson"</em> and the assistant will search
-        for <em>"Prinson Kumar"</em> exactly.
-      </div>
-
-      <!-- Contact list -->
-      <div id="wa-contacts-list" class="flex-1 overflow-y-auto px-5 py-3 space-y-2 min-h-0">
-      </div>
-
-      <!-- Add new contact form -->
-      <div class="px-5 py-4 border-t border-nova-border/60 space-y-3 shrink-0">
-        <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Add New Contact</p>
-        <div class="grid grid-cols-2 gap-2">
-          <input id="wa-new-name" type="text" placeholder="Full name (as in WhatsApp)"
-            class="col-span-2 px-3 py-2 rounded-xl bg-nova-surface border border-nova-border text-xs text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500/60 transition-colors" />
-          <input id="wa-new-alias" type="text" placeholder='Voice alias (how you say it)'
-            class="px-3 py-2 rounded-xl bg-nova-surface border border-nova-border text-xs text-white placeholder-slate-600 focus:outline-none focus:border-cyan-500/60 transition-colors" />
-          <input id="wa-new-phone" type="text" placeholder="Phone (optional)"
-            class="px-3 py-2 rounded-xl bg-nova-surface border border-nova-border text-xs text-white placeholder-slate-600 focus:outline-none focus:border-nova-borderHover transition-colors" />
-        </div>
-        <button onclick="addWAContact()" class="w-full py-2 rounded-xl bg-nova-surface hover:bg-nova-surface2 border border-nova-border text-xs text-slate-300 hover:text-white font-medium transition-all flex items-center justify-center space-x-1.5">
-          <i data-lucide="plus" class="w-3.5 h-3.5"></i>
-          <span>Add Contact</span>
-        </button>
-      </div>
-
-      <!-- Footer actions -->
-      <div class="px-5 pb-4 flex items-center justify-end space-x-2 shrink-0">
-        <button onclick="closeWhatsAppContacts()" class="px-4 py-2 rounded-xl bg-nova-surface hover:bg-nova-surface2 border border-nova-border text-xs text-slate-300 font-medium transition-all">
-          Cancel
-        </button>
-        <button onclick="saveWAContacts()" class="px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white font-bold text-xs transition-all shadow-lg shadow-emerald-600/20 flex items-center space-x-1.5">
-          <i data-lucide="save" class="w-3.5 h-3.5"></i>
-          <span>Save Contacts</span>
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ===== PowerPoint Commands Modal ===== -->
-  <div id="ppt-commands-modal" class="hidden fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-    <div class="bg-nova-card border border-nova-border rounded-2xl w-full max-w-2xl shadow-2xl flex flex-col" style="max-height:88vh;">
-
-      <!-- Header -->
-      <div class="flex items-center justify-between px-5 py-4 border-b border-nova-border shrink-0">
-        <div class="flex items-center space-x-3">
-          <div class="w-9 h-9 rounded-xl bg-orange-500/15 flex items-center justify-center">
-            <span class="text-xl">🖥️</span>
-          </div>
-          <div>
-            <div class="flex items-center space-x-2">
-              <h3 class="text-sm font-bold text-white">PowerPoint Voice Commands</h3>
-              <span class="text-[10px] px-2 py-0.5 rounded-full bg-orange-500/15 text-orange-400 font-semibold border border-orange-500/30">29 Commands</span>
-            </div>
-            <p class="text-[11px] text-slate-400">Complete reference of hands-free presentation, drawing, and navigation controls</p>
-          </div>
-        </div>
-        <button onclick="closePPTCommands()" class="p-1.5 rounded-lg hover:bg-nova-surface2 text-slate-400 hover:text-white transition-colors">
-          <i data-lucide="x" class="w-4 h-4"></i>
-        </button>
-      </div>
-
-      <!-- Search Bar -->
-      <div class="px-5 pt-3 pb-2 border-b border-nova-border/60 shrink-0">
-        <div class="relative">
-          <i data-lucide="search" class="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2"></i>
-          <input id="ppt-cmd-search" type="text" oninput="filterPPTCommands()" placeholder="Search commands, shortcuts, or phrases (e.g. next, laser, slide 5, pen)..."
-            class="w-full pl-9 pr-3 py-2 rounded-xl bg-nova-surface border border-nova-border text-xs text-white placeholder-slate-500 focus:outline-none focus:border-orange-500/60 transition-colors" />
-        </div>
-      </div>
-
-      <!-- Command list -->
-      <div id="ppt-commands-list" class="flex-1 overflow-y-auto px-5 py-4 space-y-4 min-h-0">
-      </div>
-
-      <!-- Footer -->
-      <div class="px-5 py-3 border-t border-nova-border flex items-center justify-between text-xs text-slate-400 shrink-0 bg-nova-surface/30">
-        <div class="flex items-center space-x-1.5 text-[11px]">
-          <i data-lucide="mic" class="w-3.5 h-3.5 text-orange-400"></i>
-          <span>Say: <strong class="text-white">"Alexa, [command]"</strong> or <strong class="text-white">"Privacy68, [command]"</strong></span>
-        </div>
-        <button onclick="closePPTCommands()" class="px-4 py-1.5 rounded-xl bg-nova-surface hover:bg-nova-surface2 border border-nova-border text-xs text-slate-300 font-medium transition-all">
-          Close Guide
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ===== Universal Plugin Commands Modal ===== -->
-  <div id="plugin-commands-modal" class="hidden fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-    <div class="bg-nova-card border border-nova-border rounded-2xl w-full max-w-2xl shadow-2xl flex flex-col" style="max-height:88vh;">
-
-      <!-- Header -->
-      <div class="flex items-center justify-between px-5 py-4 border-b border-nova-border shrink-0">
-        <div class="flex items-center space-x-3">
-          <div class="w-10 h-10 rounded-xl bg-red-500/15 flex items-center justify-center">
-            <span id="plugin-modal-icon" class="text-2xl">🔌</span>
-          </div>
-          <div>
-            <div class="flex items-center space-x-2">
-              <h3 id="plugin-modal-title" class="text-sm font-bold text-white">Plugin Voice Commands</h3>
-              <span id="plugin-modal-count-badge" class="text-[10px] px-2 py-0.5 rounded-full bg-red-500/15 text-red-400 font-semibold border border-red-500/30">0 Commands</span>
-            </div>
-            <p id="plugin-modal-desc" class="text-[11px] text-slate-400">List of hands-free triggers and automated actions</p>
-          </div>
-        </div>
-        <button onclick="closePluginCommandsModal()" class="p-1.5 rounded-lg hover:bg-nova-surface2 text-slate-400 hover:text-white transition-colors">
-          <i data-lucide="x" class="w-4 h-4"></i>
-        </button>
-      </div>
-
-      <!-- Search Bar -->
-      <div class="px-5 pt-3 pb-2 border-b border-nova-border/60 shrink-0">
-        <div class="relative">
-          <i data-lucide="search" class="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2"></i>
-          <input id="plugin-modal-search" type="text" oninput="filterPluginModalCommands()" placeholder="Search commands, actions, or trigger phrases..."
-            class="w-full pl-9 pr-3 py-2 rounded-xl bg-nova-surface border border-nova-border text-xs text-white placeholder-slate-500 focus:outline-none focus:border-red-500/60 transition-colors" />
-        </div>
-      </div>
-
-      <!-- Command list -->
-      <div id="plugin-modal-commands-list" class="flex-1 overflow-y-auto px-5 py-4 space-y-3 min-h-0">
-      </div>
-
-      <!-- Footer -->
-      <div class="px-5 py-3 border-t border-nova-border flex items-center justify-between text-xs text-slate-400 shrink-0 bg-nova-surface/30">
-        <div class="flex items-center space-x-1.5 text-[11px]">
-          <i data-lucide="mic" class="w-3.5 h-3.5 text-red-400"></i>
-          <span>Say: <strong class="text-white">"Alexa, [command]"</strong> or <strong class="text-white">"Privacy68, [command]"</strong></span>
-        </div>
-        <button onclick="closePluginCommandsModal()" class="px-4 py-1.5 rounded-xl bg-nova-surface hover:bg-nova-surface2 border border-nova-border text-xs text-slate-300 font-medium transition-all">
-          Close Guide
-        </button>
-      </div>
-    </div>
-  </div>
-
 </body>
-
 </html>

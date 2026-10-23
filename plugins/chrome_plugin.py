@@ -1,231 +1,66 @@
-import logging
-import re
 import subprocess
-import time
-import urllib.parse
-from typing import Callable, Dict, List
+import os
+import logging
 from plugins.base_plugin import BasePlugin
-from plugins.win_utils import kill_process
 
-logger = logging.getLogger("PRIVACY68.Plugin.Chrome")
+logger = logging.getLogger("PRIVACY68.Plugins.Chrome")
 
 class ChromePlugin(BasePlugin):
-    id = "chrome"
-    name = "Google Chrome"
-    icon = "🌐"
-    description = "Control Google Chrome: open, close, new tab, close tab, search, and incognito mode."
-    version = "1.3.0"
-    author = "Privacy68 Team"
-    category = "Browser"
-    plugin_type = "Browser Control"
+    """
+    Professional Chrome Browser Automation Plugin.
+    Handles launching, URL navigation, and browser management.
+    """
 
-    @property
-    def actions(self) -> Dict[str, Callable[[str], bool]]:
-        return {
-            "chrome.open": self.open_browser,
-            "chrome.close_app": self.close_browser,
-            "chrome.new_tab": self.new_tab,
-            "chrome.close_tab": self.close_tab,
-            "chrome.reopen_tab": self.reopen_tab,
-            "chrome.incognito": self.open_incognito,
-            "chrome.search": self.search_web,
-            "chrome.open_website": self.open_website,
-            "chrome.select_profile": self.select_profile,
-        }
+    def __init__(self):
+        super().__init__()
+        self.name = "Google Chrome Controller"
+        self.version = "1.1.0"
+        self.description = "Automates Google Chrome navigation and search."
 
-    @property
-    def fast_intents(self) -> Dict[str, List[str]]:
-        return {
-            "chrome.open": [
-                "open chrome",
-                "launch chrome",
-                "start chrome",
-                "open google chrome",
-                "launch google chrome",
-            ],
-            "chrome.close_app": [
-                "close chrome",
-                "exit chrome",
-                "quit chrome",
-                "terminate chrome",
-                "close google chrome",
-                "exit google chrome",
-            ],
-            "chrome.new_tab": [
-                "new tab in chrome",
-                "create a new tab in chrome",
-                "open new tab in chrome",
-                "chrome new tab",
-                "new tab",
-                "open new tab",
-                "open a new tab",
-                "create a new tab",
-            ],
-            "chrome.close_tab": [
-                "close tab in chrome",
-                "close current tab in chrome",
-                "chrome close tab",
-                "close tab",
-                "close this tab",
-                "close current tab",
-            ],
-            "chrome.reopen_tab": [
-                "reopen tab in chrome",
-                "restore tab in chrome",
-                "reopen tab",
-                "reopen last tab",
-                "restore tab",
-                "restore last tab",
-            ],
-            "chrome.incognito": [
-                "open incognito in chrome",
-                "open private window in chrome",
-                "chrome incognito",
-            ],
-            "chrome.search": [
-                "search in chrome",
-                "search on chrome",
-                "search using chrome",
-                "chrome search",
-            ],
-            "chrome.open_website": [
-                "open website in chrome",
-                "go to website",
-                "navigate to",
-                "open domain",
-                "launch website",
-                "visit website",
-            ],
-            "chrome.select_profile": [
-                "select first user",
-                "select second user",
-                "select third user",
-                "select fourth user",
-                "select item one",
-                "select item two",
-                "select item three",
-                "select the first one",
-                "select the second one",
-                "choose first",
-                "choose second",
-                "select profile 1",
-                "select profile 2",
-            ]
-        }
+        # Common paths for Chrome on Windows
+        self.exe_paths = [
+            os.path.join(os.environ.get("ProgramFiles", "C:\\Program Files"), "Google\\Chrome\\Application\\chrome.exe"),
+            os.path.join(os.environ.get("ProgramFiles(x86)", "C:\\Program Files (x86)"), "Google\\Chrome\\Application\\chrome.exe"),
+            os.path.join(os.path.expanduser("~"), "AppData\\Local\\Google\\Chrome\\Application\\chrome.exe"),
+        ]
 
-    @property
-    def descriptions(self) -> Dict[str, str]:
-        return {
-            "chrome.open": "- chrome.open: Launch or bring up Google Chrome.",
-            "chrome.close_app": "- chrome.close_app: Close or exit Google Chrome application.",
-            "chrome.new_tab": "- chrome.new_tab: Create a new browser tab in Chrome.",
-            "chrome.close_tab": "- chrome.close_tab: Close the active tab in Chrome.",
-            "chrome.reopen_tab": "- chrome.reopen_tab: Reopen the last closed tab in Chrome.",
-            "chrome.incognito": "- chrome.incognito: Open a new Incognito window in Chrome.",
-            "chrome.search": "- chrome.search: Search a query using Google Chrome.",
-            "chrome.open_website": "- chrome.open_website: Open a website URL directly in Chrome (e.g. 'open youtube.com', 'go to github.com').",
-            "chrome.select_profile": "- chrome.select_profile: Select a numbered Chrome profile (e.g. 'select 2nd user').",
-        }
+    def _find_chrome_exe(self) -> str:
+        """Locates the chrome.exe binary on the system."""
+        for path in self.exe_paths:
+            if os.path.exists(path):
+                return path
+        return ""
 
-    def open_browser(self, text: str) -> bool:
-        logger.info("Plugin Action: Launching Google Chrome")
-        subprocess.Popen("start chrome", shell=True)
-        return True
+    def open_browser(self) -> bool:
+        """
+        Launches Chrome to the default homepage.
+        """
+        return self.open_url("https://www.google.com")
 
-    def close_browser(self, text: str) -> bool:
-        logger.info("Plugin Action: Closing Google Chrome")
-        kill_process("chrome.exe")
-        return True
-
-    def _ensure_focused(self) -> bool:
-        """Ensures Chrome is the focused foreground window before sending hotkeys."""
-        from computer_use.window_manager import window_manager
-        active = window_manager.get_active_window()
-        proc = str(active.get("process_name", "")).lower()
-        if proc == "chrome.exe":
-            return True
-        # Chrome is not focused — try to find and focus it
-        hwnd = window_manager.find_window("chrome")
-        if hwnd:
-            logger.info("Chrome not focused — bringing Chrome to foreground")
-            window_manager.focus_window(hwnd)
-            time.sleep(0.15)
-            return True
-        # Chrome not open at all — launch it
-        logger.info("Chrome not running — launching Chrome")
-        subprocess.Popen("start chrome", shell=True)
-        time.sleep(1.0)
-        return True
-
-    def new_tab(self, text: str) -> bool:
-        logger.info("Plugin Action: Opening new tab in Chrome")
-        self._ensure_focused()
-        import pyautogui
-        pyautogui.hotkey("ctrl", "t")
-        return True
-
-    def close_tab(self, text: str) -> bool:
-        logger.info("Plugin Action: Closing current tab in Chrome")
-        self._ensure_focused()
-        import pyautogui
-        pyautogui.hotkey("ctrl", "w")
-        return True
-
-    def reopen_tab(self, text: str) -> bool:
-        logger.info("Plugin Action: Reopening last closed tab in Chrome")
-        self._ensure_focused()
-        import pyautogui
-        pyautogui.hotkey("ctrl", "shift", "t")
-        return True
-
-    def open_incognito(self, text: str) -> bool:
-        logger.info("Plugin Action: Opening Chrome Incognito window")
-        subprocess.Popen("start chrome --incognito", shell=True)
-        return True
-
-    def search_web(self, text: str) -> bool:
-        cleaned = re.sub(r"\b(?:search|in|on|using|with|chrome|browser|for|about|google)\b", "", text, flags=re.IGNORECASE).strip(".!?, \t\n")
-        if not cleaned:
-            cleaned = "Google"
-        
-        logger.info(f"Plugin Action: Searching Chrome for '{cleaned}'")
-        url = f"https://www.google.com/search?q={urllib.parse.quote_plus(cleaned)}"
-        subprocess.Popen(f'start chrome "{url}"', shell=True)
-        return True
-        
-    def open_website(self, text: str) -> bool:
-        cleaned = re.sub(r"\b(?:open|go to|navigate to|visit|website|domain|in|on|chrome|browser)\b", "", text, flags=re.IGNORECASE).strip(".!?, \t\n")
-        if not cleaned:
+    def open_url(self, url: str) -> bool:
+        """
+        Launches Chrome and navigates to the specified URL.
+        """
+        exe = self._find_chrome_exe()
+        if not exe:
+            logger.error("Chrome executable not found on this system.")
             return False
-            
-        url = cleaned if cleaned.startswith("http") else f"https://{cleaned}"
-        # Strip spaces that might have been accidentally transcribed in domain names
-        url = url.replace(" ", "")
-        
-        logger.info(f"Plugin Action: Opening website directly: '{url}'")
-        subprocess.Popen(f'start chrome "{url}"', shell=True)
-        return True
 
-    def select_profile(self, text: str) -> bool:
-        """Parses the text for a profile number and launches Chrome natively with that profile."""
-        t = text.lower()
-        profile_id = None
-        
-        if any(w in t for w in ["first", "1st", "1", "one", "default"]):
-            profile_id = "Default"
-        elif any(w in t for w in ["second", "2nd", "2", "two"]):
-            profile_id = "Profile 1"
-        elif any(w in t for w in ["third", "3rd", "3", "three"]):
-            profile_id = "Profile 2"
-        elif any(w in t for w in ["fourth", "4th", "4", "four"]):
-            profile_id = "Profile 3"
-        elif any(w in t for w in ["fifth", "5th", "5", "five"]):
-            profile_id = "Profile 4"
-            
-        if profile_id:
-            logger.info(f"Plugin Action: Launching Chrome with {profile_id}")
-            # Launch chrome directly forcing a specific profile bypassing the profile picker
-            subprocess.Popen(f'start chrome --profile-directory="{profile_id}"', shell=True)
+        try:
+            subprocess.Popen([exe, url])
+            self.log_action(f"open_url({url})", "SUCCESS")
             return True
-            
+        except Exception as e:
+            logger.error(f"Failed to launch Chrome: {e}")
+            return False
+
+    def execute(self, action: str, **kwargs) -> bool:
+        """
+        Maps string actions to plugin methods.
+        """
+        if action == "open_url":
+            url = kwargs.get("url", "https://www.google.com")
+            return self.open_url(url)
+
+        logger.warning(f"Action '{action}' not supported by ChromePlugin.")
         return False

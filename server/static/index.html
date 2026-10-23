@@ -25,8 +25,8 @@
                     <div class="orb-ring"></div>
                 </div>
                 <div class="brand-text">
-                    <div class="brand-title">PRIVACY68 <span class="badge">REMOTE</span></div>
-                    <div class="brand-sub" id="pc-target">Connecting to PC...</div>
+                    <div class="brand-title">PRIVACY68 <span class="badge">AGENTIC CORE</span></div>
+                    <div class="brand-sub" id="pc-target">Autonomous System Online</div>
                 </div>
             </div>
             <div class="header-actions">
@@ -43,13 +43,13 @@
         <!-- Command Input Section -->
         <main class="main-content">
             <section class="command-card">
-                <div class="card-label">COMMAND DISPATCH</div>
+                <div class="card-label">AGENTIC COMMAND DISPATCH</div>
                 <form id="command-form" class="input-form">
                     <div class="input-wrapper">
-                        <input 
-                            type="text" 
-                            id="command-input" 
-                            placeholder="Type 'Open Chrome', 'volume up'..." 
+                        <input
+                            type="text"
+                            id="command-input"
+                            placeholder="Ask me to do anything on your PC..."
                             autocomplete="off"
                             autocorrect="off"
                             spellcheck="false"
@@ -66,7 +66,7 @@
                         </button>
                     </div>
                     <button type="submit" class="send-btn" id="btn-send">
-                        <span>Send to PC</span>
+                        <span id="btn-text">Execute Command</span>
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <line x1="22" y1="2" x2="11" y2="13"></line>
                             <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
@@ -79,34 +79,52 @@
                 </div>
             </section>
 
-            <!-- Quick Action Grid -->
+            <!-- Agent Capabilities Section -->
             <section class="section">
                 <div class="section-title">
-                    <span>⚡ Quick Actions</span>
-                    <span class="section-sub">Tap to execute on PC</span>
+                    <span>🤖 Agent Capabilities</span>
+                    <span class="section-sub">Dynamic execution, no limits</span>
                 </div>
-                
-                <!-- Category Tabs -->
-                <div class="category-tabs">
-                    <button class="tab-btn active" data-cat="all">All</button>
-                    <button class="tab-btn" data-cat="Apps">Apps</button>
-                    <button class="tab-btn" data-cat="Media">Media</button>
-                    <button class="tab-btn" data-cat="System">System</button>
-                </div>
-
-                <div class="actions-grid" id="actions-grid">
-                    <!-- Loaded dynamically via JS -->
+                <div class="capabilities-grid" id="capabilities-grid">
+                    <div class="cap-item">
+                        <span class="cap-icon">🌐</span>
+                        <div class="cap-info">
+                            <span class="cap-name">Web Automation</span>
+                            <span class="cap-desc">Browsing, scraping, and interacting</span>
+                        </div>
+                    </div>
+                    <div class="cap-item">
+                        <span class="cap-icon">🖥️</span>
+                        <div class="cap-info">
+                            <span class="cap-name">OS Control</span>
+                            <span class="cap-desc">App management & system settings</span>
+                        </div>
+                    </div>
+                    <div class="cap-item">
+                        <span class="cap-icon">⌨️</span>
+                        <div class="cap-info">
+                            <span class="cap-name">GUI Interaction</span>
+                            <span class="cap-desc">Clicks, typing, and menu navigation</span>
+                        </div>
+                    </div>
+                    <div class="cap-item">
+                        <span class="cap-icon">🛠️</span>
+                        <div class="cap-info">
+                            <span class="cap-name">Self-Correction</span>
+                            <span class="cap-desc">Automatically fixes its own code errors</span>
+                        </div>
+                    </div>
                 </div>
             </section>
 
             <!-- Live Execution Feed -->
             <section class="section">
                 <div class="section-title">
-                    <span>📜 Recent Commands</span>
+                    <span>📜 Execution Log</span>
                     <button class="clear-btn" id="btn-clear-history">Clear</button>
                 </div>
                 <div class="history-list" id="history-list">
-                    <div class="empty-history">No commands dispatched yet. Speak or type above!</div>
+                    <div class="empty-history">Waiting for your first command...</div>
                 </div>
             </section>
         </main>
