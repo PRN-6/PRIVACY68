@@ -58,6 +58,8 @@ class AgentBrain:
         Generates code via litellm and executes it directly using the system Python.
         This completely bypasses the broken OpenInterpreter model-check loop.
         """
+        self.last_code = ""
+        self.last_reasoning = f"Analyzing request: {text}"
         try:
             logger.info(f"[AGENT BRAIN] Reasoning via {self.model}: {text}")
 
@@ -66,7 +68,6 @@ class AgentBrain:
 
             # Store for UI visibility
             self.last_code = code
-            self.last_reasoning = f"Analyzing request: {text}"
 
             if not code:
                 return {"success": False, "message": "LLM failed to generate code.", "method": "agentic_brain"}

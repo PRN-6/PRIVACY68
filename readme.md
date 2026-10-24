@@ -1,161 +1,92 @@
-# 🌌 PRIVACY68 Voice Assistant v1.4.1
+# PRIVACY68 Voice Assistant
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-yellow.svg)](LICENSE)
 [![Security Policy](https://img.shields.io/badge/security-Policy-blue.svg)](SECURITY.md)
 [![Contributing](https://img.shields.io/badge/contributing-Guide-orange.svg)](CONTRIBUTING.md)
-[![Python 3.10+](https://img.shields.io/badge/python-3.10+-3776AB.svg?logo=python&logoColor=white)](https://www.python.org/)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-3776AB.svg?logo=python&logoColor=white)](https://www.python.org/)
 [![Platform: Windows 10/11](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-0078D6.svg?logo=windows&logoColor=white)](#)
-[![Privacy First](https://img.shields.io/badge/privacy-100%25%20Local-brightgreen.svg)](#)
-[![Release: v1.4.1](https://img.shields.io/badge/release-v1.4.1-blueviolet.svg)](https://github.com/PRN-6/PRIVACY68/releases)
 
-**PRIVACY68** is an ultra-fast, local-first AI voice assistant and autonomous desktop automation engine for Windows. Engineered for extreme speed, 100% zero-cloud voice privacy, and biometric security, it replaces fragmented script-based automation with a professional **Agentic Brain** powered by local LLMs.
+PRIVACY68 is a Windows desktop voice assistant with local speech-processing components, a desktop control center, and OS automation. It uses an Agent Brain to request Python code through LiteLLM and executes returned code in a local Python subprocess.
 
----
+> **Privacy and safety:** The Agent Brain currently uses the model identifier `ollama/gemma4:31b-cloud`. Do not assume that prompts are processed locally; provider routing depends on configuration. Generated Python runs with the current user's permissions. The optional mobile remote has no request authentication, so do not expose it to untrusted networks.
 
-## 📑 Table of Contents
-1. [Architecture Overview: The Agentic Brain](#-architecture-overview-the-agentic-brain)
-2. [Speech Engine & Wake Word Recognition](#-speech-engine--wake-word-recognition)
-3. [Biometric Voice Authentication (Voice Lock)](#-biometric-voice-authentication-voice-lock)
-4. [Control Center Dashboard](#-control-center-dashboard)
-5. [Hardware Acceleration & Performance Boost](#-hardware-acceleration--performance-boost)
-6. [Complete User Guide & Application Controls](#-complete-user-guide--application-controls)
-7. [Voice Command Reference](#-voice-command-reference)
-8. [Installation & Developer Setup](#-installation--developer-setup)
-9. [Security & Privacy Commitments](#-security--privacy-commitments)
+## Current command flow
 
----
+The project does **not** currently implement a three-lane router. Pending security confirmations and short greetings are handled directly. Most other commands are sent to the Agent Brain:
 
-## 🧠 Architecture Overview: The Agentic Brain
-
-Unlike traditional voice assistants that rely on fixed "if-then" routing, PRIVACY68 uses an **Agentic Reasoning Engine**. This architecture allows the assistant to reason through a request, plan the necessary steps, and generate executable Python code on-the-fly to automate your OS.
-
-### The Reasoning Flow:
-```
- [ Voice/Text Input ] 
-          │
- [ Silero Neural VAD ] → [ faster-whisper STT ]
-          │
- [ Voice Lock Verification ] (Biometric Gate)
-          │
- [ Agentic Brain (Gemma 4 via Ollama) ]
-          │
- [ Python Code Generation ] → [ Subprocess Execution ]
-          │
- [ OS Automation / Plugin Execution ]
+```text
+Voice/text input
+  -> command executor
+       -> pending security confirmation or greeting shortcut
+       -> Agent Brain for other commands
+            -> LiteLLM completion (ollama/gemma4:31b-cloud)
+            -> generated Python
+            -> Python subprocess (30-second timeout)
+            -> result returned to the UI
 ```
 
-### Key Components:
-- **Neural Core**: Powered by **Gemma 4 (31B)** via Ollama, providing deep reasoning and high-accuracy code generation.
-- **Dynamic Plugin System**: A modular architecture (`plugins/`) allowing the Agent to call specialized controllers for Chrome, WhatsApp, System settings, and more.
-- **Zero-Latency Execution**: Generated scripts are executed directly via the system Python interpreter, bypassing slow intermediate layers.
-- **Air-Gapped Privacy**: All reasoning happens locally on your machine. No data is sent to the cloud.
+The website's command terminal is a demonstration only. It does not connect to the desktop app or execute commands. For the full system diagrams and design details, see [PRIVACY68_SDS.md](PRIVACY68_SDS.md).
 
----
+## Features
 
-## 🎙️ Speech Engine & Wake Word Recognition
+- Speech input using Faster-Whisper, with Silero VAD in the speech pipeline.
+- Optional Voice Lock enrollment and speaker verification.
+- Desktop dashboard for profile settings, runtime status, microphone testing, Voice Lock, command output, and plugin registry.
+- Built-in Chrome, Windows System, and WhatsApp plugin classes.
+- Plugin management for viewing registered entries, toggling registry state, creating a starter template, installing a Python plugin file, and uninstalling user plugins.
+- Mobile remote for issuing commands over a local network when enabled.
 
-PRIVACY68 features a high-performance audio pipeline designed for accuracy across diverse environments.
+Plugin registration is separate from command routing: the executor does not automatically dispatch requests to registered plugins. Enable/disable state is registry metadata, not a sandbox or a guarantee that generated code can only use enabled plugins. Starter templates require implementation before they perform useful automation.
 
-### Core Technology:
-1. **STT Engine**: **faster-whisper (CTranslate2)** for near-instant, high-fidelity transcription.
-2. **VAD Filter**: **Silero Neural VAD** to eliminate background noise and precisely detect when speech starts and ends.
-3. **Phonetic Wake Word Matching**: Uses fuzzy Levenshtein distance and phonetic aliases to ensure the wake word is detected regardless of accent or speed.
-4. **Dynamic Normalization**: Automatically adjusts audio levels to ensure consistent trigger reliability across different microphone hardwares.
+## Requirements
 
----
+- Windows 10 or 11 (64-bit)
+- Python 3.11 or later
+- Dependencies listed in [requirements.txt](requirements.txt)
+- A configured LiteLLM-compatible model endpoint for Agent Brain requests
+- Microphone and audio devices for voice features
 
-## 🔒 Biometric Voice Authentication (Voice Lock)
+GPU acceleration is optional; CPU operation may be available depending on installed dependencies and model configuration.
 
-PRIVACY68 includes a military-grade biometric verification system powered by **ECAPA-TDNN neural speaker embeddings**.
+## Install and run
 
-### How It Works:
-- Converts your voice into a unique **512-dimensional acoustic vector**.
-- Uses **Cosine Similarity** to compare live speech against your enrolled profile.
-- Only the authorized owner can trigger sensitive system commands.
-
-**Enrollment**: Performed via the **Control Center Dashboard** where you record 3 verification samples to create your master voice profile.
-
----
-
-## 📊 Control Center Dashboard
-
-The **Control Center** is a professional WebView2-based management console that serves as the "window" into the Agent's mind.
-
-- **Neural Command Console**: A real-time terminal where you can type commands and watch the Agent's reasoning process.
-- **Reasoning Logs**: View the exact thought process ("The Why") the AI used to decompose your request.
-- **Code Viewer**: Inspect the generated Python scripts ("The How") before or after they are executed.
-- **System Telemetry**: Live monitoring of CUDA acceleration, mic sensitivity, and LLM status.
-- **Profile Management**: Easily update your wake word, user name, and biometric thresholds.
-
----
-
-## 🚀 Hardware Acceleration & Performance Boost
-
-Engineered to scale from office laptops to high-end gaming rigs.
-
-- **NVIDIA GPU Support**: Full CUDA 12 acceleration for faster-whisper, reducing transcription latency to **~120ms**.
-- **CPU Optimization**: Uses **int8 quantization** and AVX-512 instructions for fast performance on Intel/AMD systems without requiring GPU drivers.
-- **One-Click CUDA Manager**: Built-in tool to download and configure the NVIDIA cuBLAS/cuDNN runtime DLLs without requiring a full CUDA Toolkit installation.
-
----
-
-## 🖥️ Complete User Guide & Application Controls
-
-### 1. Windows System Tray
-The application docks into the tray for minimal distraction:
-- **Right-Click**: Access the Dashboard, toggle Mute, or reload plugins.
-- **Tray Color**: Changes dynamically to reflect the assistant's state (Listening, Processing, Success, Error).
-
-### 2. Floating Neon HUD
-A transparent, click-through overlay appears during interaction:
-- **Cyan Pulse**: Listening.
-- **Purple Wave**: AI is reasoning.
-- **Green Flash**: Action completed.
-
-### 3. Mobile Web Remote
-Control your PC from your phone via a local Wi-Fi server. Scan the QR code in the Dashboard to open the remote interface on any device.
-
----
-
-## ⌨️ Voice Command Reference
-
-| Category | Spoken Trigger Example | Action |
-| :--- | :--- | :--- |
-| **Browsing** | *"Privacy68, open Chrome"* | Launches Google Chrome |
-| **Communication**| *"Privacy68, open WhatsApp"* | Launches WhatsApp Desktop/Web |
-| **System** | *"Privacy68, mute volume"* | Sets master volume to 0% |
-| **Security** | *"Privacy68, lock screen"* | Locks Windows workstation |
-| **Web Search** | *"Privacy68, search for AI news"*| Searches via Chrome/Brave |
-| **Productivity** | *"Privacy68, open VS Code"* | Launches Visual Studio Code |
-| **Reasoning** | *"Privacy68, explain black holes"*| Local LLM provides spoken answer |
-
----
-
-## 🛠️ Installation & Developer Setup
-
-### Prerequisites
-- Windows 10/11 (64-bit)
-- Python 3.10+
-- [Ollama](https://ollama.ai/) (for local LLM reasoning)
-
-### Quick Start
 ```powershell
 git clone https://github.com/PRN-6/PRIVACY68.git
 cd PRIVACY68
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
 pip install -r requirements.txt
 python app.py
 ```
 
----
+Set up and verify your model provider according to your deployment before sending real commands. The model identifier is currently defined in `actions/agent_brain.py`; dashboard provider settings do not override it.
 
-## 🛡️ Security & Privacy Commitments
-- **100% Local Audio**: Voice streams never leave your RAM.
-- **Zero Cloud Reasoning**: By default, all AI processing happens via Ollama on your local hardware.
-- **Local Biometrics**: Your voice embeddings are stored encrypted on your own disk.
-- **Open Source**: Fully auditable code under the MIT License.
+## Desktop dashboard and plugins
 
----
+Open the dashboard from the running application and select **Plugins** to view the local registry. User plugins are loaded from:
 
-*Crafted for private, instant, and autonomous Windows intelligence.*
+```text
+%APPDATA%\PRIVACY68\plugins\
+```
+
+The dashboard can install `.py` plugins, create a starter template, toggle entries, and uninstall user plugins. Python plugin files execute code during loading and therefore must be treated as trusted code. Only install files you have reviewed. Built-in plugins cannot be uninstalled.
+
+## Tests
+
+Run the repository's unittest suite from the project root:
+
+```powershell
+python -m unittest discover tests -v
+```
+
+Tests use mocks where appropriate; passing tests does not validate real microphone hardware, model-provider availability, or generated automation on your machine.
+
+## Documentation and contribution
+
+- [Software Design Specification](PRIVACY68_SDS.md)
+- [Project website](website/index.html)
+- [Plugin guide](website/plugins.html)
+- [Contributing guide](CONTRIBUTING.md)
+- [Security policy](SECURITY.md)
+- [License](LICENSE)

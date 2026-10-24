@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="PRIVACY68 plugin registry, built-in integrations, and trusted Python plugin extension guide.">
+    <title>Plugins // PRIVACY68 Integrations</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,600;0,700;0,800;1,400&family=Silkscreen:wght@400;700&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="crt-enabled">
+    <canvas id="matrix-canvas"></canvas>
+    <div class="scanlines"></div>
+    <div class="site-wrapper">
+        <header class="top-nav">
+            <div class="nav-brand">
+                <span class="pixel-dot"></span>
+                <span class="brand-tag">SYS://PRIVACY68.AI</span>
+            </div>
+            <nav class="nav-links" id="main-nav">
+                <a href="index.html" class="nav-item">[ home ]</a>
+                <span class="nav-sep">·</span>
+                <a href="docs.html" class="nav-item">[ docs ]</a>
+                <span class="nav-sep">·</span>
+                <a href="plugins.html" class="nav-item active">[ plugins ]</a>
+                <span class="nav-sep">·</span>
+                <a href="about.html" class="nav-item">[ about ]</a>
+                <span class="nav-sep">·</span>
+                <a href="index.html#install" class="nav-item">[ setup ]</a>
+            </nav>
+            <div class="nav-controls">
+                <button id="sfx-toggle" class="icon-toggle" title="Toggle Sound FX"><span class="ctrl-label">SFX:</span><span id="sfx-status" class="ctrl-val">ON</span></button>
+                <button id="crt-toggle" class="icon-toggle" title="Toggle CRT Filter"><span class="ctrl-label">CRT:</span><span id="crt-status" class="ctrl-val">ON</span></button>
+                <button id="nav-toggle" class="icon-toggle mobile-menu-btn" title="Toggle Navigation Menu" aria-label="Toggle Navigation Menu">
+                    <span class="ctrl-label">[</span><span class="ctrl-val" id="nav-toggle-text">MENU</span><span class="ctrl-label">]</span>
+                </button>
+            </div>
+        </header>
+
+        <main class="content-section">
+            <div class="section-title-wrap">
+                <span class="section-index">[ 05 // EXTENSIONS &amp; INTEGRATIONS ]</span>
+                <h1 class="section-heading">Plugin Registry</h1>
+                <p class="section-desc">PRIVACY68 includes core integrations and a local registry for managing trusted Python extensions.</p>
+            </div>
+
+            <div class="spec-grid plugin-catalog">
+                <article class="spec-card">
+                    <div class="spec-header">
+                        <span class="spec-num">[ CORE ]</span>
+                        <span class="spec-icon"><i data-lucide="monitor"></i></span>
+                    </div>
+                    <h2 class="spec-title">Windows System Controller</h2>
+                    <p class="spec-body">The core system plugin supports launching applications through Windows.</p>
+                    <div class="spec-tag">SYSTEM · BUILT IN</div>
+                </article>
+                <article class="spec-card">
+                    <div class="spec-header">
+                        <span class="spec-num">[ CORE ]</span>
+                        <span class="spec-icon"><i data-lucide="globe"></i></span>
+                    </div>
+                    <h2 class="spec-title">Google Chrome Controller</h2>
+                    <p class="spec-body">Opens Chrome and navigates to a requested URL when Chrome is installed.</p>
+                    <div class="spec-tag">BROWSER · BUILT IN</div>
+                </article>
+                <article class="spec-card">
+                    <div class="spec-header">
+                        <span class="spec-num">[ CORE ]</span>
+                        <span class="spec-icon"><i data-lucide="message-circle"></i></span>
+                    </div>
+                    <h2 class="spec-title">WhatsApp Controller</h2>
+                    <p class="spec-body">Can open WhatsApp or a WhatsApp Web link. Sending a message only opens the link; it does not verify delivery or send automatically.</p>
+                    <div class="spec-tag">COMMUNICATION · BUILT IN</div>
+                </article>
+            </div>
+
+            <section class="plugin-guide">
+                <div class="doc-block-header">
+                    <i data-lucide="puzzle" class="doc-block-icon"></i>
+                    <h2 class="doc-block-title">Manage extensions in the desktop dashboard</h2>
+                </div>
+                <p class="doc-text">Open the PRIVACY68 Control Center and choose <strong>Plugins</strong> to see the plugins registered on this device. From there you can enable or disable entries, create a starter template, install a Python file, or uninstall a user plugin. Built-in plugins cannot be uninstalled.</p>
+                <p class="doc-text">External Python plugins are discovered from <code>%APPDATA%\PRIVACY68\plugins\</code>. The dashboard can install a <code>.py</code> file into this directory. The plugin manager imports Python code when it loads, so only install code you trust; plugin code runs with the current user's permissions.</p>
+                <p class="doc-text">The registry is an extension-management interface, not a security boundary. Enabling or disabling a registry entry does not sandbox generated scripts or guarantee that the assistant routes every request through a plugin.</p>
+                <a class="button-link" href="docs.html#plugin-system">Read the plugin architecture notes</a>
+            </section>
+        </main>
+
+        <footer class="bottom-bar">
+            <div class="bar-left">
+                <a href="https://github.com/PRN-6/PRIVACY68" target="_blank" rel="noreferrer" class="social-icon" aria-label="PRIVACY68 on GitHub"><i data-lucide="code"></i></a>
+                <a href="mailto:contact@prinson.dev" class="social-icon"><i data-lucide="mail"></i></a>
+                <span class="bar-tag">© 2026 PRIVACY68 · PRINSON</span>
+            </div>
+            <div class="bar-right"><span class="telemetry-item"><span class="dot-indicator"></span><span class="t-label">SYS:</span> ONLINE</span></div>
+        </footer>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>

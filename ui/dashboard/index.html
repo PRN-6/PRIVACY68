@@ -1,359 +1,861 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
-
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PRIVACY68 // Neural Command Center</title>
-
-  <!-- Tailwind CSS & Fonts -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          colors: {
-            nova: {
-              bg: '#0A0A0D',
-              surface: '#121217',
-              surface2: '#191921',
-              card: '#15151C',
-              border: '#242430',
-              borderHover: '#38384A',
-              red: '#EF4444',
-              crimson: '#E11D48',
-              rubyGlow: '#BE123C',
-              emerald: '#10B981',
-              rose: '#F43F5E'
-            }
-          },
-          fontFamily: {
-            sans: ['Inter', 'system-ui', 'sans-serif'],
-            mono: ['JetBrains Mono', 'monospace']
-          }
-        }
-      }
-    }
-  </script>
-
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&family=Outfit:wght@600;800&display=swap"
-    rel="stylesheet">
-  <script src="https://unpkg.com/lucide@latest"></script>
-
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101114">
+  <title>PRIVACY68 Control Center</title>
   <style>
-    ::-webkit-scrollbar { width: 5px; height: 5px; }
-    ::-webkit-scrollbar-track { background: #0A0A0D; }
-    ::-webkit-scrollbar-thumb { background: #242430; border-radius: 9999px; }
-    ::-webkit-scrollbar-thumb:hover { background: #E11D48; }
-    .glow-red { box-shadow: 0 0 25px -4px rgba(239, 68, 68, 0.3); }
-    .crt-screen { background: linear-gradient(rgba(18, 18, 23, 0) 50%, rgba(0, 0, 0, 0.1) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03)); background-size: 100% 2px, 3px 100%; }
+    :root {
+      color-scheme: dark;
+      --bg: #101114;
+      --panel: #17191e;
+      --panel-raised: #1d2026;
+      --line: #2a2d35;
+      --text: #f4f5f7;
+      --muted: #9a9eaa;
+      --subtle: #6f7480;
+      --accent: #f04452;
+      --accent-hover: #ff5d68;
+      --green: #47c995;
+      --amber: #f3bb58;
+      --red: #fb6670;
+      --radius: 14px;
+      font-family: "Segoe UI", Inter, system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    * { box-sizing: border-box; }
+    body { margin: 0; min-width: 320px; min-height: 100vh; background: var(--bg); }
+    button, input { font: inherit; }
+    button { color: inherit; }
+    button:focus-visible, input:focus-visible { outline: 2px solid #ff7d86; outline-offset: 2px; }
+
+    .app-shell { min-height: 100vh; display: flex; flex-direction: column; }
+    .topbar {
+      min-height: 68px; display: flex; align-items: center; justify-content: space-between;
+      gap: 18px; padding: 0 26px; border-bottom: 1px solid var(--line);
+      background: rgba(23, 25, 30, .94);
+    }
+    .brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
+    .brand-mark {
+      width: 34px; height: 34px; display: grid; place-items: center; border-radius: 11px;
+      color: white; font-size: 17px; font-weight: 800;
+      background: linear-gradient(145deg, #ff6b75, #d92f43);
+      box-shadow: 0 6px 20px #f0445230;
+    }
+    .brand-name { font-weight: 800; letter-spacing: .1em; font-size: 14px; }
+    .brand-caption { margin-top: 2px; color: var(--muted); font-size: 11px; }
+    .topbar-right { display: flex; align-items: center; gap: 12px; }
+    .user-chip, .status-chip {
+      display: inline-flex; align-items: center; gap: 8px; min-height: 32px; padding: 0 11px;
+      border: 1px solid var(--line); border-radius: 999px; color: var(--muted);
+      background: #111317; font-size: 12px;
+    }
+    .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--subtle); }
+    .status-chip.ready .status-dot { background: var(--green); box-shadow: 0 0 9px #47c99580; }
+    .status-chip.error .status-dot { background: var(--red); }
+    .icon-button {
+      width: 34px; height: 34px; border: 1px solid var(--line); border-radius: 10px;
+      background: transparent; cursor: pointer; color: var(--muted);
+    }
+    .icon-button:hover { background: var(--panel-raised); color: white; }
+
+    .layout {
+      width: min(1500px, 100%); margin: 0 auto; padding: 22px 26px 26px;
+      display: grid; grid-template-columns: 310px minmax(0, 1fr); gap: 22px; flex: 1;
+    }
+    .sidebar, .workspace { min-width: 0; }
+    .sidebar { display: flex; flex-direction: column; gap: 14px; }
+    .card {
+      border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel);
+      box-shadow: 0 8px 24px #00000012;
+    }
+    .card-pad { padding: 17px; }
+    .card-heading {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      margin-bottom: 15px;
+    }
+    .card-title { margin: 0; font-size: 12px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; }
+    .card-kicker { color: var(--subtle); font-size: 11px; }
+    .engine-name {
+      overflow-wrap: anywhere; padding: 11px 12px; border-radius: 10px;
+      background: #111317; border: 1px solid var(--line);
+      color: #ffc2c6; font: 12px/1.5 "Cascadia Code", Consolas, monospace;
+    }
+    .detail-list { display: grid; gap: 12px; margin-top: 14px; }
+    .detail-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .detail-label { color: var(--muted); font-size: 12px; }
+    .detail-value { color: #e0e2e7; font-size: 12px; text-align: right; }
+    .pill {
+      display: inline-flex; align-items: center; min-height: 23px; padding: 0 8px;
+      border-radius: 999px; border: 1px solid var(--line); color: var(--muted);
+      background: #111317; font-size: 10px; white-space: nowrap;
+    }
+    .pill.good { border-color: #47c99555; color: var(--green); }
+    .pill.warn { border-color: #f3bb5855; color: var(--amber); }
+    .pill.bad { border-color: #fb667055; color: var(--red); }
+    .field { display: grid; gap: 7px; margin-bottom: 13px; }
+    .field label { color: var(--muted); font-size: 11px; font-weight: 650; }
+    .field input {
+      width: 100%; min-height: 38px; padding: 0 11px; border: 1px solid var(--line);
+      border-radius: 9px; color: var(--text); background: #111317;
+    }
+    .field input::placeholder { color: #656a75; }
+    .button {
+      min-height: 37px; padding: 0 13px; display: inline-flex; align-items: center;
+      justify-content: center; gap: 8px; border: 1px solid var(--line); border-radius: 9px;
+      background: var(--panel-raised); color: #e6e7ea; font-size: 12px; font-weight: 650;
+      cursor: pointer; transition: background .15s ease, border-color .15s ease, transform .15s ease;
+    }
+    .button:hover:not(:disabled) { background: #292d35; border-color: #454a56; }
+    .button:active:not(:disabled) { transform: translateY(1px); }
+    .button:disabled { cursor: wait; opacity: .55; }
+    .button.primary { color: white; background: var(--accent); border-color: var(--accent); }
+    .button.primary:hover:not(:disabled) { background: var(--accent-hover); }
+    .button.danger { color: #ff9aa1; }
+    .button.full { width: 100%; }
+    .button-row { display: flex; flex-wrap: wrap; gap: 8px; }
+    .hint { color: var(--subtle); font-size: 11px; line-height: 1.5; }
+    .voice-status { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+
+    .workspace { display: flex; flex-direction: column; gap: 17px; }
+    .page-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+    .page-heading h1 { margin: 0; font-size: clamp(20px, 2.2vw, 27px); letter-spacing: -.025em; }
+    .page-heading p { margin: 7px 0 0; color: var(--muted); font-size: 13px; line-height: 1.5; }
+    .page-actions { display: flex; gap: 8px; flex-shrink: 0; }
+    .summary-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+    .summary-card { padding: 14px 15px; }
+    .summary-label { color: var(--muted); font-size: 11px; }
+    .summary-value { margin-top: 8px; font-weight: 700; font-size: 15px; overflow-wrap: anywhere; }
+    .summary-note { margin-top: 4px; color: var(--subtle); font-size: 10px; }
+    .view-tabs { display: flex; gap: 8px; }
+    .view-panel[hidden] { display: none; }
+    .plugin-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .plugin-card { min-width: 0; padding: 15px; }
+    .plugin-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+    .plugin-name { margin: 0; font-size: 14px; overflow-wrap: anywhere; }
+    .plugin-icon { margin-right: 7px; }
+    .plugin-description { margin: 10px 0; color: var(--muted); font-size: 12px; line-height: 1.55; }
+    .plugin-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+    .plugin-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+    .plugin-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 12px; }
+    .plugin-form-grid .field:last-child { grid-column: 1 / -1; }
+    .plugin-empty { padding: 24px; color: var(--muted); text-align: center; font-size: 12px; }
+
+    .console {
+      min-height: 400px; flex: 1; display: grid; grid-template-columns: minmax(280px, .9fr) minmax(0, 1.1fr);
+      overflow: hidden;
+    }
+    .conversation { min-width: 0; display: flex; flex-direction: column; border-right: 1px solid var(--line); }
+    .panel-head {
+      min-height: 48px; display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      padding: 0 16px; border-bottom: 1px solid var(--line);
+    }
+    .panel-head h2 { margin: 0; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; }
+    .text-button { border: 0; padding: 6px; color: var(--muted); background: transparent; cursor: pointer; font-size: 11px; }
+    .text-button:hover { color: white; }
+    .log {
+      min-height: 250px; flex: 1; display: flex; flex-direction: column; gap: 12px;
+      overflow-y: auto; padding: 16px;
+    }
+    .empty-state {
+      margin: auto; max-width: 245px; text-align: center; color: var(--subtle);
+      font-size: 12px; line-height: 1.7;
+    }
+    .empty-icon { display: block; margin-bottom: 10px; color: #d45b65; font-size: 24px; }
+    .message { max-width: 90%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; }
+    .message.user { align-self: flex-end; background: #54242b; border-color: #74333d; }
+    .message.system { align-self: flex-start; background: var(--panel-raised); }
+    .message.error { border-color: #8f3942; }
+    .message-role { margin-bottom: 5px; color: var(--muted); font-size: 9px; text-transform: uppercase; letter-spacing: .08em; }
+    .message-body { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 12px; line-height: 1.55; }
+    .composer { padding: 13px; border-top: 1px solid var(--line); background: #14161a; }
+    .composer-row { display: flex; gap: 8px; }
+    .composer input {
+      min-width: 0; flex: 1; height: 42px; padding: 0 12px; border: 1px solid var(--line);
+      border-radius: 10px; color: var(--text); background: #101114;
+    }
+    .composer input::placeholder { color: #6c717b; }
+    .safety-note { padding: 0 2px 10px; color: #8b8490; font-size: 10px; line-height: 1.45; }
+    .output-column { min-width: 0; display: grid; grid-template-rows: minmax(110px, .7fr) minmax(180px, 1.3fr); }
+    .output-panel { min-height: 0; display: flex; flex-direction: column; }
+    .output-panel + .output-panel { border-top: 1px solid var(--line); }
+    .output-content {
+      min-height: 0; flex: 1; overflow: auto; margin: 0; padding: 15px 16px;
+      color: #bdc1ca; font: 11px/1.6 "Cascadia Code", Consolas, monospace;
+      white-space: pre-wrap; overflow-wrap: anywhere;
+    }
+    .output-content.code { color: #a3dfbe; background: #121512; }
+
+    .toast {
+      position: fixed; right: 22px; bottom: 20px; z-index: 5; max-width: min(390px, calc(100vw - 32px));
+      padding: 12px 15px; border: 1px solid var(--line); border-radius: 10px;
+      background: #202329; box-shadow: 0 12px 40px #0008; font-size: 12px;
+      opacity: 0; transform: translateY(10px); pointer-events: none; transition: .2s ease;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+    .toast.error { border-color: #8f3942; }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+
+    @media (max-width: 980px) {
+      .layout { grid-template-columns: 260px minmax(0, 1fr); padding: 18px; gap: 16px; }
+      .console { grid-template-columns: 1fr; }
+      .conversation { min-height: 330px; border-right: 0; }
+      .output-column { min-height: 340px; border-top: 1px solid var(--line); }
+    }
+    @media (max-width: 700px) {
+      .topbar { min-height: 60px; padding: 0 14px; }
+      .brand-caption, .user-chip { display: none; }
+      .layout { display: flex; flex-direction: column; padding: 14px; }
+      .sidebar { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .sidebar .profile-card, .sidebar .voice-card { grid-column: 1 / -1; }
+      .page-heading { flex-direction: column; }
+      .page-actions { width: 100%; }
+      .page-actions .button { flex: 1; }
+      .summary-grid { grid-template-columns: 1fr; }
+      .plugin-grid { grid-template-columns: 1fr; }
+      .plugin-form-grid { grid-template-columns: 1fr; }
+      .plugin-form-grid .field:last-child { grid-column: auto; }
+      .summary-card { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+      .summary-value { margin-top: 0; text-align: right; }
+      .summary-note { display: none; }
+      .console { min-height: 660px; }
+    }
+    @media (max-width: 420px) {
+      .sidebar { grid-template-columns: 1fr; }
+      .sidebar .profile-card, .sidebar .voice-card { grid-column: auto; }
+      .card-pad { padding: 14px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
+    }
   </style>
 </head>
-
-<body class="bg-nova-bg text-slate-100 font-sans antialiased h-screen flex flex-col select-none overflow-hidden border border-nova-border/60">
-
-  <!-- TOP TITLE BAR -->
-  <header class="h-16 bg-nova-surface/90 backdrop-blur border-b border-nova-border px-6 flex items-center justify-between shrink-0">
-    <div class="flex items-center space-x-3">
-      <div class="flex items-center gap-2.5">
-        <span style="display: inline-block; width: 11px; height: 11px; border-radius: 50%; background: #EF4444; box-shadow: 0 0 10px #EF4444, 0 0 20px rgba(239, 68, 68, 0.5); flex-shrink: 0;"></span>
-        <div class="flex items-center gap-2">
-          <h1 style="font-family: 'Outfit', 'Inter', sans-serif; font-weight: 800; font-size: 1.15rem; letter-spacing: 2.5px; background: linear-gradient(90deg, #FFFFFF 0%, #FCA5A5 50%, #EF4444 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">PRIVACY68</h1>
-          <span style="font-size: 10px; background: rgba(239, 68, 68, 0.12); color: #F87171; padding: 2px 8px; border-radius: 20px; border: 1px solid rgba(239, 68, 68, 0.35); font-family: 'JetBrains Mono', monospace; font-weight: 600; letter-spacing: 0.5px;">v1.4.1</span>
-        </div>
-      </div>
-      <div class="w-px h-8 bg-nova-border mx-1"></div>
-      <div class="hidden sm:block">
-        <p class="text-xs font-semibold text-slate-200 tracking-wide">NEURAL COMMAND CENTER</p>
-        <p class="text-[10px] text-slate-500">Agentic Reasoning Engine</p>
-      </div>
-    </div>
-
-    <div class="flex items-center space-x-4">
-      <div class="flex items-center space-x-2 px-3 py-1.5 rounded-full bg-nova-card border border-nova-border text-xs text-slate-300">
-        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-        <span class="font-medium" id="header-user-tag">User</span>
-        <span class="text-slate-600">•</span>
-        <span class="text-emerald-400 font-mono text-[11px]">ONLINE</span>
-      </div>
-      <button onclick="closeApp()" class="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-nova-surface2 transition-colors">
-        <i data-lucide="x" class="w-4 h-4"></i>
-      </button>
-    </div>
-  </header>
-
-  <div class="flex flex-1 overflow-hidden">
-    <!-- LEFT SIDEBAR: SYSTEM TELEMETRY -->
-    <aside class="w-80 bg-nova-surface/50 border-r border-nova-border p-6 flex flex-col space-y-6 shrink-0 overflow-y-auto">
-
-      <!-- AI ENGINE STATUS -->
-      <div class="p-4 rounded-2xl bg-nova-card border border-nova-border space-y-4">
-        <div class="flex items-center space-x-2 text-xs font-bold text-slate-400 uppercase tracking-wider">
-          <i data-lucide="cpu" class="w-3.5 h-3.5 text-red-400"></i>
-          <span>Neural Engine</span>
-        </div>
-        <div class="space-y-3">
-          <div class="flex justify-between items-center">
-            <span class="text-xs text-slate-500">Model</span>
-            <span id="quick-llm-model" class="text-xs font-mono text-red-400">gemma4:31b-cloud</span>
-          </div>
-          <div class="flex justify-between items-center">
-            <span class="text-xs text-slate-500">Provider</span>
-            <span class="text-xs font-mono text-slate-300">Ollama (Local)</span>
-          </div>
-          <div class="flex justify-between items-center">
-            <span class="text-xs text-slate-500">Privacy</span>
-            <span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 font-semibold">Air-Gapped</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- HARDWARE STATUS -->
-      <div class="p-4 rounded-2xl bg-nova-card border border-nova-border space-y-4">
-        <div class="flex items-center space-x-2 text-xs font-bold text-slate-400 uppercase tracking-wider">
-          <i data-lucide="zap" class="w-3.5 h-3.5 text-rose-400"></i>
-          <span>Hardware</span>
-        </div>
-        <div class="space-y-3">
-          <div class="flex justify-between items-center">
-            <span class="text-xs text-slate-500">CUDA Cores</span>
-            <span id="cuda-status" class="text-xs font-mono text-emerald-400">Active</span>
-          </div>
-          <div class="flex justify-between items-center">
-            <span class="text-xs text-slate-500">ASR Engine</span>
-            <span class="text-xs font-mono text-slate-300">Faster-Whisper</span>
-          </div>
-          <div class="flex justify-between items-center">
-            <span class="text-xs text-slate-500">VAD Filter</span>
-            <span class="text-xs font-mono text-slate-300">Silero Neural</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- MIC TELEMETRY -->
-      <div class="p-4 rounded-2xl bg-nova-card border border-nova-border space-y-3">
-        <div class="flex items-center space-x-2 text-xs font-bold text-slate-400 uppercase tracking-wider">
-          <i data-lucide="mic" class="w-3.5 h-3.5 text-red-400"></i>
-          <span>Audio Input</span>
-        </div>
-        <div class="w-full h-1.5 bg-nova-surface rounded-full overflow-hidden border border-nova-border">
-          <div id="mic-meter-bar" class="h-full bg-gradient-to-r from-red-500 to-rose-400 w-0 transition-all duration-150"></div>
-        </div>
-        <div class="flex justify-between items-center">
-          <span class="text-[10px] text-slate-500">Live Sensitivity</span>
-          <span id="mic-level" class="text-[10px] font-mono text-slate-300">0%</span>
-        </div>
-      </div>
-
-      <!-- QUICK SETTINGS -->
-      <div class="p-4 rounded-2xl bg-nova-surface/50 border border-nova-border space-y-4">
-        <div class="space-y-2">
-          <label class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Wake Word</label>
-          <input type="text" id="wake_word" onchange="saveProfile()" class="w-full bg-nova-bg border border-nova-border rounded-lg px-3 py-1.5 text-xs text-white focus:border-red-500 focus:outline-none font-mono">
-        </div>
-        <div class="space-y-2">
-          <label class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Your Name</label>
-          <input type="text" id="user_name" onchange="saveProfile()" class="w-full bg-nova-bg border border-nova-border rounded-lg px-3 py-1.5 text-xs text-white focus:border-red-500 focus:outline-none">
-        </div>
-        <button onclick="saveProfile()" class="w-full py-2 rounded-lg bg-red-600 hover:bg-red-500 text-white text-xs font-bold transition-all active:scale-95">
-          Save Profile
-        </button>
-      </div>
-    </aside>
-
-    <!-- MAIN CONTENT: THE NEURAL TERMINAL -->
-    <main class="flex-1 bg-nova-bg overflow-hidden flex flex-col p-6 relative">
-
-      <div class="flex items-center justify-between mb-6">
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">P</div>
         <div>
-          <h2 class="text-2xl font-bold text-white tracking-tight flex items-center space-x-3">
-            <i data-lucide="terminal" class="w-6 h-6 text-red-500"></i>
-            <span>Neural Command Console</span>
-          </h2>
-          <p class="text-sm text-slate-400 mt-1">Direct interaction with the Agentic Brain. Type a command to see the reasoning flow.</p>
-        </div>
-        <div class="flex items-center space-x-3">
-          <span class="flex items-center space-x-1.5 text-xs text-slate-500 font-mono">
-            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-            <span>BRAIN ACTIVE</span>
-          </span>
+          <div class="brand-name">PRIVACY68</div>
+          <div class="brand-caption">Desktop assistant control center</div>
         </div>
       </div>
-
-      <!-- THE CONSOLE GRID -->
-      <div class="grid grid-cols-12 gap-6 flex-1 overflow-hidden">
-
-        <!-- LEFT: THE INTERACTION LOG (Chat style) -->
-        <div class="col-span-5 flex flex-col h-full overflow-hidden bg-nova-surface/30 border border-nova-border rounded-3xl">
-          <div class="p-4 border-b border-nova-border bg-nova-surface/50 flex items-center justify-between">
-            <span class="text-xs font-bold text-slate-300 uppercase tracking-widest">Session Log</span>
-            <button onclick="clearLog()" class="text-[10px] text-slate-500 hover:text-white transition-colors">Clear</button>
-          </div>
-
-          <div id="console-log" class="flex-1 overflow-y-auto p-4 space-y-4 font-mono text-xs">
-            <div class="text-slate-500 italic text-center py-4">Awaiting voice or text command...</div>
-          </div>
-
-          <!-- INPUT AREA -->
-          <div class="p-4 border-t border-nova-border bg-nova-surface/50">
-            <div class="relative">
-              <input type="text" id="command-input" onkeypress="handleKeyPress(event)"
-                placeholder="Ask PRIVACY68 to do something..."
-                class="w-full bg-nova-bg border border-nova-border rounded-2xl pl-4 pr-12 py-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-red-500 transition-all">
-              <button onclick="sendTextCommand()" class="absolute right-2 top-1.5 p-1.5 rounded-xl bg-red-600 hover:bg-red-500 text-white transition-all active:scale-90">
-                <i data-lucide="send" class="w-4 h-4"></i>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- RIGHT: THE REASONING ENGINE (Split View) -->
-        <div class="col-span-7 flex flex-col h-full space-y-6 overflow-hidden">
-
-          <!-- BOX 1: THOUGHT PROCESS (The "Why") -->
-          <div class="h-1/2 flex flex-col bg-nova-surface/30 border border-nova-border rounded-3xl overflow-hidden">
-            <div class="p-3 border-b border-nova-border bg-nova-surface/50 flex items-center space-x-2">
-              <i data-lucide="brain-circuit" class="w-4 h-4 text-red-400"></i>
-              <span class="text-xs font-bold text-slate-300 uppercase tracking-widest">Neural Reasoning</span>
-            </div>
-            <div id="reasoning-box" class="flex-1 p-4 font-mono text-xs text-slate-400 overflow-y-auto crt-screen">
-              <span class="opacity-50 italic">Reasoning logs will appear here during execution...</span>
-            </div>
-          </div>
-
-          <!-- BOX 2: GENERATED CODE (The "How") -->
-          <div class="h-1/2 flex flex-col bg-nova-surface/30 border border-nova-border rounded-3xl overflow-hidden">
-            <div class="p-3 border-b border-nova-border bg-nova-surface/50 flex items-center space-x-2">
-              <i data-lucide="code" class="w-4 h-4 text-red-400"></i>
-              <span class="text-xs font-bold text-slate-300 uppercase tracking-widest">Generated Python Script</span>
-            </div>
-            <div id="code-box" class="flex-1 p-4 font-mono text-xs text-emerald-400 overflow-y-auto bg-black/40">
-              <span class="opacity-30 italic">No code generated yet.</span>
-            </div>
-          </div>
-
-        </div>
+      <div class="topbar-right">
+        <span class="status-chip" id="connection-status" role="status">
+          <span class="status-dot" aria-hidden="true"></span><span id="connection-label">Connecting…</span>
+        </span>
+        <span class="user-chip"><span aria-hidden="true">◉</span><span id="header-user-tag">User</span></span>
+        <button class="icon-button" id="close-app" type="button" aria-label="Close dashboard" title="Close dashboard">×</button>
       </div>
-    </main>
-  </div>
+    </header>
 
-  <!-- Toast Notification -->
-  <div id="toast" class="fixed bottom-6 right-6 px-4 py-3 rounded-xl bg-nova-surface border border-nova-border shadow-2xl text-xs font-medium text-white flex items-center space-x-2.5 translate-y-20 opacity-0 transition-all duration-300 z-50">
-    <i data-lucide="check-circle" class="w-4 h-4 text-emerald-400" id="toast-icon"></i>
-    <span id="toast-msg">Preferences saved!</span>
+    <div class="layout">
+      <aside class="sidebar" aria-label="Assistant settings and status">
+        <section class="card card-pad">
+          <div class="card-heading">
+            <h2 class="card-title">AI engine</h2>
+            <span class="pill" id="llm-state">Checking</span>
+          </div>
+          <div class="engine-name" id="engine-model">Loading active model…</div>
+          <div class="detail-list">
+            <div class="detail-row"><span class="detail-label">Speech model</span><span class="detail-value" id="speech-model">—</span></div>
+            <div class="detail-row"><span class="detail-label">Compute</span><span class="detail-value" id="compute-mode">—</span></div>
+          </div>
+          <p class="hint" style="margin:13px 0 0">Status reflects the runtime configuration; it does not guarantee the model service is reachable.</p>
+        </section>
+
+        <section class="card card-pad">
+          <div class="card-heading">
+            <h2 class="card-title">Hardware</h2>
+            <button class="text-button" id="refresh-status" type="button">Refresh</button>
+          </div>
+          <div class="detail-list" style="margin-top:0">
+            <div class="detail-row"><span class="detail-label">CUDA runtime</span><span class="pill" id="cuda-state">Checking</span></div>
+            <div class="detail-row"><span class="detail-label">Microphone</span><span class="pill" id="mic-state">Not tested</span></div>
+          </div>
+          <button class="button full" id="test-mic" type="button" style="margin-top:14px">Test microphone</button>
+          <p class="hint" id="mic-result" aria-live="polite" style="margin:10px 0 0">Records a short sample to measure input level.</p>
+        </section>
+
+        <section class="card card-pad profile-card">
+          <div class="card-heading">
+            <h2 class="card-title">Profile</h2>
+            <span class="card-kicker">Saved on this device</span>
+          </div>
+          <div class="field">
+            <label for="user-name">Your name</label>
+            <input id="user-name" type="text" maxlength="80" autocomplete="name" placeholder="Your name">
+          </div>
+          <div class="field">
+            <label for="wake-word">Wake word</label>
+            <input id="wake-word" type="text" maxlength="120" placeholder="Privacy68">
+          </div>
+          <button class="button primary full" id="save-profile" type="button">Save profile</button>
+        </section>
+
+        <section class="card card-pad voice-card">
+          <div class="card-heading">
+            <h2 class="card-title">Voice Lock</h2>
+            <span class="pill" id="voice-state">Checking</span>
+          </div>
+          <p class="hint" id="voice-description" style="margin:0 0 13px">Speaker verification status is loading.</p>
+          <div class="button-row">
+            <button class="button" id="toggle-voice-lock" type="button">Enable Voice Lock</button>
+            <button class="button" id="record-sample" type="button">Record sample</button>
+            <button class="button primary" id="finish-enrollment" type="button">Finish enrollment</button>
+            <button class="button danger" id="reset-enrollment" type="button">Reset profile</button>
+          </div>
+          <div class="detail-row" style="margin-top:14px">
+            <span class="detail-label">Enrollment progress</span>
+            <span class="detail-value" id="sample-count">0 / 3 samples</span>
+          </div>
+          <p class="hint" style="margin:10px 0 0">Each sample records about 3 seconds from the microphone. Only embeddings are saved.</p>
+        </section>
+      </aside>
+
+      <main class="workspace">
+        <section class="page-heading">
+          <div>
+            <h1 id="workspace-title">Command console</h1>
+            <p id="workspace-description">Send a request and review the returned status and generated code.</p>
+          </div>
+          <div class="page-actions">
+            <div class="view-tabs" role="group" aria-label="Dashboard views">
+              <button class="button primary" id="console-tab" type="button" aria-pressed="true">Console</button>
+              <button class="button" id="plugins-tab" type="button" aria-pressed="false">Plugins</button>
+            </div>
+            <button class="button" id="clear-log" type="button">Clear session</button>
+          </div>
+        </section>
+
+        <div class="view-panel" id="console-view">
+        <section class="summary-grid" aria-label="Assistant overview">
+          <article class="card summary-card">
+            <span class="summary-label">Assistant</span>
+            <div><div class="summary-value" id="assistant-name">PRIVACY68</div><div class="summary-note">Desktop automation</div></div>
+          </article>
+          <article class="card summary-card">
+            <span class="summary-label">Wake phrase</span>
+            <div><div class="summary-value" id="summary-wake-word">—</div><div class="summary-note">Editable in profile</div></div>
+          </article>
+          <article class="card summary-card">
+            <span class="summary-label">Voice verification</span>
+            <div><div class="summary-value" id="summary-voice">Disabled</div><div class="summary-note">Optional owner profile</div></div>
+          </article>
+        </section>
+
+        <section class="card console" aria-label="Command session">
+          <div class="conversation">
+            <div class="panel-head">
+              <h2>Session</h2>
+              <span class="card-kicker" id="session-count">No commands yet</span>
+            </div>
+            <div class="log" id="console-log" aria-live="polite" aria-relevant="additions">
+              <div class="empty-state" id="empty-state">
+                <span class="empty-icon" aria-hidden="true">⌁</span>
+                Your command results will appear here. Enter a request below to get started.
+              </div>
+            </div>
+            <form class="composer" id="command-form">
+              <div class="safety-note">Generated scripts run with your Windows account permissions. Review requests before sending.</div>
+              <div class="composer-row">
+                <label class="sr-only" for="command-input">Command</label>
+                <input id="command-input" type="text" maxlength="1000" autocomplete="off" placeholder="For example: open Chrome">
+                <button class="button primary" id="send-command" type="submit">Run</button>
+              </div>
+            </form>
+          </div>
+          <div class="output-column">
+            <section class="output-panel">
+              <div class="panel-head"><h2>Execution status</h2><span class="pill" id="result-state">Ready</span></div>
+              <pre class="output-content" id="reasoning-box">No command has been run in this session.</pre>
+            </section>
+            <section class="output-panel">
+              <div class="panel-head"><h2>Generated code</h2><span class="card-kicker">Shown when returned by the agent</span></div>
+              <pre class="output-content code" id="code-box">No generated code yet.</pre>
+            </section>
+          </div>
+        </section>
+        </div>
+
+        <section class="view-panel" id="plugins-view" hidden>
+          <section class="card card-pad">
+            <div class="card-heading">
+              <h2 class="card-title">Registered plugins</h2>
+              <div class="button-row">
+                <span class="card-kicker" id="plugin-count">Loading…</span>
+                <button class="button" id="refresh-plugins" type="button">Refresh</button>
+              </div>
+            </div>
+            <div class="plugin-grid" id="plugin-list" aria-live="polite">
+              <p class="plugin-empty">Loading registered plugins…</p>
+            </div>
+          </section>
+
+          <section class="card card-pad">
+            <div class="card-heading">
+              <h2 class="card-title">Add a plugin</h2>
+              <span class="card-kicker">Python files only</span>
+            </div>
+            <p class="hint" style="margin:0 0 15px">Only install Python plugins you trust. Plugin code executes locally with the permissions of this application.</p>
+            <div class="button-row">
+              <button class="button" id="install-plugin-file" type="button">Install Python file…</button>
+            </div>
+          </section>
+
+          <section class="card card-pad">
+            <div class="card-heading">
+              <h2 class="card-title">Create a plugin template</h2>
+              <span class="card-kicker">Added to this device</span>
+            </div>
+            <form id="plugin-form">
+              <div class="plugin-form-grid">
+                <div class="field">
+                  <label for="plugin-id">Plugin ID</label>
+                  <input id="plugin-id" type="text" maxlength="48" pattern="[a-z][a-z0-9_]*" required placeholder="my_plugin">
+                </div>
+                <div class="field">
+                  <label for="plugin-name">Name</label>
+                  <input id="plugin-name" type="text" maxlength="80" required placeholder="My Plugin">
+                </div>
+                <div class="field">
+                  <label for="plugin-icon">Icon</label>
+                  <input id="plugin-icon" type="text" maxlength="8" value="🔌">
+                </div>
+                <div class="field">
+                  <label for="plugin-description">Description</label>
+                  <input id="plugin-description" type="text" maxlength="240" placeholder="What this plugin integrates">
+                </div>
+              </div>
+              <button class="button primary" id="create-plugin" type="submit">Create and register</button>
+            </form>
+          </section>
+
+          <p class="hint">Registry enable/disable controls plugin availability metadata. It does not sandbox generated scripts or guarantee that the assistant routes every command through a plugin.</p>
+        </section>
+      </main>
+    </div>
   </div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <script>
-    // Initialize Lucide
-    lucide.createIcons();
+    const $ = (id) => document.getElementById(id);
+    let commandCount = 0;
+    let toastTimer;
 
-    // --- UI State & Logic ---
-    async function handleKeyPress(e) {
-      if (e.key === 'Enter') sendTextCommand();
+    function setPill(element, text, tone = '') {
+      element.textContent = text;
+      element.className = `pill${tone ? ` ${tone}` : ''}`;
     }
 
-    async function sendTextCommand() {
-      const input = document.getElementById('command-input');
-      const text = input.value.trim();
-      if (!text) return;
+    function showToast(message, isError = false) {
+      const toast = $('toast');
+      toast.textContent = message;
+      toast.className = `toast show${isError ? ' error' : ''}`;
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => { toast.className = 'toast'; }, 3000);
+    }
 
-      // 1. Add user message to log
-      appendLog('user', text);
-      input.value = '';
-
-      // 2. Call Python API
+    function bridge() {
       if (!window.pywebview || !window.pywebview.api) {
-        appendLog('system', 'Error: Bridge not connected');
-        return;
+        throw new Error('Dashboard bridge is not connected. Open this page from the PRIVACY68 app.');
       }
+      return window.pywebview.api;
+    }
 
+    function setView(view) {
+      const plugins = view === 'plugins';
+      $('console-view').hidden = plugins;
+      $('plugins-view').hidden = !plugins;
+      $('workspace-title').textContent = plugins ? 'Plugin registry' : 'Command console';
+      $('workspace-description').textContent = plugins
+        ? 'Review registered integrations, enable or disable them, and manage trusted Python plugins.'
+        : 'Send a request and review the returned status and generated code.';
+      $('console-tab').className = `button${plugins ? '' : ' primary'}`;
+      $('plugins-tab').className = `button${plugins ? ' primary' : ''}`;
+      $('console-tab').setAttribute('aria-pressed', String(!plugins));
+      $('plugins-tab').setAttribute('aria-pressed', String(plugins));
+      if (plugins) refreshPlugins();
+    }
+
+    async function refreshPlugins() {
+      const list = $('plugin-list');
+      $('plugin-count').textContent = 'Loading…';
+      list.replaceChildren();
       try {
-        // We call the execute_system_command via the API
-        // Note: In your current app.py, execute_system_command is a function.
-        // We assume the DashboardBridge exposes a method to trigger it.
-        const res = await window.pywebview.api.execute_command(text);
-
-        if (res.success) {
-          appendLog('system', 'Task completed successfully.');
-        } else {
-          appendLog('system', 'Error: ' + res.message);
+        const plugins = await bridge().get_plugins();
+        if (!Array.isArray(plugins)) throw new Error('The plugin registry returned an invalid response.');
+        $('plugin-count').textContent = `${plugins.length} registered`;
+        if (!plugins.length) {
+          const empty = document.createElement('p');
+          empty.className = 'plugin-empty';
+          empty.textContent = 'No plugins are registered.';
+          list.appendChild(empty);
+          return;
         }
-      } catch (err) {
-        appendLog('system', 'Critical Error: ' + err.toString());
+        plugins.forEach((plugin) => {
+          const card = document.createElement('article');
+          card.className = 'card plugin-card';
+          const head = document.createElement('div');
+          head.className = 'plugin-card-head';
+          const title = document.createElement('h3');
+          title.className = 'plugin-name';
+          const icon = document.createElement('span');
+          icon.className = 'plugin-icon';
+          icon.textContent = plugin.icon || '🔌';
+          title.append(icon, document.createTextNode(plugin.name || plugin.id));
+          const state = document.createElement('span');
+          state.className = `pill${plugin.is_enabled ? ' good' : ' warn'}`;
+          state.textContent = plugin.is_enabled ? 'Enabled' : 'Disabled';
+          head.append(title, state);
+
+          const description = document.createElement('p');
+          description.className = 'plugin-description';
+          description.textContent = plugin.description || 'No description provided.';
+          const meta = document.createElement('div');
+          meta.className = 'plugin-meta';
+          [`${plugin.category || 'Custom'} · ${plugin.plugin_type || 'Plugin'}`, `v${plugin.version || '1.0.0'}`, plugin.is_builtin ? 'Built-in' : 'User plugin'].forEach((label) => {
+            const pill = document.createElement('span');
+            pill.className = 'pill';
+            pill.textContent = label;
+            meta.appendChild(pill);
+          });
+          const actions = document.createElement('div');
+          actions.className = 'plugin-actions';
+          const toggle = document.createElement('button');
+          toggle.className = 'button';
+          toggle.type = 'button';
+          toggle.textContent = plugin.is_enabled ? 'Disable' : 'Enable';
+          toggle.addEventListener('click', () => changePluginState(plugin.id, !plugin.is_enabled));
+          actions.appendChild(toggle);
+          if (!plugin.is_builtin) {
+            const remove = document.createElement('button');
+            remove.className = 'button danger';
+            remove.type = 'button';
+            remove.textContent = 'Uninstall';
+            remove.addEventListener('click', () => removePlugin(plugin.id, plugin.name || plugin.id));
+            actions.appendChild(remove);
+          }
+          card.append(head, description, meta, actions);
+          list.appendChild(card);
+        });
+      } catch (error) {
+        $('plugin-count').textContent = 'Unavailable';
+        const message = document.createElement('p');
+        message.className = 'plugin-empty';
+        message.textContent = `Could not load plugins: ${error.message}`;
+        list.appendChild(message);
       }
     }
 
-    function appendLog(role, text) {
-      const log = document.getElementById('console-log');
-      const div = document.createElement('div');
-      div.className = role === 'user' ? 'flex justify-end' : 'flex justify-start';
+    async function changePluginState(pluginId, enabled) {
+      try {
+        const result = await bridge().toggle_plugin(pluginId, enabled);
+        if (!result || !result.success) throw new Error(result?.message || 'Plugin state could not be changed.');
+        showToast(`Plugin ${enabled ? 'enabled' : 'disabled'}.`);
+        await refreshPlugins();
+      } catch (error) { showToast(error.message, true); }
+    }
 
-      const msg = document.createElement('div');
-      msg.className = role === 'user'
-        ? 'bg-red-600 text-white px-3 py-2 rounded-2xl rounded-tr-none max-w-[80%] text-xs'
-        : 'bg-nova-surface text-slate-300 px-3 py-2 rounded-2xl rounded-tl-none max-w-[80%] border border-nova-border text-xs';
+    async function removePlugin(pluginId, name) {
+      if (!confirm(`Uninstall ${name}? Its plugin file will be removed from this device.`)) return;
+      try {
+        const result = await bridge().uninstall_plugin(pluginId);
+        if (!result || !result.success) throw new Error(result?.message || 'Plugin could not be uninstalled.');
+        showToast(result.message || 'Plugin uninstalled.');
+        await refreshPlugins();
+      } catch (error) { showToast(error.message, true); }
+    }
 
-      msg.innerText = text;
-      div.appendChild(msg);
-      log.appendChild(div);
+    async function createPlugin(event) {
+      event.preventDefault();
+      const button = $('create-plugin');
+      button.disabled = true;
+      try {
+        const name = $('plugin-name').value.trim();
+        const result = await bridge().create_plugin({
+          id: $('plugin-id').value.trim(),
+          name,
+          icon: $('plugin-icon').value.trim(),
+          desc: $('plugin-description').value.trim() || `Integration for ${name}`
+        });
+        if (!result || !result.success) throw new Error(result?.message || 'Plugin could not be created.');
+        showToast(result.message || 'Plugin template created.');
+        $('plugin-form').reset();
+        $('plugin-icon').value = '🔌';
+        await refreshPlugins();
+      } catch (error) { showToast(error.message, true); }
+      finally { button.disabled = false; }
+    }
+
+    async function installPluginFile() {
+      try {
+        const selection = await bridge().pick_plugin_file();
+        if (!selection || !selection.success) throw new Error(selection?.message || 'The plugin file picker failed.');
+        if (!selection.file_path) return;
+        const filePath = selection.file_path;
+        const result = await bridge().install_plugin_file(filePath);
+        if (!result || !result.success) throw new Error(result?.message || 'Plugin could not be installed.');
+        showToast(result.message || 'Plugin installed.');
+        await refreshPlugins();
+      } catch (error) { showToast(error.message, true); }
+    }
+
+    function appendMessage(role, text, isError = false) {
+      const log = $('console-log');
+      const empty = $('empty-state');
+      if (empty) empty.remove();
+      const message = document.createElement('article');
+      message.className = `message ${role}${isError ? ' error' : ''}`;
+      const label = document.createElement('div');
+      label.className = 'message-role';
+      label.textContent = role === 'user' ? 'You' : (isError ? 'Error' : 'PRIVACY68');
+      const body = document.createElement('div');
+      body.className = 'message-body';
+      body.textContent = text;
+      message.append(label, body);
+      log.appendChild(message);
       log.scrollTop = log.scrollHeight;
     }
 
-    function clearLog() {
-      document.getElementById('console-log').innerHTML = '<div class="text-slate-500 italic text-center py-4">Log cleared. Awaiting command...</div>';
+    async function loadProfile() {
+      const profile = await bridge().get_profile();
+      if (!profile || !Object.keys(profile).length) throw new Error('Could not load the saved profile.');
+      $('user-name').value = profile.user_name || '';
+      $('wake-word').value = profile.wake_word || '';
+      $('header-user-tag').textContent = profile.user_name || 'User';
+      $('assistant-name').textContent = profile.assistant_name || 'PRIVACY68';
+      $('summary-wake-word').textContent = profile.wake_word || 'Not set';
+      $('summary-voice').textContent = profile.voice_lock_enabled ? 'Enabled' : 'Disabled';
+      $('connection-status').classList.add('ready');
+      $('connection-label').textContent = 'Desktop connected';
     }
 
-    //-L_S_T_S (These are updated by the Python API via window.pywebview.api)
-    function updateReasoning(text) {
-      const box = document.getElementById('reasoning-box');
-      box.innerText = text;
-      box.scrollTop = box.scrollHeight;
+    async function loadRuntimeStatus() {
+      const status = await bridge().get_runtime_status();
+      if (!status || !status.success) throw new Error(status?.message || 'Runtime status is unavailable.');
+      $('engine-model').textContent = status.model || 'Not reported';
+      $('speech-model').textContent = status.speech_model || 'Not reported';
+      $('compute-mode').textContent = `${status.speech_device || 'unknown'} / ${status.speech_compute_type || 'unknown'}`;
+      setPill($('llm-state'), 'Configured', 'good');
+      const cuda = status.cuda || {};
+      const cudaReady = Boolean(cuda.is_ready);
+      setPill($('cuda-state'), cudaReady ? 'Ready' : (cuda.has_gpu ? 'Unavailable' : 'CPU mode'), cudaReady ? 'good' : 'warn');
+      updateVoiceStatus(status.voice_lock || {});
     }
 
-    function updateCode(code) {
-      const box = document.getElementById('code-box');
-      box.innerText = code;
-      box.scrollTop = box.scrollHeight;
+    function updateVoiceStatus(status) {
+      const enrolled = Boolean(status.is_enrolled);
+      const enabled = Boolean(status.enabled);
+      const modelReady = Boolean(status.model_ready);
+      $('voice-description').textContent = enrolled
+        ? `Profile enrolled${status.owner_name ? ` for ${status.owner_name}` : ''}. ${enabled ? 'Verification is enabled.' : 'Verification is currently disabled.'}`
+        : 'No voice profile is enrolled. Record three samples before enabling Voice Lock.';
+      setPill($('voice-state'), enabled ? 'Enabled' : (enrolled ? 'Enrolled' : 'Not enrolled'), enabled ? 'good' : (enrolled ? 'warn' : ''));
+      $('sample-count').textContent = `${status.temp_samples_count || 0} / 3 samples`;
+      $('summary-voice').textContent = enabled ? 'Enabled' : 'Disabled';
+      $('record-sample').disabled = !modelReady;
+      $('finish-enrollment').disabled = !modelReady || (status.temp_samples_count || 0) < 3;
+      $('reset-enrollment').disabled = !enrolled;
+      $('toggle-voice-lock').disabled = !enrolled;
+      $('toggle-voice-lock').textContent = enabled ? 'Disable Voice Lock' : 'Enable Voice Lock';
+      if (!modelReady) $('voice-description').textContent = 'Speaker model is unavailable. Voice enrollment and verification cannot run.';
     }
 
-    async function saveProfile() {
-      if (!window.pywebview || !window.pywebview.api) return;
-      const data = {
-        user_name: document.getElementById('user_name').value.trim() || 'User',
-        wake_word: document.getElementById('wake_word').value.trim() || 'privacy68',
-      };
+    async function refreshStatus() {
+      $('connection-status').classList.remove('ready', 'error');
+      $('connection-label').textContent = 'Refreshing…';
       try {
-        await window.pywebview.api.save_profile(data);
-        showToast('Preferences saved!');
-      } catch (e) {
-        showToast('Save failed', true);
+        await Promise.all([loadProfile(), loadRuntimeStatus()]);
+      } catch (error) {
+        $('connection-status').classList.add('error');
+        $('connection-label').textContent = 'Status unavailable';
+        showToast(error.message, true);
       }
     }
 
-    function showToast(msg, isError = false) {
-      const toast = document.getElementById('toast');
-      document.getElementById('toast-msg').innerText = msg;
-      toast.classList.remove('translate-y-20', 'opacity-0');
-      setTimeout(() => toast.classList.add('translate-y-20', 'opacity-0'), 3000);
+    async function saveProfile() {
+      const button = $('save-profile');
+      button.disabled = true;
+      try {
+        const result = await bridge().save_profile({
+          user_name: $('user-name').value.trim() || 'User',
+          wake_word: $('wake-word').value.trim() || 'privacy68'
+        });
+        if (!result || !result.success) throw new Error(result?.message || 'Profile could not be saved.');
+        $('header-user-tag').textContent = $('user-name').value.trim() || 'User';
+        $('summary-wake-word').textContent = $('wake-word').value.trim() || 'privacy68';
+        showToast(result.message || 'Profile saved.');
+      } catch (error) {
+        showToast(error.message, true);
+      } finally {
+        button.disabled = false;
+      }
     }
 
-    // Hook into the API to update logs/reasoning live
-    window.addEventListener('pywebviewready', () => {
-       // Initial load
-       if (window.pywebview && window.pywebview.api) {
-         // Load initial profile
-         window.pywebview.api.get_profile().then(p => {
-           if(p) {
-             document.getElementById('user_name').value = p.user_name;
-             document.getElementById('wake_word').value = p.wake_word;
-           }
-         });
-       }
+    async function runCommand(event) {
+      event.preventDefault();
+      const input = $('command-input');
+      const text = input.value.trim();
+      if (!text) return;
+      const button = $('send-command');
+      input.value = '';
+      appendMessage('user', text);
+      $('result-state').textContent = 'Running';
+      $('reasoning-box').textContent = 'Sending command to the local application…';
+      $('code-box').textContent = 'Waiting for agent response…';
+      button.disabled = true;
+      input.disabled = true;
+      try {
+        const result = await bridge().execute_command(text);
+        if (!result || typeof result.success !== 'boolean') throw new Error(result?.message || 'The executor returned an invalid response.');
+        commandCount += 1;
+        $('session-count').textContent = `${commandCount} command${commandCount === 1 ? '' : 's'}`;
+        const message = result.message || (result.success ? 'Command completed.' : 'Command failed.');
+        appendMessage('system', message, !result.success);
+        $('result-state').textContent = result.success ? 'Completed' : 'Failed';
+        $('result-state').className = `pill ${result.success ? 'good' : 'bad'}`;
+        $('reasoning-box').textContent = [result.method && `Method: ${result.method}`, message].filter(Boolean).join('\n\n');
+        $('code-box').textContent = result.code || 'No code was generated for this command.';
+        if (!result.success) showToast(message, true);
+      } catch (error) {
+        $('result-state').textContent = 'Error';
+        $('result-state').className = 'pill bad';
+        $('reasoning-box').textContent = error.message;
+        $('code-box').textContent = 'No code available.';
+        appendMessage('system', error.message, true);
+        showToast(error.message, true);
+      } finally {
+        button.disabled = false;
+        input.disabled = false;
+        input.focus();
+      }
+    }
+
+    async function testMicrophone() {
+      const button = $('test-mic');
+      button.disabled = true;
+      $('mic-result').textContent = 'Listening for a short sample…';
+      setPill($('mic-state'), 'Testing');
+      try {
+        const result = await bridge().test_microphone();
+        if (!result || !result.success) throw new Error(result?.message || 'Microphone test failed.');
+        setPill($('mic-state'), `${result.level}% level`, result.level > 0 ? 'good' : 'warn');
+        $('mic-result').textContent = `Input measured at ${result.level}% (RMS ${Number(result.rms).toFixed(4)}).`;
+      } catch (error) {
+        setPill($('mic-state'), 'Unavailable', 'bad');
+        $('mic-result').textContent = error.message;
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    async function recordSample() {
+      const button = $('record-sample');
+      button.disabled = true;
+      button.textContent = 'Recording…';
+      try {
+        const result = await bridge().record_voice_enrollment_sample();
+        if (!result || !result.success) throw new Error(result?.message || 'Could not record enrollment sample.');
+        showToast(result.message || 'Sample recorded.');
+        await loadRuntimeStatus();
+      } catch (error) {
+        showToast(error.message, true);
+      } finally {
+        button.textContent = 'Record sample';
+        button.disabled = false;
+      }
+    }
+
+    async function finishEnrollment() {
+      try {
+        const result = await bridge().finalize_voice_enrollment();
+        if (!result || !result.success) throw new Error(result?.message || 'Enrollment could not be finalized.');
+        showToast(result.message || 'Voice profile enrolled.');
+        await loadRuntimeStatus();
+        await loadProfile();
+      } catch (error) {
+        showToast(error.message, true);
+      }
+    }
+
+    async function resetEnrollment() {
+      if (!confirm('Delete the saved voice profile and disable Voice Lock?')) return;
+      try {
+        const result = await bridge().reset_voice_enrollment();
+        if (!result || !result.success) throw new Error(result?.message || 'Voice profile could not be reset.');
+        showToast(result.message || 'Voice profile deleted.');
+        await loadRuntimeStatus();
+        await loadProfile();
+      } catch (error) {
+        showToast(error.message, true);
+      }
+    }
+
+    async function toggleVoiceLock() {
+      try {
+        const enabled = $('toggle-voice-lock').textContent.startsWith('Enable');
+        const result = await bridge().toggle_voice_lock(enabled);
+        if (!result || !result.success) throw new Error(result?.message || 'Voice Lock setting could not be changed.');
+        showToast(`Voice Lock ${enabled ? 'enabled' : 'disabled'}.`);
+        await loadRuntimeStatus();
+        await loadProfile();
+      } catch (error) {
+        showToast(error.message, true);
+      }
+    }
+
+    $('command-form').addEventListener('submit', runCommand);
+    $('console-tab').addEventListener('click', () => setView('console'));
+    $('plugins-tab').addEventListener('click', () => setView('plugins'));
+    $('refresh-plugins').addEventListener('click', refreshPlugins);
+    $('plugin-form').addEventListener('submit', createPlugin);
+    $('install-plugin-file').addEventListener('click', installPluginFile);
+    $('save-profile').addEventListener('click', saveProfile);
+    $('refresh-status').addEventListener('click', refreshStatus);
+    $('test-mic').addEventListener('click', testMicrophone);
+    $('record-sample').addEventListener('click', recordSample);
+    $('finish-enrollment').addEventListener('click', finishEnrollment);
+    $('reset-enrollment').addEventListener('click', resetEnrollment);
+    $('toggle-voice-lock').addEventListener('click', toggleVoiceLock);
+    $('clear-log').addEventListener('click', () => {
+      $('console-log').replaceChildren();
+      const empty = document.createElement('div');
+      empty.id = 'empty-state';
+      empty.className = 'empty-state';
+      empty.textContent = 'Session cleared. Enter a request below to get started.';
+      $('console-log').appendChild(empty);
+      commandCount = 0;
+      $('session-count').textContent = 'No commands yet';
+      $('reasoning-box').textContent = 'No command has been run in this session.';
+      $('code-box').textContent = 'No generated code yet.';
+      $('result-state').textContent = 'Ready';
+      $('result-state').className = 'pill';
     });
+    $('close-app').addEventListener('click', async () => {
+      try { await bridge().close_app(); }
+      catch (error) { showToast(error.message, true); }
+    });
+
+    window.addEventListener('pywebviewready', () => {
+      refreshStatus();
+      refreshPlugins();
+    });
+    document.addEventListener('DOMContentLoaded', () => {
+      if (window.pywebview && window.pywebview.api) {
+        refreshStatus();
+        refreshPlugins();
+      }
+    });
+    setTimeout(() => {
+      if (!window.pywebview || !window.pywebview.api) {
+        $('connection-status').classList.add('error');
+        $('connection-label').textContent = 'Open in desktop app';
+      }
+    }, 1800);
   </script>
 </body>
 </html>

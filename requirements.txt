@@ -1,38 +1,25 @@
-# ==============================================================================
-# PRIVACY68 - FULL DEPENDENCY LIST
-# ==============================================================================
+# PRIVACY68 runtime dependencies (Windows, Python 3.11+)
 
-# --- Speech & Audio (STT/TTS) ---
-faster-whisper
-onnxruntime-gpu
-sounddevice
-soundfile
-numpy
-scipy
-pyttsx3
+# Speech input, transcription, and speaker verification.
+faster-whisper>=1.0,<2
+huggingface-hub>=0.24,<2
+onnxruntime>=1.17,<2
+numpy>=1.26,<3
+scipy>=1.11,<2
+sounddevice>=0.4.6,<1
 
-# --- Agentic Brain & LLM Bridge ---
-litellm
-open-interpreter
-mcp
-ollama
+# Agent Brain and the dashboard's Ollama model-management controls.
+litellm>=1.50,<2
+ollama>=0.4,<1
 
-# --- Open-Interpreter Hidden Dependencies (Crucial for Windows) ---
-toml
-platformdirs
-requests
-tqdm
-click
+# Windows UI and automation.
+Pillow>=10,<13
+pystray>=0.19,<1
+pyttsx3>=2.90,<3
+pywebview>=5,<7
+pyautogui>=0.9.54,<1
+pywinauto>=0.6.8,<1
+pywin32>=306
 
-# --- Windows Automation & System Control ---
-pyautogui
-pywinauto
-pywin32
-pystray
-pillow
-pywebview
-psutil
-pyperclip
-
-# --- Infrastructure & Deployment ---
-pyinstaller
+# Used by the repository's Windows release workflow to package the application.
+pyinstaller>=6,<7

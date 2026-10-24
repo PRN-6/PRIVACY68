@@ -10,9 +10,15 @@ class BasePlugin(ABC):
     """
 
     def __init__(self):
+        self.id = self.__class__.__name__.lower().replace("plugin", "")
         self.name = "Base Plugin"
         self.version = "1.0.0"
         self.description = "Abstract base for OS automation."
+        self.icon = "🔌"
+        self.is_enabled = True
+        self.is_builtin = False
+        self.category = "General"
+        self.plugin_type = "Custom Application"
 
     @abstractmethod
     def execute(self, action: str, **kwargs) -> bool:

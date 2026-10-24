@@ -79,42 +79,20 @@
                 </div>
             </section>
 
-            <!-- Agent Capabilities Section -->
+            <!-- Quick Actions -->
             <section class="section">
                 <div class="section-title">
-                    <span>🤖 Agent Capabilities</span>
-                    <span class="section-sub">Dynamic execution, no limits</span>
+                    <span>Quick actions</span>
+                    <span class="section-sub">Common commands for this PC</span>
                 </div>
-                <div class="capabilities-grid" id="capabilities-grid">
-                    <div class="cap-item">
-                        <span class="cap-icon">🌐</span>
-                        <div class="cap-info">
-                            <span class="cap-name">Web Automation</span>
-                            <span class="cap-desc">Browsing, scraping, and interacting</span>
-                        </div>
-                    </div>
-                    <div class="cap-item">
-                        <span class="cap-icon">🖥️</span>
-                        <div class="cap-info">
-                            <span class="cap-name">OS Control</span>
-                            <span class="cap-desc">App management & system settings</span>
-                        </div>
-                    </div>
-                    <div class="cap-item">
-                        <span class="cap-icon">⌨️</span>
-                        <div class="cap-info">
-                            <span class="cap-name">GUI Interaction</span>
-                            <span class="cap-desc">Clicks, typing, and menu navigation</span>
-                        </div>
-                    </div>
-                    <div class="cap-item">
-                        <span class="cap-icon">🛠️</span>
-                        <div class="cap-info">
-                            <span class="cap-name">Self-Correction</span>
-                            <span class="cap-desc">Automatically fixes its own code errors</span>
-                        </div>
-                    </div>
+                <div class="category-tabs" role="tablist" aria-label="Filter quick actions">
+                    <button class="tab-btn active" type="button" role="tab" aria-selected="true" data-cat="all">All</button>
+                    <button class="tab-btn" type="button" role="tab" aria-selected="false" data-cat="Apps">Apps</button>
+                    <button class="tab-btn" type="button" role="tab" aria-selected="false" data-cat="Media">Media</button>
+                    <button class="tab-btn" type="button" role="tab" aria-selected="false" data-cat="System">System</button>
+                    <button class="tab-btn" type="button" role="tab" aria-selected="false" data-cat="Browser">Browser</button>
                 </div>
+                <div class="actions-grid" id="actions-grid" aria-live="polite"></div>
             </section>
 
             <!-- Live Execution Feed -->

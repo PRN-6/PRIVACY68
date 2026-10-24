@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>About // PRIVACY68 & Developer Spotlight</title>
     <meta name="description"
-        content="Learn about PRIVACY68, the 100% private local voice assistant philosophy, technology stack, and developer profile of Prinson.">
+        content="Learn about PRIVACY68, its voice assistant technology, command processing, and developer profile.">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -35,6 +35,8 @@
                 <a href="index.html" class="nav-item">[ home ]</a>
                 <span class="nav-sep">·</span>
                 <a href="docs.html" class="nav-item">[ docs ]</a>
+                <span class="nav-sep">·</span>
+                <a href="plugins.html" class="nav-item">[ plugins ]</a>
                 <span class="nav-sep">·</span>
                 <a href="about.html" class="nav-item active">[ about ]</a>
                 <span class="nav-sep">·</span>
@@ -73,14 +75,14 @@
                     // THE PRIVACY-FIRST PHILOSOPHY
                 </h3>
                 <p style="color: var(--text-secondary); font-size: 0.95rem; line-height: 1.7;">
-                    Modern voice assistants send every spoken word, audio snippet, and ambient recording to remote cloud
-                    telemetry servers. PRIVACY68 was born out of a radical commitment to personal privacy: <strong>your
-                        voice data belongs on your device, nowhere else.</strong>
+                    PRIVACY68 includes local speech-processing components, but the current Agent Brain uses the model identifier
+                    <code>ollama/gemma4:31b-cloud</code>. Model requests may be processed by a remote provider; do not assume
+                    prompts or command text remain on-device.
                 </p>
                 <p style="color: var(--text-secondary); font-size: 0.95rem; line-height: 1.7; margin-top: 12px;">
-                    By combining CTranslate2-accelerated Whisper models, ONNX Silero Voice Activity Detection, CAM++
-                    512-d neural speaker verification, and a local Agentic Brain powered by Gemma 4, PRIVACY68 delivers
-                    complex OS automation capabilities without opening a single network socket to third-party clouds.
+                    The command executor handles a small number of direct cases, such as greetings and pending security
+                    confirmations. Most other requests go to the Agent Brain, which asks LiteLLM for Python code and executes
+                    it in a subprocess with the application's user permissions.
                 </p>
 
                 <!-- Developer Bio Box -->
@@ -137,11 +139,11 @@
                 </div>
 
                 <div class="tech-card">
-                    <div class="tech-card-header"><i data-lucide="bot"></i> LOCAL REASONING</div>
-                    <h4 style="color: var(--text-pure); font-size: 1.05rem;">Ollama AI (Gemma 4)</strong></h4>
+                    <div class="tech-card-header"><i data-lucide="bot"></i> AGENT BRAIN</div>
+                    <h4 style="color: var(--text-pure); font-size: 1.05rem;">LiteLLM · gemma4:31b-cloud</h4>
                     <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 6px;">
-                        An agentic reasoning engine that analyzes intent and generates executable Python scripts
-                        for native Windows automation.
+                        Requests generated Python through LiteLLM, then runs returned scripts locally in a subprocess.
+                        The configured model identifier is cloud-tagged.
                     </p>
                 </div>
 
@@ -165,7 +167,7 @@
                         <div style="font-family: var(--font-pixel); color: var(--color-ruby); font-size: 0.8rem;">v1.4.1
                             · CURRENT RELEASE</div>
                         <h4 style="color: var(--text-pure); margin-top: 2px;">Agentic Brain & Professional CLI Installation</h4>
-                        <p style="color: var(--text-secondary); font-size: 0.85rem;">Transitioned to a full agentic reasoning architecture with Gemma 4 and a professional one-line CLI installer.</p>
+                        <p style="color: var(--text-secondary); font-size: 0.85rem;">Uses an Agent Brain with LiteLLM model requests and generated-code execution, alongside the CLI installer.</p>
                     </li>
                     <li style="border-left: 2px solid var(--border-dim); padding-left: 16px; margin-top: 12px;">
                         <div style="font-family: var(--font-pixel); color: var(--text-muted); font-size: 0.8rem;">v1.1.0

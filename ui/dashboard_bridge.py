@@ -50,6 +50,27 @@ class DashboardAPI:
             logger.error(f"Error getting profile: {e}")
             return {}
 
+    def get_runtime_status(self) -> Dict[str, Any]:
+        """Returns status values read from the active runtime components."""
+        try:
+            from actions.agent_brain import agent_brain
+            from config import WHISPER_COMPUTE_TYPE, WHISPER_DEVICE, WHISPER_MODEL_SIZE
+
+            voice_status = self.get_voice_lock_status()
+            cuda_status = self.get_cuda_status()
+            return {
+                "success": True,
+                "model": agent_brain.model,
+                "speech_model": WHISPER_MODEL_SIZE,
+                "speech_device": WHISPER_DEVICE,
+                "speech_compute_type": WHISPER_COMPUTE_TYPE,
+                "voice_lock": voice_status,
+                "cuda": cuda_status,
+            }
+        except Exception as e:
+            logger.error(f"Error getting runtime status: {e}")
+            return {"success": False, "message": str(e)}
+
     def test_llm_connection(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Tests connection to Local Ollama or Cloud API Key (OpenAI / Groq / Custom)."""
         provider = data.get("provider", "ollama").lower()
@@ -176,7 +197,7 @@ class DashboardAPI:
                 # Gather all actions, descriptions, and trigger phrases
                 commands_info = []
                 all_triggers = []
-                for action_key, phrases in getattr(p, "fast_intents", {}).items():
+                for action_key, phrases in (getattr(p, "fast_intents", None) or {}).items():
                     desc = getattr(p, "descriptions", {}).get(action_key, f"Executes {action_key}")
                     if ":" in desc:
                         desc = desc.split(":", 1)[1].strip()
@@ -216,12 +237,12 @@ class DashboardAPI:
                         plugin_type = "Custom Application"
 
                 result.append({
-                    "id": p.id,
-                    "name": p.name,
+                    "id": getattr(p, "id", p.__class__.__name__.lower()),
+                    "name": getattr(p, "name", p.__class__.__name__),
                     "version": getattr(p, "version", "1.0.0"),
-                    "description": p.description,
-                    "icon": p.icon,
-                    "is_enabled": bool(p.is_enabled),
+                    "description": getattr(p, "description", "No description provided."),
+                    "icon": getattr(p, "icon", "🔌"),
+                    "is_enabled": bool(getattr(p, "is_enabled", True)),
                     "is_builtin": getattr(p, "is_builtin", False),
                     "category": category,
                     "plugin_type": plugin_type,
@@ -232,12 +253,13 @@ class DashboardAPI:
             return result
         except Exception as e:
             logger.error(f"Error getting plugins: {e}")
-            return []
+            raise
 
     def toggle_plugin(self, plugin_id: str, enabled: bool) -> Dict[str, Any]:
         """Enables or disables a specific plugin."""
         try:
-            plugin_manager.set_plugin_enabled(plugin_id, enabled)
+            if not plugin_manager.set_plugin_enabled(plugin_id, enabled):
+                return {"success": False, "message": f"Plugin '{plugin_id}' was not found."}
             return {"success": True, "plugin_id": plugin_id, "enabled": enabled}
         except Exception as e:
             logger.error(f"Error toggling plugin {plugin_id}: {e}")
@@ -246,11 +268,15 @@ class DashboardAPI:
     def uninstall_plugin(self, plugin_id: str) -> Dict[str, Any]:
         """Uninstalls and deletes a custom user plugin."""
         try:
+            plugin = plugin_manager.get_plugin(plugin_id)
+            if not plugin:
+                return {"success": False, "message": f"Plugin '{plugin_id}' was not found."}
+            if getattr(plugin, "is_builtin", False):
+                return {"success": False, "message": "Built-in plugins cannot be uninstalled."}
             success = plugin_manager.uninstall_plugin(plugin_id)
             if success:
                 return {"success": True, "message": f"Plugin '{plugin_id}' uninstalled."}
-            else:
-                return {"success": False, "message": "Cannot uninstall built-in core plugins."}
+            return {"success": False, "message": "The plugin file could not be removed."}
         except Exception as e:
             logger.error(f"Error uninstalling plugin: {e}")
             return {"success": False, "message": str(e)}
@@ -277,8 +303,8 @@ class DashboardAPI:
             logger.error(f"Error creating plugin: {e}")
             return {"success": False, "message": str(e)}
 
-    def pick_plugin_file(self) -> str:
-        """Opens native file picker to select a .py or .zip plugin."""
+    def pick_plugin_file(self) -> Dict[str, Any]:
+        """Opens native file picker to select a Python plugin."""
         try:
             import tkinter as tk
             from tkinter import filedialog
@@ -287,13 +313,13 @@ class DashboardAPI:
             root.attributes("-topmost", True)
             file_path = filedialog.askopenfilename(
                 title="Select PRIVACY68 Plugin File",
-                filetypes=[("PRIVACY68 Plugin Files", "*.py *.zip"), ("Python Files", "*.py"), ("All Files", "*.*")]
+                filetypes=[("Python plugin files", "*.py")]
             )
             root.destroy()
-            return file_path or ""
+            return {"success": True, "file_path": file_path or ""}
         except Exception as e:
             logger.error(f"Error opening file dialog: {e}")
-            return ""
+            return {"success": False, "message": str(e)}
 
     def install_plugin_file(self, file_path: str) -> Dict[str, Any]:
         """Installs a plugin from selected file path."""
@@ -676,23 +702,18 @@ class DashboardAPI:
 
     def execute_command(self, text: str) -> Dict[str, Any]:
         """
-        Executes a natural language command via the AgentBrain.
+        Executes a natural-language command through the standard action executor.
         This method is called from the Dashboard's Neural Console.
         """
         try:
+            from actions.executor import execute_system_command_detailed
             from actions.agent_brain import agent_brain
-            # We assume agent_brain.run(text) exists and returns a result
-            # Based on the architecture, this is the core entry point for reasoning.
-            result = agent_brain.run(text)
 
-            # We want to capture the reasoning and code for the UI
-            # If agent_brain stores the last reasoning/code, we provide it here.
-            return {
-                "success": True,
-                "message": result,
-                "reasoning": getattr(agent_brain, "last_reasoning", ""),
-                "code": getattr(agent_brain, "last_code", "")
-            }
+            result = execute_system_command_detailed(text)
+            response = dict(result)
+            response["reasoning"] = getattr(agent_brain, "last_reasoning", "")
+            response["code"] = getattr(agent_brain, "last_code", "")
+            return response
         except Exception as e:
             logger.error(f"Error executing command from dashboard: {e}")
             return {"success": False, "message": str(e)}
@@ -701,4 +722,3 @@ class DashboardAPI:
         """Closes the dashboard window."""
         if hasattr(self, "_window") and self._window:
             self._window.destroy()
-
