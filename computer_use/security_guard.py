@@ -75,6 +75,8 @@ class SecurityGuard:
             "modify_startup": ActionRiskLevel.SENSITIVE,
             "clear_clipboard": ActionRiskLevel.SENSITIVE,
             "git_push_force": ActionRiskLevel.SENSITIVE,
+            "github_push": ActionRiskLevel.SENSITIVE,
+            "github_write": ActionRiskLevel.SENSITIVE,
 
             # Critical Actions (Level 3)
             "format_drive": ActionRiskLevel.CRITICAL,

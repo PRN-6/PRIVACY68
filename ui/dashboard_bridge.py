@@ -183,6 +183,32 @@ class DashboardAPI:
             logger.error(f"Error saving profile: {e}")
             return {"success": False, "message": str(e)}
 
+    # ---------------- GitHub Integration ---------------- #
+
+    def get_github_status(self) -> Dict[str, Any]:
+        try:
+            from plugins.github_plugin import GitHubPlugin
+            return {"success": True, **GitHubPlugin().get_connection_status()}
+        except Exception as e:
+            logger.error("Error checking GitHub connection: %s", e)
+            return {"success": False, "message": str(e), "connected": False}
+
+    def connect_github(self, token: str) -> Dict[str, Any]:
+        try:
+            from plugins.github_plugin import GitHubPlugin
+            return GitHubPlugin().connect(token)
+        except Exception as e:
+            logger.error("Error connecting GitHub account: %s", e)
+            return {"success": False, "message": str(e)}
+
+    def disconnect_github(self) -> Dict[str, Any]:
+        try:
+            from plugins.github_plugin import GitHubPlugin
+            return GitHubPlugin().disconnect()
+        except Exception as e:
+            logger.error("Error disconnecting GitHub account: %s", e)
+            return {"success": False, "message": str(e)}
+
 
     # ---------------- Plugin Management ---------------- #
 
@@ -711,8 +737,12 @@ class DashboardAPI:
 
             result = execute_system_command_detailed(text)
             response = dict(result)
-            response["reasoning"] = getattr(agent_brain, "last_reasoning", "")
-            response["code"] = getattr(agent_brain, "last_code", "")
+            if response.get("method") == "agentic_engine":
+                response["reasoning"] = getattr(agent_brain, "last_reasoning", "")
+                response["code"] = getattr(agent_brain, "last_code", "")
+            else:
+                response.setdefault("reasoning", response.get("message", ""))
+                response.setdefault("code", "")
             return response
         except Exception as e:
             logger.error(f"Error executing command from dashboard: {e}")

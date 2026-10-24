@@ -94,7 +94,7 @@
                             <h3 class="doc-block-title">01 // Current Command Processing Flow</h3>
                         </div>
                         <p class="doc-text">
-                            The current implementation does <strong>not</strong> use a three-lane command router. The executor handles pending security confirmations and short greeting requests directly; other non-empty requests go to the Agent Brain. It asks LiteLLM for Python code using the configured model identifier <code>ollama/gemma4:31b-cloud</code>, then runs returned code in a Python subprocess.
+                            The current implementation does <strong>not</strong> use a three-lane command router. The executor handles pending security confirmations and greeting requests directly, routes explicit GitHub requests to the built-in GitHub plugin, and sends other non-empty requests to the Agent Brain. The Agent Brain asks LiteLLM for Python code using the configured model identifier <code>ollama/gemma4:31b-cloud</code>, then runs returned code in a Python subprocess.
                         </p>
                         <div class="doc-code-preview">
 Microphone/audio path (when voice mode is used)
@@ -102,6 +102,9 @@ Microphone/audio path (when voice mode is used)
   -> command executor
        -> pending security confirmation? handle confirmation/cancellation
        -> short greeting? return greeting
+       -> explicit GitHub request? GitHub plugin
+            -> GitHub REST API or local Git
+            -> confirmation required for pushes and GitHub writes
        -> otherwise send request to Agent Brain
             -> LiteLLM completion (ollama/gemma4:31b-cloud)
             -> generated Python code
@@ -283,9 +286,9 @@ Microphone/audio path (when voice mode is used)
                             <h3 class="doc-block-title">06 // Plugin Architecture &amp; Mobile Web Remote</h3>
                         </div>
                         <p class="doc-text">
-                            The desktop dashboard includes a plugin registry for viewing registered integrations, changing enabled state, creating a template, installing a Python plugin file, and uninstalling user plugins. External Python plugins are loaded from <code>%APPDATA%/PRIVACY68/plugins/</code>; plugin code runs with the current user's permissions.
+                            The desktop dashboard includes a plugin registry for viewing registered integrations, changing enabled state, creating a template, installing a Python plugin file, and uninstalling user plugins. It also supports connecting a GitHub personal access token through Windows Credential Manager. External Python plugins are loaded from <code>%APPDATA%/PRIVACY68/plugins/</code>; plugin code runs with the current user's permissions.
                         </p>
-                        <p class="doc-text">The plugin registry is not a sandbox or an execution boundary. Registry enable/disable state does not guarantee that generated scripts are restricted to the enabled plugins.</p>
+                        <p class="doc-text">Explicit GitHub requests are routed directly to the built-in GitHub integration for current-repository status/push, repository and issue/pull-request listings, and issue/pull-request creation. Pushes and create actions require confirmation. Other plugin registrations are not automatically dispatched. The plugin registry is not a sandbox or an execution boundary.</p>
                         <p class="doc-text"><a href="plugins.html">See the built-in plugins and extension details.</a></p>
                         <h4 style="color: var(--accent-cyan); margin: 15px 0 8px 0; font-family: var(--font-retro);">Mobile Web Remote (Local Wi-Fi)</h4>
                         <p class="doc-text">
@@ -299,7 +302,7 @@ Microphone/audio path (when voice mode is used)
                             <i data-lucide="terminal" class="doc-block-icon"></i>
                             <h3 class="doc-block-title">07 // Complete Voice Command Reference</h3>
                         </div>
-                        <p class="doc-text">These examples describe the current dispatch behavior, not guaranteed outcomes. Apart from pending confirmation replies and greeting shortcuts, commands are passed to the Agent Brain; actual actions depend on the model response, available software, and permissions.</p>
+                        <p class="doc-text">These examples describe current dispatch behavior. GitHub requests listed below use the direct integration; most other requests go to the Agent Brain, and outcomes depend on model response, available software, and permissions.</p>
                         <div class="table-responsive">
                             <table class="cmd-table">
                                 <thead>
@@ -364,6 +367,12 @@ Microphone/audio path (when voice mode is used)
                                         <td><code>"Privacy68, explain quantum computing simply"</code></td>
                                         <td>Agent Brain</td>
                                         <td>Current model identifier: <code>ollama/gemma4:31b-cloud</code>.</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>GitHub</strong></td>
+                                        <td><code>"check GitHub status"</code>, <code>"push my code to GitHub branch feat/demo"</code>, <code>"list repositories"</code>, <code>"show issues"</code></td>
+                                        <td>GitHub plugin</td>
+                                        <td>Connect a fine-grained token in the dashboard. Pushes and GitHub write actions require confirmation; pushes do not stage or commit files.</td>
                                     </tr>
                                 </tbody>
                             </table>

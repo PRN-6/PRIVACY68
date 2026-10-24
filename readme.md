@@ -12,12 +12,15 @@ PRIVACY68 is a Windows desktop voice assistant with local speech-processing comp
 
 ## Current command flow
 
-The project does **not** currently implement a three-lane router. Pending security confirmations and short greetings are handled directly. Most other commands are sent to the Agent Brain:
+The project does **not** implement a three-lane router. Pending confirmations and greetings are handled directly. Explicit GitHub requests are routed to the GitHub plugin; other commands go to the Agent Brain:
 
 ```text
 Voice/text input
   -> command executor
        -> pending security confirmation or greeting shortcut
+       -> GitHub plugin for explicit GitHub/Git requests
+            -> GitHub API for repository, issue, and pull-request operations
+            -> local Git for status, diff, and confirmed branch pushes
        -> Agent Brain for other commands
             -> LiteLLM completion (ollama/gemma4:31b-cloud)
             -> generated Python
@@ -32,11 +35,12 @@ The website's command terminal is a demonstration only. It does not connect to t
 - Speech input using Faster-Whisper, with Silero VAD in the speech pipeline.
 - Optional Voice Lock enrollment and speaker verification.
 - Desktop dashboard for profile settings, runtime status, microphone testing, Voice Lock, command output, and plugin registry.
-- Built-in Chrome, Windows System, and WhatsApp plugin classes.
+- Built-in GitHub, Chrome, Windows System, and WhatsApp plugins.
 - Plugin management for viewing registered entries, toggling registry state, creating a starter template, installing a Python plugin file, and uninstalling user plugins.
+- GitHub integration for checking the current repository, pushing the current branch, listing repositories/issues/pull requests, and creating issues/pull requests.
 - Mobile remote for issuing commands over a local network when enabled.
 
-Plugin registration is separate from command routing: the executor does not automatically dispatch requests to registered plugins. Enable/disable state is registry metadata, not a sandbox or a guarantee that generated code can only use enabled plugins. Starter templates require implementation before they perform useful automation.
+The GitHub integration is explicitly routed by the command executor. Other plugin registrations are not automatically dispatched, and plugin enable/disable state is not a sandbox or a guarantee that generated code can only use enabled plugins. Starter templates require implementation before they perform useful automation.
 
 ## Requirements
 
@@ -71,6 +75,24 @@ Open the dashboard from the running application and select **Plugins** to view t
 ```
 
 The dashboard can install `.py` plugins, create a starter template, toggle entries, and uninstall user plugins. Python plugin files execute code during loading and therefore must be treated as trusted code. Only install files you have reviewed. Built-in plugins cannot be uninstalled.
+
+### GitHub integration
+
+In the **Plugins** dashboard, connect a fine-grained personal access token. PRIVACY68 validates it with GitHub and stores it in Windows Credential Manager; the token is not written to project files. Grant access only to the repositories you need, with **Metadata: read**, **Contents: read/write**, **Issues: read/write**, and **Pull requests: read/write**. Use an expiration date and revoke the token from GitHub when it is no longer needed.
+
+The dashboard command console supports explicit requests such as:
+
+```text
+check GitHub status
+push my code to GitHub branch feat/my-change
+list my GitHub repositories
+show GitHub issues
+create GitHub issue title Fix login body Login fails on startup
+show pull requests on GitHub
+create GitHub pull request title Add feature head feat/my-change base main
+```
+
+Branch pushes and issue/pull-request creation require confirmation. Pushes send the currently checked-out, clean branch to the existing `origin`; they do not stage or commit files, force-push, or switch branches. Review and commit changes in VS Code before asking PRIVACY68 to push. The integration supports common repository, issue, pull-request, status, and push tasks—not every GitHub API operation. GitHub requests need an internet connection.
 
 ## Tests
 

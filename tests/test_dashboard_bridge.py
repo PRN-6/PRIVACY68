@@ -38,6 +38,29 @@ class TestDashboardAPI(unittest.TestCase):
         self.assertFalse(result["success"])
         self.assertEqual(result["message"], "Could not complete request.")
 
+    def test_execute_command_does_not_show_stale_agent_code_for_plugin_results(self):
+        expected = {"success": True, "message": "GitHub repositories.", "method": "github_plugin"}
+        with patch("actions.executor.execute_system_command_detailed", return_value=expected):
+            with patch("actions.agent_brain.agent_brain") as brain:
+                brain.last_reasoning = "old agent response"
+                brain.last_code = "print('stale')"
+                result = self.api.execute_command("list my GitHub repositories")
+
+        self.assertEqual(result["reasoning"], expected["message"])
+        self.assertEqual(result["code"], "")
+
+    def test_github_connection_methods_use_secure_plugin_service(self):
+        with patch("plugins.github_plugin.GitHubPlugin.connect", return_value={
+            "success": True,
+            "message": "Connected to GitHub as tester.",
+            "login": "tester",
+        }) as connect:
+            result = self.api.connect_github("github_pat_example")
+
+        connect.assert_called_once_with("github_pat_example")
+        self.assertTrue(result["success"])
+        self.assertEqual(result["login"], "tester")
+
     def test_runtime_status_reports_configured_model_and_hardware(self):
         voice = {"model_ready": True, "is_enrolled": False, "enabled": False}
         cuda = {"is_ready": False, "has_gpu": False}
