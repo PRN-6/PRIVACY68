@@ -29,6 +29,16 @@ class TestActionExecutor(unittest.TestCase):
         self.assertEqual(result["tool"], "greeting")
         generate.assert_not_called()
 
+    def test_sentence_containing_hi_is_delegated_to_agent_brain(self):
+        request = "in vscode can u push my code to github this is the branch"
+        expected = {"success": True, "message": "request handled", "method": "agentic_engine"}
+        with patch.object(executor, "autocorrect_speech_command", return_value=request):
+            with patch("actions.agent_brain.agent_brain.generate_and_execute", return_value=expected) as generate:
+                result = executor.execute_system_command_detailed(request)
+
+        self.assertEqual(result, expected)
+        generate.assert_called_once_with(request)
+
     def test_commands_are_delegated_and_success_is_notified(self):
         status_callback = Mock()
         action_callback = Mock()

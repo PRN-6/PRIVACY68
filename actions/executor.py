@@ -7,6 +7,17 @@ logger = logging.getLogger("PRIVACY68.ActionExecutor")
 # Security words for confirmation
 SECURITY_CONFIRM_WORDS = frozenset({"yes", "confirm", "proceed", "sure", "do it", "yeah", "ok", "okay"})
 SECURITY_CANCEL_WORDS = frozenset({"no", "cancel", "abort", "stop", "don't", "dont", "nevermind", "never mind"})
+GREETINGS = frozenset({
+    "hi",
+    "hello",
+    "hey",
+    "hi there",
+    "hello there",
+    "hey there",
+    "good morning",
+    "good afternoon",
+    "good evening",
+})
 
 def _notify(on_status_callback, on_action_callback, tool: str, success: bool, message: str):
     """Uniform notification helper for UI callbacks."""
@@ -41,7 +52,7 @@ def execute_system_command_detailed(text: str, on_action_callback=None, on_statu
             return {"success": True, "tool": "security_cancel", "method": "security_guard", "message": msg}
 
     # 2. GREETINGS (Fast bypass)
-    if len(cleaned) <= 2 or any(g in low for g in ("hi", "hello", "hey")):
+    if low in GREETINGS:
         return {"success": True, "tool": "greeting", "method": "none", "message": "I'm listening. How can I help you with your computer today?"}
 
     # 3. THE BRAIN (Everything else goes here)
