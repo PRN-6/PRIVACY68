@@ -25,6 +25,7 @@ build/
 *.exe
 !assets/icon.ico
 *.spec
+!privacy68.spec
 
 # -----------------------------
 # Logs & Environment Variables

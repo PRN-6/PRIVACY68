@@ -14,7 +14,7 @@
 | Prepared by | _Add student name(s) and USN(s)_ |
 | Guide | _Add guide name_ |
 | Project category | Software system with pretrained ML inference components; no project-owned model training |
-| Repository version reference | 1.4.1 (project metadata) |
+| Repository version reference | 1.4.2 (project metadata) |
 
 > **Scope and accuracy note:** This specification describes the checked-in implementation, not planned or advertised features. PRIVACY68 is primarily a Windows desktop application. It uses pretrained speech and speaker-recognition models for inference, but the repository contains no dataset preparation, training, evaluation-split, experiment-tracking, or model-registry pipeline. Model training sections below therefore document the actual inference and enrollment design and explicitly mark training-only items as not applicable.
 
@@ -23,6 +23,12 @@
 ## 1. System Design
 
 ### 1.1 Architectural Design
+
+PRIVACY68 is a Windows desktop voice assistant that combines speech processing, a desktop control center, and computer automation in one Python application. Users can give commands through the microphone or dashboard, review runtime information, manage plugins, and control supported computer functions. The application uses Faster-Whisper for speech recognition and an ONNX speaker-recognition model for optional Voice Lock; these speech and speaker-processing components run locally.
+
+The system coordinates requests through a command executor. Greetings and pending confirmations are handled directly, explicit GitHub requests are routed to the GitHub integration, and other requests are sent to the Agent Brain. The GitHub integration uses the GitHub REST API for repository, issue, and pull-request tasks and local Git for repository status and confirmed branch pushes. Its personal access token is stored in Windows Credential Manager. For other requests, the Agent Brain sends command text through LiteLLM to its configured model and executes returned Python code in a subprocess, so the provider may be remote and generated code runs with the current user's permissions.
+
+PRIVACY68 does not use a central SQL database. User preferences and voice-profile data are stored in local JSON and NumPy files, while the GitHub token is stored separately in Windows Credential Manager. The architecture connects the user interfaces, speech pipeline, command routing, plugins, local Windows operations, and external services while keeping their responsibilities distinct.
 
 #### 1.1.1 System Context Diagram
 
@@ -83,6 +89,7 @@ flowchart TB
     subgraph Orchestration["Command orchestration"]
         Executor[execute_system_command_detailed]
         Guard[SecurityGuard\npending confirmation]
+        GitHubPlugin[GitHubPlugin\nexplicit GitHub requests]
         Brain[AgentBrain]
         LiteLLM[LiteLLM completion]
     end
@@ -91,6 +98,7 @@ flowchart TB
         Plugins[PluginManager and plugins]
         Python[Python subprocess\nsys.executable -c generated_code]
         Windows[Windows apps, UI and OS]
+        Git[Local Git\ncurrent project working copy]
     end
 
     subgraph Storage["Local persistent storage"]
@@ -98,6 +106,12 @@ flowchart TB
         Voice[voice_profile.npy\nvoice_profile_meta.json]
         Model[Bundled / cached ONNX model]
         Logs[privacy68.log]
+        GitCredential[Windows Credential Manager\nGitHub PAT]
+    end
+
+    subgraph External["External services"]
+        GitHubAPI[GitHub REST API / Git HTTPS]
+        ModelEndpoint[Configured LLM endpoint]
     end
 
     Audio --> Stream --> VAD --> STT --> Cleanup --> Executor
@@ -106,8 +120,16 @@ flowchart TB
     Remote --> Executor
     Executor -->|check / confirm / cancel pending action| Guard
     Guard -->|confirmation result| Executor
-    Executor -->|no pending confirmation| Brain
-    Brain --> LiteLLM --> Brain
+    Executor -->|explicit GitHub request| GitHubPlugin
+    GitHubPlugin -->|repository status / branch push| Git
+    Git -->|HTTPS push with token| GitHubAPI
+    GitHubPlugin <-->|REST API requests / results| GitHubAPI
+    GitHubPlugin <-->|read / save token| GitCredential
+    Executor -->|other requests| Brain
+    Brain --> LiteLLM
+    LiteLLM <-->|prompt / generated Python| ModelEndpoint
+    ModelEndpoint --> LiteLLM
+    LiteLLM --> Brain
     Brain --> Python --> Windows
     Plugins -. optional plugin capabilities .-> Windows
     Executor --> Tray
@@ -152,6 +174,8 @@ flowchart LR
 ```
 
 PRIVACY68 performs runtime inference and user-specific speaker enrollment only. Upstream training data, split ratios, model training parameters, validation metrics, and model-registry records are not part of this repository and must be obtained from the respective model publishers if required for the academic report.
+
+**Data location summary:** microphone audio and transcripts are processed at runtime; this SDS does not describe them as a retained dataset. Voice Lock persists embeddings and metadata in local NumPy/JSON files. User preferences are stored in the local profile JSON. The GitHub PAT is stored separately in Windows Credential Manager. The project working tree and Git history remain in the local repository. GitHub repository, issue, and pull-request data remain on GitHub and are fetched only when requested. LLM prompts and generated code are sent to the configured model endpoint; whether that endpoint is local or remote depends on deployment.
 
 #### 1.1.3 Subsystems / Components and Responsibilities
 
