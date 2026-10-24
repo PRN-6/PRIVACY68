@@ -14,23 +14,24 @@ PRIVACY68 is a Windows desktop voice assistant with local speech-processing comp
 
 ## Current command flow
 
-The project does **not** implement a three-lane router. Pending confirmations and greetings are handled directly. Explicit GitHub requests are routed to the GitHub plugin; other commands go to the Agent Brain:
+The project does **not** use Open Interpreter or implement a three-lane router. Pending confirmations and greetings are handled directly. Simple Chrome and WhatsApp launch requests, plus explicit GitHub requests, are routed to their built-in plugins. Other commands go to the Agent Brain:
 
 ```text
 Voice/text input
   -> command executor
        -> pending security confirmation or greeting shortcut
+       -> direct Chrome / WhatsApp launch via built-in plugins
        -> GitHub plugin for explicit GitHub/Git requests
             -> GitHub API for repository, issue, and pull-request operations
             -> local Git for status, diff, and confirmed branch pushes
        -> Agent Brain for other commands
             -> LiteLLM completion (ollama/gemma4:31b-cloud)
             -> generated Python
-            -> Python subprocess (30-second timeout)
+            -> isolated subprocess (Python in source runs; executable's internal runner when frozen; 30-second timeout)
             -> result returned to the UI
 ```
 
-The website's command terminal is a demonstration only. It does not connect to the desktop app or execute commands. For the full system diagrams and design details, see [PRIVACY68_SDS.md](PRIVACY68_SDS.md).
+The dashboard and voice interface share the same command executor. Chrome/WhatsApp launch and supported GitHub operations use their plugins directly; other commands need the configured Ollama service/model and are handled by the Agent Brain. The website's command terminal is a demonstration only. It does not connect to the desktop app or execute commands. For the full system diagrams and design details, see [PRIVACY68_SDS.md](PRIVACY68_SDS.md).
 
 ## Features
 
@@ -42,7 +43,7 @@ The website's command terminal is a demonstration only. It does not connect to t
 - GitHub integration for checking the current repository, pushing the current branch, listing repositories/issues/pull requests, and creating issues/pull requests.
 - Mobile remote for issuing commands over a local network when enabled.
 
-The GitHub integration is explicitly routed by the command executor. Other plugin registrations are not automatically dispatched, and plugin enable/disable state is not a sandbox or a guarantee that generated code can only use enabled plugins. Starter templates require implementation before they perform useful automation.
+The Chrome, WhatsApp, and GitHub integrations are explicitly routed by the command executor. Other plugin registrations are not automatically dispatched, and plugin enable/disable state is not a sandbox or a guarantee that generated code can only use enabled plugins. Starter templates require implementation before they perform useful automation.
 
 ## Requirements
 

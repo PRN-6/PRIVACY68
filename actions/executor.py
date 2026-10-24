@@ -1,4 +1,5 @@
 import logging
+import re
 from speech.streamer import autocorrect_speech_command
 from computer_use.security_guard import security_guard
 
@@ -19,6 +20,12 @@ GREETINGS = frozenset({
     "good evening",
 })
 
+BUILTIN_APP_COMMANDS = (
+    (re.compile(r"(?:open|launch|start)\s+(?:(?:google)\s+)?chrome(?:\s+browser)?"), "chrome", "open_url"),
+    (re.compile(r"(?:open|launch|start)\s+(?:the\s+)?whatsapp(?:\s+desktop)?"), "whatsapp", "open"),
+)
+
+
 def _notify(on_status_callback, on_action_callback, tool: str, success: bool, message: str):
     """Uniform notification helper for UI callbacks."""
     if on_status_callback:
@@ -29,10 +36,44 @@ def _notify(on_status_callback, on_action_callback, tool: str, success: bool, me
         except TypeError:
             on_action_callback(tool, success)
 
+
+def _execute_builtin_app_command(command: str, plugin_manager, on_action_callback, on_status_callback):
+    """Routes common app-launch commands directly to their installed plugins."""
+    for pattern, plugin_id, action in BUILTIN_APP_COMMANDS:
+        if not pattern.fullmatch(command):
+            continue
+
+        plugin = plugin_manager.get_plugin(plugin_id)
+        if not plugin:
+            message = f"The built-in {plugin_id.title()} plugin is unavailable."
+            success = False
+        elif not plugin.is_enabled:
+            message = f"The {plugin_id.title()} plugin is disabled. Enable it in the Plugins dashboard."
+            success = False
+        else:
+            success = bool(plugin.execute(action))
+            if success:
+                message = f"Opened {plugin_id.title()}."
+            elif plugin_id == "chrome":
+                message = "Could not open Chrome. Check that Google Chrome is installed."
+            else:
+                message = "Could not open WhatsApp. Check that WhatsApp is installed and its app link is registered."
+
+        _notify(on_status_callback, on_action_callback, plugin_id, success, message)
+        return {
+            "success": success,
+            "tool": plugin_id,
+            "method": f"{plugin_id}_plugin",
+            "message": message,
+            "output": "",
+        }
+
+    return None
+
+
 def execute_system_command_detailed(text: str, on_action_callback=None, on_status_callback=None) -> dict:
     """
-    ULTRA-LEAN AGENTIC ARCHITECTURE
-    Everything is handled by the Agent Brain (LLM-driven code execution).
+    Routes built-in commands directly and uses Agent Brain for other requests.
     """
     cleaned = autocorrect_speech_command(text.strip())
     if not cleaned:
@@ -58,8 +99,21 @@ def execute_system_command_detailed(text: str, on_action_callback=None, on_statu
             "details": {"requires_confirmation": True},
         }
 
-    # Route explicit GitHub tasks to the integrated plugin instead of generating shell code.
     from plugins.manager import plugin_manager
+
+    if low in GREETINGS:
+        return {"success": True, "tool": "greeting", "method": "none", "message": "I'm listening. How can I help you with your computer today?"}
+
+    app_result = _execute_builtin_app_command(
+        low,
+        plugin_manager,
+        on_action_callback,
+        on_status_callback,
+    )
+    if app_result is not None:
+        return app_result
+
+    # Route explicit GitHub tasks to the integrated plugin instead of generating shell code.
     github_plugin = plugin_manager.get_plugin("github")
     if github_plugin and not github_plugin.is_enabled and github_plugin.parse_command(cleaned):
         return {
@@ -129,23 +183,31 @@ def execute_system_command_detailed(text: str, on_action_callback=None, on_statu
             _notify(on_status_callback, on_action_callback, "github", True, message)
             return {**result, "tool": "github", "method": "github_plugin", "message": message}
 
-    # 2. GREETINGS (Fast bypass)
-    if low in GREETINGS:
-        return {"success": True, "tool": "greeting", "method": "none", "message": "I'm listening. How can I help you with your computer today?"}
-
-    # 3. THE BRAIN (Everything else goes here)
+    # Other requests go to the Agent Brain.
     # The Agent Brain handles apps, files, web, and system tools via generated code.
     from actions.agent_brain import agent_brain
     result = agent_brain.generate_and_execute(cleaned)
 
-    if result and result.get("success"):
-        _notify(on_status_callback, on_action_callback, "agent_brain", True, result["message"])
-        return result
+    if not result:
+        result = {
+            "success": False,
+            "message": "The Agent Brain returned no result.",
+            "method": "agentic_engine",
+        }
 
-    # 4. FAILSAFE
-    msg = f"I couldn't figure out how to do that: '{cleaned}'"
-    _notify(on_status_callback, on_action_callback, "unknown", False, msg)
-    return {"success": False, "tool": "none", "method": "none", "message": msg}
+    result = dict(result)
+    success = bool(result.get("success"))
+    tool = result.get("tool", "agent_brain")
+    result.setdefault("method", "agentic_engine")
+    result.setdefault("message", f"I couldn't complete the command: '{cleaned}'")
+    _notify(
+        on_status_callback,
+        on_action_callback,
+        tool,
+        success,
+        result["message"],
+    )
+    return result
 
 def execute_system_command(text: str, on_action_callback=None, on_status_callback=None) -> bool:
     result = execute_system_command_detailed(text, on_action_callback, on_status_callback)

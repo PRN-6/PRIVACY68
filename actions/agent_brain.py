@@ -1,20 +1,19 @@
 import logging
 from typing import Any, Dict
 import litellm
-import subprocess
-import sys
+from actions.agent_runner import run_agent_code
 
 logger = logging.getLogger("PRIVACY68.AgentBrain")
 
 class AgentBrain:
     """
     The 'Brain' of the Agentic System.
-    Uses litellm for reliable local LLM communication and a specialized
+    Uses LiteLLM to communicate with the configured Ollama model and a specialized
     subprocess runner for persistent-like execution.
     """
 
     def __init__(self):
-        # 1. Local LLM Configuration (via litellm)
+        # LiteLLM uses the user's local Ollama service, which may proxy a cloud model.
         self.model = "ollama/gemma4:31b-cloud"
         self.system_prompt = (
             "You are the la-core of PRIVACY68, a professional Windows OS Automation Agent. "
@@ -36,7 +35,7 @@ class AgentBrain:
         )
 
     def _get_code_from_llm(self, text: str) -> str:
-        """Uses litellm to get Python code from the local model."""
+        """Uses LiteLLM to get Python code from the configured model."""
         response = litellm.completion(
             model=self.model,
             messages=[
@@ -55,8 +54,7 @@ class AgentBrain:
 
     def generate_and_execute(self, text: str) -> Dict[str, Any]:
         """
-        Generates code via litellm and executes it directly using the system Python.
-        This completely bypasses the broken OpenInterpreter model-check loop.
+        Generates code via LiteLLM and executes it in a separate process.
         """
         self.last_code = ""
         self.last_reasoning = f"Analyzing request: {text}"
@@ -74,15 +72,9 @@ class AgentBrain:
 
             logger.info(f"[AGENT BRAIN] Executing generated code:\n{code}")
 
-            # Step 2: Execute directly using a subprocess.
-            # This is the most reliable way to ensure the code runs exactly as intended
-            # without external library interference.
-            result = subprocess.run(
-                [sys.executable, "-c", code],
-                capture_output=True,
-                text=True,
-                timeout=30
-            )
+            # Run in a separate process; the runner uses a Python subprocess in
+            # source mode and the executable's internal runner in frozen builds.
+            result = run_agent_code(code, timeout=30)
 
             if result.returncode == 0:
                 return {
