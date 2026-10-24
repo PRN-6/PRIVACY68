@@ -8,6 +8,8 @@
 
 PRIVACY68 is a Windows desktop voice assistant with local speech-processing components, a desktop control center, and OS automation. It uses an Agent Brain to request Python code through LiteLLM and executes returned code in a local Python subprocess.
 
+**Latest Windows release:** [Download the installer from GitHub Releases](https://github.com/PRN-6/PRIVACY68/releases/latest).
+
 > **Privacy and safety:** The Agent Brain currently uses the model identifier `ollama/gemma4:31b-cloud`. Do not assume that prompts are processed locally; provider routing depends on configuration. Generated Python runs with the current user's permissions. The optional mobile remote has no request authentication, so do not expose it to untrusted networks.
 
 ## Current command flow
@@ -65,6 +67,17 @@ python app.py
 ```
 
 Set up and verify your model provider according to your deployment before sending real commands. The model identifier is currently defined in `actions/agent_brain.py`; dashboard provider settings do not override it.
+
+### Build a Windows installer
+
+For a distributable Windows build, install Inno Setup 6, create the project virtual environment, and install the project dependencies. From the repository root, run:
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\build.bat
+```
+
+The build creates a PyInstaller application bundle under `dist\PRIVACY68\` and an Inno Setup installer under `installer\`. The installer provides Start Menu shortcuts for the assistant and Control Center. Build on Windows; the bundled speaker model is included, but the Agent Brain's configured LLM service/model is not bundled and may need separate configuration. The package uses WebView2 for its dashboard, which may need to be installed separately on a clean computer. The installer is currently unsigned, so Windows SmartScreen may show a warning.
 
 ## Desktop dashboard and plugins
 
