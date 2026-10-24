@@ -30,38 +30,57 @@ document.addEventListener('DOMContentLoaded', () => {
     async function loadQuickActions() {
         try {
             const res = await fetch('/api/quick-actions');
-            if (res.ok) {
-                const data = await res.json();
-                allActions = data.actions || [];
-                renderActions();
-            }
+            if (!res.ok) throw new Error(`Quick actions request failed (${res.status}).`);
+            const data = await res.json();
+            allActions = Array.isArray(data.actions) ? data.actions : [];
+            renderActions();
         } catch (e) {
             console.error('Failed to load quick actions', e);
+            actionsGrid.replaceChildren();
+            const error = document.createElement('p');
+            error.className = 'empty-history';
+            error.textContent = 'Quick actions are unavailable. You can still type a command above.';
+            actionsGrid.appendChild(error);
         }
     }
 
     function renderActions() {
-        actionsGrid.innerHTML = '';
+        actionsGrid.replaceChildren();
         const filtered = activeCategory === 'all' 
             ? allActions 
-            : allActions.filter(a => a.category.toLowerCase() === activeCategory.toLowerCase());
+            : allActions.filter(a => (a.category || '').toLowerCase() === activeCategory.toLowerCase());
 
         filtered.forEach(action => {
-            const card = document.createElement('div');
+            const card = document.createElement('button');
+            card.type = 'button';
             card.className = 'action-card';
-            card.innerHTML = `
-                <div class="action-icon">${action.icon}</div>
-                <div class="action-info">
-                    <span class="action-label">${action.label}</span>
-                    <span class="action-cmd">${action.command}</span>
-                </div>
-            `;
+            card.setAttribute('aria-label', `${action.label}: ${action.command}`);
+            const icon = document.createElement('span');
+            icon.className = 'action-icon';
+            icon.setAttribute('aria-hidden', 'true');
+            icon.textContent = action.icon || '•';
+            const info = document.createElement('span');
+            info.className = 'action-info';
+            const label = document.createElement('span');
+            label.className = 'action-label';
+            label.textContent = action.label || 'Quick action';
+            const command = document.createElement('span');
+            command.className = 'action-cmd';
+            command.textContent = action.command || '';
+            info.append(label, command);
+            card.append(icon, info);
             card.addEventListener('click', () => {
                 triggerVibrate(30);
                 dispatchCommand(action.command);
             });
             actionsGrid.appendChild(card);
         });
+        if (!filtered.length) {
+            const empty = document.createElement('p');
+            empty.className = 'empty-history';
+            empty.textContent = 'No quick actions in this category.';
+            actionsGrid.appendChild(empty);
+        }
     }
 
     // Category Tabs Filtering
@@ -69,6 +88,7 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.addEventListener('click', () => {
             tabBtns.forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
+            tabBtns.forEach(b => b.setAttribute('aria-selected', String(b === btn)));
             activeCategory = btn.dataset.cat;
             renderActions();
         });
@@ -230,15 +250,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const row = document.createElement('div');
         row.className = 'history-item';
-        row.innerHTML = `
-            <div class="history-left">
-                <div class="history-cmd">"${item.command}"</div>
-                <div class="history-meta">${item.time} • ${item.method.replace('_', ' ').toUpperCase()}</div>
-            </div>
-            <div class="history-badge ${item.success ? 'success' : 'error'}">
-                ${item.tool || (item.success ? 'OK' : 'ERR')}
-            </div>
-        `;
+        const left = document.createElement('div');
+        left.className = 'history-left';
+        const command = document.createElement('div');
+        command.className = 'history-cmd';
+        command.textContent = `"${item.command}"`;
+        const meta = document.createElement('div');
+        meta.className = 'history-meta';
+        meta.textContent = `${item.time} • ${(item.method || 'none').replace('_', ' ').toUpperCase()}`;
+        left.append(command, meta);
+        const badge = document.createElement('div');
+        badge.className = `history-badge ${item.success ? 'success' : 'error'}`;
+        badge.textContent = item.tool || (item.success ? 'OK' : 'ERR');
+        row.append(left, badge);
         historyList.insertBefore(row, historyList.firstChild);
 
         // Keep maximum 15 items
@@ -268,8 +292,8 @@ document.addEventListener('DOMContentLoaded', () => {
     function showToast(message, type = 'info') {
         const container = document.getElementById('toast-container');
         const toast = document.createElement('div');
-        toast.className = 'toast';
-        toast.innerHTML = message;
+        toast.className = `toast ${type}`;
+        toast.textContent = message;
         container.appendChild(toast);
 
         setTimeout(() => {

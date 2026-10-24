@@ -356,56 +356,6 @@ body.crt-enabled .scanlines {
     text-underline-offset: 4px;
 }
 
-/* Audio Waveform HUD Box */
-.audio-hud-box {
-    width: 100%;
-    max-width: 660px;
-    background: #060609;
-    border: 1px solid var(--border-subtle);
-    padding: 16px 20px;
-    margin-bottom: 36px;
-    position: relative;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8);
-}
-
-.hud-header, .hud-footer {
-    display: flex;
-    justify-content: space-between;
-    font-size: 0.72rem;
-    font-family: var(--font-mono);
-    letter-spacing: 1px;
-}
-
-.hud-header {
-    color: var(--text-secondary);
-    margin-bottom: 12px;
-}
-
-.hud-status {
-    color: var(--color-ruby);
-}
-
-.hud-mode {
-    color: var(--text-muted);
-}
-
-#waveform-canvas {
-    width: 100%;
-    height: 54px;
-    display: block;
-    background: #020204;
-    border: 1px solid #15151e;
-    margin-bottom: 12px;
-}
-
-.hud-footer {
-    color: var(--text-muted);
-}
-
-.glow-word {
-    color: var(--color-ruby);
-}
-
 /* CTA Buttons */
 .cta-actions {
     display: flex;
@@ -704,6 +654,51 @@ body.crt-enabled .scanlines {
     background: var(--bg-card-hover);
     transform: translateY(-4px);
     box-shadow: 0 12px 28px rgba(0, 0, 0, 0.7);
+}
+
+.plugin-catalog {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 18px;
+}
+
+.plugin-guide {
+    margin-top: 42px;
+    padding: 24px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-dim);
+}
+
+.plugin-guide .doc-text {
+    margin-top: 16px;
+}
+
+.plugin-guide code {
+    color: var(--color-ruby);
+    overflow-wrap: anywhere;
+}
+
+.button-link {
+    display: inline-flex;
+    margin-top: 20px;
+    padding: 10px 14px;
+    border: 1px solid var(--border-accent);
+    color: var(--text-pure);
+    text-decoration: none;
+}
+
+.button-link:hover {
+    background: var(--color-ruby);
+}
+
+@media (max-width: 760px) {
+    .plugin-catalog {
+        grid-template-columns: 1fr;
+    }
+
+    .plugin-guide {
+        padding: 18px;
+    }
 }
 
 .spec-header {
@@ -1490,23 +1485,6 @@ body.crt-enabled .scanlines {
         width: 100%;
         font-size: 0.82rem;
         padding: 14px 16px;
-    }
-
-    /* Audio HUD */
-    .audio-hud-box {
-        padding: 12px 14px;
-        margin-bottom: 24px;
-    }
-
-    .hud-header, .hud-footer {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 4px;
-        font-size: 0.65rem;
-    }
-
-    #waveform-canvas {
-        height: 44px;
     }
 
     /* Quick Start Steps */

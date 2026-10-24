@@ -1,40 +1,25 @@
-# Speech & Wake Word Detection
-faster-whisper
-onnxruntime-gpu
-huggingface_hub
+# PRIVACY68 runtime dependencies (Windows, Python 3.11+)
 
-# Audio Processing
-sounddevice
-scipy
-numpy
+# Speech input, transcription, and speaker verification.
+faster-whisper>=1.0,<2
+huggingface-hub>=0.24,<2
+onnxruntime>=1.17,<2
+numpy>=1.26,<3
+scipy>=1.11,<2
+sounddevice>=0.4.6,<1
 
-# Local ML Intent Classification & Fast Lane Routing
-scikit-learn
-joblib
+# Agent Brain and the dashboard's Ollama model-management controls.
+litellm>=1.50,<2
+ollama>=0.4,<1
 
-# Local LLM Routing (Ollama)
-ollama
+# Windows UI and automation.
+Pillow>=10,<13
+pystray>=0.19,<1
+pyttsx3>=2.90,<3
+pywebview>=5,<7
+pyautogui>=0.9.54,<1
+pywinauto>=0.6.8,<1
+pywin32>=306
 
-# NVIDIA CUDA Acceleration (for faster-whisper GPU)
-nvidia-cublas-cu12
-nvidia-cudnn-cu12
-
-# UI & System Tray
-pystray
-pillow
-pywebview
-pyautogui
-pywinauto
-comtypes
-pywin32
-qrcode
-psutil
-
-# Clipboard (used for copy/paste automation; degrades gracefully if absent)
-pyperclip
-
-# Testing
-pytest
-
-# Distribution & Build
-pyinstaller
+# Used by the repository's Windows release workflow to package the application.
+pyinstaller>=6,<7

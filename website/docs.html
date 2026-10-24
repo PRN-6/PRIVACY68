@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Documentation // PRIVACY68 Architecture & Manual</title>
     <meta name="description"
-        content="Complete documentation for PRIVACY68 autonomous local voice assistant: 3-Lane architecture, voice biometrics, microphone diagnostics, hardware acceleration, and voice trigger reference.">
+        content="Documentation for PRIVACY68 voice assistant architecture, voice biometrics, microphone diagnostics, hardware acceleration, and plugin management.">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -65,7 +65,7 @@
             <div class="section-title-wrap">
                 <span class="section-index">[ 02 // SYSTEM SPECIFICATIONS & MANUAL ]</span>
                 <h2 class="section-heading">PRIVACY68 Comprehensive Guide</h2>
-                <p class="section-desc">Technical specification of the 3-Lane AI routing engine, biometric voice lock calibration, microphone diagnostics, and hardware acceleration.</p>
+                <p class="section-desc">Technical notes on command processing, biometric voice lock, microphone diagnostics, hardware acceleration, and plugin management.</p>
             </div>
 
             <div class="docs-wrapper">
@@ -73,7 +73,7 @@
                 <aside class="docs-sidebar">
                     <div class="docs-menu-title">// NAVIGATION INDEX</div>
                     <ul class="docs-nav-list">
-                        <li><a href="#arch-overview" class="docs-nav-link active">01. 3-Lane Architecture</a></li>
+                        <li><a href="#arch-overview" class="docs-nav-link active">01. Command Processing</a></li>
                         <li><a href="#speech-pipeline" class="docs-nav-link">02. Speech & VAD Engine</a></li>
                         <li><a href="#mic-diagnostics" class="docs-nav-link">03. Microphone Setup & Testing</a></li>
                         <li><a href="#voice-lock" class="docs-nav-link">04. Biometric Voice Auth</a></li>
@@ -91,33 +91,25 @@
                     <div class="doc-block" id="arch-overview">
                         <div class="doc-block-header">
                             <i data-lucide="cpu" class="doc-block-icon"></i>
-                            <h3 class="doc-block-title">01 // The 3-Lane Architecture Overview</h3>
+                            <h3 class="doc-block-title">01 // Current Command Processing Flow</h3>
                         </div>
                         <p class="doc-text">
-                            PRIVACY68 v1.3.0 is built on a high-throughput, privacy-first <strong>3-Lane Command Router</strong>. Every voice command is analyzed locally in real time and directed to the optimal execution path based on complexity, required reasoning depth, and latency tolerance:
+                            The current implementation does <strong>not</strong> use a three-lane command router. The executor handles pending security confirmations and short greeting requests directly; other non-empty requests go to the Agent Brain. It asks LiteLLM for Python code using the configured model identifier <code>ollama/gemma4:31b-cloud</code>, then runs returned code in a Python subprocess.
                         </p>
                         <div class="doc-code-preview">
-+-----------------------------------------------------------------------------------+
-|                        PRIVACY68 3-LANE DECISION ENGINE                           |
-+-----------------------------------------------------------------------------------+
-|  [Microphone Input 16kHz] ---> [Silero Neural VAD] ---> [faster-whisper STT]     |
-|                                                                                   |
-|  [Voice Authorization OK] <--- [ECAPA-TDNN 512-d Speaker Verification]            |
-|                                       │                                           |
-|                     ┌─────────────────┴─────────────────┐                         |
-|                     ▼                                   ▼                         |
-|           [Deterministic Matcher]              [Intent Classifier ML]             |
-|                     │                                   │                         |
-|          ┌──────────┴───────────┬───────────────────────┴──────────┐              |
-|          ▼                      ▼                                  ▼              |
-|   [LANE 1: FAST LANE]   [LANE 2: API LANE]             [LANE 3: LOCAL LLM]        |
-|     Latency: &lt; 2.0ms      Latency: 300ms - 1.2s          Latency: 100ms - 400ms   |
-|     AI Overhead: 0%       OpenAI / Groq Cloud            Ollama Qwen2.5 Local     |
-|     Deterministic Win32   Coding &amp; Complex Reasoning     100% Air-Gapped Fallback |
-+-----------------------------------------------------------------------------------+
+Microphone/audio path (when voice mode is used)
+  -> speech recognition and command transcription
+  -> command executor
+       -> pending security confirmation? handle confirmation/cancellation
+       -> short greeting? return greeting
+       -> otherwise send request to Agent Brain
+            -> LiteLLM completion (ollama/gemma4:31b-cloud)
+            -> generated Python code
+            -> Python subprocess (30-second timeout)
+            -> result returned to UI
                         </div>
                         <p class="doc-text" style="margin-top: 15px;">
-                            This tri-tiered structure guarantees that routine desktop controls (volume, app launching, window management) execute with near-zero latency, while open-ended research questions and coding workflows leverage advanced reasoning engines.
+                            The model identifier includes <code>cloud</code>; do not assume requests are processed offline or that prompt text remains on the device. Generated code is executed with the application's user permissions. The website command simulator is illustrative and does not submit commands to the running application.
                         </p>
                     </div>
 
@@ -291,24 +283,13 @@
                             <h3 class="doc-block-title">06 // Plugin Architecture &amp; Mobile Web Remote</h3>
                         </div>
                         <p class="doc-text">
-                            Extend PRIVACY68 with custom desktop automations by inheriting from <code>BasePlugin</code>. Dropping scripts into <code>%APPDATA%/PRIVACY68/plugins/</code> automatically registers new voice intents with hot-reloading:
+                            The desktop dashboard includes a plugin registry for viewing registered integrations, changing enabled state, creating a template, installing a Python plugin file, and uninstalling user plugins. External Python plugins are loaded from <code>%APPDATA%/PRIVACY68/plugins/</code>; plugin code runs with the current user's permissions.
                         </p>
-                        <div class="doc-code-preview">
-from plugins.base_plugin import BasePlugin
-
-class MediaControlPlugin(BasePlugin):
-    name = "Custom Media Controller"
-    version = "1.0.0"
-
-    def register_intents(self) -> dict:
-        return {"media.next": self.next_track}
-
-    def get_intent_phrases(self) -> dict:
-        return {"media.next": ["next song", "skip track", "play next"]}
-                        </div>
+                        <p class="doc-text">The plugin registry is not a sandbox or an execution boundary. Registry enable/disable state does not guarantee that generated scripts are restricted to the enabled plugins.</p>
+                        <p class="doc-text"><a href="plugins.html">See the built-in plugins and extension details.</a></p>
                         <h4 style="color: var(--accent-cyan); margin: 15px 0 8px 0; font-family: var(--font-retro);">Mobile Web Remote (Local Wi-Fi)</h4>
                         <p class="doc-text">
-                            Control your computer from your smartphone or tablet! PRIVACY68 hosts an authenticated local server on port <code>8765</code>. Open Dashboard &rarr; <strong>Remote Server</strong>, scan the displayed QR code with your phone camera, and execute voice or text commands across your local network.
+                            Control your computer from your smartphone or tablet over the local network. The remote server does not provide authentication; only enable it on a trusted network and keep in mind commands run on the host computer.
                         </p>
                     </div>
 
@@ -318,71 +299,71 @@ class MediaControlPlugin(BasePlugin):
                             <i data-lucide="terminal" class="doc-block-icon"></i>
                             <h3 class="doc-block-title">07 // Complete Voice Command Reference</h3>
                         </div>
-                        <p class="doc-text">Common commands supported natively out of the box across each execution lane:</p>
+                        <p class="doc-text">These examples describe the current dispatch behavior, not guaranteed outcomes. Apart from pending confirmation replies and greeting shortcuts, commands are passed to the Agent Brain; actual actions depend on the model response, available software, and permissions.</p>
                         <div class="table-responsive">
                             <table class="cmd-table">
                                 <thead>
                                     <tr>
                                         <th>CATEGORY</th>
                                         <th>EXAMPLE VOICE COMMANDS</th>
-                                        <th>ROUTING LANE</th>
-                                        <th>ACTION PERFORMED</th>
+                                        <th>CURRENT HANDLING</th>
+                                        <th>NOTES</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <tr>
                                         <td><strong>System Control</strong></td>
                                         <td><code>"Privacy68, mute volume"</code>, <code>"set volume 75"</code></td>
-                                        <td><span class="badge-tag" style="background:rgba(0,255,255,0.1); color:var(--accent-cyan);">FAST LANE</span></td>
-                                        <td>Win32 endpoint volume adjustment (<2ms)</td>
+                                        <td>Agent Brain</td>
+                                        <td>Requests are sent to the configured model; actions are not guaranteed.</td>
                                     </tr>
                                     <tr>
                                         <td><strong>Display &amp; Power</strong></td>
                                         <td><code>"Privacy68, lock screen"</code>, <code>"take screenshot"</code></td>
-                                        <td><span class="badge-tag" style="background:rgba(0,255,255,0.1); color:var(--accent-cyan);">FAST LANE</span></td>
-                                        <td>Calls Win32 LockWorkStation / captures screen</td>
+                                        <td>Agent Brain</td>
+                                        <td>Generated code runs in a subprocess with the current user's permissions.</td>
                                     </tr>
                                     <tr>
                                         <td><strong>Applications</strong></td>
                                         <td><code>"Privacy68, open Chrome"</code>, <code>"launch VS Code"</code></td>
-                                        <td><span class="badge-tag" style="background:rgba(0,255,255,0.1); color:var(--accent-cyan);">FAST LANE</span></td>
-                                        <td>Resolves binary path and launches process</td>
+                                        <td>Agent Brain</td>
+                                        <td>Results depend on model output and installed applications.</td>
                                     </tr>
                                     <tr>
                                         <td><strong>Web Navigation</strong></td>
                                         <td><code>"Privacy68, open YouTube"</code>, <code>"open GitHub"</code></td>
-                                        <td><span class="badge-tag" style="background:rgba(0,255,255,0.1); color:var(--accent-cyan);">FAST LANE</span></td>
-                                        <td>Opens URL directly in default web browser</td>
+                                        <td>Agent Brain</td>
+                                        <td>Requests may involve network access if generated code performs it.</td>
                                     </tr>
                                     <tr>
                                         <td><strong>Windows Settings</strong></td>
                                         <td><code>"Privacy68, open bluetooth"</code>, <code>"open wifi settings"</code></td>
-                                        <td><span class="badge-tag" style="background:rgba(0,255,255,0.1); color:var(--accent-cyan);">FAST LANE</span></td>
-                                        <td>Direct protocol launch to Windows ms-settings</td>
+                                        <td>Agent Brain</td>
+                                        <td>No separate deterministic settings lane is implemented.</td>
                                     </tr>
                                     <tr>
                                         <td><strong>Compound Browser</strong></td>
                                         <td><code>"Privacy68, play Believer on YouTube"</code></td>
-                                        <td><span class="badge-tag" style="background:rgba(0,255,136,0.1); color:var(--accent-green);">FAST / API</span></td>
-                                        <td>Opens browser and triggers automated YouTube playback</td>
+                                        <td>Agent Brain</td>
+                                        <td>The website demo does not execute this example.</td>
                                     </tr>
                                     <tr>
                                         <td><strong>Messaging</strong></td>
                                         <td><code>"Privacy68, send WhatsApp message to Mom"</code></td>
-                                        <td><span class="badge-tag" style="background:rgba(0,255,255,0.1); color:var(--accent-cyan);">PLUGIN</span></td>
-                                        <td>Resolves contact alias and navigates WhatsApp desktop</td>
+                                        <td>Agent Brain</td>
+                                        <td>The built-in plugin code is available, but the executor does not route commands directly to it.</td>
                                     </tr>
                                     <tr>
                                         <td><strong>Live Web Search</strong></td>
                                         <td><code>"Privacy68, search latest space discoveries"</code></td>
-                                        <td><span class="badge-tag" style="background:rgba(255,0,85,0.1); color:var(--accent-magenta);">API LANE</span></td>
-                                        <td>Performs search and synthesizes spoken summary</td>
+                                        <td>Agent Brain</td>
+                                        <td>Any live search depends on model-generated code and may use the network.</td>
                                     </tr>
                                     <tr>
                                         <td><strong>General AI Reasoning</strong></td>
                                         <td><code>"Privacy68, explain quantum computing simply"</code></td>
-                                        <td><span class="badge-tag" style="background:rgba(255,170,0,0.1); color:var(--accent-amber);">OLLAMA / API</span></td>
-                                        <td>Synthesizes natural spoken answer via LLM</td>
+                                        <td>Agent Brain</td>
+                                        <td>Current model identifier: <code>ollama/gemma4:31b-cloud</code>.</td>
                                     </tr>
                                 </tbody>
                             </table>

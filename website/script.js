@@ -114,53 +114,6 @@ function initMatrixCanvas() {
     render();
 }
 
-// Simulated Waveform HUD Visualizer
-function initWaveformVisualizer() {
-    const canvas = document.getElementById('waveform-canvas');
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-
-    const bars = 48;
-    const barWidth = 8;
-    const gap = 5;
-
-    let time = 0;
-    function drawWave() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        time += 0.04;
-
-        const totalWidth = bars * (barWidth + gap);
-        const startX = (canvas.width - totalWidth) / 2;
-
-        for (let i = 0; i < bars; i++) {
-            const x = startX + i * (barWidth + gap);
-            const distFromCenter = Math.abs(i - bars / 2) / (bars / 2);
-            
-            // Generate pseudo-audio frequency bars
-            const wave1 = Math.sin(time * 2 + i * 0.3);
-            const wave2 = Math.cos(time * 1.5 + i * 0.5);
-            const rawH = (Math.abs(wave1 * wave2) * 36 + 6) * (1 - distFromCenter * 0.5);
-            const h = Math.max(4, Math.min(46, rawH));
-
-            const y = (canvas.height - h) / 2;
-
-            // Gradient fill: Crimson to Pure White
-            if (h > 30) {
-                ctx.fillStyle = '#ffffff';
-            } else if (h > 18) {
-                ctx.fillStyle = '#ef4444';
-            } else {
-                ctx.fillStyle = '#55111b';
-            }
-
-            ctx.fillRect(x, y, barWidth, h);
-        }
-
-        requestAnimationFrame(drawWave);
-    }
-    drawWave();
-}
-
 // Interactive Terminal Simulator
 function initTerminalSimulator() {
     const chips = document.querySelectorAll('.cmd-chip');
@@ -175,27 +128,10 @@ function initTerminalSimulator() {
             playRetroSFX('beep');
 
             const cmd = chip.getAttribute('data-cmd');
-            const lane = chip.getAttribute('data-lane');
-            const action = chip.getAttribute('data-action');
-            const conf = chip.getAttribute('data-conf');
+            if (termInput) termInput.textContent = `> [DEMO INPUT] "${cmd}"`;
+            if (termLane) termLane.textContent = '> [CURRENT FLOW] Request forwarded to Agent Brain (website simulation only)';
+            if (termAction) termAction.textContent = '> [DEMO ONLY] No model request was sent and no command was executed';
 
-            // Simulate typing into terminal
-            if (termInput) termInput.innerHTML = `&gt; [USER SPOKE] "${cmd}"`;
-            
-            if (lane === 'FAST_LANE') {
-                if (termLane) termLane.innerHTML = `&gt; [3-LANE ROUTER] <span style="color:#10b981;">⚡ FAST LANE ROUTED</span> (100% ML Match, Zero AI)`;
-                if (termAction) termAction.innerHTML = `&gt; [ACTION SUCCESS] ⚡ ${action} in 1.2ms`;
-            } else if (lane === 'API_LANE') {
-                if (termLane) termLane.innerHTML = `&gt; [3-LANE ROUTER] <span style="color:#38bdf8;">☁️ CLOUD API LANE</span> (OpenAI / Groq Fast Cloud Intelligence)`;
-                if (termAction) termAction.innerHTML = `&gt; [ACTION SUCCESS] ☁️ ${action} in 420ms`;
-            } else {
-                if (termLane) termLane.innerHTML = `&gt; [3-LANE ROUTER] <span style="color:#f59e0b;">🔒 LOCAL OLLAMA AIR-GAP</span> (100% Private Offline Inference)`;
-                if (termAction) termAction.innerHTML = `&gt; [ACTION SUCCESS] 🧠 ${action} in 160ms`;
-            }
-
-            setTimeout(() => {
-                playRetroSFX('success');
-            }, 120);
         });
     });
 }
@@ -299,7 +235,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     initMatrixCanvas();
-    initWaveformVisualizer();
     initTerminalSimulator();
     initControls();
 });
