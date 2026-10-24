@@ -67,26 +67,80 @@ class TestActionExecutor(unittest.TestCase):
         status_callback = Mock()
         action_callback = Mock()
         expected = {"success": True, "message": "completed", "method": "agentic_engine"}
-        with patch.object(executor, "autocorrect_speech_command", return_value="open chrome"):
+        with patch.object(executor, "autocorrect_speech_command", return_value="summarize this document"):
             with patch("actions.agent_brain.agent_brain.generate_and_execute", return_value=expected) as generate:
                 result = executor.execute_system_command_detailed(
-                    "open chrome",
+                    "summarize this document",
                     on_action_callback=action_callback,
                     on_status_callback=status_callback,
                 )
 
         self.assertEqual(result, expected)
-        generate.assert_called_once_with("open chrome")
+        generate.assert_called_once_with("summarize this document")
         status_callback.assert_called_once_with("completed", "completed")
         action_callback.assert_called_once_with("agent_brain", True, "completed")
+
+    def test_open_chrome_routes_directly_to_chrome_plugin(self):
+        chrome = Mock()
+        chrome.is_enabled = True
+        chrome.execute.return_value = True
+        with patch.object(executor, "autocorrect_speech_command", return_value="open chrome"):
+            with patch("plugins.manager.plugin_manager.get_plugin", side_effect=lambda pid: {
+                "github": None,
+                "chrome": chrome,
+            }.get(pid)):
+                with patch("actions.agent_brain.agent_brain.generate_and_execute") as generate:
+                    result = executor.execute_system_command_detailed("open chrome")
+
+        self.assertTrue(result["success"])
+        self.assertEqual(result["method"], "chrome_plugin")
+        chrome.execute.assert_called_once_with("open_url")
+        generate.assert_not_called()
+
+    def test_open_whatsapp_routes_directly_to_whatsapp_plugin(self):
+        whatsapp = Mock()
+        whatsapp.is_enabled = True
+        whatsapp.execute.return_value = True
+        with patch.object(executor, "autocorrect_speech_command", return_value="open whatsapp"):
+            with patch("plugins.manager.plugin_manager.get_plugin", side_effect=lambda pid: {
+                "github": None,
+                "whatsapp": whatsapp,
+            }.get(pid)):
+                with patch("actions.agent_brain.agent_brain.generate_and_execute") as generate:
+                    result = executor.execute_system_command_detailed("open whatsapp")
+
+        self.assertTrue(result["success"])
+        self.assertEqual(result["method"], "whatsapp_plugin")
+        whatsapp.execute.assert_called_once_with("open")
+        generate.assert_not_called()
+
+    def test_disabled_builtin_app_plugin_reports_actionable_error(self):
+        chrome = Mock()
+        chrome.is_enabled = False
+        with patch.object(executor, "autocorrect_speech_command", return_value="open chrome"):
+            with patch("plugins.manager.plugin_manager.get_plugin", side_effect=lambda pid: {
+                "github": None,
+                "chrome": chrome,
+            }.get(pid)):
+                result = executor.execute_system_command_detailed("open chrome")
+
+        self.assertFalse(result["success"])
+        self.assertEqual(result["method"], "chrome_plugin")
+        self.assertIn("disabled", result["message"])
+        chrome.execute.assert_not_called()
 
     def test_failed_agent_action_returns_failsafe_and_notifies(self):
         status_callback = Mock()
         action_callback = Mock()
+        underlying_error = "Agent Brain Error: Unknown encoding cl100k_base."
         with patch.object(executor, "autocorrect_speech_command", return_value="launch app"):
             with patch(
                 "actions.agent_brain.agent_brain.generate_and_execute",
-                return_value={"success": False, "message": "execution failed"},
+                return_value={
+                    "success": False,
+                    "message": underlying_error,
+                    "method": "agentic_engine",
+                },
             ):
                 result = executor.execute_system_command_detailed(
                     "launch app",
@@ -95,9 +149,10 @@ class TestActionExecutor(unittest.TestCase):
                 )
 
         self.assertFalse(result["success"])
-        self.assertIn("launch app", result["message"])
+        self.assertEqual(result["message"], underlying_error)
+        self.assertEqual(result["method"], "agentic_engine")
         status_callback.assert_called_once_with("error", result["message"])
-        action_callback.assert_called_once_with("unknown", False, result["message"])
+        action_callback.assert_called_once_with("agent_brain", False, result["message"])
 
     def test_pending_security_action_can_be_confirmed_via_executor(self):
         action = Mock(return_value="done")

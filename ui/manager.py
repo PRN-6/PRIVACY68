@@ -1,5 +1,7 @@
 import logging
 import os
+import subprocess
+import sys
 from typing import Optional
 from ui.hud import FloatingHUD
 from ui.tray import SystemTray
@@ -99,14 +101,19 @@ class UIManager:
 
     def open_dashboard(self):
         """Launches the PRIVACY68 Control Center Dashboard."""
-        from ui.dashboard_runner import run_dashboard
         logger.info("Requesting Control Center Dashboard launch...")
         # We cannot run webview.start() in a background thread.
         # Instead, we use a queue or a simple flag that the main thread can check,
-        # but for a quick professional fix, we launch it as a separate process.
-        import subprocess
-        import sys
-        subprocess.Popen([sys.executable, "-m", "ui.dashboard_runner"])
+        # so launch a separate process. A frozen build must use the app's own
+        # --dashboard mode rather than Python's -m module syntax.
+        if getattr(sys, "frozen", False):
+            command = [sys.executable, "--dashboard"]
+        else:
+            command = [sys.executable, "-m", "ui.dashboard_runner"]
+        try:
+            subprocess.Popen(command)
+        except OSError:
+            logger.exception("Could not launch the PRIVACY68 Control Center.")
 
 
     def toggle_mute(self):

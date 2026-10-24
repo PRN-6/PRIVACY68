@@ -14,7 +14,7 @@
 | Prepared by | _Add student name(s) and USN(s)_ |
 | Guide | _Add guide name_ |
 | Project category | Software system with pretrained ML inference components; no project-owned model training |
-| Repository version reference | 1.4.2 (project metadata) |
+| Repository version reference | 1.4.3 (project metadata) |
 
 > **Scope and accuracy note:** This specification describes the checked-in implementation, not planned or advertised features. PRIVACY68 is primarily a Windows desktop application. It uses pretrained speech and speaker-recognition models for inference, but the repository contains no dataset preparation, training, evaluation-split, experiment-tracking, or model-registry pipeline. Model training sections below therefore document the actual inference and enrollment design and explicitly mark training-only items as not applicable.
 

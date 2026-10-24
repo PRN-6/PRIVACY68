@@ -75,6 +75,18 @@ jobs:
         with:
           tag_name: ${{ github.ref_name }}
           name: "PRIVACY68 ${{ github.ref_name }}"
+          body: |
+            ## What's changed
+            - Fixes the frozen Windows build so LiteLLM can load the `cl100k_base` tokenizer encoding.
+            - Routes common Chrome and WhatsApp launch requests directly to their built-in plugins.
+            - Preserves the Agent Brain's actual error details in command results.
+            - Fixes frozen dashboard launching and isolated Agent Brain subprocess execution.
+
+            ## Requirements
+            - Model-backed commands require the local Ollama service and the configured model; they are not bundled.
+            - Chrome and WhatsApp launch commands require the corresponding application to be installed.
+
+            The project uses LiteLLM with Ollama; it does not use Open Interpreter.
           draft: false
           prerelease: false
           files: |

@@ -4,7 +4,7 @@ title PRIVACY68 Windows Installer Build
 
 echo.
 echo =====================================================
-echo       PRIVACY68  v1.4.2  -  Windows Installer Build
+echo       PRIVACY68  v1.4.3  -  Windows Installer Build
 echo =====================================================
 echo.
 
@@ -41,6 +41,6 @@ echo =====================================================
 echo  [DONE] PRIVACY68 installer build complete.
 echo.
 echo  App bundle : dist\PRIVACY68\
-echo  Installer  : installer\PRIVACY68-Setup-v1.4.2.exe
+echo  Installer  : installer\PRIVACY68-Setup-v1.4.3.exe
 echo =====================================================
 echo.

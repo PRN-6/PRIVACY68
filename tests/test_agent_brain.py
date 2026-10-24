@@ -19,7 +19,7 @@ class TestAgentBrain(unittest.TestCase):
         self.assertEqual(self.brain._get_code_from_llm("say hello"), "print('ok')")
         completion.assert_called_once()
 
-    @patch("actions.agent_brain.subprocess.run")
+    @patch("actions.agent_brain.run_agent_code")
     def test_generate_and_execute_returns_success_and_stdout(self, run):
         run.return_value = subprocess.CompletedProcess(
             args=["python", "-c", "print('ok')"],
@@ -34,9 +34,9 @@ class TestAgentBrain(unittest.TestCase):
         self.assertEqual(result["output"], "ok\n")
         self.assertEqual(result["method"], "agentic_engine")
         self.assertEqual(self.brain.last_code, "print('ok')")
-        run.assert_called_once()
+        run.assert_called_once_with("print('ok')", timeout=30)
 
-    @patch("actions.agent_brain.subprocess.run")
+    @patch("actions.agent_brain.run_agent_code")
     def test_generate_and_execute_reports_execution_error(self, run):
         run.return_value = subprocess.CompletedProcess(
             args=["python", "-c", "raise RuntimeError('bad')"],
@@ -50,7 +50,7 @@ class TestAgentBrain(unittest.TestCase):
         self.assertFalse(result["success"])
         self.assertIn("RuntimeError: bad", result["message"])
 
-    @patch("actions.agent_brain.subprocess.run")
+    @patch("actions.agent_brain.run_agent_code")
     def test_empty_generated_code_is_not_executed(self, run):
         with patch.object(self.brain, "_get_code_from_llm", return_value=""):
             result = self.brain.generate_and_execute("do something")

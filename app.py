@@ -1,5 +1,7 @@
 import os
 import sys
+import logging
+import threading
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 1. PyInstaller frozen-safe base directory resolution
@@ -16,30 +18,7 @@ APPDATA_DIR = os.path.join(os.getenv("APPDATA", os.path.expanduser("~")), "PRIVA
 os.makedirs(APPDATA_DIR, exist_ok=True)
 LOG_FILE = os.path.join(APPDATA_DIR, "privacy68.log")
 
-# ─────────────────────────────────────────────────────────────────────────────
-# 3. CUDA 12 Runtime DLL paths (required by faster-whisper / ctranslate2)
-#    Search AppData (downloaded on demand), frozen bundle, and .venv.
-# ─────────────────────────────────────────────────────────────────────────────
-try:
-    from utils.cuda_manager import register_cuda_dlls
-    register_cuda_dlls()
-except Exception:
-    for _pkg in ["cublas", "cudnn", "cuda_nvrtc"]:
-        for _candidate in [
-            os.path.join(APPDATA_DIR, "cuda", "bin"),
-            os.path.join(BASE_DIR, "nvidia", _pkg, "bin"),
-            os.path.join(os.path.dirname(os.path.abspath(__file__)), ".venv", "Lib", "site-packages", "nvidia", _pkg, "bin"),
-        ]:
-            if os.path.isdir(_candidate):
-                try:
-                    os.add_dll_directory(_candidate)
-                    os.environ["PATH"] = _candidate + os.pathsep + os.environ["PATH"]
-                except Exception as e:
-                    logger.debug(f"module: {e}")
-
-
-import logging
-import threading
+logger = logging.getLogger("PRIVACY68.Core")
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 4. Logging — always write to AppData log file; only echo to stdout if a
@@ -71,14 +50,36 @@ logger = logging.getLogger("PRIVACY68.Core")
 logger.info(f"PRIVACY68 starting — frozen={IS_FROZEN}, base={BASE_DIR}")
 logger.info(f"Log file: {LOG_FILE}")
 
+# CUDA registration is optional and must happen after logging is ready: in the
+# windowed executable, an exception here otherwise prevents every app mode
+# from starting and leaves no diagnostic log.
+try:
+    from utils.cuda_manager import register_cuda_dlls
+    register_cuda_dlls()
+except Exception:
+    logger.exception("Could not register optional CUDA runtime DLL paths; continuing without CUDA setup.")
+
 import config
 
 
 def main() -> None:
+    if "--run-agent-script" in sys.argv:
+        from actions.agent_runner import execute_agent_script
+
+        arguments = sys.argv[1:]
+        if len(arguments) != 3 or arguments[0] != "--run-agent-script":
+            logger.error("Invalid internal Agent Brain runner arguments.")
+            raise SystemExit(2)
+        raise SystemExit(execute_agent_script(arguments[1], arguments[2]))
+
     if "--dashboard" in sys.argv or "--settings" in sys.argv:
         logger.info("Launching PRIVACY68 Control Center Dashboard...")
-        from ui.dashboard_runner import run_dashboard
-        run_dashboard()
+        try:
+            from ui.dashboard_runner import run_dashboard
+            run_dashboard()
+        except Exception:
+            logger.exception("The PRIVACY68 Control Center failed to start.")
+            raise SystemExit(1)
         return
 
     from speech.streamer import SpeechStreamer, set_speech_streamer

@@ -29,6 +29,10 @@ for package in (
 for package in ("actions", "computer_use", "plugins", "server", "speech", "ui", "utils"):
     hiddenimports += collect_submodules(package)
 
+# tiktoken discovers its encoding definitions by scanning the tiktoken_ext
+# namespace package at runtime, which PyInstaller cannot infer from imports.
+hiddenimports += collect_submodules("tiktoken_ext")
+
 a = Analysis(
     [str(root / "app.py")],
     pathex=[str(root)],
