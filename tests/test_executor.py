@@ -29,8 +29,8 @@ class TestActionExecutor(unittest.TestCase):
         self.assertEqual(result["tool"], "greeting")
         generate.assert_not_called()
 
-    def test_sentence_containing_hi_is_delegated_to_agent_brain(self):
-        request = "in vscode can u push my code to github this is the branch"
+    def test_sentence_containing_this_is_not_misread_as_greeting(self):
+        request = "do this now"
         expected = {"success": True, "message": "request handled", "method": "agentic_engine"}
         with patch.object(executor, "autocorrect_speech_command", return_value=request):
             with patch("actions.agent_brain.agent_brain.generate_and_execute", return_value=expected) as generate:
@@ -38,6 +38,30 @@ class TestActionExecutor(unittest.TestCase):
 
         self.assertEqual(result, expected)
         generate.assert_called_once_with(request)
+
+    def test_github_push_requires_confirmation(self):
+        request = "in vscode can u push my code to github this is the branch feat/demo"
+        plugin = Mock()
+        plugin.is_enabled = True
+        plugin.parse_command.return_value = {
+            "action": "push",
+            "kwargs": {"branch": "feat/demo"},
+            "requires_confirmation": True,
+            "description": "push the current project branch feat/demo to GitHub",
+        }
+        plugin.perform.return_value = {"success": True, "message": "Pushed branch feat/demo"}
+        with patch.object(executor, "autocorrect_speech_command", side_effect=[request, "yes"]):
+            with patch("plugins.manager.plugin_manager.get_plugin", return_value=plugin):
+                result = executor.execute_system_command_detailed(request)
+                self.assertTrue(result["success"])
+                self.assertTrue(result["details"]["requires_confirmation"])
+                self.assertIn("Confirm", result["message"])
+                plugin.perform.assert_not_called()
+                confirmation = executor.execute_system_command_detailed("yes")
+
+        self.assertTrue(confirmation["success"])
+        self.assertEqual(confirmation["tool"], "security_confirmation")
+        plugin.perform.assert_called_once_with("push", branch="feat/demo")
 
     def test_commands_are_delegated_and_success_is_notified(self):
         status_callback = Mock()

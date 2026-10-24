@@ -26,7 +26,7 @@
 
 #### 1.1.1 System Context Diagram
 
-The user interacts with PRIVACY68 through a microphone, the Windows desktop interface, or (when enabled) a browser on the local network. Speech-to-text and speaker verification execute locally. The Agent Brain sends text to the provider/model configured in its source (`ollama/gemma4:31b-cloud` at the time of this specification) through LiteLLM and receives generated Python code. The provider may be local or remote depending on its configuration and deployment; the application must not be described as air-gapped unless the selected endpoint is verified to be local.
+The user interacts with PRIVACY68 through a microphone, the Windows desktop interface, or (when enabled) a browser on the local network. Speech-to-text and speaker verification execute locally. The Agent Brain sends text to the provider/model configured in its source (`ollama/gemma4:31b-cloud` at the time of this specification) through LiteLLM and receives generated Python code. Explicit GitHub tasks use the GitHub REST API and local Git; their personal access token is kept in Windows Credential Manager. The provider may be local or remote depending on its configuration and deployment; the application must not be described as air-gapped unless the selected endpoint is verified to be local.
 
 ```mermaid
 flowchart LR
@@ -39,6 +39,8 @@ flowchart LR
     Ollama[Optional local Ollama service]
     Apps[Windows apps and OS APIs]
     HF[Hugging Face model repository\nfirst-run fallback only]
+    GitHub[GitHub REST API and Git HTTPS]
+    Cred[Windows Credential Manager]
 
     User -->|voice| Mic
     Mic -->|audio stream| App
@@ -46,6 +48,8 @@ flowchart LR
     Phone -->|HTTP command / status| App
     App <-->|prompt text / generated code| LLM
     LLM -.->|if selected by provider| Ollama
+    App <-->|explicit GitHub requests / results| GitHub
+    App <-->|GitHub PAT| Cred
     App -->|approved or generated automation| Apps
     App -.->|model download if no bundled/cache model| HF
     Apps -->|action result| App
@@ -53,9 +57,9 @@ flowchart LR
     App -->|HTTP response| Phone
 ```
 
-**Trust boundaries:** microphone audio enters the local process; the Agent Brain currently hard-codes the model identifier `ollama/gemma4:31b-cloud` and does not read the provider/model values saved by the dashboard. Treat command text and the system prompt as potentially leaving the machine until the provider's actual routing is verified. Generated code executes with the user's Windows account permissions. The remote HTTP server currently defaults to `0.0.0.0` and does not implement request authentication. LAN access therefore exposes a control surface and must be treated as a security boundary, not as a private authenticated API.
+**Trust boundaries:** microphone audio enters the local process; the Agent Brain currently hard-codes the model identifier `ollama/gemma4:31b-cloud` and does not read the provider/model values saved by the dashboard. Treat command text and the system prompt as potentially leaving the machine until the provider's actual routing is verified. Generated code executes with the user's Windows account permissions. The GitHub integration sends authenticated requests to GitHub; protect the Windows account and grant the token only required repository permissions. The remote HTTP server currently defaults to `0.0.0.0` and does not implement request authentication. LAN access therefore exposes a control surface and must be treated as a security boundary, not as a private authenticated API.
 
-**Routing note:** the current implementation does not use a three-lane architecture. The executor handles pending security confirmations and greeting shortcuts; remaining requests are sent to the Agent Brain, which requests code through LiteLLM and executes returned Python in a subprocess.
+**Routing note:** the implementation does not use a three-lane architecture. The executor handles pending security confirmations and greeting shortcuts, routes explicit GitHub requests to the GitHub plugin, and sends remaining requests to the Agent Brain. The GitHub plugin uses the GitHub API for account/repository tasks and local Git for repository status and confirmed branch pushes.
 
 #### 1.1.2 High-Level Architecture
 
@@ -158,13 +162,14 @@ PRIVACY68 performs runtime inference and user-specific speaker enrollment only. 
 | Speech activity detection | `speech/vad.py` | Provides Silero VAD functionality used by the speech pipeline. |
 | Speech recognition | `faster-whisper` accessed from `speech/streamer.py` | Transcribes wake phrases and commands. `config.py` selects `medium.en`, CUDA/float16 when detected, otherwise CPU/int8. |
 | Voice Lock | `speech/voice_auth.py` | Preprocesses audio, computes 80-bin log-mel features, invokes a CAM++ ONNX model, creates 512-dimensional embeddings, enrolls a profile, and compares speakers. |
-| Command execution | `actions/executor.py` | Cleans text, handles pending confirmation and greeting shortcuts, dispatches remaining commands to the Agent Brain, and emits callbacks. |
+| Command execution | `actions/executor.py` | Cleans text, handles pending confirmation and greeting shortcuts, routes explicit GitHub commands to the GitHub plugin, dispatches remaining commands to the Agent Brain, and emits callbacks. |
 | Security confirmation | `computer_use/security_guard.py` | Classifies named actions into risk levels, queues sensitive/critical actions, expires pending actions after 15 seconds, and records an in-memory audit list. |
 | Agent Brain | `actions/agent_brain.py` | Sends user text to LiteLLM, extracts Python from the model response, then invokes it using a Python subprocess with a 30-second timeout. |
-| Plugin framework | `plugins/base_plugin.py`, `plugins/manager.py`, `plugins/*_plugin.py` | Defines the plugin interface, registers built-in Chrome/System/WhatsApp plugins, and loads user Python plugins from the application-data directory. The dashboard can list, toggle, install, create, and uninstall user plugins. |
+| Plugin framework | `plugins/base_plugin.py`, `plugins/manager.py`, `plugins/*_plugin.py` | Defines the plugin interface, registers built-in GitHub/Chrome/System/WhatsApp plugins, and loads user Python plugins from the application-data directory. The dashboard can list, toggle, install, create, and uninstall user plugins. |
+| GitHub integration | `plugins/github_plugin.py`, `computer_use/security_guard.py` | Stores a PAT in Windows Credential Manager, accesses repositories/issues/pull requests through the GitHub REST API, reports local Git status, and pushes the checked-out branch after confirmation. |
 | User profile | `plugins/profile_manager.py` | Reads and writes settings as JSON under `%APPDATA%\PRIVACY68\user_profile.json` (or the home directory fallback). |
 | Desktop UI | `ui/manager.py`, `ui/hud.py`, `ui/tray.py` | Displays listening, processing, success, and error states and exposes tray actions. |
-| Control Center | `ui/dashboard_runner.py`, `ui/dashboard_bridge.py`, `ui/dashboard/index.html` | Starts a pywebview window and exposes settings, diagnostics, model connection tests, plugin management, and voice-enrollment operations to JavaScript. |
+| Control Center | `ui/dashboard_runner.py`, `ui/dashboard_bridge.py`, `ui/dashboard/index.html` | Starts a pywebview window and exposes settings, diagnostics, model connection tests, plugin management, GitHub token connection, and voice-enrollment operations to JavaScript. |
 | Mobile Remote | `server/remote_server.py`, `server/static/` | Serves a mobile web page and HTTP status, QR, quick-action, and command endpoints. |
 | Acceleration utilities | `utils/cuda_manager.py` | Detects/configures CUDA DLL availability for supported inference workloads. |
 
@@ -174,11 +179,12 @@ PRIVACY68 performs runtime inference and user-specific speaker enrollment only. 
 2. While idle, it applies energy/no-speech checks and transcribes rolling audio windows to detect a configured wake word.
 3. After wake detection, it collects command audio, applies VAD/silence handling, and—if Voice Lock is enabled—verifies the speaker before transcribing the command with Faster-Whisper.
 4. The callback in `app.py` updates the HUD and invokes `execute_system_command`.
-5. `actions/executor.py` normalizes the transcript and checks for a pending confirmation. Confirmation words can confirm an action already queued by a caller; cancellation words cancel it. The generic LLM-generated code path is not automatically queued or checked by `SecurityGuard`.
-6. A greeting may return locally. Other commands are sent to `AgentBrain.generate_and_execute`.
-7. `AgentBrain` calls `litellm.completion`, extracts Python source, then executes the source using `subprocess.run([sys.executable, "-c", code], timeout=30)`.
-8. Results are returned to the UI callbacks and shown in the HUD/tray. The remote endpoint similarly dispatches command text through a callback and returns JSON.
-9. Voice Lock uses the ONNX model to map enrollment and verification audio to embeddings. The voice profile stores embeddings and metadata rather than the original enrollment audio.
+5. `actions/executor.py` normalizes the transcript and checks for a pending confirmation. Confirmation words execute a queued action and cancellation words discard it. Other requests are not allowed to replace an action while its confirmation is pending.
+6. A greeting returns locally. Explicit GitHub requests are parsed and routed to `GitHubPlugin`; other requests go to `AgentBrain.generate_and_execute`.
+7. The GitHub plugin uses Windows Credential Manager for the PAT. Read requests use GitHub REST API endpoints; local status reads the current repository, and a branch push uses Git with a temporary askpass helper. Push, issue creation, and pull-request creation require an explicit confirmation.
+8. `AgentBrain` calls `litellm.completion`, extracts Python source, then executes the source using `subprocess.run([sys.executable, "-c", code], timeout=30)`.
+9. Results are returned to the UI callbacks and shown in the HUD/tray. The remote endpoint similarly dispatches command text through a callback and returns JSON.
+10. Voice Lock uses the ONNX model to map enrollment and verification audio to embeddings. The voice profile stores embeddings and metadata rather than the original enrollment audio.
 
 **Communication mechanisms:** in-process Python calls and callbacks; WebView JavaScript-to-Python bridge; HTTP/JSON over the configured remote server; LiteLLM provider interface; ONNX Runtime inference; and subprocess execution of generated code.
 
@@ -210,9 +216,10 @@ PRIVACY68 does not create or train a custom machine-learning dataset. It consume
 | Bundled speaker model | `assets/models/speaker_model.onnx`; the source code identifies the upstream model family as WeSpeaker CAM++ (`Wespeaker/wespeaker-voxceleb-campplus-LM`) | Confirm the upstream model card and redistribution terms before academic or public redistribution. The repository does not establish a separate model license in this SDS. | Pretrained before use; downloaded only if bundled and cached models are unavailable | Local speaker embedding inference. |
 | Speech recognition model | Faster-Whisper downloads/loads the selected Whisper model through its runtime | Follow the model provider's model-card/license terms for the exact selected model. | Pretrained before use | Local English speech recognition and wake phrase detection. |
 | User settings | Entered by the user in the dashboard or read from local profile file | User-provided; API credentials should be treated as secrets | Updated when settings are saved | Wake word, provider/model configuration, thresholds, preferences, and credentials. |
+| GitHub personal access token | Entered by the user in the dashboard; validated with GitHub | User-created token; grant only required fine-grained repository permissions and set an expiration | Stored until disconnected/revoked | GitHub REST API access and authenticated HTTPS Git push. Stored in Windows Credential Manager, not the profile JSON. |
 | Command text / LLM output | Generated from the user's typed or recognized request and configured LLM response | User command content; provider terms apply if the configured endpoint is remote | Per request | Code generation and desktop task execution. |
 
-**Permissions and privacy controls:** provide a clear consent step before enrollment, explain local storage and deletion, and do not enroll another person's voice without permission. The current JSON profile writer stores API credentials as ordinary JSON; protect the Windows account and profile directory and consider replacing plaintext storage with Windows Credential Manager. The current remote server has no authentication; do not expose it to the public Internet.
+**Permissions and privacy controls:** provide a clear consent step before enrollment, explain local storage and deletion, and do not enroll another person's voice without permission. Model/provider credentials in the profile JSON remain ordinary JSON and require protection of the Windows account and profile directory. The GitHub token is stored separately in Windows Credential Manager and can be removed from the dashboard; revoke it on GitHub when no longer needed. The current remote server has no authentication; do not expose it to the public Internet.
 
 #### 2.1.2 Dataset Schema and Data Dictionary
 

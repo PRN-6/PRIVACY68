@@ -360,7 +360,7 @@
               </div>
             </div>
             <form class="composer" id="command-form">
-              <div class="safety-note">Generated scripts run with your Windows account permissions. Review requests before sending.</div>
+              <div class="safety-note">Generated scripts run with your Windows account permissions. GitHub changes and pushes require confirmation.</div>
               <div class="composer-row">
                 <label class="sr-only" for="command-input">Command</label>
                 <input id="command-input" type="text" maxlength="1000" autocomplete="off" placeholder="For example: open Chrome">
@@ -374,7 +374,7 @@
               <pre class="output-content" id="reasoning-box">No command has been run in this session.</pre>
             </section>
             <section class="output-panel">
-              <div class="panel-head"><h2>Generated code</h2><span class="card-kicker">Shown when returned by the agent</span></div>
+              <div class="panel-head"><h2>Output</h2><span class="card-kicker">Agent code or integration details</span></div>
               <pre class="output-content code" id="code-box">No generated code yet.</pre>
             </section>
           </div>
@@ -393,6 +393,30 @@
             <div class="plugin-grid" id="plugin-list" aria-live="polite">
               <p class="plugin-empty">Loading registered plugins…</p>
             </div>
+          </section>
+
+          <section class="card card-pad">
+            <div class="card-heading">
+              <h2 class="card-title">GitHub connection</h2>
+              <span class="pill" id="github-connection-state">Checking…</span>
+            </div>
+            <p class="hint" id="github-connection-description" style="margin:0 0 15px">
+              Connect with a fine-grained GitHub token. PRIVACY68 stores it in Windows Credential Manager, not in project files.
+            </p>
+            <form id="github-connect-form" class="plugin-form-grid">
+              <div class="field" style="grid-column:1/-1">
+                <label for="github-token">Personal access token</label>
+                <input id="github-token" type="password" autocomplete="new-password" spellcheck="false" maxlength="500" placeholder="github_pat_…" required>
+              </div>
+              <div class="button-row" style="grid-column:1/-1">
+                <button class="button primary" id="github-connect" type="submit">Connect GitHub</button>
+                <button class="button" id="github-disconnect" type="button" hidden>Disconnect</button>
+              </div>
+            </form>
+            <p class="hint" style="margin:12px 0 0">
+              Grant only the repositories and permissions you need: Metadata read, Contents read/write, Issues read/write, and Pull requests read/write.
+              Pushes and GitHub changes require confirmation. PRIVACY68 never displays or stores the token in project files.
+            </p>
           </section>
 
           <section class="card card-pad">
@@ -473,7 +497,7 @@
       $('workspace-title').textContent = plugins ? 'Plugin registry' : 'Command console';
       $('workspace-description').textContent = plugins
         ? 'Review registered integrations, enable or disable them, and manage trusted Python plugins.'
-        : 'Send a request and review the returned status and generated code.';
+        : 'Send a request and review the result, generated code, or integration details.';
       $('console-tab').className = `button${plugins ? '' : ' primary'}`;
       $('plugins-tab').className = `button${plugins ? ' primary' : ''}`;
       $('console-tab').setAttribute('aria-pressed', String(!plugins));
@@ -548,6 +572,59 @@
         message.className = 'plugin-empty';
         message.textContent = `Could not load plugins: ${error.message}`;
         list.appendChild(message);
+      }
+    }
+
+    async function refreshGitHubStatus() {
+      const state = $('github-connection-state');
+      try {
+        const result = await bridge().get_github_status();
+        if (!result || !result.success) throw new Error(result?.message || 'Could not check GitHub connection.');
+        state.textContent = result.connected ? `Connected: ${result.login}` : 'Not connected';
+        state.className = `pill ${result.connected ? 'good' : 'warn'}`;
+        $('github-connection-description').textContent = result.connected
+          ? `Connected to GitHub as ${result.login}. Your token is stored in Windows Credential Manager.`
+          : 'Connect with a fine-grained GitHub token. PRIVACY68 stores it in Windows Credential Manager, not in project files.';
+        $('github-token').required = !result.connected;
+        $('github-token').placeholder = result.connected ? 'Token saved securely' : 'github_pat_…';
+        $('github-disconnect').hidden = !result.connected;
+      } catch (error) {
+        state.textContent = 'Unavailable';
+        state.className = 'pill bad';
+        $('github-connection-description').textContent = error.message;
+      }
+    }
+
+    async function connectGitHub(event) {
+      event.preventDefault();
+      const input = $('github-token');
+      const token = input.value.trim();
+      if (!token) return;
+      input.value = '';
+      const button = $('github-connect');
+      button.disabled = true;
+      try {
+        const result = await bridge().connect_github(token);
+        if (!result || !result.success) throw new Error(result?.message || 'GitHub connection failed.');
+        showToast(result.message);
+        await refreshGitHubStatus();
+      } catch (error) {
+        showToast(error.message, true);
+      } finally {
+        button.disabled = false;
+        input.value = '';
+      }
+    }
+
+    async function disconnectGitHub() {
+      if (!confirm('Remove the saved GitHub token from Windows Credential Manager?')) return;
+      try {
+        const result = await bridge().disconnect_github();
+        if (!result || !result.success) throw new Error(result?.message || 'Could not disconnect GitHub.');
+        showToast(result.message);
+        await refreshGitHubStatus();
+      } catch (error) {
+        showToast(error.message, true);
       }
     }
 
@@ -716,10 +793,13 @@
         $('session-count').textContent = `${commandCount} command${commandCount === 1 ? '' : 's'}`;
         const message = result.message || (result.success ? 'Command completed.' : 'Command failed.');
         appendMessage('system', message, !result.success);
-        $('result-state').textContent = result.success ? 'Completed' : 'Failed';
-        $('result-state').className = `pill ${result.success ? 'good' : 'bad'}`;
+        const awaitingConfirmation = Boolean(result.details?.requires_confirmation);
+        $('result-state').textContent = awaitingConfirmation ? 'Confirm action' : (result.success ? 'Completed' : 'Failed');
+        $('result-state').className = `pill ${awaitingConfirmation ? 'warn' : (result.success ? 'good' : 'bad')}`;
         $('reasoning-box').textContent = [result.method && `Method: ${result.method}`, message].filter(Boolean).join('\n\n');
-        $('code-box').textContent = result.code || 'No code was generated for this command.';
+        $('code-box').textContent = result.details
+          ? JSON.stringify(result.details, null, 2)
+          : (result.output || result.code || 'No additional output.');
         if (!result.success) showToast(message, true);
       } catch (error) {
         $('result-state').textContent = 'Error';
@@ -812,6 +892,8 @@
     $('console-tab').addEventListener('click', () => setView('console'));
     $('plugins-tab').addEventListener('click', () => setView('plugins'));
     $('refresh-plugins').addEventListener('click', refreshPlugins);
+    $('github-connect-form').addEventListener('submit', connectGitHub);
+    $('github-disconnect').addEventListener('click', disconnectGitHub);
     $('plugin-form').addEventListener('submit', createPlugin);
     $('install-plugin-file').addEventListener('click', installPluginFile);
     $('save-profile').addEventListener('click', saveProfile);
@@ -843,6 +925,7 @@
     window.addEventListener('pywebviewready', () => {
       refreshStatus();
       refreshPlugins();
+      refreshGitHubStatus();
     });
     document.addEventListener('DOMContentLoaded', () => {
       if (window.pywebview && window.pywebview.api) {

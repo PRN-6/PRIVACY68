@@ -75,6 +75,15 @@
                     <p class="spec-body">Can open WhatsApp or a WhatsApp Web link. Sending a message only opens the link; it does not verify delivery or send automatically.</p>
                     <div class="spec-tag">COMMUNICATION · BUILT IN</div>
                 </article>
+                <article class="spec-card">
+                    <div class="spec-header">
+                        <span class="spec-num">[ CORE ]</span>
+                        <span class="spec-icon"><i data-lucide="github"></i></span>
+                    </div>
+                    <h2 class="spec-title">GitHub Integration</h2>
+                    <p class="spec-body">Uses a personal access token stored in Windows Credential Manager to inspect project status, push the current branch, list repositories/issues/pull requests, and create issues or pull requests. Write operations require confirmation.</p>
+                    <div class="spec-tag">DEVELOPER · BUILT IN</div>
+                </article>
             </div>
 
             <section class="plugin-guide">
@@ -84,7 +93,8 @@
                 </div>
                 <p class="doc-text">Open the PRIVACY68 Control Center and choose <strong>Plugins</strong> to see the plugins registered on this device. From there you can enable or disable entries, create a starter template, install a Python file, or uninstall a user plugin. Built-in plugins cannot be uninstalled.</p>
                 <p class="doc-text">External Python plugins are discovered from <code>%APPDATA%\PRIVACY68\plugins\</code>. The dashboard can install a <code>.py</code> file into this directory. The plugin manager imports Python code when it loads, so only install code you trust; plugin code runs with the current user's permissions.</p>
-                <p class="doc-text">The registry is an extension-management interface, not a security boundary. Enabling or disabling a registry entry does not sandbox generated scripts or guarantee that the assistant routes every request through a plugin.</p>
+                <p class="doc-text">The registry is an extension-management interface, not a security boundary. GitHub requests are explicitly routed to the built-in GitHub integration; other plugin registrations are not automatically dispatched. Enabling or disabling a registry entry does not sandbox generated scripts.</p>
+                <p class="doc-text">Connect GitHub in this dashboard with a fine-grained personal access token. PRIVACY68 stores it in Windows Credential Manager. Grant only the repository permissions required: Metadata read, Contents read/write, Issues read/write, and Pull requests read/write. Pushes and creation of issues/pull requests ask for confirmation.</p>
                 <a class="button-link" href="docs.html#plugin-system">Read the plugin architecture notes</a>
             </section>
         </main>

@@ -50,6 +50,84 @@ def execute_system_command_detailed(text: str, on_action_callback=None, on_statu
             msg = security_guard.cancel_pending()
             _notify(on_status_callback, on_action_callback, "security_cancel", True, msg)
             return {"success": True, "tool": "security_cancel", "method": "security_guard", "message": msg}
+        return {
+            "success": False,
+            "tool": "security_confirmation",
+            "method": "security_guard",
+            "message": "An action is awaiting confirmation. Say 'confirm' or 'yes' to proceed, or 'cancel' before making another request.",
+            "details": {"requires_confirmation": True},
+        }
+
+    # Route explicit GitHub tasks to the integrated plugin instead of generating shell code.
+    from plugins.manager import plugin_manager
+    github_plugin = plugin_manager.get_plugin("github")
+    if github_plugin and not github_plugin.is_enabled and github_plugin.parse_command(cleaned):
+        return {
+            "success": False,
+            "tool": "github",
+            "method": "github_plugin",
+            "message": "The GitHub plugin is disabled. Enable it in the Plugins dashboard to use GitHub commands.",
+        }
+    if github_plugin and github_plugin.is_enabled:
+        request = github_plugin.parse_command(cleaned)
+        if request:
+            action = request["action"]
+            kwargs = request["kwargs"]
+            if action == "unsupported":
+                return {
+                    "success": False,
+                    "tool": "github",
+                    "method": "github_plugin",
+                    "message": "That GitHub operation is not supported yet. Supported tasks: repository status, current-branch push, list repositories/issues/pull requests, and create issues/pull requests.",
+                }
+            if action == "create_issue" and not kwargs.get("title"):
+                return {
+                    "success": False,
+                    "tool": "github",
+                    "method": "github_plugin",
+                    "message": "Specify an issue title, for example: create GitHub issue title Fix login.",
+                }
+            if action == "create_pull_request" and not all(kwargs.get(key) for key in ("title", "head", "base")):
+                return {
+                    "success": False,
+                    "tool": "github",
+                    "method": "github_plugin",
+                    "message": "Specify the PR title, head branch, and base branch.",
+                }
+
+            def perform_github_action():
+                return github_plugin.perform(action, **kwargs)
+
+            if request["requires_confirmation"]:
+                risk_action = "github_push" if action == "push" else "github_write"
+                success, message, details = security_guard.request_execution(
+                    risk_action,
+                    perform_github_action,
+                    description=request["description"],
+                )
+                requires_confirmation = bool(details and details.get("requires_confirmation"))
+                if not requires_confirmation:
+                    _notify(on_status_callback, on_action_callback, "github", success, message)
+                return {
+                    "success": success or requires_confirmation,
+                    "tool": "github",
+                    "method": "github_plugin",
+                    "message": message,
+                    "details": details,
+                }
+
+            try:
+                result = perform_github_action()
+            except (RuntimeError, ValueError) as exc:
+                message = str(exc)
+                _notify(on_status_callback, on_action_callback, "github", False, message)
+                return {"success": False, "tool": "github", "method": "github_plugin", "message": message}
+            message = result.get("message", "GitHub request completed.")
+            details = result.get("details")
+            if details is not None:
+                message = f"{message}\n{details}"
+            _notify(on_status_callback, on_action_callback, "github", True, message)
+            return {**result, "tool": "github", "method": "github_plugin", "message": message}
 
     # 2. GREETINGS (Fast bypass)
     if low in GREETINGS:
