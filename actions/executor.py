@@ -22,6 +22,9 @@ GREETINGS = frozenset({
 
 BUILTIN_APP_COMMANDS = (
     (re.compile(r"(?:open|launch|start)\s+(?:(?:google)\s+)?chrome(?:\s+browser)?"), "chrome", "open_url"),
+    (re.compile(r"(?:open|launch|start)\s+(?:the\s+)?brave(?:\s+browser)?\s+and\s+(?:create|open)\s+(?:a\s+)?new\s+tab(?:\s+in\s+brave)?"), "brave", "open_new_tab"),
+    (re.compile(r"(?:create|open)\s+(?:a\s+)?new\s+tab\s+in\s+brave"), "brave", "open_new_tab"),
+    (re.compile(r"(?:open|launch|start)\s+(?:the\s+)?brave(?:\s+browser)?"), "brave", "open"),
     (re.compile(r"(?:open|launch|start)\s+(?:the\s+)?whatsapp(?:\s+desktop)?"), "whatsapp", "open"),
 )
 
@@ -53,9 +56,15 @@ def _execute_builtin_app_command(command: str, plugin_manager, on_action_callbac
         else:
             success = bool(plugin.execute(action))
             if success:
-                message = f"Opened {plugin_id.title()}."
+                message = (
+                    "Opened a new Brave tab."
+                    if plugin_id == "brave" and action == "open_new_tab"
+                    else f"Opened {plugin_id.title()}."
+                )
             elif plugin_id == "chrome":
                 message = "Could not open Chrome. Check that Google Chrome is installed."
+            elif plugin_id == "brave":
+                message = "Could not open Brave. Check that Brave is installed."
             else:
                 message = "Could not open WhatsApp. Check that WhatsApp is installed and its app link is registered."
 

@@ -22,6 +22,13 @@ class TestAgentRunner(unittest.TestCase):
         self.assertTrue(run.call_args.kwargs["capture_output"])
         self.assertTrue(run.call_args.kwargs["text"])
 
+    def test_source_runner_calls_defined_main_function(self):
+        result = run_agent_code("def main():\n    print('main ran')\n")
+
+        self.assertEqual(result.returncode, 0)
+        self.assertEqual(result.stdout, "main ran\n")
+        self.assertEqual(result.stderr, "")
+
     def test_frozen_run_uses_internal_executable_runner(self):
         def run_child(command, **kwargs):
             self.assertEqual(command[1], "--run-agent-script")
@@ -56,6 +63,35 @@ class TestAgentRunner(unittest.TestCase):
         self.assertEqual(result["returncode"], 1)
         self.assertEqual(result["stdout"], "before failure\n")
         self.assertIn("RuntimeError: broken", result["stderr"])
+
+    def test_internal_runner_calls_defined_main_function(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            script_path = os.path.join(temp_dir, "agent_script.py")
+            result_path = os.path.join(temp_dir, "result.json")
+            with open(script_path, "w", encoding="utf-8") as script:
+                script.write("def main():\n    print('main ran')\n")
+
+            returncode = execute_agent_script(script_path, result_path)
+
+            with open(result_path, encoding="utf-8") as result_file:
+                result = json.load(result_file)
+
+        self.assertEqual(returncode, 0)
+        self.assertEqual(result["stdout"], "main ran\n")
+
+    def test_internal_runner_does_not_call_main_twice(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            script_path = os.path.join(temp_dir, "agent_script.py")
+            result_path = os.path.join(temp_dir, "result.json")
+            with open(script_path, "w", encoding="utf-8") as script:
+                script.write("def main():\n    print('main ran')\n\nif __name__ == '__main__':\n    main()\n")
+
+            execute_agent_script(script_path, result_path)
+
+            with open(result_path, encoding="utf-8") as result_file:
+                result = json.load(result_file)
+
+        self.assertEqual(result["stdout"], "main ran\n")
 
 
 if __name__ == "__main__":

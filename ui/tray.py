@@ -39,7 +39,6 @@ class SystemTray:
         menu = pystray.Menu(
             pystray.MenuItem(f"🤖 Status: {self.current_status}", lambda: None, enabled=False),
             pystray.Menu.SEPARATOR,
-            pystray.MenuItem("🚀 Quick Command", self._on_quick_command),
             pystray.MenuItem("📊 Open Dashboard", self._on_open_dashboard),
             pystray.MenuItem("📱 Open Mobile Remote", self._on_open_mobile_remote),
             pystray.MenuItem("🧹 Reset Brain Session", self._on_reset_brain),
@@ -65,10 +64,6 @@ class SystemTray:
             self.ui_manager.open_dashboard()
         else:
             logger.error("UI Manager not found; cannot open dashboard.")
-
-    def _on_quick_command(self):
-        """Quickly opens the mobile remote for immediate command entry."""
-        self._on_open_mobile_remote()
 
     def _on_open_mobile_remote(self):
         """Opens the local web remote using the dynamic project URL."""

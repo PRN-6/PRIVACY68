@@ -97,6 +97,41 @@ class TestActionExecutor(unittest.TestCase):
         chrome.execute.assert_called_once_with("open_url")
         generate.assert_not_called()
 
+    def test_open_brave_routes_directly_to_brave_plugin(self):
+        brave = Mock()
+        brave.is_enabled = True
+        brave.execute.return_value = True
+        with patch.object(executor, "autocorrect_speech_command", return_value="open brave"):
+            with patch("plugins.manager.plugin_manager.get_plugin", side_effect=lambda pid: {
+                "github": None,
+                "brave": brave,
+            }.get(pid)):
+                with patch("actions.agent_brain.agent_brain.generate_and_execute") as generate:
+                    result = executor.execute_system_command_detailed("open brave")
+
+        self.assertTrue(result["success"])
+        self.assertEqual(result["method"], "brave_plugin")
+        brave.execute.assert_called_once_with("open")
+        generate.assert_not_called()
+
+    def test_open_brave_and_create_new_tab_routes_directly_to_plugin(self):
+        brave = Mock()
+        brave.is_enabled = True
+        brave.execute.return_value = True
+        request = "open brave and create a new tab in brave"
+        with patch.object(executor, "autocorrect_speech_command", return_value=request):
+            with patch("plugins.manager.plugin_manager.get_plugin", side_effect=lambda pid: {
+                "github": None,
+                "brave": brave,
+            }.get(pid)):
+                with patch("actions.agent_brain.agent_brain.generate_and_execute") as generate:
+                    result = executor.execute_system_command_detailed(request)
+
+        self.assertTrue(result["success"])
+        self.assertEqual(result["message"], "Opened a new Brave tab.")
+        brave.execute.assert_called_once_with("open_new_tab")
+        generate.assert_not_called()
+
     def test_open_whatsapp_routes_directly_to_whatsapp_plugin(self):
         whatsapp = Mock()
         whatsapp.is_enabled = True
