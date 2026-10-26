@@ -81,7 +81,7 @@ class TestPluginManager(unittest.TestCase):
         self.manager.load_builtin_plugins()
         plugins = {plugin.id: plugin for plugin in self.manager.get_all_plugins()}
 
-        self.assertEqual(set(plugins), {"chrome", "github", "system", "whatsapp"})
+        self.assertEqual(set(plugins), {"brave", "chrome", "github", "system", "whatsapp"})
         self.assertTrue(all(plugin.is_builtin for plugin in plugins.values()))
         self.assertTrue(all(plugin.is_enabled for plugin in plugins.values()))
 
