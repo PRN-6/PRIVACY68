@@ -235,6 +235,53 @@
             </div>
         </section>
 
+        <!-- System Requirements & Prerequisites Section -->
+        <section class="content-section" id="prerequisites">
+            <div class="section-title-wrap">
+                <span class="section-index">[ 03 // RUNTIME &amp; PREREQUISITES ]</span>
+                <h2 class="section-heading">System Prerequisites: Ollama &amp; CUDA</h2>
+                <p class="section-desc">Key requirements for agentic automation and optional hardware acceleration.</p>
+            </div>
+
+            <div class="specs-grid">
+                <!-- Ollama Prerequisite Card -->
+                <div class="spec-card">
+                    <div class="spec-header">
+                        <span class="spec-num">[ REQ-01 ]</span>
+                        <span class="spec-icon"><i data-lucide="bot"></i></span>
+                    </div>
+                    <h3 class="spec-title">Ollama (Required for Agent Brain)</h3>
+                    <p class="spec-body">
+                        Agent Brain automation requires the <strong>Ollama service</strong> running on your machine (<code>http://127.0.0.1:11434</code>).
+                    </p>
+                    <ul style="color: var(--text-secondary); font-size: 0.85rem; margin: 10px 0 12px 18px; line-height: 1.6;">
+                        <li><strong>Install:</strong> Download from <a href="https://ollama.com/download" target="_blank" rel="noreferrer" style="color: var(--color-ruby); text-decoration: underline;">ollama.com</a>.</li>
+                        <li><strong>Dashboard Probe:</strong> The Control Center auto-detects if Ollama is Online 🟢, Offline 🟡, or Missing 🔴, with 1-click launch.</li>
+                        <li><strong>Offline Models:</strong> Uses cloud proxy by default, or run <code>ollama pull qwen2.5:0.5b</code> for 100% offline air-gapped tasks.</li>
+                    </ul>
+                    <div class="spec-tag">AUTOMATION CORE</div>
+                </div>
+
+                <!-- CUDA Prerequisite Card -->
+                <div class="spec-card">
+                    <div class="spec-header">
+                        <span class="spec-num">[ REQ-02 ]</span>
+                        <span class="spec-icon"><i data-lucide="cpu"></i></span>
+                    </div>
+                    <h3 class="spec-title">CUDA 12 &amp; cuDNN 9 (Optional GPU)</h3>
+                    <p class="spec-body">
+                        Runs out-of-the-box on <strong>CPU (int8)</strong> with zero GPU setup. For 3x faster transcription on NVIDIA GPUs:
+                    </p>
+                    <ul style="color: var(--text-secondary); font-size: 0.85rem; margin: 10px 0 12px 18px; line-height: 1.6;">
+                        <li><strong>Why CUDA Toolkit fails:</strong> Faster-Whisper requires CUDA 12 + cuDNN 9 DLLs. Standard toolkit installers (like CUDA 13.x) omit cuDNN.</li>
+                        <li><strong>1-Click Install:</strong> Click <em>"Download CUDA (~450MB)"</em> in the Control Center Hardware card.</li>
+                        <li><strong>Automated:</strong> Installs isolated cuBLAS 12 and cuDNN 9 DLLs into <code>%APPDATA%\PRIVACY68\cuda\bin</code>.</li>
+                    </ul>
+                    <div class="spec-tag">3X ACCELERATION</div>
+                </div>
+            </div>
+        </section>
+
         <!-- Quick 3-Step Setup Section -->
         <section class="content-section" id="install">
             <div class="section-title-wrap">
@@ -283,7 +330,7 @@
                 <div class="step-row">
                     <div class="step-badge">STEP 03</div>
                     <div class="step-detail">
-                        <h4>Launch Assistant & Say "Privacy68"</h4>
+                        <h4>Launch Assistant &amp; Say "Alexa"</h4>
                         <div class="code-block">
                             <code>python app.py</code>
                             <button class="copy-btn" onclick="copyCode(this, 'python app.py')">COPY</button>
