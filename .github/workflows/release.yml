@@ -28,13 +28,6 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt .
 
-      - name: Check bundled speaker model
-        run: |
-          if (-not (Test-Path "assets/models/speaker_model.onnx")) {
-            Write-Error "Missing assets/models/speaker_model.onnx — the installer requires it."
-            exit 1
-          }
-
       - name: Run unit tests
         run: python -m unittest discover tests -v
 
@@ -76,17 +69,16 @@ jobs:
           tag_name: ${{ github.ref_name }}
           name: "PRIVACY68 ${{ github.ref_name }}"
           body: |
-            ## What's changed
-            - Fixes the frozen Windows build so LiteLLM can load the `cl100k_base` tokenizer encoding.
-            - Routes common Chrome and WhatsApp launch requests directly to their built-in plugins.
-            - Preserves the Agent Brain's actual error details in command results.
-            - Fixes frozen dashboard launching and isolated Agent Brain subprocess execution.
+            ## What's Changed in ${{ github.ref_name }}
+            - **Ollama Detection & Management**: Real-time probe in Control Center displaying local/cloud Ollama service status and one-click controls.
+            - **On-Demand CUDA 12 Runtime**: One-click download and extraction of cuBLAS/cuDNN DLLs directly from the dashboard for instant GPU acceleration on compatible NVIDIA GPUs.
+            - **Dynamic Path Resolution**: Enhanced Agent Brain path resolution across OneDrive redirected folders (Desktop, Documents, Downloads).
+            - **Alexa Wake Word**: Fast and accurate wake phrase detection using Faster-Whisper and Silero neural VAD.
+            - **Streamlined Footprint**: Removed heavy legacy biometric models for a faster and cleaner desktop installation.
 
             ## Requirements
-            - Model-backed commands require the local Ollama service and the configured model; they are not bundled.
-            - Chrome and WhatsApp launch commands require the corresponding application to be installed.
-
-            The project uses LiteLLM with Ollama; it does not use Open Interpreter.
+            - **Ollama**: Local Ollama service is recommended for executing agentic OS automation commands (or configure an API key).
+            - **GPU Acceleration (Optional)**: Can run on CPU out of the box, or click 'Download CUDA' in Hardware settings for NVIDIA GPU acceleration.
           draft: false
           prerelease: false
           files: |

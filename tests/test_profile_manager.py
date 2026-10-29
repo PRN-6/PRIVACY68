@@ -13,7 +13,7 @@ class TestProfileManager(unittest.TestCase):
             profile = ProfileManager()
 
         self.assertEqual(profile.get("user_name"), "User")
-        self.assertEqual(profile.get("wake_word"), "privacy68")
+        self.assertEqual(profile.get("wake_word"), "alexa")
         self.assertEqual(profile.get("missing", "fallback"), "fallback")
 
     def test_updates_persist_and_merge_with_defaults(self):
@@ -27,7 +27,7 @@ class TestProfileManager(unittest.TestCase):
 
         self.assertEqual(saved["user_name"], "Ada")
         self.assertEqual(reloaded.get("user_name"), "Ada")
-        self.assertEqual(reloaded.get("assistant_name"), "Privacy68")
+        self.assertEqual(reloaded.get("assistant_name"), "Alexa")
 
     def test_existing_profile_is_merged_with_new_defaults(self):
         with tempfile.TemporaryDirectory() as directory, patch.dict(os.environ, {"APPDATA": directory}):
@@ -40,7 +40,7 @@ class TestProfileManager(unittest.TestCase):
             profile = ProfileManager()
 
         self.assertEqual(profile.get("user_name"), "Ada")
-        self.assertEqual(profile.get("assistant_name"), "Privacy68")
+        self.assertEqual(profile.get("assistant_name"), "Alexa")
 
 
 if __name__ == "__main__":

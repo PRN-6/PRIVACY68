@@ -35,19 +35,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      # ── 5. Verify the bundled speaker model is present ─────────────────────────
-      # The voice-auth tests need the CAM++ ONNX model. It is committed to the
-      # repository so the suite runs offline; this step fails fast with a clear
-      # message instead of a confusing IndexError further down.
-      - name: Check bundled speaker model
-        run: |
-          if (-not (Test-Path "assets/models/speaker_model.onnx")) {
-            Write-Error "Missing assets/models/speaker_model.onnx — the voice-auth tests need it."
-            exit 1
-          }
-          Write-Host "Bundled speaker model present."
-
-      # ── 6. Run the test suite ──────────────────────────────────────────────────
+      # ── 4. Run the test suite ──────────────────────────────────────────────────
       - name: Run unit tests
         shell: pwsh
         run: |
@@ -68,12 +56,12 @@ jobs:
           }
           exit $code
 
-      # ── 7. Byte-compile every source file (catches syntax errors) ──────────────
+      # ── 5. Byte-compile every source file (catches syntax errors) ──────────────
       - name: Byte-compile sources
         run: |
           python -m compileall -q actions plugins computer_use speech ui utils server tests app.py config.py
 
-      # ── 8. Upload the test log when the suite fails ────────────────────────────
+      # ── 6. Upload the test log when the suite fails ────────────────────────────
       - name: Upload test log on failure
         if: failure()
         uses: actions/upload-artifact@v4
