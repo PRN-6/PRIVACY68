@@ -1,3 +1,5 @@
+import os
+from pathlib import Path
 import logging
 from typing import Any, Dict
 import litellm
@@ -15,27 +17,72 @@ class AgentBrain:
     def __init__(self):
         # LiteLLM uses the user's local Ollama service, which may proxy a cloud model.
         self.model = "ollama/gemma4:31b-cloud"
-        self.system_prompt = (
-            "You are the la-core of PRIVACY68, a professional Windows OS Automation Agent. "
-            "Your goal is to execute the user's request by writing a Python script. \n\n"
+
+    def _resolve_user_paths(self) -> Dict[str, str]:
+        """Resolves active user directory paths, including OneDrive redirections."""
+        home = Path.home()
+        onedrive = os.environ.get("OneDrive") or os.environ.get("OneDriveConsumer") or os.environ.get("OneDriveCommercial") or ""
+
+        desktop = str(home / "Desktop")
+        if onedrive and os.path.exists(os.path.join(onedrive, "Desktop")):
+            desktop = os.path.join(onedrive, "Desktop")
+
+        downloads = str(home / "Downloads")
+        if onedrive and os.path.exists(os.path.join(onedrive, "Downloads")):
+            downloads = os.path.join(onedrive, "Downloads")
+
+        documents = str(home / "Documents")
+        if onedrive and os.path.exists(os.path.join(onedrive, "Documents")):
+            documents = os.path.join(onedrive, "Documents")
+
+        return {
+            "home": str(home),
+            "desktop": desktop,
+            "downloads": downloads,
+            "documents": documents,
+            "onedrive": onedrive,
+        }
+
+    def _build_system_prompt(self) -> str:
+        paths = self._resolve_user_paths()
+        env_lines = [
+            f"- User Home: r'{paths['home']}'",
+            f"- Desktop: r'{paths['desktop']}'",
+            f"- Downloads: r'{paths['downloads']}'",
+            f"- Documents: r'{paths['documents']}'",
+        ]
+        if paths["onedrive"]:
+            env_lines.append(f"- OneDrive Root: r'{paths['onedrive']}'")
+        env_str = "\n".join(env_lines)
+
+        return (
+            "You are the core of PRIVACY68, a professional Windows OS Automation Agent. "
+            "Your goal is to execute the user's request by writing a Python script.\n\n"
+            f"SYSTEM ENVIRONMENT (Use these exact paths for user directories):\n{env_str}\n\n"
             "PRIORITY TOOLBOX (Use in this order):\n"
             "1. Built-in Plugin Logic: For Chrome, Brave, WhatsApp, GitHub, and Windows System controls, "
             "use the existing plugins in the project. Brave is 'from plugins.brave_plugin import BravePlugin'; "
             "Chrome is 'from plugins.chrome_plugin import ChromePlugin'.\n"
             "2. pyautogui: For mouse/keyboard control and hotkeys.\n"
             "3. pywinauto: For deep Windows application interaction.\n"
-            "4. os/subprocess: For shell commands and file management.\n"
+            "4. os/subprocess/shutil: For shell commands and file management.\n"
             "5. playwright: Use ONLY as a last resort for complex web scraping/automation.\n\n"
             "RULES:\n"
             "1. ONLY output the Python code. No explanations, no markdown blocks.\n"
-            "2. Always import necessary libraries.\n"
+            "2. Always import necessary libraries (e.g. os, shutil, glob).\n"
             "3. Ensure scripts are self-contained and handle exceptions. Prefer executable top-level code; "
             "if you define a main() function, call main() at the end of the script.\n"
             "4. CRITICAL IMPORT PATHS: Use the actual module names, such as 'from plugins.brave_plugin import BravePlugin' "
             "and 'from plugins.chrome_plugin import ChromePlugin'. Do NOT invent plugin module names.\n"
             "5. For web searches, generate the direct search URL and open it with an available browser plugin.\n"
-            "6. If you cannot perform the action, return a print statement explaining why."
+            "6. USER FOLDERS: When accessing Desktop, Downloads, or Documents, ALWAYS use the exact paths from "
+            "the SYSTEM ENVIRONMENT block above. Do not hardcode C:\\Users\\...\\Desktop if Desktop is redirected by OneDrive.\n"
+            "7. If you cannot perform the action, return a print statement explaining why."
         )
+
+    @property
+    def system_prompt(self) -> str:
+        return self._build_system_prompt()
 
     def _get_code_from_llm(self, text: str) -> str:
         """Uses LiteLLM to get Python code from the configured model."""

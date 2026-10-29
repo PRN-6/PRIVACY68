@@ -9,7 +9,6 @@ import numpy as np
 
 from plugins.manager import plugin_manager
 from plugins.profile_manager import profile_manager
-from speech.voice_auth import voice_authenticator
 
 logger = logging.getLogger("PRIVACY68.DashboardBridge")
 
@@ -32,8 +31,8 @@ class DashboardAPI:
         try:
             return {
                 "user_name": profile_manager.get("user_name", "User"),
-                "assistant_name": profile_manager.get("assistant_name", "Privacy68"),
-                "wake_word": profile_manager.get("wake_word", "privacy68"),
+                "assistant_name": profile_manager.get("assistant_name", "Alexa"),
+                "wake_word": profile_manager.get("wake_word", "alexa"),
                 "wake_threshold": float(profile_manager.get("wake_threshold", 0.50)),
                 "whisper_model": profile_manager.get("whisper_model", "small.en"),
                 "llm_provider": profile_manager.get("llm_provider", "ollama"),
@@ -554,137 +553,28 @@ class DashboardAPI:
         except Exception as e:
             return {"success": False, "level": 0, "message": str(e)}
 
-    # ---------------- Voice Lock (Speaker Verification) ---------------- #
+    # ---------------- Voice Lock (Removed) ---------------- #
 
     def get_voice_lock_status(self) -> Dict[str, Any]:
-        """Returns the current state of Voice Lock biometrics."""
-        try:
-            status = voice_authenticator.get_status()
-            status["enabled"] = bool(profile_manager.get("voice_lock_enabled", False))
-            status["threshold"] = float(profile_manager.get("voice_lock_threshold", 0.50))
-            return status
-        except Exception as e:
-            logger.error(f"Error getting voice lock status: {e}")
-            return {"enabled": False, "is_enrolled": False, "threshold": 0.50, "error": str(e)}
+        return {"enabled": False, "is_enrolled": False, "threshold": 0.50, "model_ready": False}
 
     def toggle_voice_lock(self, enabled: bool) -> Dict[str, Any]:
-        """Enables or disables Voice Lock gating."""
-        try:
-            profile_manager.set("voice_lock_enabled", enabled)
-            logger.info(f"Voice Lock set to {'ENABLED' if enabled else 'DISABLED'}")
-            return {"success": True, "enabled": enabled}
-        except Exception as e:
-            logger.error(f"Error toggling voice lock: {e}")
-            return {"success": False, "message": str(e)}
+        return {"success": True, "enabled": False}
 
     def set_voice_lock_threshold(self, threshold: float) -> Dict[str, Any]:
-        """Updates the cosine similarity threshold (e.g. 0.70)."""
-        try:
-            th = max(0.40, min(0.95, float(threshold)))
-            profile_manager.set("voice_lock_threshold", th)
-            return {"success": True, "threshold": th}
-        except Exception as e:
-            return {"success": False, "message": str(e)}
-
-    def _get_enrollment_audio(self, duration: float) -> np.ndarray:
-        """
-        Captures audio via the running SpeechStreamer (same device/gain as live
-        verification) if available, otherwise falls back to sd.rec().
-        """
-        try:
-            # Prefer the already-running InputStream so enrollment and
-            # live verification share an identical audio path.
-            from speech.streamer import speech_streamer
-            if speech_streamer is not None and hasattr(speech_streamer, 'capture_enrollment_audio'):
-                logger.info(f"Capturing enrollment via active stream ({duration}s)...")
-                return speech_streamer.capture_enrollment_audio(duration=duration)
-        except Exception as e:
-            logger.warning(f"Streamer capture unavailable, falling back to sd.rec(): {e}")
-        # Fallback: direct mic recording
-        logger.info(f"Capturing enrollment via sd.rec ({duration}s)...")
-        recording = sd.rec(int(duration * 16000), samplerate=16000, channels=1, dtype='float32')
-        sd.wait()
-        return recording.flatten()
+        return {"success": True, "threshold": 0.50}
 
     def record_voice_enrollment_sample(self) -> Dict[str, Any]:
-        """
-        Records 3.0 seconds from the microphone (using the same audio path as live
-        speaker verification) and extracts a voice embedding enrollment sample.
-        """
-        try:
-            audio = self._get_enrollment_audio(duration=3.0)
-            rms = float(np.sqrt(np.mean(audio**2)))
-            if rms < 0.005:
-                return {
-                    "success": False,
-                    "message": "Audio volume too low — please speak louder into your microphone.",
-                    "count": len(voice_authenticator.temp_enrollment_samples)
-                }
-            logger.info(f"Enrollment sample RMS={rms:.4f}. Extracting embedding...")
-            res = voice_authenticator.enroll_sample(audio)
-            return res
-        except Exception as e:
-            logger.error(f"Error during enrollment recording: {e}")
-            return {"success": False, "message": str(e), "count": len(voice_authenticator.temp_enrollment_samples)}
+        return {"success": False, "message": "Voice Lock feature has been removed."}
 
     def finalize_voice_enrollment(self) -> Dict[str, Any]:
-        """
-        Averages all recorded samples, creates master profile, and enables Voice Lock.
-        """
-        try:
-            user_name = profile_manager.get("user_name", "Owner")
-            success = voice_authenticator.save_profile(owner_name=user_name)
-            if success:
-                profile_manager.set("voice_lock_enabled", True)
-                return {
-                    "success": True,
-                    "message": "Voice profile successfully enrolled and activated!"
-                }
-            return {
-                "success": False,
-                "message": "Could not finalize voice profile. Please record 3 samples first."
-            }
-        except Exception as e:
-            logger.error(f"Error finalizing voice enrollment: {e}")
-            return {"success": False, "message": str(e)}
+        return {"success": False, "message": "Voice Lock feature has been removed."}
 
     def reset_voice_enrollment(self) -> Dict[str, Any]:
-        """Clears the master voice profile and disables Voice Lock."""
-        try:
-            voice_authenticator.clear_profile()
-            profile_manager.set("voice_lock_enabled", False)
-            return {"success": True, "message": "Voice profile deleted successfully."}
-        except Exception as e:
-            return {"success": False, "message": str(e)}
+        return {"success": True, "message": "Voice profile cleared."}
 
     def test_voice_match(self) -> Dict[str, Any]:
-        """
-        Records 3.0 seconds of live speech (via same audio path as live verification)
-        and computes real-time similarity score against the master voice profile.
-        """
-        try:
-            audio = self._get_enrollment_audio(duration=3.0)
-            rms = float(np.sqrt(np.mean(audio**2)))
-            if rms < 0.005:
-                return {
-                    "success": False,
-                    "message": "Audio too quiet. Speak clearly into the microphone.",
-                    "score": 0.0,
-                    "is_match": False
-                }
-
-            threshold = float(profile_manager.get("voice_lock_threshold", 0.50))
-            is_match, score = voice_authenticator.verify_speaker(audio, threshold=threshold)
-            return {
-                "success": True,
-                "score": round(score, 3),
-                "threshold": threshold,
-                "is_match": is_match,
-                "message": f"Match Score: {int(score * 100)}% ({'MATCH ✅ — Owner Verified' if is_match else 'NO MATCH ❌ — Access Denied'})"
-            }
-        except Exception as e:
-            logger.error(f"Error testing voice match: {e}")
-            return {"success": False, "score": 0.0, "is_match": False, "message": str(e)}
+        return {"success": False, "score": 0.0, "is_match": False, "message": "Voice Lock feature has been removed."}
 
     # ---------------- System Utilities ---------------- #
 

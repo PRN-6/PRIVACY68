@@ -1,12 +1,16 @@
 # PRIVACY68 runtime dependencies (Windows, Python 3.11+)
 
-# Speech input, transcription, and speaker verification.
+# Speech input, transcription, and local ASR.
 faster-whisper>=1.0,<2
 huggingface-hub>=0.24,<2
 onnxruntime>=1.17,<2
 numpy>=1.26,<3
 scipy>=1.11,<2
 sounddevice>=0.4.6,<1
+
+# NVIDIA GPU acceleration for Faster-Whisper (CUDA 12)
+nvidia-cublas-cu12
+nvidia-cudnn-cu12
 
 # Agent Brain and the dashboard's Ollama model-management controls.
 litellm>=1.50,<2

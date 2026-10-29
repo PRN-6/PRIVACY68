@@ -15,7 +15,6 @@ def main() -> int:
         return 1
 
     required_paths = (
-        ROOT / "assets" / "models" / "speaker_model.onnx",
         ROOT / "assets" / "icon.ico",
         ROOT / "ui" / "dashboard" / "index.html",
         ROOT / "privacy68.spec",

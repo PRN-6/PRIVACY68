@@ -38,9 +38,6 @@ try:
     from plugins.profile_manager import profile_manager
 except Exception:
     profile_manager = None
-from speech.voice_auth import voice_authenticator
-
-
 logging.basicConfig(level=logging.INFO , format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger("PRIVACY68.SpeechStreamer")
 
@@ -96,11 +93,11 @@ class SpeechStreamer:
         - Optional natural conversational greetings (e.g. 'hey privacy 68', 'ok privacy', 'hi nova')
         """
         if not wake_input:
-            wake_input = "privacy68"
+            wake_input = "alexa"
         
         words = [w.strip() for w in wake_input.replace("/", ",").split(",") if w.strip()]
         if not words:
-            words = ["privacy68"]
+            words = ["alexa"]
 
         aliases = set()
         for w in words:
@@ -545,33 +542,6 @@ class SpeechStreamer:
                                 self.audio_queue.queue.clear()
                             continue
 
-                        # ── Voice Lock (Speaker Verification Biometrics Gate) ──
-                        # Architecture: Mic -> VAD -> ECAPA-TDNN -> Match? -> Faster-Whisper -> Router
-                        #                                           -> No Match? -> IGNORE
-                        voice_lock_enabled = False
-                        threshold = 0.50
-                        if profile_manager:
-                            voice_lock_enabled = profile_manager.get("voice_lock_enabled", False)
-                            threshold = float(profile_manager.get("voice_lock_threshold", 0.50))
-
-                        if voice_lock_enabled:
-                            is_authorized, score = voice_authenticator.verify_speaker(full_audio, threshold=threshold)
-                            if not is_authorized:
-                                logger.warning(f"🚨 [VOICE LOCK] Access Denied: Unauthorized voice (Score: {score:.2f} < {threshold:.2f}). Ignored immediately.")
-                                if on_sleep_callback:
-                                    on_sleep_callback()
-                                audio_buffer.clear()
-                                self.vad.reset()
-                                speech_chunks = 0
-                                silence_counter = 0
-                                has_spoken = False
-                                self.is_active = False
-                                with self.audio_queue.mutex:
-                                    self.audio_queue.queue.clear()
-                                logger.info(f"Command cycle rejected by Voice Lock. PRIVACY68 is in sleep mode (Say '{self.wake_word}' to speak).")
-                                continue
-                            else:
-                                logger.info(f"✅ [VOICE LOCK] Access Granted: Verified owner (Score: {score:.2f} >= {threshold:.2f}). Transcribing command...")
 
                         # Normalize audio volume so Whisper receives clean, high-gain signal
                         if max_peak > 0.005:

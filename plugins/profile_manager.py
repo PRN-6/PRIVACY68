@@ -21,8 +21,8 @@ class ProfileManager:
         """Loads profile from disk or returns defaults if file is missing."""
         defaults = {
             "user_name": "User",
-            "assistant_name": "Privacy68",
-            "wake_word": "privacy68",
+            "assistant_name": "Alexa",
+            "wake_word": "alexa",
             "wake_threshold": 0.50,
             "whisper_model": "small.en",
             "llm_provider": "ollama",

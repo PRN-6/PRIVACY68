@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+  <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -276,6 +276,16 @@
             <div class="detail-row"><span class="detail-label">CUDA runtime</span><span class="pill" id="cuda-state">Checking</span></div>
             <div class="detail-row"><span class="detail-label">Microphone</span><span class="pill" id="mic-state">Not tested</span></div>
           </div>
+          <button class="button full primary" id="btn-download-cuda" type="button" style="margin-top:12px; display:none;">Download CUDA (~450MB)</button>
+          <div id="cuda-progress-wrap" style="display:none; margin-top:12px;">
+            <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px;">
+              <span id="cuda-progress-status" style="color:var(--text-muted, #aaa);">Downloading...</span>
+              <span id="cuda-progress-pct" style="font-weight:600;">0%</span>
+            </div>
+            <div style="background:rgba(255,255,255,0.1); border-radius:4px; height:6px; overflow:hidden;">
+              <div id="cuda-progress-bar" style="background:#e04848; height:100%; width:0%; transition:width 0.3s;"></div>
+            </div>
+          </div>
           <button class="button full" id="test-mic" type="button" style="margin-top:14px">Test microphone</button>
           <p class="hint" id="mic-result" aria-live="polite" style="margin:10px 0 0">Records a short sample to measure input level.</p>
         </section>
@@ -291,28 +301,9 @@
           </div>
           <div class="field">
             <label for="wake-word">Wake word</label>
-            <input id="wake-word" type="text" maxlength="120" placeholder="Privacy68">
+            <input id="wake-word" type="text" maxlength="120" placeholder="Alexa">
           </div>
           <button class="button primary full" id="save-profile" type="button">Save profile</button>
-        </section>
-
-        <section class="card card-pad voice-card">
-          <div class="card-heading">
-            <h2 class="card-title">Voice Lock</h2>
-            <span class="pill" id="voice-state">Checking</span>
-          </div>
-          <p class="hint" id="voice-description" style="margin:0 0 13px">Speaker verification status is loading.</p>
-          <div class="button-row">
-            <button class="button" id="toggle-voice-lock" type="button">Enable Voice Lock</button>
-            <button class="button" id="record-sample" type="button">Record sample</button>
-            <button class="button primary" id="finish-enrollment" type="button">Finish enrollment</button>
-            <button class="button danger" id="reset-enrollment" type="button">Reset profile</button>
-          </div>
-          <div class="detail-row" style="margin-top:14px">
-            <span class="detail-label">Enrollment progress</span>
-            <span class="detail-value" id="sample-count">0 / 3 samples</span>
-          </div>
-          <p class="hint" style="margin:10px 0 0">Each sample records about 3 seconds from the microphone. Only embeddings are saved.</p>
         </section>
       </aside>
 
@@ -341,9 +332,9 @@
             <span class="summary-label">Wake phrase</span>
             <div><div class="summary-value" id="summary-wake-word">—</div><div class="summary-note">Editable in profile</div></div>
           </article>
-          <article class="card summary-card">
-            <span class="summary-label">Voice verification</span>
-            <div><div class="summary-value" id="summary-voice">Disabled</div><div class="summary-note">Optional owner profile</div></div>
+                    <article class="card summary-card">
+            <span class="summary-label">Speech Engine</span>
+            <div><div class="summary-value" id="summary-voice">Active</div><div class="summary-note">Faster-Whisper &amp; Silero VAD</div></div>
           </article>
         </section>
 
@@ -721,26 +712,10 @@
       const cuda = status.cuda || {};
       const cudaReady = Boolean(cuda.is_ready);
       setPill($('cuda-state'), cudaReady ? 'Ready' : (cuda.has_gpu ? 'Unavailable' : 'CPU mode'), cudaReady ? 'good' : 'warn');
-      updateVoiceStatus(status.voice_lock || {});
+      // Voice Lock disabled
     }
 
-    function updateVoiceStatus(status) {
-      const enrolled = Boolean(status.is_enrolled);
-      const enabled = Boolean(status.enabled);
-      const modelReady = Boolean(status.model_ready);
-      $('voice-description').textContent = enrolled
-        ? `Profile enrolled${status.owner_name ? ` for ${status.owner_name}` : ''}. ${enabled ? 'Verification is enabled.' : 'Verification is currently disabled.'}`
-        : 'No voice profile is enrolled. Record three samples before enabling Voice Lock.';
-      setPill($('voice-state'), enabled ? 'Enabled' : (enrolled ? 'Enrolled' : 'Not enrolled'), enabled ? 'good' : (enrolled ? 'warn' : ''));
-      $('sample-count').textContent = `${status.temp_samples_count || 0} / 3 samples`;
-      $('summary-voice').textContent = enabled ? 'Enabled' : 'Disabled';
-      $('record-sample').disabled = !modelReady;
-      $('finish-enrollment').disabled = !modelReady || (status.temp_samples_count || 0) < 3;
-      $('reset-enrollment').disabled = !enrolled;
-      $('toggle-voice-lock').disabled = !enrolled;
-      $('toggle-voice-lock').textContent = enabled ? 'Disable Voice Lock' : 'Enable Voice Lock';
-      if (!modelReady) $('voice-description').textContent = 'Speaker model is unavailable. Voice enrollment and verification cannot run.';
-    }
+    function updateVoiceStatus(status) {}
 
     async function refreshStatus() {
       $('connection-status').classList.remove('ready', 'error');
@@ -760,11 +735,11 @@
       try {
         const result = await bridge().save_profile({
           user_name: $('user-name').value.trim() || 'User',
-          wake_word: $('wake-word').value.trim() || 'privacy68'
+          wake_word: $('wake-word').value.trim() || 'alexa'
         });
         if (!result || !result.success) throw new Error(result?.message || 'Profile could not be saved.');
         $('header-user-tag').textContent = $('user-name').value.trim() || 'User';
-        $('summary-wake-word').textContent = $('wake-word').value.trim() || 'privacy68';
+        $('summary-wake-word').textContent = $('wake-word').value.trim() || 'alexa';
         showToast(result.message || 'Profile saved.');
       } catch (error) {
         showToast(error.message, true);
@@ -815,7 +790,59 @@
       }
     }
 
-    async function testMicrophone() {
+        let cudaPollTimer = null;
+
+    async function downloadCUDA() {
+      const btn = $('btn-download-cuda');
+      const wrap = $('cuda-progress-wrap');
+      const statusText = $('cuda-progress-status');
+      const pctText = $('cuda-progress-pct');
+      const bar = $('cuda-progress-bar');
+
+      btn.disabled = true;
+      btn.style.display = 'none';
+      wrap.style.display = 'block';
+
+      try {
+        const res = await bridge().start_cuda_download();
+        if (!res || (!res.success && res.message !== 'Download is already in progress.')) {
+          throw new Error(res?.message || 'Failed to start download');
+        }
+
+        cudaPollTimer = setInterval(async () => {
+          try {
+            const prog = await bridge().get_cuda_download_progress();
+            if (!prog) return;
+
+            statusText.textContent = prog.status || 'Downloading...';
+            pctText.textContent = `${prog.progress || 0}%`;
+            bar.style.width = `${prog.progress || 0}%`;
+
+            if (prog.error) {
+              clearInterval(cudaPollTimer);
+              showToast(prog.error, true);
+              btn.disabled = false;
+              btn.style.display = 'block';
+              wrap.style.display = 'none';
+              return;
+            }
+
+            if (!prog.is_downloading && prog.progress >= 100) {
+              clearInterval(cudaPollTimer);
+              showToast('CUDA runtime installed! Restart PRIVACY68 to activate GPU acceleration.');
+              wrap.style.display = 'none';
+              await loadRuntimeStatus();
+            }
+          } catch (e) {}
+        }, 1000);
+      } catch (err) {
+        showToast(err.message, true);
+        btn.disabled = false;
+        btn.style.display = 'block';
+        wrap.style.display = 'none';
+      }
+    }
+async function testMicrophone() {
       const button = $('test-mic');
       button.disabled = true;
       $('mic-result').textContent = 'Listening for a short sample…';
