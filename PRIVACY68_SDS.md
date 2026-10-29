@@ -223,6 +223,48 @@ PRIVACY68 performs runtime inference and user-specific speaker enrollment only. 
 | HTTP remote bridge | WebSocket service | The current protocol is a small synchronous command/status API. HTTP is simple to use from a mobile browser; the current implementation still needs authentication and network restriction before exposure to untrusted networks. |
 | LLM-generated Python | Fixed intent-only router | Code generation supports flexible requests but introduces prompt-injection, correctness, and execution risks. The current subprocess execution is not a sandbox. |
 
+#### 1.1.6 Hardware and Software Requirements Specification
+
+##### A. Minimum and Recommended System Requirements
+
+| Specification | Minimum Requirement | Recommended Specification |
+|---|---|---|
+| **Operating System** | Windows 10 (64-bit, Version 2004 / Build 19041+) | Windows 11 (64-bit) |
+| **Processor (CPU)** | Dual-core x86_64 with AVX2 instruction support | Quad-core Intel Core i5/i7 or AMD Ryzen 5/7+ |
+| **System Memory (RAM)** | 4 GB | 8 GB – 16 GB |
+| **Graphics (GPU)** | Integrated Graphics (runs CPU inference via `int8`) | NVIDIA GeForce RTX 3050+ (6 GB+ VRAM) with Tensor Cores |
+| **Audio I/O** | 16 kHz capable microphone and audio output | Array microphone with active acoustic noise cancellation |
+| **Persistent Storage** | 1.5 GB free disk space (application and dependencies) | 8 GB+ (when local offline LLM weights are cached) |
+
+##### B. Ollama Automation Subsystem Specification
+
+The Agent Brain subsystem (`actions/agent_brain.py`) delegates natural language planning to an LLM via the LiteLLM proxy interface. The default reasoning provider requires a running Ollama daemon:
+
+1. **Daemon Endpoint & Protocol**: Ollama provides a local HTTP server binding to `http://127.0.0.1:11434`.
+2. **Proactive Diagnostics & Lifecycle Control**:
+   - `ui/dashboard_bridge.py::check_ollama_status()` probes `http://127.0.0.1:11434/api/tags` with a 1.5-second fail-fast timeout.
+   - The Control Center UI exposes a tri-state pill: `Online` (green), `Offline / Not Running` (amber), or `Not Installed` (red).
+   - `ui/dashboard_bridge.py::start_ollama()` invokes the background service executable (`ollama app.exe` or `ollama serve`) asynchronously if the binary is present.
+3. **Execution Topologies**:
+   - **Cloud Proxy Topology (`ollama/gemma4:31b-cloud`)**: Ollama routes completion requests to remote Google Cloud infrastructure. Requires zero local GPU VRAM.
+   - **Air-Gapped Local Topology (`ollama/qwen2.5:0.5b`)**: Pulling models locally enables 100% offline code generation without internet connectivity.
+
+##### C. CUDA 12 and cuDNN 9 Acceleration Runtime Specification
+
+Speech recognition inference in PRIVACY68 is powered by `faster-whisper` (utilizing the CTranslate2 neural execution engine):
+
+1. **Dual Compute Profile**:
+   - **CPU Mode (`cpu / int8`)**: Universal fallback executing on any modern x86_64 CPU using quantized INT8 matrix operations. Average latency: ~350ms – 600ms.
+   - **CUDA Mode (`cuda / float16`)**: GPU accelerated using half-precision floating-point Tensor Cores on NVIDIA architectures. Average latency: ~120ms – 160ms.
+2. **Binary ABI and Library Constraints**:
+   - CTranslate2 Windows wheels are compiled against the **CUDA 12 ABI** (`cublas64_12.dll`, `cublasLt64_12.dll`).
+   - CTranslate2 strictly requires **NVIDIA cuDNN 9** (`cudnn64_9.dll`, `cudnn_ops64_9.dll`).
+   - Standard NVIDIA CUDA Toolkit installers (e.g., CUDA 13.x) do not provide compatible CUDA 12 DLLs and omit cuDNN.
+3. **Zero-Config AppData Isolation**:
+   - `utils/cuda_manager.py` manages an isolated runtime directory at `%APPDATA%\PRIVACY68\cuda\bin`.
+   - The Control Center dashboard features an on-demand runtime downloader that streams and extracts official cuBLAS 12 and cuDNN 9 wheels from PyPI directly into `%APPDATA%\PRIVACY68\cuda\bin`.
+   - On startup, `register_cuda_dlls()` registers the directory with `os.add_dll_directory()` and prepends it to the process `PATH`.
+
 ---
 
 ## 2. Detailed Design

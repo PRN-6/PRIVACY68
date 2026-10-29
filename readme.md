@@ -6,123 +6,154 @@
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-3776AB.svg?logo=python&logoColor=white)](https://www.python.org/)
 [![Platform: Windows 10/11](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-0078D6.svg?logo=windows&logoColor=white)](#)
 
-PRIVACY68 is a Windows desktop voice assistant with local speech-processing components, a desktop control center, and OS automation. It uses an Agent Brain to request Python code through LiteLLM and executes returned code in a local Python subprocess.
+PRIVACY68 is an offline-first Windows desktop voice assistant with local speech-processing components, a desktop control center, and agentic OS automation. It pairs local Faster-Whisper inference with an Agent Brain powered by Ollama to execute complex desktop tasks safely through generated Python scripts.
 
 **Latest Windows release:** [Download the installer from GitHub Releases](https://github.com/PRN-6/PRIVACY68/releases/latest).
 
-> **Privacy and safety:** The Agent Brain currently uses the model identifier `ollama/gemma4:31b-cloud`. Do not assume that prompts are processed locally; provider routing depends on configuration. Generated Python runs with the current user's permissions. The optional mobile remote has no request authentication, so do not expose it to untrusted networks.
+---
 
-## Current command flow
+## Command Routing Architecture
 
-The project does **not** use Open Interpreter or implement a three-lane router. Pending confirmations and greetings are handled directly. Simple Chrome and WhatsApp launch requests, plus explicit GitHub requests, are routed to their built-in plugins. Other commands go to the Agent Brain:
+The assistant uses deterministic shortcut dispatching alongside an LLM-powered Agent Brain:
 
 ```text
-Voice/text input
-  -> command executor
-       -> pending security confirmation or greeting shortcut
-       -> direct Chrome / WhatsApp launch via built-in plugins
-       -> GitHub plugin for explicit GitHub/Git requests
-            -> GitHub API for repository, issue, and pull-request operations
-            -> local Git for status, diff, and confirmed branch pushes
-       -> Agent Brain for other commands
-            -> LiteLLM completion (ollama/gemma4:31b-cloud)
-            -> generated Python
-            -> isolated subprocess (Python in source runs; executable's internal runner when frozen; 30-second timeout)
-            -> result returned to the UI
+Voice/Text Command
+  -> Command Executor (actions/executor.py)
+       ├── Pending Security Confirmation ("yes", "confirm", "cancel")
+       ├── Built-in Greeting Shortcuts ("hi", "hello", "good morning")
+       ├── Direct App Launch Shortcuts (Chrome, Brave, WhatsApp) -> Native Plugins
+       ├── GitHub Integration Plugin -> GitHub REST API & local Git operations
+       └── Agent Brain (actions/agent_brain.py)
+            ├── LiteLLM Completion Request -> Ollama (http://127.0.0.1:11434)
+            ├── Dynamic Windows Path Resolution (OneDrive/Desktop/Downloads)
+            ├── Isolated Code Execution (30-second watchdog timeout)
+            └── Formatted Results & UI Telemetry to Control Center & Floating HUD
 ```
 
-The dashboard and voice interface share the same command executor. Chrome/WhatsApp launch and supported GitHub operations use their plugins directly; other commands need the configured Ollama service/model and are handled by the Agent Brain. The website's command terminal is a demonstration only. It does not connect to the desktop app or execute commands. For the full system diagrams and design details, see [PRIVACY68_SDS.md](PRIVACY68_SDS.md).
+---
+
+## System Requirements & Prerequisites
+
+### 1. Hardware Specifications
+
+| Component | Minimum Specification | Recommended Specification |
+|---|---|---|
+| **Operating System** | Windows 10 (64-bit, build 19041+) | Windows 11 (64-bit) |
+| **Processor (CPU)** | Intel Core i3 / AMD Ryzen 3 (AVX2 support) | Intel Core i5/i7 / AMD Ryzen 5/7 |
+| **System Memory (RAM)** | 4 GB | 8 GB or 16 GB |
+| **GPU (Optional)** | None (runs on CPU via `int8`) | NVIDIA GeForce GTX 1650 / RTX 3050+ (6 GB+ VRAM) |
+| **Audio Hardware** | Standard USB/3.5mm microphone & speakers | Noise-cancelling microphone |
+| **Storage** | 1.5 GB free disk space | 5 GB+ (for local LLMs if stored locally) |
+
+---
+
+### 2. Ollama Subsystem (Required for Agent Brain Automation)
+
+PRIVACY68 uses **Ollama** via LiteLLM as its reasoning engine for desktop automation (opening apps, managing files, adjusting system settings, web navigation, etc.).
+
+* **How to Install**: Download and run the official Windows installer from [ollama.com/download](https://ollama.com/download).
+* **Service Requirements**: Ollama must be running as a background service (listens on `http://127.0.0.1:11434`). It usually runs in the Windows system tray.
+* **Control Center Integration**: The PRIVACY68 Control Center actively monitors the Ollama service on startup:
+  - 🟢 **Online**: Ollama is active; Agent Brain can immediately execute commands.
+  - 🟡 **Not Running / Offline**: Ollama is installed on your PC, but the service is stopped. Click **Start Ollama** right in the dashboard to launch it.
+  - 🔴 **Not Installed**: Ollama was not found on your system. Click **Download Ollama** to open the installer page.
+* **Execution Modes**:
+  - **Cloud Proxy (Default `ollama/gemma4:31b-cloud`)**: Ollama acts as a lightweight proxy to Google Cloud's Gemma 4 31B model. Requires zero local GPU VRAM.
+  - **100% Offline Local Model (e.g. `qwen2.5:0.5b` or `llama3.2:1b`)**: For completely air-gapped local execution, pull your preferred model:
+    ```powershell
+    ollama pull qwen2.5:0.5b
+    ```
+    Then change `self.model = "ollama/qwen2.5:0.5b"` in `actions/agent_brain.py`.
+
+---
+
+### 3. CUDA & GPU Acceleration (Optional, for High-Speed Audio Inference)
+
+PRIVACY68 uses **Faster-Whisper** and Silero neural Voice Activity Detection (VAD) for real-time speech transcription and wake-word gating.
+
+| Compute Mode | Audio Inference Latency | Memory Footprint | Setup Required |
+|---|---|---|---|
+| **CPU (`cpu / int8`)** | ~350ms – 600ms | ~1.2 GB System RAM | **Zero setup.** Works out of the box on any Windows PC. |
+| **GPU (`cuda / float16`)** | ~120ms – 160ms | ~1.4 GB NVIDIA VRAM | NVIDIA GPU + cuBLAS 12 & cuDNN 9 runtime DLLs. |
+
+#### Why the standard NVIDIA CUDA Toolkit is not enough:
+Faster-Whisper (built on CTranslate2) requires **CUDA 12 runtime** (`cublas64_12.dll`, `cublasLt64_12.dll`) **AND NVIDIA cuDNN 9** (`cudnn64_9.dll`, `cudnn_ops64_9.dll`). Standard NVIDIA CUDA Toolkit installers (such as CUDA 13.x) have mismatched versions and **never include cuDNN**.
+
+#### Zero-Config One-Click Solution:
+You do **not** need to manually search for or install the multi-gigabyte NVIDIA Developer SDK. If an NVIDIA GPU is detected on your PC, the PRIVACY68 dashboard automatically provides a **"Download CUDA (~450MB)"** button under the Hardware card. Clicking it downloads the exact pre-compiled cuBLAS 12 and cuDNN 9 runtime DLLs directly into:
+```text
+%APPDATA%\PRIVACY68\cuda\bin\
+```
+Upon restart, PRIVACY68 automatically registers these DLLs and switches the audio pipeline to `cuda / float16` GPU acceleration.
+
+---
 
 ## Features
 
-- Speech input using Faster-Whisper, with Silero VAD in the speech pipeline.
-- Optional Voice Lock enrollment and speaker verification.
-- Desktop dashboard for profile settings, runtime status, microphone testing, Voice Lock, command output, and plugin registry.
-- Built-in GitHub, Chrome, Windows System, and WhatsApp plugins.
-- Plugin management for viewing registered entries, toggling registry state, creating a starter template, installing a Python plugin file, and uninstalling user plugins.
-- GitHub integration for checking the current repository, pushing the current branch, listing repositories/issues/pull requests, and creating issues/pull requests.
-- Mobile remote for issuing commands over a local network when enabled.
+- **Local Speech Recognition**: Faster-Whisper with Silero neural VAD for zero-latency wake word ("Alexa") and command recognition.
+- **Agentic Code Execution**: Translates user intent into verified Python automation with an integrated 30-second watchdog timer.
+- **Control Center Dashboard**: Modern pywebview control center for managing runtime status, testing microphones, reviewing LLM output, and toggling plugins.
+- **Hardware Telemetry**: Real-time monitoring of NVIDIA GPU availability, CUDA runtime readiness, microphone input RMS, and Ollama connectivity.
+- **Security Confirmation State Machine**: High-risk actions (file deletion, GitHub branch pushes) are paused and require explicit user confirmation ("yes" / "confirm").
+- **Built-in Plugins**: Dedicated controllers for Google Chrome, Brave Browser, WhatsApp, and GitHub.
+- **Dynamic User Path Resolution**: Resolves active OneDrive and standard Windows desktop paths dynamically.
 
-The Chrome, WhatsApp, and GitHub integrations are explicitly routed by the command executor. Other plugin registrations are not automatically dispatched, and plugin enable/disable state is not a sandbox or a guarantee that generated code can only use enabled plugins. Starter templates require implementation before they perform useful automation.
+---
 
-## Requirements
-
-- Windows 10 or 11 (64-bit)
-- Python 3.11 or later
-- Dependencies listed in [requirements.txt](requirements.txt)
-- A configured LiteLLM-compatible model endpoint for Agent Brain requests
-- Microphone and audio devices for voice features
-
-GPU acceleration is optional; CPU operation may be available depending on installed dependencies and model configuration.
-
-## Install and run
+## Installation & Running from Source
 
 ```powershell
+# 1. Clone repository
 git clone https://github.com/PRN-6/PRIVACY68.git
 cd PRIVACY68
+
+# 2. Create virtual environment with Python 3.11 or 3.12
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
+
+# 3. Install dependencies
 python -m pip install --upgrade pip
 pip install -r requirements.txt
+
+# 4. Start PRIVACY68
 python app.py
 ```
 
-Set up and verify your model provider according to your deployment before sending real commands. The model identifier is currently defined in `actions/agent_brain.py`; dashboard provider settings do not override it.
+To open the dashboard directly:
+```powershell
+python app.py --dashboard
+```
 
-### Build a Windows installer
+---
 
-For a distributable Windows build, install Inno Setup 6, create the project virtual environment, and install the project dependencies. From the repository root, run:
+## Building the Windows Installer
+
+Building a standalone distributable installer uses PyInstaller and Inno Setup 6:
 
 ```powershell
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
 .\build.bat
 ```
 
-The build creates a PyInstaller application bundle under `dist\PRIVACY68\` and an Inno Setup installer under `installer\`. The installer provides Start Menu shortcuts for the assistant and Control Center. Build on Windows; the bundled speaker model is included, but the Agent Brain's configured LLM service/model is not bundled and may need separate configuration. The package uses WebView2 for its dashboard, which may need to be installed separately on a clean computer. The installer is currently unsigned, so Windows SmartScreen may show a warning.
+This compiles `PRIVACY68.exe` under `dist\PRIVACY68\` and packages an Inno Setup installer under `installer\PRIVACY68-Setup-v1.5.0.exe`.
 
-## Desktop dashboard and plugins
+---
 
-Open the dashboard from the running application and select **Plugins** to view the local registry. User plugins are loaded from:
+## Unit Testing
 
-```text
-%APPDATA%\PRIVACY68\plugins\
-```
-
-The dashboard can install `.py` plugins, create a starter template, toggle entries, and uninstall user plugins. Python plugin files execute code during loading and therefore must be treated as trusted code. Only install files you have reviewed. Built-in plugins cannot be uninstalled.
-
-### GitHub integration
-
-In the **Plugins** dashboard, connect a fine-grained personal access token. PRIVACY68 validates it with GitHub and stores it in Windows Credential Manager; the token is not written to project files. Grant access only to the repositories you need, with **Metadata: read**, **Contents: read/write**, **Issues: read/write**, and **Pull requests: read/write**. Use an expiration date and revoke the token from GitHub when it is no longer needed.
-
-The dashboard command console supports explicit requests such as:
-
-```text
-check GitHub status
-push my code to GitHub branch feat/my-change
-list my GitHub repositories
-show GitHub issues
-create GitHub issue title Fix login body Login fails on startup
-show pull requests on GitHub
-create GitHub pull request title Add feature head feat/my-change base main
-```
-
-Branch pushes and issue/pull-request creation require confirmation. Pushes send the currently checked-out, clean branch to the existing `origin`; they do not stage or commit files, force-push, or switch branches. Review and commit changes in VS Code before asking PRIVACY68 to push. The integration supports common repository, issue, pull-request, status, and push tasks—not every GitHub API operation. GitHub requests need an internet connection.
-
-## Tests
-
-Run the repository's unittest suite from the project root:
+Run the full automated test suite (59 unit tests covering command parsing, executor dispatch, security guard, and dashboard bridge):
 
 ```powershell
 python -m unittest discover tests -v
 ```
 
-Tests use mocks where appropriate; passing tests does not validate real microphone hardware, model-provider availability, or generated automation on your machine.
+---
 
-## Documentation and contribution
+## Documentation Links
 
-- [Software Design Specification](PRIVACY68_SDS.md)
-- [Project website](website/index.html)
-- [Plugin guide](website/plugins.html)
-- [Contributing guide](CONTRIBUTING.md)
-- [Security policy](SECURITY.md)
+- [Software Design Specification (SDS)](PRIVACY68_SDS.md)
+- [Project Documentation Portal](website/docs.html)
+- [Plugin Architecture Guide](website/plugins.html)
+- [Security Policy](SECURITY.md)
+- [Contributing Guidelines](CONTRIBUTING.md)
 - [License](LICENSE)

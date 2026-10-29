@@ -114,6 +114,10 @@ Microphone/audio path (when voice mode is used)
                         <p class="doc-text" style="margin-top: 15px;">
                             The model identifier includes <code>cloud</code>; do not assume requests are processed offline or that prompt text remains on the device. Generated code is executed with the application's user permissions. The website command simulator is illustrative and does not submit commands to the running application.
                         </p>
+                        <h4 style="color: var(--accent-cyan); margin: 15px 0 8px 0; font-family: var(--font-retro);">Ollama Automation Core Setup</h4>
+                        <p class="doc-text">
+                            Agent Brain requests require the <strong>Ollama service</strong> running on your machine (<code>http://127.0.0.1:11434</code>). Download and install it from <a href="https://ollama.com/download" target="_blank" style="color:var(--color-ruby); text-decoration: underline;">ollama.com</a>. The Control Center actively detects if Ollama is online, stopped, or missing, and allows 1-click startup directly from the dashboard. For 100% offline air-gapped execution, pull a local model with <code>ollama pull qwen2.5:0.5b</code>.
+                        </p>
                     </div>
 
                     <!-- Section 02: Speech & VAD Pipeline -->
@@ -275,7 +279,10 @@ Microphone/audio path (when voice mode is used)
                         </div>
                         <h4 style="color: var(--accent-cyan); margin: 15px 0 8px 0; font-family: var(--font-retro);">Zero-Config CUDA Runtime Manager</h4>
                         <p class="doc-text">
-                            For users with NVIDIA GPUs who do not have the complete CUDA toolkit installed, the built-in <strong>CUDA Manager</strong> allows one-click runtime installation. Simply click <em>"Download &amp; Register CUDA 12 Runtime"</em> in the Dashboard to download the isolated cuBLAS and cuDNN DLLs to your user profile.
+                            Faster-Whisper requires <strong>CUDA 12</strong> (<code>cublas64_12.dll</code>) and <strong>NVIDIA cuDNN 9</strong> (<code>cudnn64_9.dll</code>). Note that official NVIDIA CUDA Toolkit installers (such as CUDA 13.x) have mismatched DLL versions and omit cuDNN entirely.
+                        </p>
+                        <p class="doc-text">
+                            PRIVACY68 eliminates this manual setup: the built-in <strong>CUDA Manager</strong> allows one-click runtime installation. Simply click <em>"Download CUDA (~450MB)"</em> in the Control Center Hardware card to automatically download and register the pre-compiled cuBLAS 12 and cuDNN 9 DLLs into <code>%APPDATA%\PRIVACY68\cuda\bin\</code>.
                         </p>
                     </div>
 
