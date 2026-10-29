@@ -759,6 +759,8 @@
       const cuda = status.cuda || {};
       const cudaReady = Boolean(cuda.is_ready);
       setPill($('cuda-state'), cudaReady ? 'Ready' : (cuda.has_gpu ? 'Unavailable' : 'CPU mode'), cudaReady ? 'good' : 'warn');
+      const btnCuda = $('btn-download-cuda');
+      if (btnCuda) btnCuda.style.display = (cuda.has_gpu && !cudaReady) ? 'block' : 'none';
       // Voice Lock disabled
     }
 
@@ -998,6 +1000,8 @@ async function testMicrophone() {
         showToast(e.message, true);
       }
     });
+    const btnCudaDownload = $('btn-download-cuda');
+    if (btnCudaDownload) btnCudaDownload.addEventListener('click', downloadCUDA);
     $('test-mic').addEventListener('click', testMicrophone);
     $('record-sample').addEventListener('click', recordSample);
     $('finish-enrollment').addEventListener('click', finishEnrollment);
