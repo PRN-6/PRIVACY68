@@ -49,6 +49,100 @@ class DashboardAPI:
             logger.error(f"Error getting profile: {e}")
             return {}
 
+    def check_ollama_status(self) -> Dict[str, Any]:
+        """
+        Checks if Ollama is installed on the computer and whether its service is running.
+        """
+        ollama_path = shutil.which("ollama")
+        if not ollama_path:
+            local_app_data = os.getenv("LOCALAPPDATA", "")
+            cand = os.path.join(local_app_data, "Programs", "Ollama", "ollama.exe")
+            if os.path.isfile(cand):
+                ollama_path = cand
+            else:
+                cand_pf = os.path.join(os.getenv("ProgramFiles", "C:\\Program Files"), "Ollama", "ollama.exe")
+                if os.path.isfile(cand_pf):
+                    ollama_path = cand_pf
+
+        installed = bool(ollama_path)
+        running = False
+        models = []
+        version = None
+
+        import urllib.request
+        import json
+
+        try:
+            req = urllib.request.Request("http://127.0.0.1:11434/api/tags", headers={"User-Agent": "PRIVACY68/1.0"})
+            with urllib.request.urlopen(req, timeout=1.5) as resp:
+                if resp.status == 200:
+                    running = True
+                    data = json.loads(resp.read().decode("utf-8"))
+                    for item in data.get("models", []):
+                        name = item.get("name") or item.get("model")
+                        if name:
+                            models.append(name)
+        except Exception:
+            running = False
+
+        if running:
+            installed = True
+            try:
+                req_ver = urllib.request.Request("http://127.0.0.1:11434/api/version", headers={"User-Agent": "PRIVACY68/1.0"})
+                with urllib.request.urlopen(req_ver, timeout=1.0) as resp:
+                    if resp.status == 200:
+                        ver_data = json.loads(resp.read().decode("utf-8"))
+                        version = ver_data.get("version")
+            except Exception:
+                pass
+
+        if running:
+            status_text = "running"
+            message = f"Ollama is running with {len(models)} model(s) installed."
+        elif installed:
+            status_text = "offline"
+            message = "Ollama is installed on this computer, but the background service is not running."
+        else:
+            status_text = "not_installed"
+            message = "Ollama is not installed on this computer."
+
+        return {
+            "installed": installed,
+            "running": running,
+            "executable_path": ollama_path,
+            "models": models,
+            "version": version,
+            "status_text": status_text,
+            "message": message,
+        }
+
+    def start_ollama(self) -> Dict[str, Any]:
+        """Attempts to start the Ollama service on the local computer."""
+        try:
+            status = self.check_ollama_status()
+            if status.get("running"):
+                return {"success": True, "message": "Ollama is already running."}
+
+            ollama_path = status.get("executable_path")
+            if not ollama_path:
+                ollama_path = shutil.which("ollama")
+
+            if not ollama_path:
+                return {"success": False, "message": "Ollama is not installed. Download it from ollama.com."}
+
+            app_dir = os.path.dirname(ollama_path)
+            app_exe = os.path.join(app_dir, "ollama app.exe")
+            if os.path.isfile(app_exe):
+                subprocess.Popen([app_exe], shell=True)
+            else:
+                creationflags = 0x08000000 if platform.system() == "Windows" else 0
+                subprocess.Popen([ollama_path, "serve"], creationflags=creationflags, close_fds=True)
+
+            return {"success": True, "message": "Starting Ollama service..."}
+        except Exception as e:
+            logger.error(f"Failed to start Ollama: {e}")
+            return {"success": False, "message": f"Could not start Ollama: {e}"}
+
     def get_runtime_status(self) -> Dict[str, Any]:
         """Returns status values read from the active runtime components."""
         try:
@@ -65,6 +159,7 @@ class DashboardAPI:
                 "speech_compute_type": WHISPER_COMPUTE_TYPE,
                 "voice_lock": voice_status,
                 "cuda": cuda_status,
+                "ollama": self.check_ollama_status(),
             }
         except Exception as e:
             logger.error(f"Error getting runtime status: {e}")

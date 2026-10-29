@@ -263,8 +263,17 @@
           <div class="detail-list">
             <div class="detail-row"><span class="detail-label">Speech model</span><span class="detail-value" id="speech-model">—</span></div>
             <div class="detail-row"><span class="detail-label">Compute</span><span class="detail-value" id="compute-mode">—</span></div>
+            <div class="detail-row"><span class="detail-label">Ollama</span><span class="pill" id="ollama-state">Checking</span></div>
           </div>
-          <p class="hint" style="margin:13px 0 0">Status reflects the runtime configuration; it does not guarantee the model service is reachable.</p>
+          <div id="ollama-notice" style="display:none; margin-top:12px; padding:10px 12px; border-radius:8px; font-size:11px; line-height:1.45;">
+            <div id="ollama-notice-text" style="font-weight:600; margin-bottom:4px;"></div>
+            <div id="ollama-notice-sub" style="font-size:10px; margin-bottom:8px; opacity:0.85;"></div>
+            <div style="display:flex; gap:8px;">
+              <button class="button primary" id="btn-start-ollama" type="button" style="display:none; font-size:11px; min-height:28px; padding:0 12px;">Start Ollama</button>
+              <button class="button primary" id="btn-install-ollama" type="button" style="display:none; font-size:11px; min-height:28px; padding:0 12px;">Download Ollama</button>
+            </div>
+          </div>
+          <p class="hint" style="margin:13px 0 0">Ollama powers the local Agent Brain for offline desktop task execution.</p>
         </section>
 
         <section class="card card-pad">
@@ -708,7 +717,45 @@
       $('engine-model').textContent = status.model || 'Not reported';
       $('speech-model').textContent = status.speech_model || 'Not reported';
       $('compute-mode').textContent = `${status.speech_device || 'unknown'} / ${status.speech_compute_type || 'unknown'}`;
-      setPill($('llm-state'), 'Configured', 'good');
+      const ollama = status.ollama || {};
+      const notice = $('ollama-notice');
+      const noticeText = $('ollama-notice-text');
+      const noticeSub = $('ollama-notice-sub');
+      const btnStart = $('btn-start-ollama');
+      const btnInstall = $('btn-install-ollama');
+
+      if (ollama.running) {
+        setPill($('llm-state'), 'Online', 'good');
+        const count = Array.isArray(ollama.models) ? ollama.models.length : 0;
+        setPill($('ollama-state'), `Running (${count} model${count === 1 ? '' : 's'})`, 'good');
+        if (notice) notice.style.display = 'none';
+      } else if (ollama.installed) {
+        setPill($('llm-state'), 'Offline', 'warn');
+        setPill($('ollama-state'), 'Not Running', 'warn');
+        if (notice) {
+          notice.style.display = 'block';
+          notice.style.background = '#282113';
+          notice.style.border = '1px solid #70531c';
+          notice.style.color = '#f7d088';
+          noticeText.textContent = 'Ollama is installed, but the background service is not running.';
+          noticeSub.textContent = 'Start Ollama so the Agent Brain can execute desktop automation tasks.';
+          btnStart.style.display = 'inline-flex';
+          btnInstall.style.display = 'none';
+        }
+      } else {
+        setPill($('llm-state'), 'Missing', 'bad');
+        setPill($('ollama-state'), 'Not Installed', 'bad');
+        if (notice) {
+          notice.style.display = 'block';
+          notice.style.background = '#2a1618';
+          notice.style.border = '1px solid #822931';
+          notice.style.color = '#fca5a5';
+          noticeText.textContent = 'Ollama was not found on this computer.';
+          noticeSub.textContent = 'Agent Brain requires Ollama to run local LLMs and desktop automation.';
+          btnStart.style.display = 'none';
+          btnInstall.style.display = 'inline-flex';
+        }
+      }
       const cuda = status.cuda || {};
       const cudaReady = Boolean(cuda.is_ready);
       setPill($('cuda-state'), cudaReady ? 'Ready' : (cuda.has_gpu ? 'Unavailable' : 'CPU mode'), cudaReady ? 'good' : 'warn');
@@ -925,6 +972,32 @@ async function testMicrophone() {
     $('install-plugin-file').addEventListener('click', installPluginFile);
     $('save-profile').addEventListener('click', saveProfile);
     $('refresh-status').addEventListener('click', refreshStatus);
+    $('btn-start-ollama').addEventListener('click', async () => {
+      const btn = $('btn-start-ollama');
+      btn.disabled = true;
+      btn.textContent = 'Starting…';
+      try {
+        const res = await bridge().start_ollama();
+        showToast(res.message || 'Starting Ollama service…');
+        setTimeout(async () => {
+          await loadRuntimeStatus();
+          btn.disabled = false;
+          btn.textContent = 'Start Ollama';
+        }, 3000);
+      } catch (e) {
+        showToast(e.message, true);
+        btn.disabled = false;
+        btn.textContent = 'Start Ollama';
+      }
+    });
+    $('btn-install-ollama').addEventListener('click', async () => {
+      try {
+        await bridge().open_external_url('https://ollama.com/download');
+        showToast('Opening https://ollama.com/download in your browser…');
+      } catch (e) {
+        showToast(e.message, true);
+      }
+    });
     $('test-mic').addEventListener('click', testMicrophone);
     $('record-sample').addEventListener('click', recordSample);
     $('finish-enrollment').addEventListener('click', finishEnrollment);
