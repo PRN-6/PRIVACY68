@@ -135,7 +135,7 @@ Building a standalone distributable installer uses PyInstaller and Inno Setup 6:
 .\build.bat
 ```
 
-This compiles `PRIVACY68.exe` under `dist\PRIVACY68\` and packages an Inno Setup installer under `installer\PRIVACY68-Setup-v1.5.0.exe`.
+This compiles `PRIVACY68.exe` under `dist\PRIVACY68\` and packages an Inno Setup installer under `installer\PRIVACY68-Setup-v1.6.0.exe`.
 
 ---
 

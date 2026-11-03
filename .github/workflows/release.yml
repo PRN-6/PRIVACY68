@@ -69,12 +69,13 @@ jobs:
           tag_name: ${{ github.ref_name }}
           name: "PRIVACY68 ${{ github.ref_name }}"
           body: |
-            ## What's Changed in ${{ github.ref_name }}
-            - **Ollama Detection & Management**: Real-time probe in Control Center displaying local/cloud Ollama service status and one-click controls.
-            - **On-Demand CUDA 12 Runtime**: One-click download and extraction of cuBLAS/cuDNN DLLs directly from the dashboard for instant GPU acceleration on compatible NVIDIA GPUs.
-            - **Dynamic Path Resolution**: Enhanced Agent Brain path resolution across OneDrive redirected folders (Desktop, Documents, Downloads).
-            - **Alexa Wake Word**: Fast and accurate wake phrase detection using Faster-Whisper and Silero neural VAD.
-            - **Streamlined Footprint**: Removed heavy legacy biometric models for a faster and cleaner desktop installation.
+                        ## What's Changed in ${{ github.ref_name }}
+            - **Google Gemini & Multi-Provider AI Brain**: Native support for Google Gemini (1.5/2.0 Flash) and Groq Cloud (Llama 3.3 70B) alongside Claude, OpenAI, and local Ollama.
+            - **Resilient Auto-Failover**: Seamless multi-provider fallback if an API limit or network error is reached.
+            - **100% Free Speech Recognition**: Zero-setup Google Web Speech Recognition with strict Click-to-Speak privacy (no background mic recording).
+            - **Self-Improving Skill Engine**: Automatically learns, registers, and executes desktop automation skills.
+            - **WebView2 Control Center Fixes**: Instant bridge initialization, Cloud AI Keys manager, and live execution console.
+            - **Streamlined Footprint**: Lightweight package without bulky local model weights.
 
             ## Requirements
             - **Ollama**: Local Ollama service is recommended for executing agentic OS automation commands (or configure an API key).

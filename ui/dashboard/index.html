@@ -276,6 +276,31 @@
           <p class="hint" style="margin:13px 0 0">Ollama powers the local Agent Brain for offline desktop task execution.</p>
         </section>
 
+        <section class="card card-pad" id="api-keys-card">
+          <div class="card-heading">
+            <h2 class="card-title">Cloud AI Keys</h2>
+            <span class="card-kicker">Multi-Provider</span>
+          </div>
+          <div class="field">
+            <label for="ai-provider-select">Provider</label>
+            <select id="ai-provider-select" style="width:100%; padding:8px 10px; border-radius:8px; background:#111317; border:1px solid var(--line); color:var(--text); font-size:12px;">
+              <option value="gemini">Google Gemini (Free 1.5/2.0 Flash)</option>
+              <option value="groq">Groq Cloud (Free Llama 3.3 70B)</option>
+              <option value="claude">Anthropic Claude (Claude 3.5)</option>
+              <option value="openai">OpenAI (GPT-4o-mini)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="ai-key-input" id="ai-key-label">Gemini API Key</label>
+            <input id="ai-key-input" type="password" placeholder="Paste Gemini key (AIzaSy...)" autocomplete="off">
+          </div>
+          <div style="display:flex; gap:8px;">
+            <button class="button primary full" id="save-ai-key" type="button">Save Key</button>
+            <button class="button" id="test-ai-key" type="button">Test</button>
+          </div>
+          <p class="hint" id="ai-key-hint" style="margin:10px 0 0">Keys save to .env with auto-failover enabled.</p>
+        </section>
+
         <section class="card card-pad">
           <div class="card-heading">
             <h2 class="card-title">Hardware</h2>
@@ -339,11 +364,11 @@
           </article>
           <article class="card summary-card">
             <span class="summary-label">Wake phrase</span>
-            <div><div class="summary-value" id="summary-wake-word">—</div><div class="summary-note">Editable in profile</div></div>
+            <div><div class="summary-value" id="summary-wake-word">Click to Speak</div><div class="summary-note">100% Private (No background mic)</div></div>
           </article>
-                    <article class="card summary-card">
+          <article class="card summary-card">
             <span class="summary-label">Speech Engine</span>
-            <div><div class="summary-value" id="summary-voice">Active</div><div class="summary-note">Faster-Whisper &amp; Silero VAD</div></div>
+            <div><div class="summary-value" id="summary-voice">Active</div><div class="summary-note">Google Web Speech (Free Cloud ASR)</div></div>
           </article>
         </section>
 
@@ -705,8 +730,9 @@
       $('wake-word').value = profile.wake_word || '';
       $('header-user-tag').textContent = profile.user_name || 'User';
       $('assistant-name').textContent = profile.assistant_name || 'PRIVACY68';
-      $('summary-wake-word').textContent = profile.wake_word || 'Not set';
-      $('summary-voice').textContent = profile.voice_lock_enabled ? 'Enabled' : 'Disabled';
+      $('summary-wake-word').textContent = 'Click to Speak';
+      $('summary-voice').textContent = 'Active (100% Free)';
+      $('connection-status').classList.remove('error');
       $('connection-status').classList.add('ready');
       $('connection-label').textContent = 'Desktop connected';
     }
@@ -714,9 +740,23 @@
     async function loadRuntimeStatus() {
       const status = await bridge().get_runtime_status();
       if (!status || !status.success) throw new Error(status?.message || 'Runtime status is unavailable.');
-      $('engine-model').textContent = status.model || 'Not reported';
-      $('speech-model').textContent = status.speech_model || 'Not reported';
-      $('compute-mode').textContent = `${status.speech_device || 'unknown'} / ${status.speech_compute_type || 'unknown'}`;
+      const model = status.model || '';
+      $('engine-model').textContent = model || 'Not configured';
+      $('speech-model').textContent = status.speech_model || 'google-speech-free';
+      $('compute-mode').textContent = 'Cloud API / Click-to-Speak';
+
+      const isCloudModel = model.includes('gemini') || model.includes('groq') || model.includes('claude') || model.includes('gpt') || model.includes('openai');
+
+      if (isCloudModel) {
+        setPill($('llm-state'), 'Online (Cloud AI)', 'good');
+      } else if (status.ollama && status.ollama.running) {
+        setPill($('llm-state'), 'Online (Ollama)', 'good');
+      } else if (status.ollama && status.ollama.installed) {
+        setPill($('llm-state'), 'Offline', 'warn');
+      } else {
+        setPill($('llm-state'), 'Ready (Cloud API)', 'good');
+      }
+
       const ollama = status.ollama || {};
       const notice = $('ollama-notice');
       const noticeText = $('ollama-notice-text');
@@ -725,35 +765,40 @@
       const btnInstall = $('btn-install-ollama');
 
       if (ollama.running) {
-        setPill($('llm-state'), 'Online', 'good');
         const count = Array.isArray(ollama.models) ? ollama.models.length : 0;
         setPill($('ollama-state'), `Running (${count} model${count === 1 ? '' : 's'})`, 'good');
         if (notice) notice.style.display = 'none';
       } else if (ollama.installed) {
-        setPill($('llm-state'), 'Offline', 'warn');
         setPill($('ollama-state'), 'Not Running', 'warn');
         if (notice) {
-          notice.style.display = 'block';
-          notice.style.background = '#282113';
-          notice.style.border = '1px solid #70531c';
-          notice.style.color = '#f7d088';
-          noticeText.textContent = 'Ollama is installed, but the background service is not running.';
-          noticeSub.textContent = 'Start Ollama so the Agent Brain can execute desktop automation tasks.';
-          btnStart.style.display = 'inline-flex';
-          btnInstall.style.display = 'none';
+          if (!isCloudModel) {
+            notice.style.display = 'block';
+            notice.style.background = '#282113';
+            notice.style.border = '1px solid #70531c';
+            notice.style.color = '#f7d088';
+            noticeText.textContent = 'Ollama is installed, but the background service is not running.';
+            noticeSub.textContent = 'Start Ollama or configure a free Cloud API key above.';
+            btnStart.style.display = 'inline-flex';
+            btnInstall.style.display = 'none';
+          } else {
+            notice.style.display = 'none';
+          }
         }
       } else {
-        setPill($('llm-state'), 'Missing', 'bad');
         setPill($('ollama-state'), 'Not Installed', 'bad');
         if (notice) {
-          notice.style.display = 'block';
-          notice.style.background = '#2a1618';
-          notice.style.border = '1px solid #822931';
-          notice.style.color = '#fca5a5';
-          noticeText.textContent = 'Ollama was not found on this computer.';
-          noticeSub.textContent = 'Agent Brain requires Ollama to run local LLMs and desktop automation.';
-          btnStart.style.display = 'none';
-          btnInstall.style.display = 'inline-flex';
+          if (!isCloudModel) {
+            notice.style.display = 'block';
+            notice.style.background = '#2a1618';
+            notice.style.border = '1px solid #822931';
+            notice.style.color = '#fca5a5';
+            noticeText.textContent = 'Ollama not detected. Cloud API mode is ready.';
+            noticeSub.textContent = 'Configure a free Google Gemini or Groq API key above.';
+            btnStart.style.display = 'none';
+            btnInstall.style.display = 'none';
+          } else {
+            notice.style.display = 'none';
+          }
         }
       }
       const cuda = status.cuda || {};
@@ -761,7 +806,6 @@
       setPill($('cuda-state'), cudaReady ? 'Ready' : (cuda.has_gpu ? 'Unavailable' : 'CPU mode'), cudaReady ? 'good' : 'warn');
       const btnCuda = $('btn-download-cuda');
       if (btnCuda) btnCuda.style.display = (cuda.has_gpu && !cudaReady) ? 'block' : 'none';
-      // Voice Lock disabled
     }
 
     function updateVoiceStatus(status) {}
@@ -909,104 +953,74 @@ async function testMicrophone() {
       }
     }
 
-    async function recordSample() {
-      const button = $('record-sample');
-      button.disabled = true;
-      button.textContent = 'Recording…';
-      try {
-        const result = await bridge().record_voice_enrollment_sample();
-        if (!result || !result.success) throw new Error(result?.message || 'Could not record enrollment sample.');
-        showToast(result.message || 'Sample recorded.');
-        await loadRuntimeStatus();
-      } catch (error) {
-        showToast(error.message, true);
-      } finally {
-        button.textContent = 'Record sample';
-        button.disabled = false;
-      }
+        // Cloud API Key handlers
+    const providerSelect = $('ai-provider-select');
+    const keyInput = $('ai-key-input');
+    const keyLabel = $('ai-key-label');
+    const keyHint = $('ai-key-hint');
+
+    const providerConfigs = {
+      gemini: { label: 'Gemini API Key', placeholder: 'Paste Gemini key (AIzaSy...)', model: 'gemini/gemini-1.5-flash', hint: 'Free tier key from aistudio.google.com' },
+      groq: { label: 'Groq API Key', placeholder: 'Paste Groq key (gsk_...)', model: 'groq/llama-3.3-70b-versatile', hint: 'Ultra-fast free reasoning from console.groq.com' },
+      claude: { label: 'Claude API Key', placeholder: 'Paste Claude key (sk-ant-...)', model: 'claude-3-5-sonnet-20241022', hint: 'Anthropic Claude 3.5 Sonnet frontier reasoning' },
+      openai: { label: 'OpenAI API Key', placeholder: 'Paste OpenAI key (sk-...)', model: 'openai/gpt-4o-mini', hint: 'OpenAI GPT-4o-mini / GPT-4o reasoning' }
+    };
+
+    if (providerSelect) {
+      providerSelect.addEventListener('change', () => {
+        const conf = providerConfigs[providerSelect.value] || providerConfigs.gemini;
+        keyLabel.textContent = conf.label;
+        keyInput.placeholder = conf.placeholder;
+        keyHint.textContent = conf.hint;
+      });
     }
 
-    async function finishEnrollment() {
-      try {
-        const result = await bridge().finalize_voice_enrollment();
-        if (!result || !result.success) throw new Error(result?.message || 'Enrollment could not be finalized.');
-        showToast(result.message || 'Voice profile enrolled.');
-        await loadRuntimeStatus();
-        await loadProfile();
-      } catch (error) {
-        showToast(error.message, true);
-      }
-    }
-
-    async function resetEnrollment() {
-      if (!confirm('Delete the saved voice profile and disable Voice Lock?')) return;
-      try {
-        const result = await bridge().reset_voice_enrollment();
-        if (!result || !result.success) throw new Error(result?.message || 'Voice profile could not be reset.');
-        showToast(result.message || 'Voice profile deleted.');
-        await loadRuntimeStatus();
-        await loadProfile();
-      } catch (error) {
-        showToast(error.message, true);
-      }
-    }
-
-    async function toggleVoiceLock() {
-      try {
-        const enabled = $('toggle-voice-lock').textContent.startsWith('Enable');
-        const result = await bridge().toggle_voice_lock(enabled);
-        if (!result || !result.success) throw new Error(result?.message || 'Voice Lock setting could not be changed.');
-        showToast(`Voice Lock ${enabled ? 'enabled' : 'disabled'}.`);
-        await loadRuntimeStatus();
-        await loadProfile();
-      } catch (error) {
-        showToast(error.message, true);
-      }
-    }
-
-    $('command-form').addEventListener('submit', runCommand);
-    $('console-tab').addEventListener('click', () => setView('console'));
-    $('plugins-tab').addEventListener('click', () => setView('plugins'));
-    $('refresh-plugins').addEventListener('click', refreshPlugins);
-    $('github-connect-form').addEventListener('submit', connectGitHub);
-    $('github-disconnect').addEventListener('click', disconnectGitHub);
-    $('plugin-form').addEventListener('submit', createPlugin);
-    $('install-plugin-file').addEventListener('click', installPluginFile);
-    $('save-profile').addEventListener('click', saveProfile);
-    $('refresh-status').addEventListener('click', refreshStatus);
-    $('btn-start-ollama').addEventListener('click', async () => {
-      const btn = $('btn-start-ollama');
-      btn.disabled = true;
-      btn.textContent = 'Starting…';
-      try {
-        const res = await bridge().start_ollama();
-        showToast(res.message || 'Starting Ollama service…');
-        setTimeout(async () => {
+    const saveKeyBtn = $('save-ai-key');
+    if (saveKeyBtn) {
+      saveKeyBtn.addEventListener('click', async () => {
+        const prov = providerSelect.value;
+        const key = keyInput.value.trim();
+        if (!key) {
+          showToast('Please paste an API key first.', true);
+          return;
+        }
+        const conf = providerConfigs[prov] || providerConfigs.gemini;
+        saveKeyBtn.disabled = true;
+        saveKeyBtn.textContent = 'Saving…';
+        try {
+          const res = await bridge().save_api_key(prov, key, conf.model);
+          showToast(res.message || 'API key saved!');
+          keyInput.value = '';
           await loadRuntimeStatus();
-          btn.disabled = false;
-          btn.textContent = 'Start Ollama';
-        }, 3000);
-      } catch (e) {
-        showToast(e.message, true);
-        btn.disabled = false;
-        btn.textContent = 'Start Ollama';
-      }
-    });
-    $('btn-install-ollama').addEventListener('click', async () => {
-      try {
-        await bridge().open_external_url('https://ollama.com/download');
-        showToast('Opening https://ollama.com/download in your browser…');
-      } catch (e) {
-        showToast(e.message, true);
-      }
-    });
-    const btnCudaDownload = $('btn-download-cuda');
-    if (btnCudaDownload) btnCudaDownload.addEventListener('click', downloadCUDA);
+        } catch (err) {
+          showToast(err.message, true);
+        } finally {
+          saveKeyBtn.disabled = false;
+          saveKeyBtn.textContent = 'Save Key';
+        }
+      });
+    }
+
+    const testKeyBtn = $('test-ai-key');
+    if (testKeyBtn) {
+      testKeyBtn.addEventListener('click', async () => {
+        const prov = providerSelect.value;
+        const key = keyInput.value.trim();
+        testKeyBtn.disabled = true;
+        testKeyBtn.textContent = 'Testing…';
+        try {
+          const res = await bridge().test_llm_connection({ provider: prov, api_key: key });
+          showToast(res.message, !res.success);
+        } catch (err) {
+          showToast(err.message, true);
+        } finally {
+          testKeyBtn.disabled = false;
+          testKeyBtn.textContent = 'Test';
+        }
+      });
+    }
+
     $('test-mic').addEventListener('click', testMicrophone);
-    $('record-sample').addEventListener('click', recordSample);
-    $('finish-enrollment').addEventListener('click', finishEnrollment);
-    $('reset-enrollment').addEventListener('click', resetEnrollment);
-    $('toggle-voice-lock').addEventListener('click', toggleVoiceLock);
     $('clear-log').addEventListener('click', () => {
       $('console-log').replaceChildren();
       const empty = document.createElement('div');
@@ -1026,23 +1040,39 @@ async function testMicrophone() {
       catch (error) { showToast(error.message, true); }
     });
 
-    window.addEventListener('pywebviewready', () => {
-      refreshStatus();
-      refreshPlugins();
-      refreshGitHubStatus();
-    });
-    document.addEventListener('DOMContentLoaded', () => {
+    let _dashboardInitialized = false;
+    async function initDashboard() {
+      if (_dashboardInitialized) return;
       if (window.pywebview && window.pywebview.api) {
-        refreshStatus();
-        refreshPlugins();
+        _dashboardInitialized = true;
+        $('connection-status').classList.remove('error');
+        $('connection-status').classList.add('ready');
+        $('connection-label').textContent = 'Desktop connected';
+        try { await loadProfile(); } catch (e) { console.warn('loadProfile error:', e); }
+        try { await loadRuntimeStatus(); } catch (e) { console.warn('loadRuntimeStatus error:', e); }
+        try { await refreshPlugins(); } catch (e) { console.warn('refreshPlugins error:', e); }
+        try { await refreshGitHubStatus(); } catch (e) { console.warn('refreshGitHubStatus error:', e); }
       }
-    });
+    }
+
+    window.addEventListener('pywebviewready', initDashboard);
+    document.addEventListener('DOMContentLoaded', initDashboard);
+
+    // Fast-poll bridge detection (resolves within 50ms)
+    const bridgePoll = setInterval(() => {
+      if (window.pywebview && window.pywebview.api) {
+        clearInterval(bridgePoll);
+        initDashboard();
+      }
+    }, 100);
+
     setTimeout(() => {
+      clearInterval(bridgePoll);
       if (!window.pywebview || !window.pywebview.api) {
         $('connection-status').classList.add('error');
         $('connection-label').textContent = 'Open in desktop app';
       }
-    }, 1800);
+    }, 4000);
   </script>
 </body>
 </html>

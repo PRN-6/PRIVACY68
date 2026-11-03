@@ -94,7 +94,7 @@
                             <h3 class="doc-block-title">01 // Current Command Processing Flow</h3>
                         </div>
                         <p class="doc-text">
-                            The current implementation does <strong>not</strong> use a three-lane command router. The executor handles pending security confirmations and greeting requests directly, routes explicit GitHub requests to the built-in GitHub plugin, and sends other non-empty requests to the Agent Brain. The Agent Brain asks LiteLLM for Python code using the configured model identifier <code>ollama/gemma4:31b-cloud</code>, then runs returned code in a Python subprocess.
+                            The current implementation does <strong>not</strong> use a three-lane command router. The executor handles pending security confirmations and greeting requests directly, routes explicit GitHub requests to the built-in GitHub plugin, and sends other non-empty requests to the Agent Brain. The Agent Brain asks LiteLLM for Python code using the configured model identifier <code>Google Gemini / Groq Cloud / Multi-Provider Auto-Failover</code>, then runs returned code in a Python subprocess.
                         </p>
                         <div class="doc-code-preview">
 Microphone/audio path (when voice mode is used)
@@ -106,7 +106,7 @@ Microphone/audio path (when voice mode is used)
             -> GitHub REST API or local Git
             -> confirmation required for pushes and GitHub writes
        -> otherwise send request to Agent Brain
-            -> LiteLLM completion (ollama/gemma4:31b-cloud)
+            -> LiteLLM completion (Google Gemini / Groq Cloud / Multi-Provider Auto-Failover)
             -> generated Python code
             -> Python subprocess (30-second timeout)
             -> result returned to UI
@@ -373,7 +373,7 @@ Microphone/audio path (when voice mode is used)
                                         <td><strong>General AI Reasoning</strong></td>
                                         <td><code>"Privacy68, explain quantum computing simply"</code></td>
                                         <td>Agent Brain</td>
-                                        <td>Current model identifier: <code>ollama/gemma4:31b-cloud</code>.</td>
+                                        <td>Current model identifier: <code>Google Gemini / Groq Cloud / Multi-Provider Auto-Failover</code>.</td>
                                     </tr>
                                     <tr>
                                         <td><strong>GitHub</strong></td>
@@ -442,7 +442,7 @@ INITIAL_PROMPT = (
                 <span class="telemetry-item"><span class="dot-indicator"></span><span class="t-label">SYS:</span>
                     ONLINE</span>
                 <span class="telemetry-sep">·</span>
-                <span class="telemetry-item"><span class="t-label">DOCS:</span> v1.3.0</span>
+                <span class="telemetry-item"><span class="t-label">DOCS:</span> v1.6.0</span>
             </div>
         </footer>
 

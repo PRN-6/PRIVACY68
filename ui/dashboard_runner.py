@@ -1,6 +1,7 @@
 import os
 import sys
 import logging
+import threading
 
 # Ensure project root is in sys.path
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -18,16 +19,24 @@ def get_dashboard_html_path() -> str:
     else:
         base = PROJECT_ROOT
 
-    html_path = os.path.join(base, "ui", "dashboard", "index.html")
-    if not os.path.exists(html_path):
-        alt_path = os.path.join(os.path.dirname(__file__), "dashboard", "index.html")
-        if os.path.exists(alt_path):
-            return alt_path
-    return html_path
+    candidates = [
+        os.path.join(base, "ui", "dashboard", "index.html"),
+        os.path.join(base, "_internal", "ui", "dashboard", "index.html"),
+        os.path.join(os.path.dirname(sys.executable), "_internal", "ui", "dashboard", "index.html"),
+        os.path.join(os.path.dirname(__file__), "dashboard", "index.html"),
+        os.path.join(PROJECT_ROOT, "ui", "dashboard", "index.html"),
+    ]
+    for path in candidates:
+        if os.path.exists(path):
+            return path
+    return candidates[0]
 
 
 def run_dashboard():
     """Launches the modern PRIVACY68 Control Center (WebView2 HTML/JS GUI with native fallback)."""
+    # Pre-warm agent brain in background thread so LiteLLM import does not block UI load
+    threading.Thread(target=lambda: __import__("actions.agent_brain"), daemon=True).start()
+
     html_path = get_dashboard_html_path()
     try:
         import webview

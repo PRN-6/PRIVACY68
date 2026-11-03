@@ -270,6 +270,17 @@ class DashboardAPI:
 
         return {"success": True, "message": f"{provider.capitalize()} API key saved successfully!"}
 
+    def get_api_keys(self) -> Dict[str, Any]:
+        """Returns configured status of Cloud API keys and active model."""
+        import config
+        return {
+            "gemini": bool(getattr(config, "GEMINI_API_KEY", "") or os.environ.get("GEMINI_API_KEY", "")),
+            "groq": bool(getattr(config, "GROQ_API_KEY", "") or os.environ.get("GROQ_API_KEY", "")),
+            "claude": bool(getattr(config, "ANTHROPIC_API_KEY", "") or os.environ.get("ANTHROPIC_API_KEY", "")),
+            "openai": bool(getattr(config, "OPENAI_API_KEY", "") or os.environ.get("OPENAI_API_KEY", "")),
+            "active_model": getattr(config, "AGENT_BRAIN_MODEL", "gemini/gemini-1.5-flash"),
+        }
+
     def get_available_llm_models(self) -> List[Dict[str, Any]]:
         """Returns a list of all models installed in local Ollama instance."""
         try:
