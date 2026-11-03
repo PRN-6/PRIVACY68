@@ -148,7 +148,7 @@ class SpeechStreamer:
 
         if self.engine_type == "whispercpp":
             try:
-                threads = 2 if is_idle else 4
+                threads = 4
                 segs = self.model.transcribe(
                     audio_data,
                     n_threads=threads,
@@ -156,6 +156,9 @@ class SpeechStreamer:
                     language='en',
                     no_timestamps=True,
                     single_segment=True if is_idle else False,
+                    print_progress=False,
+                    print_realtime=False,
+                    print_timestamps=False,
                 )
                 return " ".join([s.text.strip() for s in segs]).strip()
             except Exception as e:
@@ -237,7 +240,7 @@ class SpeechStreamer:
                     else:
                         model_path = "base.en"
 
-                self.model = WhisperCppModel(model_path)
+                self.model = WhisperCppModel(model_path, redirect_whispercpp_logs_to=None)
                 self.engine_type = "whispercpp"
                 logger.info(f"Loaded whisper.cpp engine ({model_path}) on CPU.")
             except Exception as e:
@@ -345,10 +348,14 @@ class SpeechStreamer:
                             idle_audio = np.concatenate(idle_buffer).flatten()
                             idle_buffer = idle_buffer[idle_step_chunks:]
 
-                            # Energy check: skip silence / faint background hum
+                            # VAD + Energy check: skip silence and non-speech background noise
                             rms = float(np.sqrt(np.mean(idle_audio**2)))
-                            peak = float(np.max(np.abs(idle_audio)))
-                            if (rms < 0.002 and peak < 0.007) or self.model is None:
+                            if rms < 0.003 or self.model is None:
+                                continue
+
+                            # Verify human voice is present in the audio window via neural VAD
+                            has_voice = any(self.vad.is_speech(c) for c in idle_buffer[-6:])
+                            if not has_voice:
                                 continue
 
                             norm_idle = (idle_audio / peak) * 0.9 if peak > 0.01 else idle_audio

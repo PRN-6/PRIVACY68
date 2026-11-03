@@ -1,5 +1,7 @@
 import logging
 import re
+import urllib.parse
+import webbrowser
 from speech.streamer import autocorrect_speech_command
 from computer_use.security_guard import security_guard
 
@@ -28,6 +30,34 @@ BUILTIN_APP_COMMANDS = (
     (re.compile(r"(?:open|launch|start)\s+(?:the\s+)?whatsapp(?:\s+desktop)?"), "whatsapp", "open"),
 )
 
+COMMON_WEB_SERVICES = {
+    "youtube": "https://www.youtube.com",
+    "google": "https://www.google.com",
+    "github": "https://www.github.com",
+    "gmail": "https://mail.google.com",
+    "whatsapp": "https://web.whatsapp.com",
+    "reddit": "https://www.reddit.com",
+    "twitter": "https://x.com",
+    "x": "https://x.com",
+    "facebook": "https://www.facebook.com",
+    "instagram": "https://www.instagram.com",
+    "linkedin": "https://www.linkedin.com",
+    "wikipedia": "https://www.wikipedia.org",
+    "chatgpt": "https://chatgpt.com",
+}
+
+APP_LAUNCHERS = {
+    "notepad": ["notepad.exe"],
+    "calculator": ["calc.exe"],
+    "calc": ["calc.exe"],
+    "explorer": ["explorer.exe"],
+    "file explorer": ["explorer.exe"],
+    "task manager": ["taskmgr.exe"],
+    "cmd": ["cmd.exe"],
+    "powershell": ["powershell.exe"],
+    "terminal": ["wt.exe"],
+}
+
 
 def _notify(on_status_callback, on_action_callback, tool: str, success: bool, message: str):
     """Uniform notification helper for UI callbacks."""
@@ -38,6 +68,44 @@ def _notify(on_status_callback, on_action_callback, tool: str, success: bool, me
             on_action_callback(tool, success, message)
         except TypeError:
             on_action_callback(tool, success)
+
+
+def _open_url(url: str, plugin_manager, preferred_browser: str = None) -> bool:
+    """Attempts to open URL via Chrome or Brave plugin, falling back to system browser."""
+    if preferred_browser == "chrome":
+        chrome = plugin_manager.get_plugin("chrome")
+        if chrome and chrome.is_enabled and hasattr(chrome, "open_url"):
+            try:
+                if chrome.open_url(url):
+                    return True
+            except Exception:
+                pass
+    elif preferred_browser == "brave":
+        brave = plugin_manager.get_plugin("brave")
+        if brave and brave.is_enabled and hasattr(brave, "open_url"):
+            try:
+                if brave.open_url(url):
+                    return True
+            except Exception:
+                pass
+
+    chrome = plugin_manager.get_plugin("chrome")
+    if chrome and chrome.is_enabled and hasattr(chrome, "open_url"):
+        try:
+            if chrome.open_url(url):
+                return True
+        except Exception:
+            pass
+
+    brave = plugin_manager.get_plugin("brave")
+    if brave and brave.is_enabled and hasattr(brave, "open_url"):
+        try:
+            if brave.open_url(url):
+                return True
+        except Exception:
+            pass
+
+    return webbrowser.open(url)
 
 
 def _execute_builtin_app_command(command: str, plugin_manager, on_action_callback, on_status_callback):
@@ -80,6 +148,136 @@ def _execute_builtin_app_command(command: str, plugin_manager, on_action_callbac
     return None
 
 
+def _execute_web_or_app_command(command: str, plugin_manager, on_action_callback, on_status_callback):
+    """
+    Directly routes common web searches, website navigations, and desktop app launches
+    without requiring LLM/Ollama reasoning.
+    """
+    clean_cmd = command.strip().strip("'\"")
+
+    # 1. "open <browser> and search for <query>"
+    m_browser_search = re.match(
+        r"(?:open|launch|start)\s+(?:(?:google)\s+)?(chrome|brave|browser)\s+and\s+search(?:\s+for)?\s+(.+)",
+        clean_cmd,
+        re.IGNORECASE
+    )
+    if m_browser_search:
+        browser_pref = m_browser_search.group(1).lower()
+        query = m_browser_search.group(2).strip().strip("'\"")
+
+        if query.lower() in COMMON_WEB_SERVICES:
+            url = COMMON_WEB_SERVICES[query.lower()]
+            target_name = query.title()
+        else:
+            url = f"https://www.google.com/search?q={urllib.parse.quote(query)}"
+            target_name = f"'{query}'"
+
+        _open_url(url, plugin_manager, preferred_browser=browser_pref)
+        msg = f"Opened {browser_pref.title()} and searched for {target_name}."
+        _notify(on_status_callback, on_action_callback, "browser", True, msg)
+        return {
+            "success": True,
+            "tool": "browser",
+            "method": "browser_search",
+            "message": msg,
+            "output": url,
+        }
+
+    # 2. "search youtube for <query>"
+    m_yt = re.match(r"(?:search|look up)\s+youtube\s+for\s+(.+)", clean_cmd, re.IGNORECASE)
+    if m_yt:
+        query = m_yt.group(1).strip().strip("'\"")
+        url = f"https://www.youtube.com/results?search_query={urllib.parse.quote(query)}"
+        _open_url(url, plugin_manager)
+        msg = f"Searched YouTube for '{query}'."
+        _notify(on_status_callback, on_action_callback, "browser", True, msg)
+        return {
+            "success": True,
+            "tool": "browser",
+            "method": "browser_search",
+            "message": msg,
+            "output": url,
+        }
+
+    # 3. "search for <query>" / "search google for <query>"
+    m_search = re.match(r"(?:search|look up)(?:\s+for|\s+google for)?\s+(.+)", clean_cmd, re.IGNORECASE)
+    if m_search:
+        query = m_search.group(1).strip().strip("'\"")
+        if query.lower().endswith(" on youtube"):
+            clean_q = query[:-11].strip()
+            url = f"https://www.youtube.com/results?search_query={urllib.parse.quote(clean_q)}"
+            target = f"YouTube for '{clean_q}'"
+        elif query.lower() in COMMON_WEB_SERVICES:
+            url = COMMON_WEB_SERVICES[query.lower()]
+            target = query.title()
+        else:
+            url = f"https://www.google.com/search?q={urllib.parse.quote(query)}"
+            target = f"'{query}'"
+
+        _open_url(url, plugin_manager)
+        msg = f"Searched for {target}."
+        _notify(on_status_callback, on_action_callback, "browser", True, msg)
+        return {
+            "success": True,
+            "tool": "browser",
+            "method": "browser_search",
+            "message": msg,
+            "output": url,
+        }
+
+    # 4. "open <website>" (e.g. "open youtube", "open github")
+    m_site = re.match(r"(?:open|launch|go to)\s+([a-zA-Z0-9_\-\.]+)", clean_cmd, re.IGNORECASE)
+    if m_site:
+        site_key = m_site.group(1).lower().strip()
+        if site_key in COMMON_WEB_SERVICES:
+            url = COMMON_WEB_SERVICES[site_key]
+            _open_url(url, plugin_manager)
+            msg = f"Opened {site_key.title()}."
+            _notify(on_status_callback, on_action_callback, "browser", True, msg)
+            return {
+                "success": True,
+                "tool": "browser",
+                "method": "website_launcher",
+                "message": msg,
+                "output": url,
+            }
+        elif "." in site_key and not site_key.endswith((".exe", ".py", ".txt", ".md")):
+            url = f"https://{site_key}"
+            _open_url(url, plugin_manager)
+            msg = f"Navigated to {site_key}."
+            _notify(on_status_callback, on_action_callback, "browser", True, msg)
+            return {
+                "success": True,
+                "tool": "browser",
+                "method": "website_launcher",
+                "message": msg,
+                "output": url,
+            }
+
+    # 5. Desktop apps (notepad, calculator, cmd, powershell)
+    m_app = re.match(r"(?:open|launch|start)\s+(notepad|calculator|calc|explorer|file explorer|task manager|cmd|powershell|terminal)", clean_cmd, re.IGNORECASE)
+    if m_app:
+        app_key = m_app.group(1).lower().strip()
+        exe_cmd = APP_LAUNCHERS.get(app_key)
+        if exe_cmd:
+            try:
+                import subprocess
+                subprocess.Popen(exe_cmd)
+                msg = f"Opened {app_key.title()}."
+                _notify(on_status_callback, on_action_callback, "system_app", True, msg)
+                return {
+                    "success": True,
+                    "tool": "system_app",
+                    "method": "app_launcher",
+                    "message": msg,
+                    "output": "",
+                }
+            except Exception as e:
+                logger.error(f"Failed to launch {app_key}: {e}")
+
+    return None
+
+
 def execute_system_command_detailed(text: str, on_action_callback=None, on_status_callback=None) -> dict:
     """
     Routes built-in commands directly and uses Agent Brain for other requests.
@@ -113,6 +311,7 @@ def execute_system_command_detailed(text: str, on_action_callback=None, on_statu
     if low in GREETINGS:
         return {"success": True, "tool": "greeting", "method": "none", "message": "I'm listening. How can I help you with your computer today?"}
 
+    # 2. Built-in Core Application Plugins (Exact app opens)
     app_result = _execute_builtin_app_command(
         low,
         plugin_manager,
@@ -122,7 +321,17 @@ def execute_system_command_detailed(text: str, on_action_callback=None, on_statu
     if app_result is not None:
         return app_result
 
-    # Route explicit GitHub tasks to the integrated plugin instead of generating shell code.
+    # 3. Direct Web Searches, Websites, and App Launches
+    web_result = _execute_web_or_app_command(
+        low,
+        plugin_manager,
+        on_action_callback,
+        on_status_callback,
+    )
+    if web_result is not None:
+        return web_result
+
+    # 4. Route explicit GitHub tasks to the integrated plugin instead of generating shell code.
     github_plugin = plugin_manager.get_plugin("github")
     if github_plugin and not github_plugin.is_enabled and github_plugin.parse_command(cleaned):
         return {
@@ -192,8 +401,7 @@ def execute_system_command_detailed(text: str, on_action_callback=None, on_statu
             _notify(on_status_callback, on_action_callback, "github", True, message)
             return {**result, "tool": "github", "method": "github_plugin", "message": message}
 
-    # Other requests go to the Agent Brain.
-    # The Agent Brain handles apps, files, web, and system tools via generated code.
+    # 5. Complex agentic requests go to Agent Brain (Local Ollama / Cloud LLM)
     from actions.agent_brain import agent_brain
     result = agent_brain.generate_and_execute(cleaned)
 
@@ -217,6 +425,7 @@ def execute_system_command_detailed(text: str, on_action_callback=None, on_statu
         result["message"],
     )
     return result
+
 
 def execute_system_command(text: str, on_action_callback=None, on_status_callback=None) -> bool:
     result = execute_system_command_detailed(text, on_action_callback, on_status_callback)
