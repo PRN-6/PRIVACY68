@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -39,10 +40,10 @@ jobs:
         shell: pwsh
         run: |
           $version = python -c "import tomllib; print(tomllib.load(open('pyproject.toml', 'rb'))['project']['version'])"
-          if ("${{ github.ref_name }}" -ne "v$version") {
+          if ("${{ github.ref_type }}" -eq "tag" -and "${{ github.ref_name }}" -ne "v$version") {
             throw "Release tag ${{ github.ref_name }} does not match project version v$version."
           }
-          "VERSION=$version" >> $env:GITHUB_OUTPUT
+          "VERSION=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
 
       - name: Build Inno Setup installer
         shell: pwsh
@@ -61,15 +62,17 @@ jobs:
           $version = "v${{ steps.version.outputs.VERSION }}"
           $zipName = "PRIVACY68-$version-Windows-x64.zip"
           Compress-Archive -Path dist\PRIVACY68\* -DestinationPath $zipName
-          "ZIP_NAME=$zipName" >> $env:GITHUB_ENV
+          "ZIP_NAME=$zipName" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
       - name: Publish GitHub release
         uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ github.ref_name }}
-          name: "PRIVACY68 ${{ github.ref_name }}"
+          tag_name: ${{ github.ref_type == 'tag' && github.ref_name || format('v{0}', steps.version.outputs.VERSION) }}
+          name: "PRIVACY68 ${{ github.ref_type == 'tag' && github.ref_name || format('v{0}', steps.version.outputs.VERSION) }}"
           body: |
-                                    ## What's Changed in ${{ github.ref_name }}
+            ## What's Changed in ${{ steps.version.outputs.VERSION }}
             - **Clean Minimalist Control Center**: Removed emojis and cluttered icons for an ultra-sleek, professional desktop management interface.
             - **Multi-Provider Cloud AI Slots**: Simultaneous slots for Google Gemini (Free 1.5/2.0 Flash), Groq Cloud (Free Llama 3.3 70B), Anthropic Claude, OpenAI, and Ollama.
             - **Autonomous Skill Crystallization**: 0ms fast-path execution of learned desktop automation tasks.
