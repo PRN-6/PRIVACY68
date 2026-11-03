@@ -24,16 +24,13 @@ class ProfileManager:
             "assistant_name": "Alexa",
             "wake_word": "alexa",
             "wake_threshold": 0.50,
-            "whisper_model": "small.en",
-            "llm_provider": "ollama",
-            "llm_model": "gemma4:31b-cloud",
+            "llm_provider": "gemini",
+            "llm_model": "gemini-1.5-flash",
             "api_key": "",
             "api_base_url": "",
-            "cloud_model": "gpt-4o-mini",
+            "cloud_model": "gemini-1.5-flash",
             "hud_enabled": True,
             "theme": "obsidian_red",
-            "voice_lock_enabled": False,
-            "voice_lock_threshold": 0.50,
         }
 
         if not os.path.exists(self.profile_path):
