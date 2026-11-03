@@ -46,8 +46,8 @@ class Privacy68Dashboard(ctk.CTk):
         super().__init__()
 
         self.title("PRIVACY68 Control Center - Smart Assistant")
-        self.geometry("1060x720")
-        self.minsize(920, 620)
+        self.geometry("1000x640")
+        self.minsize(840, 500)
         self.configure(fg_color=COLOR_BG_DARK)
 
         # State
@@ -67,7 +67,7 @@ class Privacy68Dashboard(ctk.CTk):
         self.grid_columnconfigure(1, weight=1)
 
         # ── Left Navigation Sidebar ──
-        self.sidebar = ctk.CTkFrame(self, width=220, corner_radius=0, fg_color=COLOR_SIDEBAR)
+        self.sidebar = ctk.CTkFrame(self, width=210, corner_radius=0, fg_color=COLOR_SIDEBAR)
         self.sidebar.grid(row=0, column=0, sticky="nsew")
         self.sidebar.grid_rowconfigure(8, weight=1)
 
@@ -75,67 +75,71 @@ class Privacy68Dashboard(ctk.CTk):
         brand_label = ctk.CTkLabel(
             self.sidebar,
             text="PRIVACY 68",
-            font=ctk.CTkFont(family="Segoe UI", size=22, weight="bold"),
+            font=ctk.CTkFont(family="Segoe UI", size=20, weight="bold"),
             text_color=COLOR_ACCENT_RED
         )
-        brand_label.grid(row=0, column=0, padx=20, pady=(20, 4), sticky="w")
+        brand_label.grid(row=0, column=0, padx=16, pady=(14, 2), sticky="w")
 
         subtitle = ctk.CTkLabel(
             self.sidebar,
             text="AI Desktop Assistant",
-            font=ctk.CTkFont(family="Segoe UI", size=12),
+            font=ctk.CTkFont(family="Segoe UI", size=11),
             text_color=COLOR_TEXT_MUTED
         )
-        subtitle.grid(row=1, column=0, padx=20, pady=(0, 20), sticky="w")
+        subtitle.grid(row=1, column=0, padx=16, pady=(0, 12), sticky="w")
 
         # Nav Buttons
         self.nav_console_btn = ctk.CTkButton(
             self.sidebar,
             text="💻 Live Console",
             anchor="w",
-            font=ctk.CTkFont(family="Segoe UI", size=13, weight="bold"),
+            height=34,
+            font=ctk.CTkFont(family="Segoe UI", size=12, weight="bold"),
             fg_color=COLOR_ACCENT_RED,
             hover_color=COLOR_ACCENT_RED_HOVER,
             command=lambda: self._switch_tab("console")
         )
-        self.nav_console_btn.grid(row=2, column=0, padx=15, pady=6, sticky="ew")
+        self.nav_console_btn.grid(row=2, column=0, padx=12, pady=3, sticky="ew")
 
         self.nav_brain_btn = ctk.CTkButton(
             self.sidebar,
             text="🧠 AI Brain & Ollama",
             anchor="w",
-            font=ctk.CTkFont(family="Segoe UI", size=13),
+            height=34,
+            font=ctk.CTkFont(family="Segoe UI", size=12),
             fg_color="transparent",
             hover_color=COLOR_CARD_HOVER,
             command=lambda: self._switch_tab("brain")
         )
-        self.nav_brain_btn.grid(row=3, column=0, padx=15, pady=6, sticky="ew")
+        self.nav_brain_btn.grid(row=3, column=0, padx=12, pady=3, sticky="ew")
 
         self.nav_voice_btn = ctk.CTkButton(
             self.sidebar,
             text="🎙️ Voice & Audio",
             anchor="w",
-            font=ctk.CTkFont(family="Segoe UI", size=13),
+            height=34,
+            font=ctk.CTkFont(family="Segoe UI", size=12),
             fg_color="transparent",
             hover_color=COLOR_CARD_HOVER,
             command=lambda: self._switch_tab("voice")
         )
-        self.nav_voice_btn.grid(row=4, column=0, padx=15, pady=6, sticky="ew")
+        self.nav_voice_btn.grid(row=4, column=0, padx=12, pady=3, sticky="ew")
 
         self.nav_settings_btn = ctk.CTkButton(
             self.sidebar,
             text="⚙️ Settings",
             anchor="w",
-            font=ctk.CTkFont(family="Segoe UI", size=13),
+            height=34,
+            font=ctk.CTkFont(family="Segoe UI", size=12),
             fg_color="transparent",
             hover_color=COLOR_CARD_HOVER,
             command=lambda: self._switch_tab("settings")
         )
-        self.nav_settings_btn.grid(row=5, column=0, padx=15, pady=6, sticky="ew")
+        self.nav_settings_btn.grid(row=5, column=0, padx=12, pady=3, sticky="ew")
 
         # Service Status Indicators
         status_frame = ctk.CTkFrame(self.sidebar, fg_color=COLOR_CARD, corner_radius=8)
-        status_frame.grid(row=6, column=0, padx=15, pady=(20, 10), sticky="ew")
+        status_frame.grid(row=6, column=0, padx=12, pady=(12, 6), sticky="ew")
 
         self.voice_status_label = ctk.CTkLabel(
             status_frame,
@@ -143,7 +147,7 @@ class Privacy68Dashboard(ctk.CTk):
             font=ctk.CTkFont(family="Segoe UI", size=11),
             text_color="#F59E0B"
         )
-        self.voice_status_label.pack(anchor="w", padx=12, pady=(8, 4))
+        self.voice_status_label.pack(anchor="w", padx=10, pady=(6, 2))
 
         self.brain_status_label = ctk.CTkLabel(
             status_frame,
@@ -151,18 +155,19 @@ class Privacy68Dashboard(ctk.CTk):
             font=ctk.CTkFont(family="Segoe UI", size=11),
             text_color=COLOR_TEXT_MUTED
         )
-        self.brain_status_label.pack(anchor="w", padx=12, pady=(0, 8))
+        self.brain_status_label.pack(anchor="w", padx=10, pady=(0, 6))
 
         # Voice Streamer Toggle Button
         self.streamer_btn = ctk.CTkButton(
             self.sidebar,
             text="▶ Start Voice",
-            font=ctk.CTkFont(family="Segoe UI", size=13, weight="bold"),
+            height=36,
+            font=ctk.CTkFont(family="Segoe UI", size=12, weight="bold"),
             fg_color=COLOR_ACCENT_GREEN,
             hover_color="#059669",
             command=self._toggle_voice_streamer
         )
-        self.streamer_btn.grid(row=7, column=0, padx=15, pady=10, sticky="ew")
+        self.streamer_btn.grid(row=7, column=0, padx=12, pady=6, sticky="ew")
 
         # Footer
         footer_label = ctk.CTkLabel(
@@ -171,12 +176,12 @@ class Privacy68Dashboard(ctk.CTk):
             font=ctk.CTkFont(family="Segoe UI", size=10),
             text_color=COLOR_TEXT_MUTED
         )
-        footer_label.grid(row=9, column=0, padx=15, pady=15, sticky="s")
+        footer_label.grid(row=9, column=0, padx=12, pady=10, sticky="s")
 
         # ── Main Content Area ──
         self.content_frame = ctk.CTkFrame(self, fg_color=COLOR_BG_DARK, corner_radius=0)
-        self.content_frame.grid(row=0, column=1, sticky="nsew", padx=15, pady=15)
-        self.content_frame.grid_rowconfigure(1, weight=1)
+        self.content_frame.grid(row=0, column=1, sticky="nsew", padx=12, pady=12)
+        self.content_frame.grid_rowconfigure(0, weight=1)
         self.content_frame.grid_columnconfigure(0, weight=1)
 
         # Tab Frames container
@@ -195,8 +200,8 @@ class Privacy68Dashboard(ctk.CTk):
         view.grid_columnconfigure(0, weight=1)
 
         # Top Stat Badges
-        header_bar = ctk.CTkFrame(view, fg_color=COLOR_CARD, corner_radius=8, height=45)
-        header_bar.grid(row=0, column=0, sticky="ew", pady=(0, 10))
+        header_bar = ctk.CTkFrame(view, fg_color=COLOR_CARD, corner_radius=8, height=42)
+        header_bar.grid(row=0, column=0, sticky="ew", pady=(0, 8))
 
         engine_name = getattr(config, "SPEECH_ENGINE", "whispercpp")
         self.badge_engine = ctk.CTkLabel(
@@ -206,9 +211,9 @@ class Privacy68Dashboard(ctk.CTk):
             text_color=COLOR_TEXT_PRIMARY,
             fg_color=COLOR_BG_DARK,
             corner_radius=6,
-            padx=10, pady=4
+            padx=10, pady=3
         )
-        self.badge_engine.pack(side="left", padx=10, pady=8)
+        self.badge_engine.pack(side="left", padx=8, pady=6)
 
         wake_word = getattr(config, "WAKE_WORD_MODEL", "alexa")
         self.badge_wake = ctk.CTkLabel(
@@ -218,26 +223,26 @@ class Privacy68Dashboard(ctk.CTk):
             text_color=COLOR_TEXT_PRIMARY,
             fg_color=COLOR_BG_DARK,
             corner_radius=6,
-            padx=10, pady=4
+            padx=10, pady=3
         )
-        self.badge_wake.pack(side="left", padx=6, pady=8)
+        self.badge_wake.pack(side="left", padx=4, pady=6)
 
         self.clear_feed_btn = ctk.CTkButton(
             header_bar,
             text="Clear Log",
             width=70,
-            height=28,
+            height=26,
             font=ctk.CTkFont(family="Segoe UI", size=11),
             fg_color="transparent",
             hover_color=COLOR_CARD_HOVER,
             text_color=COLOR_TEXT_MUTED,
             command=self._clear_feed
         )
-        self.clear_feed_btn.pack(side="right", padx=10, pady=8)
+        self.clear_feed_btn.pack(side="right", padx=8, pady=6)
 
         # Scrollable Feed Container
         self.feed_scroll = ctk.CTkScrollableFrame(view, fg_color=COLOR_CARD, corner_radius=8)
-        self.feed_scroll.grid(row=1, column=0, sticky="nsew", pady=(0, 10))
+        self.feed_scroll.grid(row=1, column=0, sticky="nsew", pady=(0, 8))
         self.feed_scroll.grid_columnconfigure(0, weight=1)
 
         # Bottom Input Bar
@@ -249,21 +254,21 @@ class Privacy68Dashboard(ctk.CTk):
             input_bar,
             placeholder_text="Type an instruction (e.g. 'open brave and search github', 'what time is it?')...",
             font=ctk.CTkFont(family="Segoe UI", size=13),
-            height=44,
+            height=40,
             corner_radius=8,
             fg_color=COLOR_CARD,
             border_color=COLOR_CARD_HOVER,
             text_color=COLOR_TEXT_PRIMARY
         )
-        self.command_entry.grid(row=0, column=0, sticky="ew", padx=(0, 10))
+        self.command_entry.grid(row=0, column=0, sticky="ew", padx=(0, 8))
         self.command_entry.bind("<Return>", lambda e: self._send_manual_command())
 
         self.send_btn = ctk.CTkButton(
             input_bar,
             text="Execute",
-            font=ctk.CTkFont(family="Segoe UI", size=13, weight="bold"),
-            width=100,
-            height=44,
+            font=ctk.CTkFont(family="Segoe UI", size=12, weight="bold"),
+            width=90,
+            height=40,
             corner_radius=8,
             fg_color=COLOR_ACCENT_RED,
             hover_color=COLOR_ACCENT_RED_HOVER,
@@ -288,75 +293,119 @@ class Privacy68Dashboard(ctk.CTk):
         title = ctk.CTkLabel(
             view,
             text="AI Brain & Ollama Integration",
-            font=ctk.CTkFont(family="Segoe UI", size=18, weight="bold"),
+            font=ctk.CTkFont(family="Segoe UI", size=16, weight="bold"),
             text_color=COLOR_TEXT_PRIMARY
         )
-        title.pack(anchor="w", padx=20, pady=(20, 10))
+        title.pack(anchor="w", padx=16, pady=(12, 4))
 
         desc = ctk.CTkLabel(
             view,
-            text="PRIVACY68 features an agentic reasoning engine with Open-Interpreter style self-healing.\nWhen a complex command is received, the Brain writes Python code and auto-fixes execution errors.",
-            font=ctk.CTkFont(family="Segoe UI", size=12),
+            text="PRIVACY68 features an agentic reasoning engine with self-healing code execution.\nWhen a complex command is received, the Brain writes Python code and auto-repairs runtime errors.",
+            font=ctk.CTkFont(family="Segoe UI", size=11),
             text_color=COLOR_TEXT_MUTED,
             justify="left"
         )
-        desc.pack(anchor="w", padx=20, pady=(0, 20))
+        desc.pack(anchor="w", padx=16, pady=(0, 10))
 
         # Model configuration section
         model_frame = ctk.CTkFrame(view, fg_color=COLOR_BG_DARK, corner_radius=8)
-        model_frame.pack(fill="x", padx=20, pady=10)
+        model_frame.pack(fill="x", padx=16, pady=6)
 
         ctk.CTkLabel(
             model_frame,
             text="Active LLM Model:",
-            font=ctk.CTkFont(family="Segoe UI", size=13, weight="bold"),
+            font=ctk.CTkFont(family="Segoe UI", size=12, weight="bold"),
             text_color=COLOR_TEXT_PRIMARY
-        ).pack(anchor="w", padx=15, pady=(15, 5))
+        ).pack(anchor="w", padx=14, pady=(10, 4))
+
+        model_row = ctk.CTkFrame(model_frame, fg_color="transparent")
+        model_row.pack(fill="x", padx=14, pady=(0, 10))
+        model_row.grid_columnconfigure(0, weight=1)
 
         self.brain_model_entry = ctk.CTkEntry(
-            model_frame,
-            font=ctk.CTkFont(family="Segoe UI", size=13),
-            height=36,
+            model_row,
+            font=ctk.CTkFont(family="Segoe UI", size=12),
+            height=34,
             fg_color=COLOR_CARD,
             border_color=COLOR_CARD_HOVER,
             text_color=COLOR_TEXT_PRIMARY
         )
         self.brain_model_entry.insert(0, getattr(config, "AGENT_BRAIN_MODEL", "ollama/llama3.2:latest"))
-        self.brain_model_entry.pack(fill="x", padx=15, pady=(0, 10))
+        self.brain_model_entry.grid(row=0, column=0, sticky="ew", padx=(0, 8))
+
+        save_model_btn = ctk.CTkButton(
+            model_row,
+            text="Apply Model",
+            width=90,
+            height=34,
+            font=ctk.CTkFont(family="Segoe UI", size=11, weight="bold"),
+            command=self._apply_model_choice
+        )
+        save_model_btn.grid(row=0, column=1)
+
+        # Quick Model Preset Dropdown
+        preset_row = ctk.CTkFrame(model_frame, fg_color="transparent")
+        preset_row.pack(fill="x", padx=14, pady=(0, 10))
+
+        ctk.CTkLabel(
+            preset_row,
+            text="Model Presets:",
+            font=ctk.CTkFont(family="Segoe UI", size=11),
+            text_color=COLOR_TEXT_MUTED
+        ).pack(side="left", padx=(0, 8))
+
+        self.preset_menu = ctk.CTkOptionMenu(
+            preset_row,
+            values=[
+                "ollama/llama3.2:latest",
+                "ollama/qwen2.5-coder:7b",
+                "ollama/mistral:latest",
+                "ollama/gemma4:31b-cloud"
+            ],
+            width=240,
+            height=28,
+            font=ctk.CTkFont(family="Segoe UI", size=11),
+            command=self._on_preset_selected
+        )
+        self.preset_menu.pack(side="left")
 
         # Ollama Controller Frame
         ctrl_frame = ctk.CTkFrame(view, fg_color=COLOR_BG_DARK, corner_radius=8)
-        ctrl_frame.pack(fill="x", padx=20, pady=10)
+        ctrl_frame.pack(fill="x", padx=16, pady=6)
 
         ctk.CTkLabel(
             ctrl_frame,
-            text="Ollama Service Status:",
-            font=ctk.CTkFont(family="Segoe UI", size=13, weight="bold"),
+            text="Ollama Local Service:",
+            font=ctk.CTkFont(family="Segoe UI", size=12, weight="bold"),
             text_color=COLOR_TEXT_PRIMARY
-        ).pack(anchor="w", padx=15, pady=(15, 5))
+        ).pack(anchor="w", padx=14, pady=(10, 4))
 
         self.ollama_detail_label = ctk.CTkLabel(
             ctrl_frame,
             text="Status: Checking...",
-            font=ctk.CTkFont(family="Segoe UI", size=12),
+            font=ctk.CTkFont(family="Segoe UI", size=11),
             text_color=COLOR_TEXT_MUTED
         )
-        self.ollama_detail_label.pack(anchor="w", padx=15, pady=(0, 10))
+        self.ollama_detail_label.pack(anchor="w", padx=14, pady=(0, 8))
 
         btn_row = ctk.CTkFrame(ctrl_frame, fg_color="transparent")
-        btn_row.pack(anchor="w", padx=15, pady=(0, 15))
+        btn_row.pack(anchor="w", padx=14, pady=(0, 10))
 
         check_btn = ctk.CTkButton(
             btn_row,
-            text="Check Status",
-            width=120,
+            text="Refresh Status",
+            width=110,
+            height=30,
+            font=ctk.CTkFont(family="Segoe UI", size=11),
             command=self._check_services
         )
-        check_btn.pack(side="left", padx=(0, 10))
+        check_btn.pack(side="left", padx=(0, 8))
 
         start_ollama_btn = ctk.CTkButton(
             btn_row,
             text="Start Ollama ('ollama serve')",
+            height=30,
+            font=ctk.CTkFont(family="Segoe UI", size=11, weight="bold"),
             fg_color=COLOR_ACCENT_BLUE,
             hover_color="#2563EB",
             command=self._launch_ollama_service
@@ -365,33 +414,35 @@ class Privacy68Dashboard(ctk.CTk):
 
         # Test reasoning frame
         test_frame = ctk.CTkFrame(view, fg_color=COLOR_BG_DARK, corner_radius=8)
-        test_frame.pack(fill="x", padx=20, pady=10)
+        test_frame.pack(fill="x", padx=16, pady=6)
 
         ctk.CTkLabel(
             test_frame,
             text="Test AI Reasoning Prompt:",
-            font=ctk.CTkFont(family="Segoe UI", size=13, weight="bold"),
+            font=ctk.CTkFont(family="Segoe UI", size=12, weight="bold"),
             text_color=COLOR_TEXT_PRIMARY
-        ).pack(anchor="w", padx=15, pady=(15, 5))
+        ).pack(anchor="w", padx=14, pady=(10, 4))
 
         self.test_prompt_entry = ctk.CTkEntry(
             test_frame,
             placeholder_text="Enter test prompt (e.g. 'open notepad and type hello')...",
-            font=ctk.CTkFont(family="Segoe UI", size=13),
-            height=36,
+            font=ctk.CTkFont(family="Segoe UI", size=12),
+            height=34,
             fg_color=COLOR_CARD,
             border_color=COLOR_CARD_HOVER
         )
-        self.test_prompt_entry.pack(fill="x", padx=15, pady=(0, 10))
+        self.test_prompt_entry.pack(fill="x", padx=14, pady=(0, 8))
 
         run_test_btn = ctk.CTkButton(
             test_frame,
             text="Test Brain Generation",
+            height=30,
+            font=ctk.CTkFont(family="Segoe UI", size=11, weight="bold"),
             fg_color=COLOR_ACCENT_RED,
             hover_color=COLOR_ACCENT_RED_HOVER,
             command=self._test_brain_generation
         )
-        run_test_btn.pack(anchor="w", padx=15, pady=(0, 15))
+        run_test_btn.pack(anchor="w", padx=14, pady=(0, 10))
 
         self.views["brain"] = view
 
@@ -403,60 +454,64 @@ class Privacy68Dashboard(ctk.CTk):
         title = ctk.CTkLabel(
             view,
             text="Voice & Speech Settings",
-            font=ctk.CTkFont(family="Segoe UI", size=18, weight="bold"),
+            font=ctk.CTkFont(family="Segoe UI", size=16, weight="bold"),
             text_color=COLOR_TEXT_PRIMARY
         )
-        title.pack(anchor="w", padx=20, pady=(20, 10))
+        title.pack(anchor="w", padx=16, pady=(12, 4))
 
         # Engine Selection
         box1 = ctk.CTkFrame(view, fg_color=COLOR_BG_DARK, corner_radius=8)
-        box1.pack(fill="x", padx=20, pady=10)
+        box1.pack(fill="x", padx=16, pady=6)
 
         ctk.CTkLabel(
             box1,
             text="Speech Engine:",
-            font=ctk.CTkFont(family="Segoe UI", size=13, weight="bold")
-        ).pack(anchor="w", padx=15, pady=(15, 5))
+            font=ctk.CTkFont(family="Segoe UI", size=12, weight="bold")
+        ).pack(anchor="w", padx=14, pady=(10, 4))
 
         self.engine_selector = ctk.CTkOptionMenu(
             box1,
             values=["whispercpp (Fast CPU - Recommended)", "faster-whisper (CUDA/CPU)"],
-            width=320,
+            width=300,
+            height=30,
+            font=ctk.CTkFont(family="Segoe UI", size=11),
             command=self._on_engine_changed
         )
-        self.engine_selector.pack(anchor="w", padx=15, pady=(0, 15))
+        self.engine_selector.pack(anchor="w", padx=14, pady=(0, 10))
 
         # Wake Word Selection
         box2 = ctk.CTkFrame(view, fg_color=COLOR_BG_DARK, corner_radius=8)
-        box2.pack(fill="x", padx=20, pady=10)
+        box2.pack(fill="x", padx=16, pady=6)
 
         ctk.CTkLabel(
             box2,
             text="Wake Word:",
-            font=ctk.CTkFont(family="Segoe UI", size=13, weight="bold")
-        ).pack(anchor="w", padx=15, pady=(15, 5))
+            font=ctk.CTkFont(family="Segoe UI", size=12, weight="bold")
+        ).pack(anchor="w", padx=14, pady=(10, 4))
 
         self.wake_selector = ctk.CTkOptionMenu(
             box2,
             values=["alexa", "jarvis", "privacy68", "nova"],
-            width=200,
+            width=180,
+            height=30,
+            font=ctk.CTkFont(family="Segoe UI", size=11),
             command=self._on_wake_changed
         )
-        self.wake_selector.pack(anchor="w", padx=15, pady=(0, 15))
+        self.wake_selector.pack(anchor="w", padx=14, pady=(0, 10))
 
         # Mic Test
         box3 = ctk.CTkFrame(view, fg_color=COLOR_BG_DARK, corner_radius=8)
-        box3.pack(fill="x", padx=20, pady=10)
+        box3.pack(fill="x", padx=16, pady=6)
 
         ctk.CTkLabel(
             box3,
             text="Microphone Test:",
-            font=ctk.CTkFont(family="Segoe UI", size=13, weight="bold")
-        ).pack(anchor="w", padx=15, pady=(15, 5))
+            font=ctk.CTkFont(family="Segoe UI", size=12, weight="bold")
+        ).pack(anchor="w", padx=14, pady=(10, 4))
 
-        self.mic_level_bar = ctk.CTkProgressBar(box3, width=300, height=14)
+        self.mic_level_bar = ctk.CTkProgressBar(box3, width=280, height=12)
         self.mic_level_bar.set(0.0)
-        self.mic_level_bar.pack(anchor="w", padx=15, pady=(5, 15))
+        self.mic_level_bar.pack(anchor="w", padx=14, pady=(4, 10))
 
         self.views["voice"] = view
 
@@ -468,20 +523,19 @@ class Privacy68Dashboard(ctk.CTk):
         title = ctk.CTkLabel(
             view,
             text="General Assistant Settings",
-            font=ctk.CTkFont(family="Segoe UI", size=18, weight="bold"),
+            font=ctk.CTkFont(family="Segoe UI", size=16, weight="bold"),
             text_color=COLOR_TEXT_PRIMARY
         )
-        title.pack(anchor="w", padx=20, pady=(20, 10))
+        title.pack(anchor="w", padx=16, pady=(12, 4))
 
-        # Environment Info
         info_frame = ctk.CTkFrame(view, fg_color=COLOR_BG_DARK, corner_radius=8)
-        info_frame.pack(fill="x", padx=20, pady=10)
+        info_frame.pack(fill="x", padx=16, pady=6)
 
         ctk.CTkLabel(
             info_frame,
             text="System Environment:",
-            font=ctk.CTkFont(family="Segoe UI", size=13, weight="bold")
-        ).pack(anchor="w", padx=15, pady=(15, 5))
+            font=ctk.CTkFont(family="Segoe UI", size=12, weight="bold")
+        ).pack(anchor="w", padx=14, pady=(10, 4))
 
         paths = agent_brain._resolve_user_paths()
         env_text = (
@@ -493,10 +547,10 @@ class Privacy68Dashboard(ctk.CTk):
         ctk.CTkLabel(
             info_frame,
             text=env_text,
-            font=ctk.CTkFont(family="Segoe UI", size=12),
+            font=ctk.CTkFont(family="Segoe UI", size=11),
             text_color=COLOR_TEXT_MUTED,
             justify="left"
-        ).pack(anchor="w", padx=15, pady=(0, 15))
+        ).pack(anchor="w", padx=14, pady=(0, 10))
 
         self.views["settings"] = view
 
@@ -509,7 +563,6 @@ class Privacy68Dashboard(ctk.CTk):
             else:
                 frame.grid_forget()
 
-        # Update button highlights
         buttons = {
             "console": self.nav_console_btn,
             "brain": self.nav_brain_btn,
@@ -525,10 +578,10 @@ class Privacy68Dashboard(ctk.CTk):
     # ── Live Feed UI Card Helpers ──
     def _add_feed_card(self, title: str, body: str, card_type: str = "user", code: Optional[str] = None):
         card = ctk.CTkFrame(self.feed_scroll, fg_color=COLOR_BG_DARK, corner_radius=8)
-        card.pack(fill="x", padx=10, pady=6)
+        card.pack(fill="x", padx=8, pady=4)
 
         header_frame = ctk.CTkFrame(card, fg_color="transparent")
-        header_frame.pack(fill="x", padx=12, pady=(10, 4))
+        header_frame.pack(fill="x", padx=10, pady=(8, 2))
 
         color = COLOR_ACCENT_BLUE if card_type == "user" else (COLOR_ACCENT_RED if card_type == "code" else COLOR_TEXT_PRIMARY)
         icon = "👤 " if card_type == "user" else ("🤖 " if card_type == "assistant" else "⚙️ ")
@@ -536,7 +589,7 @@ class Privacy68Dashboard(ctk.CTk):
         ctk.CTkLabel(
             header_frame,
             text=f"{icon}{title}",
-            font=ctk.CTkFont(family="Segoe UI", size=13, weight="bold"),
+            font=ctk.CTkFont(family="Segoe UI", size=12, weight="bold"),
             text_color=color
         ).pack(side="left")
 
@@ -552,24 +605,24 @@ class Privacy68Dashboard(ctk.CTk):
             ctk.CTkLabel(
                 card,
                 text=body,
-                font=ctk.CTkFont(family="Segoe UI", size=12),
+                font=ctk.CTkFont(family="Segoe UI", size=11),
                 text_color=COLOR_TEXT_PRIMARY,
                 justify="left",
-                wraplength=680
-            ).pack(anchor="w", padx=14, pady=(2, 8))
+                wraplength=640
+            ).pack(anchor="w", padx=12, pady=(2, 6))
 
         if code:
             code_box = ctk.CTkTextbox(
                 card,
-                height=min(140, 20 + code.count("\n") * 18),
-                font=ctk.CTkFont(family="Consolas", size=11),
+                height=min(120, 20 + code.count("\n") * 16),
+                font=ctk.CTkFont(family="Consolas", size=10),
                 fg_color=COLOR_CODE_BG,
                 text_color="#60A5FA",
                 corner_radius=6
             )
             code_box.insert("1.0", code)
             code_box.configure(state="disabled")
-            code_box.pack(fill="x", padx=12, pady=(0, 10))
+            code_box.pack(fill="x", padx=10, pady=(0, 8))
 
     def _clear_feed(self):
         for widget in self.feed_scroll.winfo_children():
@@ -584,7 +637,6 @@ class Privacy68Dashboard(ctk.CTk):
 
         self._add_feed_card("User Command", cmd, card_type="user")
 
-        # Run command execution in background thread
         threading.Thread(target=self._execute_command_async, args=(cmd,), daemon=True).start()
 
     def _execute_command_async(self, cmd: str):
@@ -619,7 +671,7 @@ class Privacy68Dashboard(ctk.CTk):
                     self.ollama_detail_label.configure(text="Status: Online & Ready (http://localhost:11434)", text_color=COLOR_ACCENT_GREEN)
                 else:
                     self.brain_status_label.configure(text="● Brain: Offline (Ollama)", text_color="#EF4444")
-                    self.ollama_detail_label.configure(text="Status: Offline (Target machine actively refused it / Not running)", text_color="#EF4444")
+                    self.ollama_detail_label.configure(text="Status: Offline (Ollama daemon not running)", text_color="#EF4444")
 
             self.after(0, update)
 
@@ -632,6 +684,18 @@ class Privacy68Dashboard(ctk.CTk):
             self.after(2000, self._check_services)
         except Exception as e:
             self._add_feed_card("System Error", f"Could not launch ollama: {e}", card_type="system")
+
+    def _on_preset_selected(self, choice: str):
+        self.brain_model_entry.delete(0, "end")
+        self.brain_model_entry.insert(0, choice)
+        self._apply_model_choice()
+
+    def _apply_model_choice(self):
+        model = self.brain_model_entry.get().strip()
+        if model:
+            config.AGENT_BRAIN_MODEL = model
+            agent_brain.model = model
+            self._add_feed_card("Settings", f"AI Brain model set to: {model}", card_type="system")
 
     def _test_brain_generation(self):
         prompt = self.test_prompt_entry.get().strip() or "open notepad and type hello"
@@ -673,7 +737,6 @@ class Privacy68Dashboard(ctk.CTk):
                 self.after(0, lambda: self._add_feed_card("Wake Word", "Listening for command...", card_type="system"))
 
             def on_energy(vol: float):
-                # Update meter safely
                 meter_val = min(1.0, vol * 15.0)
                 self.after(0, lambda: self.mic_level_bar.set(meter_val))
 
