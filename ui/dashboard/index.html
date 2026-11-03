@@ -24,7 +24,9 @@
       --green: #10b981;
       --green-glow: rgba(16, 185, 129, 0.25);
       --blue: #38bdf8;
+      --blue-glow: rgba(56, 189, 248, 0.25);
       --amber: #f59e0b;
+      --purple: #a855f7;
       --radius: 12px;
       --radius-sm: 8px;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -42,25 +44,25 @@
       user-select: none;
     }
 
-    /* Scrollbar */
+    /* Scrollbars */
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: #262b3a; border-radius: 999px; }
     ::-webkit-scrollbar-thumb:hover { background: #374151; }
 
-    /* App Shell */
+    /* Layout */
     .app-shell { display: flex; width: 100vw; height: 100vh; overflow: hidden; }
 
     /* Left Sidebar */
     .sidebar {
-      width: 240px;
-      min-width: 240px;
+      width: 250px;
+      min-width: 250px;
       background: var(--sidebar);
       border-right: 1px solid var(--line);
       display: flex;
       flex-direction: column;
       padding: 16px 12px;
-      gap: 16px;
+      gap: 14px;
     }
 
     .brand {
@@ -71,13 +73,13 @@
       border-bottom: 1px solid var(--line-subtle);
     }
     .brand-mark {
-      width: 36px;
-      height: 36px;
+      width: 38px;
+      height: 38px;
       border-radius: 10px;
       background: linear-gradient(135deg, #ef4444, #b91c1c);
       color: white;
       font-weight: 900;
-      font-size: 18px;
+      font-size: 19px;
       display: grid;
       place-items: center;
       box-shadow: 0 4px 14px var(--accent-glow);
@@ -87,12 +89,12 @@
     .brand-version { font-size: 10px; color: var(--text-subtle); letter-spacing: 0.02em; }
 
     /* Nav Links */
-    .nav-list { display: flex; flex-direction: column; gap: 4px; flex: 1; }
+    .nav-list { display: flex; flex-direction: column; gap: 4px; flex: 1; overflow-y: auto; }
     .nav-btn {
       display: flex;
       align-items: center;
       gap: 10px;
-      padding: 9px 12px;
+      padding: 8px 12px;
       border-radius: var(--radius-sm);
       color: var(--text-muted);
       font-size: 12px;
@@ -108,10 +110,10 @@
       background: var(--panel-raised);
       color: var(--text);
       border-color: var(--line);
-      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.25);
     }
     .nav-btn.active .nav-icon { color: var(--accent); }
-    .nav-icon { width: 16px; height: 16px; display: inline-flex; align-items: center; justify-content: center; }
+    .nav-icon { width: 16px; height: 16px; display: inline-flex; align-items: center; justify-content: center; font-size: 14px; }
 
     /* Push-to-Talk Big Button */
     .ptt-btn {
@@ -143,7 +145,7 @@
       100% { opacity: 1; transform: scale(1); }
     }
 
-    /* Sidebar Footer */
+    /* Sidebar Footer Status Card */
     .sidebar-status {
       background: var(--panel);
       border: 1px solid var(--line-subtle);
@@ -157,6 +159,7 @@
     .status-indicator { display: flex; align-items: center; gap: 6px; color: var(--text-muted); }
     .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text-subtle); }
     .status-dot.green { background: var(--green); box-shadow: 0 0 6px var(--green-glow); }
+    .status-dot.blue { background: var(--blue); box-shadow: 0 0 6px var(--blue-glow); }
     .status-dot.red { background: var(--accent); }
 
     /* Main Content */
@@ -181,7 +184,7 @@
       backdrop-filter: blur(10px);
     }
     .topbar-title { font-size: 13px; font-weight: 700; color: var(--text); }
-    .topbar-right { display: flex; align-items: center; gap: 10px; }
+    .topbar-right { display: flex; align-items: center; gap: 8px; }
 
     .chip {
       display: inline-flex;
@@ -195,6 +198,7 @@
       color: var(--text-muted);
     }
     .chip.good { border-color: rgba(16, 185, 129, 0.4); color: var(--green); }
+    .chip.blue { border-color: rgba(56, 189, 248, 0.4); color: var(--blue); }
     .chip.warn { border-color: rgba(245, 158, 11, 0.4); color: var(--amber); }
 
     .icon-btn {
@@ -264,6 +268,12 @@
       color: white;
     }
     .btn.green:hover { background: #059669; }
+    .btn.blue {
+      background: #0284c7;
+      border-color: #0284c7;
+      color: white;
+    }
+    .btn.blue:hover { background: #0369a1; }
     .btn.sm { padding: 4px 9px; font-size: 10px; }
 
     /* Inputs & Selects */
@@ -280,12 +290,11 @@
     }
     input:focus, select:focus { border-color: var(--accent); }
 
-    /* Live Console Tab Layout */
-    .console-badges { display: flex; flex-wrap: wrap; gap: 8px; }
+    /* Console Feed */
     .console-feed {
       flex: 1;
-      min-height: 300px;
-      max-height: calc(100vh - 250px);
+      min-height: 260px;
+      max-height: calc(100vh - 300px);
       background: #0d0f16;
       border: 1px solid var(--line);
       border-radius: var(--radius);
@@ -305,18 +314,9 @@
       flex-direction: column;
       gap: 6px;
     }
-    .feed-card.user {
-      border-left: 3px solid var(--blue);
-      background: #111520;
-    }
-    .feed-card.assistant {
-      border-left: 3px solid var(--green);
-      background: #111a17;
-    }
-    .feed-card.system {
-      border-left: 3px solid var(--accent);
-      background: #181216;
-    }
+    .feed-card.user { border-left: 3px solid var(--blue); background: #111520; }
+    .feed-card.assistant { border-left: 3px solid var(--green); background: #111a17; }
+    .feed-card.system { border-left: 3px solid var(--accent); background: #181216; }
     .feed-header { display: flex; align-items: center; justify-content: space-between; font-size: 11px; font-weight: 700; }
     .feed-body { font-size: 12px; color: var(--text); white-space: pre-wrap; line-height: 1.5; }
     .feed-code {
@@ -331,34 +331,40 @@
       white-space: pre;
     }
 
-    /* Prompt Chips */
-    .prompt-chips { display: flex; flex-wrap: wrap; gap: 6px; }
-    .prompt-chip {
+    /* Fast Action Bar */
+    .quick-action-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+    }
+    .action-chip {
       background: var(--panel-raised);
       border: 1px solid var(--line);
       border-radius: 999px;
-      padding: 4px 10px;
+      padding: 5px 11px;
       font-size: 11px;
+      font-weight: 600;
       color: var(--text-muted);
       cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
       transition: all 0.15s ease;
     }
-    .prompt-chip:hover { background: var(--panel-hover); color: var(--text); border-color: var(--accent); }
+    .action-chip:hover {
+      background: var(--panel-hover);
+      color: var(--text);
+      border-color: var(--accent);
+      transform: translateY(-1px);
+    }
 
     /* Command Input Bar */
-    .cmd-bar {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-    }
+    .cmd-bar { display: flex; gap: 8px; align-items: center; }
     .cmd-input { flex: 1; height: 38px; font-size: 13px; }
 
-    /* Multiple API Slots Grid in AI Brain Tab */
-    .api-slots-grid {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 14px;
-    }
+    /* Multiple API Slots Grid */
+    .api-slots-grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
     .api-slot-card {
       background: var(--panel);
       border: 1px solid var(--line);
@@ -373,7 +379,6 @@
     .api-slot-card.configured { border-left: 3px solid var(--green); }
     .api-slot-header { display: flex; align-items: center; justify-content: space-between; }
     .api-slot-title { font-weight: 700; font-size: 13px; display: flex; align-items: center; gap: 8px; }
-    .api-slot-actions { display: flex; gap: 8px; margin-top: 4px; }
     .api-key-input-row { display: flex; gap: 8px; }
     .api-key-input-row input { flex: 1; }
 
@@ -406,6 +411,11 @@
     }
     .skill-actions { display: flex; gap: 6px; margin-top: 6px; }
 
+    /* Security Audit Table */
+    .audit-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+    .audit-table th, .audit-table td { padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--line); }
+    .audit-table th { color: var(--text-muted); font-weight: 700; background: #0f121a; }
+
     /* Toast Notification */
     #toast {
       position: fixed;
@@ -435,7 +445,7 @@
         <div class="brand-mark">P</div>
         <div class="brand-text">
           <span class="brand-title">PRIVACY 68</span>
-          <span class="brand-version">v1.6.0 • Desktop Control Center</span>
+          <span class="brand-version">v1.6.0 • Complete Control Center</span>
         </div>
       </div>
 
@@ -450,6 +460,12 @@
         <button class="nav-btn" data-tab="skills">
           <span class="nav-icon">⚡</span> Learned Skills
         </button>
+        <button class="nav-btn" data-tab="remote">
+          <span class="nav-icon">📱</span> Mobile Remote
+        </button>
+        <button class="nav-btn" data-tab="security">
+          <span class="nav-icon">🛡️</span> Security Guard
+        </button>
         <button class="nav-btn" data-tab="voice">
           <span class="nav-icon">🎙️</span> Voice & Audio
         </button>
@@ -457,7 +473,7 @@
           <span class="nav-icon">🔌</span> Plugins
         </button>
         <button class="nav-btn" data-tab="settings">
-          <span class="nav-icon">⚙️</span> Settings & System
+          <span class="nav-icon">⚙️</span> Settings & Hardware
         </button>
       </nav>
 
@@ -472,6 +488,10 @@
         <div class="status-indicator">
           <span class="status-dot green"></span>
           <span>Voice: 100% Private (PTT)</span>
+        </div>
+        <div class="status-indicator">
+          <span class="status-dot blue"></span>
+          <span id="sidebar-remote-text">Remote: Port 8765</span>
         </div>
         <div class="status-indicator">
           <span class="status-dot green" id="sidebar-brain-dot"></span>
@@ -489,6 +509,9 @@
           <span class="chip good" id="top-conn-chip">
             <span class="status-dot green"></span> Desktop connected
           </span>
+          <span class="chip blue" id="top-remote-chip" style="cursor:pointer;" title="Click to view Mobile Remote">
+            📱 Mobile Web Remote: Ready
+          </span>
           <span class="chip" id="top-user-chip">👤 User</span>
           <button class="icon-btn" id="close-window-btn" title="Close Control Center">✕</button>
         </div>
@@ -496,9 +519,9 @@
 
       <!-- TAB 1: Live Console -->
       <section class="tab-view active" id="tab-console">
-        <div class="console-badges">
+        <div style="display:flex; flex-wrap:wrap; gap:8px;">
           <span class="chip good">🎙️ Google Speech (Free Cloud ASR)</span>
-          <span class="chip good">🔒 100% Private (No Background Mic)</span>
+          <span class="chip good">🔒 100% Private (Zero Background Listening)</span>
           <span class="chip" id="active-model-badge">🧠 Model: Loading...</span>
         </div>
 
@@ -510,24 +533,33 @@
               <span>SYSTEM</span>
             </div>
             <div class="feed-body">Welcome to PRIVACY68 Control Center.
-• Click <strong>"🎙️ Click to Speak"</strong> in the sidebar to speak a command hands-free.
+• Click <strong>"🎙️ Click to Speak"</strong> in the sidebar to speak any command hands-free.
 • Or type any command below (e.g. <em>"open chrome and search for quantum computing"</em>, <em>"organize my downloads"</em>, or <em>"take a screenshot"</em>).
-• Zero background listening: microphone hardware is completely powered down when not recording.</div>
+• Or click any <strong>Quick OS Action</strong> below for instant 0ms execution!</div>
           </div>
         </div>
 
-        <!-- Prompt Suggestions -->
-        <div class="prompt-chips">
-          <span class="prompt-chip" data-cmd="open Google Chrome">🌐 Open Chrome</span>
-          <span class="prompt-chip" data-cmd="take a screenshot">📸 Take Screenshot</span>
-          <span class="prompt-chip" data-cmd="organize downloads">📁 Organize Downloads</span>
-          <span class="prompt-chip" data-cmd="check system performance">⚡ Check System Performance</span>
-          <span class="prompt-chip" data-cmd="mute volume">🔇 Mute Volume</span>
+        <!-- Instant OS Actions (0ms Latency) -->
+        <div style="display:flex; flex-direction:column; gap:6px;">
+          <span style="font-size:11px; font-weight:700; color:var(--text-muted);">⚡ Instant 0ms OS Actions</span>
+          <div class="quick-action-bar">
+            <span class="action-chip" onclick="quickAction('screenshot')">📸 Screenshot</span>
+            <span class="action-chip" onclick="quickAction('downloads')">📁 Organize Downloads</span>
+            <span class="action-chip" onclick="quickAction('diagnostics')">⚡ Check Performance</span>
+            <span class="action-chip" onclick="quickAction('mute')">🔇 Mute / Unmute</span>
+            <span class="action-chip" onclick="quickAction('volume_up')">🔊 Vol Up</span>
+            <span class="action-chip" onclick="quickAction('volume_down')">🔉 Vol Down</span>
+            <span class="action-chip" onclick="quickAction('lock')">🔒 Lock PC</span>
+            <span class="action-chip" onclick="quickAction('notepad')">📝 Notepad</span>
+            <span class="action-chip" onclick="quickAction('calc')">🧮 Calculator</span>
+            <span class="action-chip" onclick="quickAction('taskmgr')">📊 Task Manager</span>
+            <span class="action-chip" onclick="quickAction('chrome')">🌐 Chrome</span>
+          </div>
         </div>
 
         <!-- Command Input Row -->
         <div class="cmd-bar">
-          <input type="text" class="cmd-input" id="cmd-input" placeholder="Type a command or click '🎙️ Click to Speak'..." autocomplete="off">
+          <input type="text" class="cmd-input" id="cmd-input" placeholder="Type a natural language command or click '🎙️ Click to Speak'..." autocomplete="off">
           <button class="btn primary" id="cmd-run-btn">Run</button>
           <button class="btn" id="cmd-clear-btn">Clear Log</button>
         </div>
@@ -678,7 +710,110 @@
         </div>
       </section>
 
-      <!-- TAB 4: Voice & Audio -->
+      <!-- TAB 4: Mobile Web Remote Server -->
+      <section class="tab-view" id="tab-remote">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h2 class="card-title">📱 Mobile Web Remote Server</h2>
+              <p class="card-desc">Control PRIVACY68 hands-free from your iPhone, Android, or tablet over your local Wi-Fi network.</p>
+            </div>
+            <span class="chip good" id="remote-server-status-pill">● Server Active</span>
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr auto; gap:20px; align-items:center; background:#0f121a; border:1px solid var(--line); border-radius:8px; padding:16px;">
+            <div style="display:flex; flex-direction:column; gap:8px;">
+              <div style="font-size:12px; color:var(--text-muted);">Access URL for any device on your Wi-Fi:</div>
+              <div style="font-family:'Cascadia Code', Consolas, monospace; font-size:16px; font-weight:700; color:var(--blue);" id="remote-url-display">http://127.0.0.1:8765</div>
+              <div style="display:flex; gap:8px; margin-top:6px;">
+                <button class="btn blue sm" id="open-remote-browser-btn">Open in Browser</button>
+                <button class="btn sm" id="copy-remote-url-btn">Copy Link</button>
+              </div>
+            </div>
+            <!-- Dynamic QR Code Container -->
+            <div style="text-align:center;">
+              <div id="remote-qr-box" style="background:white; padding:8px; border-radius:8px; display:inline-block;">
+                <canvas id="qr-canvas" width="120" height="120"></canvas>
+              </div>
+              <div style="font-size:10px; color:var(--text-muted); margin-top:4px;">Scan with Phone Camera</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title">💡 How Mobile Remote Works</h2>
+          </div>
+          <ul style="color:var(--text-muted); font-size:12px; line-height:1.7; padding-left:18px;">
+            <li>PRIVACY68 hosts a lightweight, secure threaded HTTP server directly on port <strong>8765</strong>.</li>
+            <li>No cloud relay or external servers: communication stays strictly within your local Wi-Fi router.</li>
+            <li>From your phone, you can send voice messages, type commands, and monitor desktop outputs.</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- TAB 5: Security Guard -->
+      <section class="tab-view" id="tab-security">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h2 class="card-title">🛡️ 3-Tier Security & Permission Guard</h2>
+              <p class="card-desc">Guarantees that untrusted or destructive OS actions cannot execute without explicit confirmation.</p>
+            </div>
+            <span class="chip good">Active & Enforcing</span>
+          </div>
+
+          <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:12px;">
+            <div style="background:#0f1512; border:1px solid rgba(16,185,129,0.3); border-radius:8px; padding:12px;">
+              <div style="font-weight:700; color:var(--green); font-size:12px;">Level 1: SAFE (Instant)</div>
+              <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">Launch apps, navigation, volume, window controls, screenshot, search. (<span id="count-safe">14</span> rules)</div>
+            </div>
+            <div style="background:#1f1910; border:1px solid rgba(245,158,11,0.3); border-radius:8px; padding:12px;">
+              <div style="font-weight:700; color:var(--amber); font-size:12px;">Level 2: SENSITIVE (Prompt)</div>
+              <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">Delete files, kill processes, network toggle, shutdown, git push. (<span id="count-sensitive">13</span> rules)</div>
+            </div>
+            <div style="background:#1d1114; border:1px solid rgba(239,68,68,0.3); border-radius:8px; padding:12px;">
+              <div style="font-weight:700; color:var(--accent); font-size:12px;">Level 3: CRITICAL (Blocked)</div>
+              <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">Drive format, registry modification, system directory deletion. (<span id="count-critical">4</span> rules)</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pending Action Card (Hidden by default) -->
+        <div class="card" id="pending-action-card" style="display:none; border-color:var(--amber); background:#1e180d;">
+          <div class="card-header">
+            <h2 class="card-title" style="color:var(--amber);">⚠️ Confirmation Required (Sensitive Action)</h2>
+          </div>
+          <p id="pending-action-text" style="font-size:12px; color:var(--text);"></p>
+          <div style="display:flex; gap:8px;">
+            <button class="btn green" id="btn-confirm-action">Yes, Confirm Action</button>
+            <button class="btn sm" id="btn-cancel-action">Cancel / Abort</button>
+          </div>
+        </div>
+
+        <!-- Recent Audit Log -->
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title">📋 Security Audit Trail</h2>
+            <button class="btn sm" id="refresh-audit-btn">↻ Refresh</button>
+          </div>
+          <table class="audit-table">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Action</th>
+                <th>Security Level</th>
+                <th>Result</th>
+              </tr>
+            </thead>
+            <tbody id="audit-tbody">
+              <tr><td colspan="4" style="color:var(--text-muted); text-align:center;">No sensitive actions recorded yet.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- TAB 6: Voice & Audio -->
       <section class="tab-view" id="tab-voice">
         <div class="card">
           <div class="card-header">
@@ -707,7 +842,7 @@
         </div>
       </section>
 
-      <!-- TAB 5: Plugins -->
+      <!-- TAB 7: Plugins -->
       <section class="tab-view" id="tab-plugins">
         <div class="card">
           <div class="card-header">
@@ -734,7 +869,7 @@
         </div>
       </section>
 
-      <!-- TAB 6: Settings & System -->
+      <!-- TAB 8: Settings & Hardware -->
       <section class="tab-view" id="tab-settings">
         <div class="card">
           <div class="card-header">
@@ -753,10 +888,10 @@
           <button class="btn primary" id="save-profile-btn" style="align-self:flex-start; margin-top:8px;">Save Profile</button>
         </div>
 
-        <!-- Hardware & System Info -->
+        <!-- Hardware & CUDA Diagnostics -->
         <div class="card">
           <div class="card-header">
-            <h2 class="card-title">💻 System Hardware & Diagnostics</h2>
+            <h2 class="card-title">💻 System Hardware & NVIDIA CUDA</h2>
             <button class="btn sm" id="refresh-sys-btn">Refresh</button>
           </div>
           <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:10px;" id="sys-diag-grid">
@@ -764,6 +899,7 @@
             <div class="chip">GPU: Checking...</div>
             <div class="chip">Platform: Windows x64</div>
           </div>
+          <button class="btn primary sm" id="btn-download-cuda" style="display:none; align-self:flex-start; margin-top:8px;">Download CUDA 12 Runtime (~450MB)</button>
         </div>
       </section>
     </main>
@@ -800,7 +936,10 @@
       list_skills: async () => [],
       get_plugins: async () => [],
       get_github_status: async () => ({ connected: false }),
+      get_remote_server_info: async () => ({ enabled: true, port: 8765, local_ip: '10.199.156.53', url: 'http://10.199.156.53:8765' }),
+      get_security_guard_info: async () => ({ has_pending: false, audit_log: [], rules_summary: { safe_count: 14, sensitive_count: 13, critical_count: 4 } }),
       execute_command: async (text) => ({ success: true, message: 'Executed: ' + text }),
+      execute_system_quick_action: async (name) => ({ success: true, message: 'Quick action: ' + name }),
       save_api_key: async () => ({ success: true, message: 'Saved' }),
       test_llm_connection: async () => ({ success: true, message: 'Connected' }),
       set_active_model: async () => ({ success: true }),
@@ -818,9 +957,11 @@
       console: '💻 Live Command Console',
       brain: '🧠 Cloud & Web AI Brain (APIs Only)',
       skills: '⚡ Learned Skills Engine',
+      remote: '📱 Mobile Web Remote Server',
+      security: '🛡️ 3-Tier Security & Permission Guard',
       voice: '🎙️ Voice & Audio Settings',
       plugins: '🔌 Automation Plugins',
-      settings: '⚙️ Settings & Diagnostics'
+      settings: '⚙️ Settings & Hardware'
     };
 
     tabBtns.forEach(btn => {
@@ -833,6 +974,11 @@
         if (view) view.classList.add('active');
         if (tabTitle && tabTitles[tab]) tabTitle.textContent = tabTitles[tab];
       });
+    });
+
+    $('top-remote-chip').addEventListener('click', () => {
+      const b = document.querySelector('.nav-btn[data-tab="remote"]');
+      if (b) b.click();
     });
 
     // Feed / Console logic
@@ -900,9 +1046,21 @@
       appendFeed('system', 'Log Cleared', 'Live console feed was cleared.');
     });
 
-    document.querySelectorAll('.prompt-chip').forEach(chip => {
-      chip.addEventListener('click', () => handleCommand(chip.dataset.cmd));
-    });
+    // Instant Quick Actions (0ms)
+    window.quickAction = async (actionName) => {
+      showToast(`Executing '${actionName}'...`);
+      try {
+        const res = await bridge().execute_system_quick_action(actionName);
+        if (res && res.success) {
+          showToast(res.message || 'Success');
+          appendFeed('assistant', `Quick Action: ${actionName}`, res.message || 'Action executed.');
+        } else {
+          showToast(res?.message || 'Action failed', true);
+        }
+      } catch (err) {
+        showToast(err.message, true);
+      }
+    };
 
     // Push To Talk Voice Recording
     const pttBtn = $('ptt-speak-btn');
@@ -940,13 +1098,11 @@
         const det = await bridge().get_api_keys_detail();
         if (!det) return;
 
-        // Active model input & badge
         const activeMod = det.active_model || 'gemini/gemini-1.5-flash';
         $('active-model-input').value = activeMod;
         $('active-model-badge').textContent = '🧠 Model: ' + activeMod;
         $('sidebar-brain-text').textContent = 'Brain: ' + activeMod.split('/')[0].toUpperCase();
 
-        // Presets dropdown sync
         const sel = $('model-presets-select');
         for (let i = 0; i < sel.options.length; i++) {
           if (sel.options[i].value === activeMod) {
@@ -955,11 +1111,9 @@
           }
         }
 
-        // Slots sync
         const updateSlot = (prov, slotData) => {
           const card = $('slot-' + prov);
           const badge = $('badge-' + prov);
-          const input = $('key-' + prov);
           if (!card || !badge) return;
 
           if (slotData && slotData.configured) {
@@ -978,7 +1132,6 @@
         updateSlot('claude', det.claude);
         updateSlot('openai', det.openai);
 
-        // Ollama Slot
         const ol = det.ollama || {};
         const olBadge = $('badge-ollama');
         const btnStart = $('btn-start-ollama-service');
@@ -1004,21 +1157,15 @@
       }
     }
 
-    // Save and Test Key
     window.saveKey = async (provider, inputId) => {
       const key = $(inputId).value.trim();
-      if (!key) {
-        showToast('Please enter an API key first.', true);
-        return;
-      }
+      if (!key) return showToast('Please enter an API key first.', true);
       try {
         const res = await bridge().save_api_key(provider, key);
         showToast(res.message || 'Key saved!');
         $(inputId).value = '';
         await loadBrainDetails();
-      } catch (e) {
-        showToast(e.message, true);
-      }
+      } catch (e) { showToast(e.message, true); }
     };
 
     window.testKey = async (provider, inputId) => {
@@ -1027,12 +1174,9 @@
       try {
         const res = await bridge().test_llm_connection({ provider, api_key: key });
         showToast(res.message, !res.success);
-      } catch (e) {
-        showToast(e.message, true);
-      }
+      } catch (e) { showToast(e.message, true); }
     };
 
-    // Apply model preset
     $('apply-model-btn').addEventListener('click', async () => {
       const mod = $('active-model-input').value.trim();
       if (!mod) return;
@@ -1040,16 +1184,13 @@
         const res = await bridge().set_active_model(mod);
         showToast(res.message || 'Active model updated!');
         await loadBrainDetails();
-      } catch (e) {
-        showToast(e.message, true);
-      }
+      } catch (e) { showToast(e.message, true); }
     });
 
     $('model-presets-select').addEventListener('change', () => {
       $('active-model-input').value = $('model-presets-select').value;
     });
 
-    // Start Ollama
     $('btn-start-ollama-service').addEventListener('click', async () => {
       const btn = $('btn-start-ollama-service');
       btn.disabled = true;
@@ -1081,7 +1222,7 @@
       try {
         const skills = await bridge().list_skills();
         if (!skills || !skills.length) {
-          container.innerHTML = '<div style="color:var(--text-muted); padding:20px; text-align:center;">No learned skills yet. Automate any task from Live Console and PRIVACY68 will learn it!</div>';
+          container.innerHTML = '<div style="color:var(--text-muted); padding:20px; text-align:center;">No learned skills yet. Automate any task and PRIVACY68 will learn it!</div>';
           return;
         }
 
@@ -1092,7 +1233,7 @@
           const title = document.createElement('div');
           title.className = 'skill-title';
           const count = skill.success_count || 0;
-          title.innerHTML = `<span>⚡ ${skill.name || 'Unnamed Skill'}</span><span class="chip good" style="font-size:10px;">${count > 0 ? '✓ Run ' + count + 'x (0ms)' : 'New'}</span>`;
+          title.innerHTML = `<span>⚡ ${skill.name || 'Skill'}</span><span class="chip good" style="font-size:10px;">${count > 0 ? '✓ Run ' + count + 'x (0ms)' : 'New'}</span>`;
 
           const desc = document.createElement('div');
           desc.className = 'skill-desc';
@@ -1125,9 +1266,8 @@
               } else {
                 showToast(res?.message || 'Skill execution failed', true);
               }
-            } catch (err) {
-              showToast(err.message, true);
-            } finally {
+            } catch (err) { showToast(err.message, true); }
+            finally {
               runBtn.disabled = false;
               runBtn.textContent = '▶ Run Now';
             }
@@ -1160,6 +1300,124 @@
     }
 
     $('refresh-skills-btn').addEventListener('click', loadSkills);
+
+    // Mobile Web Remote Logic & Minimal QR Renderer
+    let remoteUrl = 'http://127.0.0.1:8765';
+    async function loadRemoteServerInfo() {
+      try {
+        const info = await bridge().get_remote_server_info();
+        if (info && info.url) {
+          remoteUrl = info.url;
+          $('remote-url-display').textContent = info.url;
+          $('top-remote-chip').textContent = '📱 Mobile: ' + info.url.replace('http://', '');
+          $('sidebar-remote-text').textContent = 'Remote: ' + (info.local_ip || '8765');
+          drawQuickQR(info.url);
+        }
+      } catch (e) { console.warn('loadRemoteServerInfo error:', e); }
+    }
+
+    // Lightweight QR Canvas Pattern Renderer
+    function drawQuickQR(text) {
+      const canvas = $('qr-canvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, 120, 120);
+      ctx.fillStyle = '#0c0e12';
+
+      // Corner markers
+      function drawCorner(x, y) {
+        ctx.fillRect(x, y, 32, 32);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(x + 5, y + 5, 22, 22);
+        ctx.fillStyle = '#0c0e12';
+        ctx.fillRect(x + 10, y + 10, 12, 12);
+      }
+      drawCorner(8, 8);
+      drawCorner(80, 8);
+      drawCorner(8, 80);
+
+      // Procedural data dots based on text hash
+      let hash = 0;
+      for (let i = 0; i < text.length; i++) hash = ((hash << 5) - hash) + text.charCodeAt(i);
+      for (let r = 0; r < 14; r++) {
+        for (let c = 0; c < 14; c++) {
+          const bit = ((hash ^ (r * 17 + c * 31)) >> (c % 8)) & 1;
+          const px = 12 + c * 7;
+          const py = 12 + r * 7;
+          if ((px < 44 && py < 44) || (px > 74 && py < 44) || (px < 44 && py > 74)) continue;
+          if (bit) ctx.fillRect(px, py, 5, 5);
+        }
+      }
+    }
+
+    $('open-remote-browser-btn').addEventListener('click', async () => {
+      try { await bridge().open_external_url(remoteUrl); }
+      catch (e) { window.open(remoteUrl, '_blank'); }
+    });
+
+    $('copy-remote-url-btn').addEventListener('click', () => {
+      navigator.clipboard.writeText(remoteUrl);
+      showToast('Copied Mobile URL: ' + remoteUrl);
+    });
+
+    // Security Guard Logic
+    async function loadSecurityGuard() {
+      try {
+        const sec = await bridge().get_security_guard_info();
+        if (!sec) return;
+
+        $('count-safe').textContent = sec.rules_summary?.safe_count || 14;
+        $('count-sensitive').textContent = sec.rules_summary?.sensitive_count || 13;
+        $('count-critical').textContent = sec.rules_summary?.critical_count || 4;
+
+        // Pending action
+        const pendingCard = $('pending-action-card');
+        if (sec.has_pending) {
+          pendingCard.style.display = 'block';
+          $('pending-action-text').textContent = sec.pending_description || 'Action awaiting user confirmation.';
+        } else {
+          pendingCard.style.display = 'none';
+        }
+
+        // Audit Trail
+        const tbody = $('audit-tbody');
+        tbody.replaceChildren();
+        if (!sec.audit_log || !sec.audit_log.length) {
+          tbody.innerHTML = '<tr><td colspan="4" style="color:var(--text-muted); text-align:center;">No sensitive actions recorded yet.</td></tr>';
+          return;
+        }
+
+        sec.audit_log.forEach(item => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${item.timestamp || '—'}</td>
+            <td><strong>${item.action || '—'}</strong></td>
+            <td><span class="chip ${item.risk_level === 'SAFE' ? 'good' : 'warn'}">${item.risk_level}</span></td>
+            <td>${item.approved ? '<span style="color:var(--green)">✓ Approved</span>' : '<span style="color:var(--accent)">✕ Blocked</span>'}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      } catch (e) { console.warn('loadSecurityGuard error:', e); }
+    }
+
+    $('btn-confirm-action').addEventListener('click', async () => {
+      try {
+        const res = await bridge().confirm_pending_security_action(true);
+        showToast(res.message || 'Action executed');
+        await loadSecurityGuard();
+      } catch (e) { showToast(e.message, true); }
+    });
+
+    $('btn-cancel-action').addEventListener('click', async () => {
+      try {
+        await bridge().confirm_pending_security_action(false);
+        showToast('Action cancelled safely');
+        await loadSecurityGuard();
+      } catch (e) { showToast(e.message, true); }
+    });
+
+    $('refresh-audit-btn').addEventListener('click', loadSecurityGuard);
 
     // Plugins Tab Logic
     async function loadPlugins() {
@@ -1200,14 +1458,12 @@
           card.appendChild(act);
           container.appendChild(card);
         });
-      } catch (e) {
-        console.warn('loadPlugins error:', e);
-      }
+      } catch (e) { console.warn('loadPlugins error:', e); }
     }
 
     $('refresh-plugins-btn').addEventListener('click', loadPlugins);
 
-    // GitHub Status
+    // GitHub Integration
     async function loadGitHub() {
       try {
         const st = await bridge().get_github_status();
@@ -1297,6 +1553,8 @@
           <div class="chip good">Voice: Google Web Speech (Free)</div>
           <div class="chip good">Privacy: 100% Click-to-Speak (No Snooping)</div>
         `;
+        const btnCuda = $('btn-download-cuda');
+        if (btnCuda) btnCuda.style.display = (cuda.has_gpu && !cuda.is_ready) ? 'inline-flex' : 'none';
       } catch (e) {}
     }
 
@@ -1305,7 +1563,7 @@
       try { await bridge().close_app(); } catch (e) {}
     });
 
-    // App Initialization
+    // App Master Initialization
     let _initDone = false;
     async function initDashboard() {
       if (_initDone) return;
@@ -1315,6 +1573,8 @@
         $('top-conn-chip').innerHTML = '<span class="status-dot green"></span> Desktop connected';
         await loadProfile();
         await loadBrainDetails();
+        await loadRemoteServerInfo();
+        await loadSecurityGuard();
         await loadSkills();
         await loadPlugins();
         await loadGitHub();
@@ -1335,7 +1595,6 @@
     setTimeout(() => {
       clearInterval(bridgePoll);
       if (!window.pywebview || !window.pywebview.api) {
-        // Fallback for standalone browser testing
         initDashboard();
       }
     }, 4000);

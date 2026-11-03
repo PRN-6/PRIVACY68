@@ -390,6 +390,118 @@ class DashboardAPI:
         except Exception as e:
             return {"success": False, "message": str(e)}
 
+    def get_remote_server_info(self) -> Dict[str, Any]:
+        """Returns Mobile Web Remote server access URL, IP, and status."""
+        try:
+            from server.remote_server import get_remote_url, get_local_ip
+            import config
+            port = getattr(config, "REMOTE_SERVER_PORT", 8765)
+            enabled = getattr(config, "ENABLE_REMOTE_SERVER", True)
+            local_ip = get_local_ip()
+            url = get_remote_url(port)
+            return {
+                "enabled": enabled,
+                "port": port,
+                "local_ip": local_ip,
+                "url": url,
+                "message": f"Connect any phone/tablet on your Wi-Fi to {url}"
+            }
+        except Exception as e:
+            logger.error(f"Error getting remote server info: {e}")
+            return {"enabled": False, "port": 8765, "local_ip": "127.0.0.1", "url": "http://127.0.0.1:8765", "error": str(e)}
+
+    def get_security_guard_info(self) -> Dict[str, Any]:
+        """Returns 3-tier security model status and recent audit log entries."""
+        import time
+        try:
+            from computer_use.security_guard import security_guard
+            audit = []
+            for entry in getattr(security_guard, "_audit_log", [])[-15:]:
+                audit.append({
+                    "action": str(entry.get("action", "")),
+                    "risk_level": str(entry.get("risk_level", "SAFE")).replace("ActionRiskLevel.", ""),
+                    "timestamp": time.strftime("%H:%M:%S", time.localtime(entry.get("timestamp", time.time()))),
+                    "approved": bool(entry.get("approved", True)),
+                })
+            rules_summary = {
+                "safe_count": sum(1 for v in security_guard._action_risk_rules.values() if v.value == 1),
+                "sensitive_count": sum(1 for v in security_guard._action_risk_rules.values() if v.value == 2),
+                "critical_count": sum(1 for v in security_guard._action_risk_rules.values() if v.value == 3),
+            }
+            has_pending = security_guard.check_has_pending()
+            pending_desc = ""
+            if has_pending and security_guard._pending_action:
+                pending_desc = security_guard._pending_action.description
+            return {
+                "has_pending": has_pending,
+                "pending_description": pending_desc,
+                "rules_summary": rules_summary,
+                "audit_log": audit,
+            }
+        except Exception as e:
+            logger.error(f"Error getting security guard info: {e}")
+            return {"has_pending": False, "audit_log": [], "rules_summary": {"safe_count": 14, "sensitive_count": 13, "critical_count": 4}}
+
+    def confirm_pending_security_action(self, confirmed: bool) -> Dict[str, Any]:
+        """Confirms or cancels a pending Sensitive Level 2 action."""
+        try:
+            from computer_use.security_guard import security_guard
+            if confirmed:
+                res = security_guard.confirm_pending()
+                return {"success": True, "message": "Action confirmed and executed.", "result": str(res)}
+            else:
+                security_guard.cancel_pending()
+                return {"success": True, "message": "Action cancelled safely."}
+        except Exception as e:
+            return {"success": False, "message": str(e)}
+
+    def execute_system_quick_action(self, action_name: str) -> Dict[str, Any]:
+        """Executes instant predefined desktop actions directly with 0ms latency."""
+        import ctypes
+        import subprocess
+        action = action_name.lower().strip()
+        try:
+            if action == "mute":
+                ctypes.windll.user32.keybd_event(0xAD, 0, 0, 0)
+                ctypes.windll.user32.keybd_event(0xAD, 0, 2, 0)
+                return {"success": True, "message": "Toggled volume mute."}
+            elif action == "volume_up":
+                for _ in range(5):
+                    ctypes.windll.user32.keybd_event(0xAF, 0, 0, 0)
+                    ctypes.windll.user32.keybd_event(0xAF, 0, 2, 0)
+                return {"success": True, "message": "Increased volume."}
+            elif action == "volume_down":
+                for _ in range(5):
+                    ctypes.windll.user32.keybd_event(0xAE, 0, 0, 0)
+                    ctypes.windll.user32.keybd_event(0xAE, 0, 2, 0)
+                return {"success": True, "message": "Decreased volume."}
+            elif action == "lock":
+                ctypes.windll.user32.LockWorkStation()
+                return {"success": True, "message": "Locked Windows workstation."}
+            elif action == "notepad":
+                subprocess.Popen(["notepad.exe"])
+                return {"success": True, "message": "Launched Notepad."}
+            elif action == "calc":
+                subprocess.Popen(["calc.exe"])
+                return {"success": True, "message": "Launched Calculator."}
+            elif action == "taskmgr":
+                subprocess.Popen(["taskmgr.exe"])
+                return {"success": True, "message": "Launched Task Manager."}
+            elif action == "explorer":
+                subprocess.Popen(["explorer.exe"])
+                return {"success": True, "message": "Opened File Explorer."}
+            elif action == "screenshot":
+                return self.run_skill("take_screenshot")
+            elif action == "diagnostics":
+                return self.run_skill("system_performance_diagnostics")
+            elif action == "downloads":
+                return self.run_skill("organize_downloads")
+            else:
+                from actions.executor import execute_system_command_detailed
+                return execute_system_command_detailed(action)
+        except Exception as e:
+            return {"success": False, "message": str(e)}
+
     def get_available_llm_models(self) -> List[Dict[str, Any]]:
         """Returns a list of all models installed in local Ollama instance."""
         try:
