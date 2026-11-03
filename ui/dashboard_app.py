@@ -358,10 +358,12 @@ class Privacy68Dashboard(ctk.CTk):
         self.preset_menu = ctk.CTkOptionMenu(
             preset_row,
             values=[
+                "claude-3-5-sonnet-20241022",
+                "claude-3-5-haiku-20241022",
+                "groq/llama-3.3-70b-versatile",
                 "ollama/llama3.2:latest",
                 "ollama/qwen2.5-coder:7b",
-                "ollama/mistral:latest",
-                "ollama/gemma4:31b-cloud"
+                "ollama/mistral:latest"
             ],
             width=240,
             height=28,
@@ -370,13 +372,69 @@ class Privacy68Dashboard(ctk.CTk):
         )
         self.preset_menu.pack(side="left")
 
+        # Claude Cloud Intelligence Frame (Out of the Box / OpenClaw)
+        claude_frame = ctk.CTkFrame(view, fg_color=COLOR_BG_DARK, corner_radius=8)
+        claude_frame.pack(fill="x", padx=16, pady=6)
+
+        ctk.CTkLabel(
+            claude_frame,
+            text="⚡ Anthropic Claude AI (Out-of-the-Box / OpenClaw)",
+            font=ctk.CTkFont(family="Segoe UI", size=12, weight="bold"),
+            text_color=COLOR_TEXT_PRIMARY
+        ).pack(anchor="w", padx=14, pady=(10, 2))
+
+        ctk.CTkLabel(
+            claude_frame,
+            text="Frontier reasoning with zero local model downloads. Works out of the box with Claude 3.5.",
+            font=ctk.CTkFont(family="Segoe UI", size=11),
+            text_color=COLOR_TEXT_MUTED
+        ).pack(anchor="w", padx=14, pady=(0, 6))
+
+        claude_row = ctk.CTkFrame(claude_frame, fg_color="transparent")
+        claude_row.pack(fill="x", padx=14, pady=(0, 6))
+        claude_row.grid_columnconfigure(0, weight=1)
+
+        self.claude_key_entry = ctk.CTkEntry(
+            claude_row,
+            placeholder_text="Paste Claude API Key (sk-ant-api03-...)",
+            font=ctk.CTkFont(family="Segoe UI", size=12),
+            height=34,
+            fg_color=COLOR_CARD,
+            border_color=COLOR_CARD_HOVER,
+            show="•"
+        )
+        cur_claude = getattr(config, "ANTHROPIC_API_KEY", "") or os.environ.get("ANTHROPIC_API_KEY", "")
+        if cur_claude:
+            self.claude_key_entry.insert(0, cur_claude)
+        self.claude_key_entry.grid(row=0, column=0, sticky="ew", padx=(0, 8))
+
+        save_claude_btn = ctk.CTkButton(
+            claude_row,
+            text="Save Claude Key",
+            width=120,
+            height=34,
+            font=ctk.CTkFont(family="Segoe UI", size=11, weight="bold"),
+            fg_color=COLOR_ACCENT_RED,
+            hover_color=COLOR_ACCENT_RED_HOVER,
+            command=self._save_claude_key
+        )
+        save_claude_btn.grid(row=0, column=1)
+
+        self.claude_status_label = ctk.CTkLabel(
+            claude_frame,
+            text="● Status: " + ("Claude 3.5 Active (API Key Saved)" if cur_claude else "Inactive (Enter API key to activate)"),
+            font=ctk.CTkFont(family="Segoe UI", size=11),
+            text_color=COLOR_ACCENT_GREEN if cur_claude else COLOR_TEXT_MUTED
+        )
+        self.claude_status_label.pack(anchor="w", padx=14, pady=(0, 10))
+
         # Ollama Controller Frame
         ctrl_frame = ctk.CTkFrame(view, fg_color=COLOR_BG_DARK, corner_radius=8)
         ctrl_frame.pack(fill="x", padx=16, pady=6)
 
         ctk.CTkLabel(
             ctrl_frame,
-            text="Ollama Local Service:",
+            text="🔒 Ollama Local Service (100% Offline & Private):",
             font=ctk.CTkFont(family="Segoe UI", size=12, weight="bold"),
             text_color=COLOR_TEXT_PRIMARY
         ).pack(anchor="w", padx=14, pady=(10, 4))
@@ -719,18 +777,86 @@ class Privacy68Dashboard(ctk.CTk):
     def _check_services(self):
         def worker():
             ollama_ok = is_ollama_online()
+            cur_model = getattr(config, "AGENT_BRAIN_MODEL", "ollama/llama3.2:latest").lower()
+            claude_key = getattr(config, "ANTHROPIC_API_KEY", "") or os.environ.get("ANTHROPIC_API_KEY", "")
+            groq_key = getattr(config, "GROQ_API_KEY", "") or os.environ.get("GROQ_API_KEY", "")
 
             def update():
-                if ollama_ok:
-                    self.brain_status_label.configure(text="● Brain: Online (Ollama)", text_color=COLOR_ACCENT_GREEN)
-                    self.ollama_detail_label.configure(text="Status: Online & Ready (http://localhost:11434)", text_color=COLOR_ACCENT_GREEN)
+                # 1. Update Ollama local service label if available
+                if hasattr(self, "ollama_detail_label"):
+                    if ollama_ok:
+                        self.ollama_detail_label.configure(
+                            text="Status: Online & Ready (http://localhost:11434)",
+                            text_color=COLOR_ACCENT_GREEN
+                        )
+                    else:
+                        self.ollama_detail_label.configure(
+                            text="Status: Offline (Local daemon not running)",
+                            text_color="#EF4444"
+                        )
+
+                # 2. Update Claude status label if available
+                if hasattr(self, "claude_status_label"):
+                    if claude_key:
+                        self.claude_status_label.configure(
+                            text="● Status: Claude 3.5 Active (API Key Saved)",
+                            text_color=COLOR_ACCENT_GREEN
+                        )
+                    else:
+                        self.claude_status_label.configure(
+                            text="● Status: Inactive (Enter API key to activate)",
+                            text_color=COLOR_TEXT_MUTED
+                        )
+
+                # 3. Update Left Sidebar Brain Status
+                if "claude" in cur_model or "anthropic" in cur_model:
+                    if claude_key:
+                        self.brain_status_label.configure(text="● Brain: Online (Claude)", text_color=COLOR_ACCENT_GREEN)
+                    else:
+                        self.brain_status_label.configure(text="● Brain: Needs Claude Key", text_color="#F59E0B")
+                elif "groq" in cur_model:
+                    if groq_key:
+                        self.brain_status_label.configure(text="● Brain: Online (Groq)", text_color=COLOR_ACCENT_GREEN)
+                    else:
+                        self.brain_status_label.configure(text="● Brain: Needs Groq Key", text_color="#F59E0B")
                 else:
-                    self.brain_status_label.configure(text="● Brain: Offline (Ollama)", text_color="#EF4444")
-                    self.ollama_detail_label.configure(text="Status: Offline (Ollama daemon not running)", text_color="#EF4444")
+                    if ollama_ok:
+                        self.brain_status_label.configure(text="● Brain: Online (Ollama)", text_color=COLOR_ACCENT_GREEN)
+                    else:
+                        self.brain_status_label.configure(text="● Brain: Offline (Ollama)", text_color="#EF4444")
 
             self.after(0, update)
 
         threading.Thread(target=worker, daemon=True).start()
+
+    def _save_claude_key(self):
+        key = self.claude_key_entry.get().strip()
+        config.ANTHROPIC_API_KEY = key
+        os.environ["ANTHROPIC_API_KEY"] = key
+        if key:
+            if hasattr(self, "claude_status_label"):
+                self.claude_status_label.configure(
+                    text="● Status: Claude 3.5 Active (API Key Saved)",
+                    text_color=COLOR_ACCENT_GREEN
+                )
+            self._add_feed_card(
+                "AI Brain",
+                "Anthropic Claude API key activated! Out-of-the-box OpenClaw reasoning is now enabled.",
+                card_type="system"
+            )
+            # If current model was still ollama, auto-switch to claude-3-5-sonnet
+            if "ollama" in self.brain_model_entry.get():
+                self.brain_model_entry.delete(0, "end")
+                self.brain_model_entry.insert(0, "claude-3-5-sonnet-20241022")
+                self._apply_model_choice()
+        else:
+            if hasattr(self, "claude_status_label"):
+                self.claude_status_label.configure(
+                    text="● Status: Inactive (Enter API key to activate)",
+                    text_color=COLOR_TEXT_MUTED
+                )
+            self._add_feed_card("AI Brain", "Claude API key removed.", card_type="system")
+        self._check_services()
 
     def _launch_ollama_service(self):
         try:
@@ -751,6 +877,7 @@ class Privacy68Dashboard(ctk.CTk):
             config.AGENT_BRAIN_MODEL = model
             agent_brain.model = model
             self._add_feed_card("Settings", f"AI Brain model set to: {model}", card_type="system")
+            self._check_services()
 
     def _test_brain_generation(self):
         prompt = self.test_prompt_entry.get().strip() or "open notepad and type hello"

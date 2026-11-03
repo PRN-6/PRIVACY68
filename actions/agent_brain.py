@@ -120,11 +120,31 @@ class AgentBrain:
                 )
             })
 
-        response = litellm.completion(
-            model=self.model,
-            messages=messages,
-            temperature=0,
-        )
+        # Resolve API Key based on model provider
+        api_key = None
+        model_lower = self.model.lower()
+        if "claude" in model_lower or "anthropic" in model_lower:
+            api_key = getattr(config, "ANTHROPIC_API_KEY", "") or os.environ.get("ANTHROPIC_API_KEY", "")
+        elif "groq" in model_lower:
+            api_key = getattr(config, "GROQ_API_KEY", "") or os.environ.get("GROQ_API_KEY", "")
+        elif "gpt" in model_lower or "openai" in model_lower:
+            api_key = getattr(config, "OPENAI_API_KEY", "") or os.environ.get("OPENAI_API_KEY", "")
+
+        call_kwargs = {
+            "model": self.model,
+            "messages": messages,
+            "temperature": 0,
+        }
+        if api_key:
+            call_kwargs["api_key"] = api_key.strip()
+            if "claude" in model_lower or "anthropic" in model_lower:
+                os.environ["ANTHROPIC_API_KEY"] = api_key.strip()
+            elif "groq" in model_lower:
+                os.environ["GROQ_API_KEY"] = api_key.strip()
+            elif "gpt" in model_lower or "openai" in model_lower:
+                os.environ["OPENAI_API_KEY"] = api_key.strip()
+
+        response = litellm.completion(**call_kwargs)
         code = response.choices[0].message.content.strip()
 
         if code.startswith("```python"):
@@ -143,17 +163,47 @@ class AgentBrain:
         try:
             logger.info(f"[AGENT BRAIN] Reasoning via {self.model}: {text}")
 
+            model_lower = self.model.lower()
+            if ("claude" in model_lower or "anthropic" in model_lower) and not (getattr(config, "ANTHROPIC_API_KEY", "") or os.environ.get("ANTHROPIC_API_KEY", "")):
+                msg = "Anthropic Claude API key is not configured. Go to the 'AI Brain' tab in the dashboard and paste your Claude API key."
+                logger.warning(f"[AGENT BRAIN] {msg}")
+                return {
+                    "success": False,
+                    "message": msg,
+                    "output": "Missing ANTHROPIC_API_KEY",
+                    "method": "agentic_engine",
+                }
+            if "groq" in model_lower and not (getattr(config, "GROQ_API_KEY", "") or os.environ.get("GROQ_API_KEY", "")):
+                msg = "Groq API key is not configured. Go to the 'AI Brain' tab in the dashboard and paste your Groq API key."
+                logger.warning(f"[AGENT BRAIN] {msg}")
+                return {
+                    "success": False,
+                    "message": msg,
+                    "output": "Missing GROQ_API_KEY",
+                    "method": "agentic_engine",
+                }
+
             # Step 1: Get code from LLM
             try:
                 code = self._get_code_from_llm(text)
             except Exception as e:
                 err_str = str(e)
-                if "10061" in err_str or "Connection refused" in err_str or "APIConnectionError" in type(e).__name__:
+                err_name = type(e).__name__
+                if "10061" in err_str or "Connection refused" in err_str or "APIConnectionError" in err_name:
                     logger.error(f"[AGENT BRAIN] Ollama is not running: {e}")
                     return {
                         "success": False,
-                        "message": "Ollama service is not reachable. Start Ollama ('ollama serve') to enable AI reasoning.",
+                        "message": "Ollama service is not reachable. Start Ollama ('ollama serve') or switch to a Cloud model (Claude 3.5 Sonnet / Groq) in the dashboard.",
                         "output": "Connection refused to http://localhost:11434",
+                        "method": "agentic_engine",
+                    }
+                if "not found" in err_str.lower() or "notfounderror" in err_name.lower():
+                    logger.error(f"[AGENT BRAIN] Model '{self.model}' not found in Ollama: {e}")
+                    clean_model_name = self.model.replace("ollama/", "")
+                    return {
+                        "success": False,
+                        "message": f"Model '{self.model}' is not installed in Ollama. Run 'ollama pull {clean_model_name}' in your terminal, or switch to Claude / Groq in the dashboard.",
+                        "output": err_str,
                         "method": "agentic_engine",
                     }
                 raise e

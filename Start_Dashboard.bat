@@ -23,3 +23,4 @@ start "" ".\.venv\Scripts\pythonw.exe" app.py --dashboard
 if errorlevel 1 (
     .\.venv\Scripts\python.exe app.py --dashboard
 )
+

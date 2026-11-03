@@ -110,8 +110,9 @@ def _open_url(url: str, plugin_manager, preferred_browser: str = None) -> bool:
 
 def _execute_builtin_app_command(command: str, plugin_manager, on_action_callback, on_status_callback):
     """Routes common app-launch commands directly to their installed plugins."""
+    clean_cmd = re.sub(r"^['\"`‘“\s]+|['\"`’”\s]+$", "", command.strip()).strip(".!?, \t\n")
     for pattern, plugin_id, action in BUILTIN_APP_COMMANDS:
-        if not pattern.fullmatch(command):
+        if not pattern.fullmatch(clean_cmd):
             continue
 
         plugin = plugin_manager.get_plugin(plugin_id)
@@ -286,7 +287,9 @@ def execute_system_command_detailed(text: str, on_action_callback=None, on_statu
     if not cleaned:
         return {"success": False, "tool": "None", "method": "none", "message": "Empty command"}
 
-    low = cleaned.lower().strip(".!?, ")
+    low = re.sub(r"^['\"`‘“\s]+|['\"`’”\s]+$", "", cleaned.lower().strip()).strip(".!?, \t\n")
+    if not low:
+        return {"success": False, "tool": "None", "method": "none", "message": "Empty command"}
 
     # 1. Security Guard Intercept
     if security_guard.check_has_pending():

@@ -11,3 +11,4 @@ if not exist ".venv\Scripts\python.exe" (
 
 echo Starting PRIVACY68 Voice Assistant...
 .\.venv\Scripts\python.exe app.py
+

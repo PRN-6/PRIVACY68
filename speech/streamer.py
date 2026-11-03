@@ -40,11 +40,13 @@ logger = logging.getLogger("PRIVACY68.SpeechStreamer")
 
 
 def autocorrect_speech_command(text: str) -> str:
-    """Cleans filler words, duplicate stutters, and typos from transcribed speech."""
+    """Cleans filler words, duplicate stutters, quotes, and typos from transcribed speech."""
     if not text:
         return ""
 
-    cleaned = text
+    # Aggressively strip wrapping single/double quotes or backticks added by Whisper models
+    cleaned = re.sub(r"^['\"`‘“\s]+|['\"`’”\s]+$", "", text.strip())
+
     # 1. Strip filler vocal tics (e.g., hmmm, ummm, uhhh)
     cleaned = re.sub(r'\b(h+m+|u+m+|u+h+|a+h+|e+r+|b+m+|m+h+m+|m+m+)\b', ' ', cleaned, flags=re.IGNORECASE)
     # 2. Strip consecutive repeated stutter words ('open open Chrome' -> 'open Chrome')
@@ -64,7 +66,8 @@ def autocorrect_speech_command(text: str) -> str:
         cleaned = re.sub(pattern, repl, cleaned, flags=re.IGNORECASE)
     # 5. Clean leading conversational greetings
     cleaned = re.sub(r'^(?:please|kindly|hey|alexa|privacy68|jarvis)[,\s]+', '', cleaned, flags=re.IGNORECASE)
-    return re.sub(r'\s+', ' ', cleaned).strip(".!?, \t\n")
+    cleaned = re.sub(r'\s+', ' ', cleaned)
+    return re.sub(r"^['\"`‘“\s]+|['\"`’”\s]+$", "", cleaned).strip(".!?, \t\n")
 
 
 class SpeechStreamer:
@@ -143,6 +146,7 @@ class SpeechStreamer:
         """Removes the wake phrase from the command utterance."""
         res = self.wake_pattern.sub('', text)
         res = re.sub(r'^(hey|ok|okay|hi|hello|ah|oh)\s+', '', res, flags=re.IGNORECASE)
+        res = re.sub(r"^['\"`‘“\s]+|['\"`’”\s]+$", "", res.strip())
         return res.strip(".!?, \t\n")
 
     def _transcribe_groq(self, audio_data: np.ndarray) -> str:
