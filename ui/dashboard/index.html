@@ -9,26 +9,25 @@
     :root {
       color-scheme: dark;
       --bg: #0c0e12;
-      --sidebar: #13161f;
+      --sidebar: #12151d;
       --panel: #161922;
-      --panel-raised: #1d222e;
-      --panel-hover: #232838;
-      --line: #262b3a;
-      --line-subtle: #1c202d;
+      --panel-raised: #1c202d;
+      --panel-hover: #222736;
+      --line: #242938;
+      --line-subtle: #1a1e2a;
       --text: #f3f4f6;
-      --text-muted: #9ca3af;
-      --text-subtle: #6b7280;
-      --accent: #ef4444;
-      --accent-hover: #dc2626;
-      --accent-glow: rgba(239, 68, 68, 0.25);
+      --text-muted: #949ba8;
+      --text-subtle: #626977;
+      --accent: #e53935;
+      --accent-hover: #d32f2f;
+      --accent-glow: rgba(229, 57, 53, 0.2);
       --green: #10b981;
-      --green-glow: rgba(16, 185, 129, 0.25);
+      --green-glow: rgba(16, 185, 129, 0.2);
       --blue: #38bdf8;
-      --blue-glow: rgba(56, 189, 248, 0.25);
+      --blue-glow: rgba(56, 189, 248, 0.2);
       --amber: #f59e0b;
-      --purple: #a855f7;
-      --radius: 12px;
-      --radius-sm: 8px;
+      --radius: 10px;
+      --radius-sm: 6px;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     }
 
@@ -45,7 +44,7 @@
     }
 
     /* Scrollbars */
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: #262b3a; border-radius: 999px; }
     ::-webkit-scrollbar-thumb:hover { background: #374151; }
@@ -55,8 +54,8 @@
 
     /* Left Sidebar */
     .sidebar {
-      width: 250px;
-      min-width: 250px;
+      width: 230px;
+      min-width: 230px;
       background: var(--sidebar);
       border-right: 1px solid var(--line);
       display: flex;
@@ -68,32 +67,31 @@
     .brand {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
       padding: 4px 6px 12px;
       border-bottom: 1px solid var(--line-subtle);
     }
     .brand-mark {
-      width: 38px;
-      height: 38px;
-      border-radius: 10px;
-      background: linear-gradient(135deg, #ef4444, #b91c1c);
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #e53935, #b71c1c);
       color: white;
-      font-weight: 900;
-      font-size: 19px;
+      font-weight: 800;
+      font-size: 16px;
       display: grid;
       place-items: center;
-      box-shadow: 0 4px 14px var(--accent-glow);
+      box-shadow: 0 2px 10px var(--accent-glow);
     }
     .brand-text { display: flex; flex-direction: column; }
-    .brand-title { font-weight: 800; font-size: 15px; letter-spacing: 0.05em; color: var(--text); }
+    .brand-title { font-weight: 800; font-size: 14px; letter-spacing: 0.06em; color: var(--text); }
     .brand-version { font-size: 10px; color: var(--text-subtle); letter-spacing: 0.02em; }
 
-    /* Nav Links */
-    .nav-list { display: flex; flex-direction: column; gap: 4px; flex: 1; overflow-y: auto; }
+    /* Navigation Links */
+    .nav-list { display: flex; flex-direction: column; gap: 3px; flex: 1; overflow-y: auto; }
     .nav-btn {
       display: flex;
       align-items: center;
-      gap: 10px;
       padding: 8px 12px;
       border-radius: var(--radius-sm);
       color: var(--text-muted);
@@ -102,7 +100,7 @@
       background: transparent;
       border: 1px solid transparent;
       cursor: pointer;
-      transition: all 0.15s ease;
+      transition: all 0.12s ease;
       text-align: left;
     }
     .nav-btn:hover { background: var(--panel); color: var(--text); }
@@ -110,39 +108,34 @@
       background: var(--panel-raised);
       color: var(--text);
       border-color: var(--line);
-      box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+      border-left: 3px solid var(--accent);
     }
-    .nav-btn.active .nav-icon { color: var(--accent); }
-    .nav-icon { width: 16px; height: 16px; display: inline-flex; align-items: center; justify-content: center; font-size: 14px; }
 
-    /* Push-to-Talk Big Button */
+    /* Push-to-Talk Button */
     .ptt-btn {
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 8px;
-      padding: 11px 14px;
+      padding: 10px 14px;
       border-radius: var(--radius-sm);
-      background: linear-gradient(135deg, #10b981, #059669);
+      background: #10b981;
       color: white;
       font-size: 12px;
       font-weight: 700;
       border: none;
       cursor: pointer;
-      box-shadow: 0 4px 12px var(--green-glow);
       transition: all 0.15s ease;
     }
-    .ptt-btn:hover { background: linear-gradient(135deg, #059669, #047857); transform: translateY(-1px); }
+    .ptt-btn:hover { background: #059669; }
     .ptt-btn.recording {
-      background: linear-gradient(135deg, #ef4444, #dc2626);
-      box-shadow: 0 4px 16px var(--accent-glow);
+      background: #e53935;
       animation: pulse 1.2s infinite;
     }
 
     @keyframes pulse {
-      0% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.88; transform: scale(0.99); }
-      100% { opacity: 1; transform: scale(1); }
+      0% { opacity: 1; }
+      50% { opacity: 0.85; }
+      100% { opacity: 1; }
     }
 
     /* Sidebar Footer Status Card */
@@ -174,14 +167,14 @@
 
     /* Top Bar */
     .topbar {
-      height: 52px;
+      height: 50px;
       border-bottom: 1px solid var(--line);
       padding: 0 20px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      background: rgba(19, 22, 31, 0.7);
-      backdrop-filter: blur(10px);
+      background: rgba(18, 21, 29, 0.85);
+      backdrop-filter: blur(8px);
     }
     .topbar-title { font-size: 13px; font-weight: 700; color: var(--text); }
     .topbar-right { display: flex; align-items: center; gap: 8px; }
@@ -190,7 +183,7 @@
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      padding: 4px 9px;
+      padding: 3px 8px;
       border-radius: 999px;
       background: var(--panel);
       border: 1px solid var(--line);
@@ -202,8 +195,8 @@
     .chip.warn { border-color: rgba(245, 158, 11, 0.4); color: var(--amber); }
 
     .icon-btn {
-      width: 28px;
-      height: 28px;
+      width: 26px;
+      height: 26px;
       display: grid;
       place-items: center;
       border-radius: 6px;
@@ -211,6 +204,7 @@
       border: 1px solid var(--line);
       color: var(--text-muted);
       cursor: pointer;
+      font-size: 12px;
     }
     .icon-btn:hover { background: var(--panel); color: var(--text); }
 
@@ -232,10 +226,9 @@
       display: flex;
       flex-direction: column;
       gap: 12px;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
     }
     .card-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-    .card-title { font-size: 13px; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 8px; }
+    .card-title { font-size: 13px; font-weight: 700; color: var(--text); }
     .card-desc { font-size: 11px; color: var(--text-muted); line-height: 1.45; }
 
     /* Buttons */
@@ -243,8 +236,7 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 6px;
-      padding: 7px 14px;
+      padding: 6px 13px;
       border-radius: var(--radius-sm);
       font-size: 11px;
       font-weight: 600;
@@ -252,14 +244,13 @@
       border: 1px solid var(--line);
       background: var(--panel-raised);
       color: var(--text);
-      transition: all 0.15s ease;
+      transition: all 0.12s ease;
     }
     .btn:hover { background: var(--panel-hover); border-color: #374151; }
     .btn.primary {
       background: var(--accent);
       border-color: var(--accent);
       color: white;
-      box-shadow: 0 2px 8px var(--accent-glow);
     }
     .btn.primary:hover { background: var(--accent-hover); }
     .btn.green {
@@ -274,14 +265,14 @@
       color: white;
     }
     .btn.blue:hover { background: #0369a1; }
-    .btn.sm { padding: 4px 9px; font-size: 10px; }
+    .btn.sm { padding: 4px 8px; font-size: 10px; }
 
     /* Inputs & Selects */
     input, select {
       background: #0f121a;
       border: 1px solid var(--line);
       border-radius: var(--radius-sm);
-      padding: 8px 12px;
+      padding: 7px 11px;
       color: var(--text);
       font-size: 12px;
       outline: none;
@@ -332,53 +323,44 @@
     }
 
     /* Fast Action Bar */
-    .quick-action-bar {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      align-items: center;
-    }
+    .quick-action-bar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
     .action-chip {
       background: var(--panel-raised);
       border: 1px solid var(--line);
       border-radius: 999px;
-      padding: 5px 11px;
+      padding: 4px 10px;
       font-size: 11px;
       font-weight: 600;
       color: var(--text-muted);
       cursor: pointer;
       display: inline-flex;
       align-items: center;
-      gap: 6px;
-      transition: all 0.15s ease;
+      transition: all 0.12s ease;
     }
     .action-chip:hover {
       background: var(--panel-hover);
       color: var(--text);
       border-color: var(--accent);
-      transform: translateY(-1px);
     }
 
     /* Command Input Bar */
     .cmd-bar { display: flex; gap: 8px; align-items: center; }
-    .cmd-input { flex: 1; height: 38px; font-size: 13px; }
+    .cmd-input { flex: 1; height: 36px; font-size: 12px; }
 
     /* Multiple API Slots Grid */
-    .api-slots-grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
+    .api-slots-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
     .api-slot-card {
       background: var(--panel);
       border: 1px solid var(--line);
       border-radius: var(--radius);
-      padding: 16px;
+      padding: 14px 16px;
       display: flex;
       flex-direction: column;
-      gap: 10px;
-      transition: border-color 0.15s ease;
+      gap: 8px;
     }
-    .api-slot-card:hover { border-color: #374151; }
     .api-slot-card.configured { border-left: 3px solid var(--green); }
     .api-slot-header { display: flex; align-items: center; justify-content: space-between; }
-    .api-slot-title { font-weight: 700; font-size: 13px; display: flex; align-items: center; gap: 8px; }
+    .api-slot-title { font-weight: 700; font-size: 13px; color: var(--text); }
     .api-key-input-row { display: flex; gap: 8px; }
     .api-key-input-row input { flex: 1; }
 
@@ -397,7 +379,6 @@
       flex-direction: column;
       gap: 8px;
     }
-    .skill-card:hover { border-color: #38bdf8; }
     .skill-title { font-weight: 700; font-size: 13px; color: var(--text); display: flex; align-items: center; justify-content: space-between; }
     .skill-desc { font-size: 11px; color: var(--text-muted); line-height: 1.4; }
     .skill-tags { display: flex; flex-wrap: wrap; gap: 4px; }
@@ -409,7 +390,7 @@
       border-radius: 4px;
       border: 1px solid var(--line-subtle);
     }
-    .skill-actions { display: flex; gap: 6px; margin-top: 6px; }
+    .skill-actions { display: flex; gap: 6px; margin-top: 4px; }
 
     /* Security Audit Table */
     .audit-table { width: 100%; border-collapse: collapse; font-size: 11px; }
@@ -424,13 +405,13 @@
       background: var(--panel-raised);
       border: 1px solid var(--line);
       border-radius: var(--radius-sm);
-      padding: 10px 16px;
+      padding: 9px 14px;
       font-size: 12px;
       color: var(--text);
-      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.4);
       transform: translateY(100px);
       opacity: 0;
-      transition: all 0.25s ease;
+      transition: all 0.2s ease;
       z-index: 1000;
     }
     #toast.show { transform: translateY(0); opacity: 1; }
@@ -445,41 +426,24 @@
         <div class="brand-mark">P</div>
         <div class="brand-text">
           <span class="brand-title">PRIVACY 68</span>
-          <span class="brand-version">v1.6.0 • Complete Control Center</span>
+          <span class="brand-version">v1.6.1 Control Center</span>
         </div>
       </div>
 
-      <!-- Navigation Links -->
+      <!-- Navigation Links (Clean text, no icons) -->
       <nav class="nav-list">
-        <button class="nav-btn active" data-tab="console">
-          <span class="nav-icon">💻</span> Live Console
-        </button>
-        <button class="nav-btn" data-tab="brain">
-          <span class="nav-icon">🧠</span> AI Brain (APIs)
-        </button>
-        <button class="nav-btn" data-tab="skills">
-          <span class="nav-icon">⚡</span> Learned Skills
-        </button>
-        <button class="nav-btn" data-tab="remote">
-          <span class="nav-icon">📱</span> Mobile Remote
-        </button>
-        <button class="nav-btn" data-tab="security">
-          <span class="nav-icon">🛡️</span> Security Guard
-        </button>
-        <button class="nav-btn" data-tab="voice">
-          <span class="nav-icon">🎙️</span> Voice & Audio
-        </button>
-        <button class="nav-btn" data-tab="plugins">
-          <span class="nav-icon">🔌</span> Plugins
-        </button>
-        <button class="nav-btn" data-tab="settings">
-          <span class="nav-icon">⚙️</span> Settings & Hardware
-        </button>
+        <button class="nav-btn active" data-tab="console">Live Console</button>
+        <button class="nav-btn" data-tab="brain">AI Brain (APIs)</button>
+        <button class="nav-btn" data-tab="skills">Learned Skills</button>
+        <button class="nav-btn" data-tab="remote">Mobile Remote</button>
+        <button class="nav-btn" data-tab="security">Security Guard</button>
+        <button class="nav-btn" data-tab="voice">Voice & Audio</button>
+        <button class="nav-btn" data-tab="plugins">Plugins</button>
+        <button class="nav-btn" data-tab="settings">Settings & Hardware</button>
       </nav>
 
       <!-- Push To Talk Microphone Button -->
       <button class="ptt-btn" id="ptt-speak-btn">
-        <span id="ptt-icon">🎙️</span>
         <span id="ptt-label">Click to Speak</span>
       </button>
 
@@ -487,7 +451,7 @@
       <div class="sidebar-status">
         <div class="status-indicator">
           <span class="status-dot green"></span>
-          <span>Voice: 100% Private (PTT)</span>
+          <span>Voice: Push-to-Talk (Private)</span>
         </div>
         <div class="status-indicator">
           <span class="status-dot blue"></span>
@@ -495,7 +459,7 @@
         </div>
         <div class="status-indicator">
           <span class="status-dot green" id="sidebar-brain-dot"></span>
-          <span id="sidebar-brain-text">Brain: Checking...</span>
+          <span id="sidebar-brain-text">Brain: Ready</span>
         </div>
       </div>
     </aside>
@@ -504,15 +468,15 @@
     <main class="main-content">
       <!-- Top Bar -->
       <header class="topbar">
-        <div class="topbar-title" id="active-tab-title">💻 Live Command Console</div>
+        <div class="topbar-title" id="active-tab-title">Live Command Console</div>
         <div class="topbar-right">
           <span class="chip good" id="top-conn-chip">
             <span class="status-dot green"></span> Desktop connected
           </span>
           <span class="chip blue" id="top-remote-chip" style="cursor:pointer;" title="Click to view Mobile Remote">
-            📱 Mobile Web Remote: Ready
+            Mobile Remote: Active
           </span>
-          <span class="chip" id="top-user-chip">👤 User</span>
+          <span class="chip" id="top-user-chip">User</span>
           <button class="icon-btn" id="close-window-btn" title="Close Control Center">✕</button>
         </div>
       </header>
@@ -520,9 +484,9 @@
       <!-- TAB 1: Live Console -->
       <section class="tab-view active" id="tab-console">
         <div style="display:flex; flex-wrap:wrap; gap:8px;">
-          <span class="chip good">🎙️ Google Speech (Free Cloud ASR)</span>
-          <span class="chip good">🔒 100% Private (Zero Background Listening)</span>
-          <span class="chip" id="active-model-badge">🧠 Model: Loading...</span>
+          <span class="chip good">Google Speech (Free Cloud ASR)</span>
+          <span class="chip good">100% Private (No Background Listening)</span>
+          <span class="chip" id="active-model-badge">Model: Loading...</span>
         </div>
 
         <!-- Chat / Output Feed -->
@@ -532,34 +496,34 @@
               <span>PRIVACY68 Ready (100% Private)</span>
               <span>SYSTEM</span>
             </div>
-            <div class="feed-body">Welcome to PRIVACY68 Control Center.
-• Click <strong>"🎙️ Click to Speak"</strong> in the sidebar to speak any command hands-free.
-• Or type any command below (e.g. <em>"open chrome and search for quantum computing"</em>, <em>"organize my downloads"</em>, or <em>"take a screenshot"</em>).
-• Or click any <strong>Quick OS Action</strong> below for instant 0ms execution!</div>
+            <div class="feed-body">PRIVACY68 Control Center initialized.
+• Click "Click to Speak" in the sidebar to speak a command hands-free.
+• Or type any command below (e.g. "open chrome and search for quantum computing", "organize my downloads", or "take a screenshot").
+• Or select any Quick OS Action below for instant execution.</div>
           </div>
         </div>
 
         <!-- Instant OS Actions (0ms Latency) -->
         <div style="display:flex; flex-direction:column; gap:6px;">
-          <span style="font-size:11px; font-weight:700; color:var(--text-muted);">⚡ Instant 0ms OS Actions</span>
+          <span style="font-size:11px; font-weight:700; color:var(--text-muted);">Quick Actions</span>
           <div class="quick-action-bar">
-            <span class="action-chip" onclick="quickAction('screenshot')">📸 Screenshot</span>
-            <span class="action-chip" onclick="quickAction('downloads')">📁 Organize Downloads</span>
-            <span class="action-chip" onclick="quickAction('diagnostics')">⚡ Check Performance</span>
-            <span class="action-chip" onclick="quickAction('mute')">🔇 Mute / Unmute</span>
-            <span class="action-chip" onclick="quickAction('volume_up')">🔊 Vol Up</span>
-            <span class="action-chip" onclick="quickAction('volume_down')">🔉 Vol Down</span>
-            <span class="action-chip" onclick="quickAction('lock')">🔒 Lock PC</span>
-            <span class="action-chip" onclick="quickAction('notepad')">📝 Notepad</span>
-            <span class="action-chip" onclick="quickAction('calc')">🧮 Calculator</span>
-            <span class="action-chip" onclick="quickAction('taskmgr')">📊 Task Manager</span>
-            <span class="action-chip" onclick="quickAction('chrome')">🌐 Chrome</span>
+            <span class="action-chip" onclick="quickAction('screenshot')">Screenshot</span>
+            <span class="action-chip" onclick="quickAction('downloads')">Organize Downloads</span>
+            <span class="action-chip" onclick="quickAction('diagnostics')">Check Performance</span>
+            <span class="action-chip" onclick="quickAction('mute')">Mute / Unmute</span>
+            <span class="action-chip" onclick="quickAction('volume_up')">Volume Up</span>
+            <span class="action-chip" onclick="quickAction('volume_down')">Volume Down</span>
+            <span class="action-chip" onclick="quickAction('lock')">Lock PC</span>
+            <span class="action-chip" onclick="quickAction('notepad')">Notepad</span>
+            <span class="action-chip" onclick="quickAction('calc')">Calculator</span>
+            <span class="action-chip" onclick="quickAction('taskmgr')">Task Manager</span>
+            <span class="action-chip" onclick="quickAction('chrome')">Chrome</span>
           </div>
         </div>
 
         <!-- Command Input Row -->
         <div class="cmd-bar">
-          <input type="text" class="cmd-input" id="cmd-input" placeholder="Type a natural language command or click '🎙️ Click to Speak'..." autocomplete="off">
+          <input type="text" class="cmd-input" id="cmd-input" placeholder="Type a natural language command or click 'Click to Speak'..." autocomplete="off">
           <button class="btn primary" id="cmd-run-btn">Run</button>
           <button class="btn" id="cmd-clear-btn">Clear Log</button>
         </div>
@@ -570,13 +534,13 @@
         <div class="card">
           <div class="card-header">
             <div>
-              <h2 class="card-title">🧠 Cloud & Web AI Brain (APIs Only)</h2>
-              <p class="card-desc">PRIVACY68 operates 100% via AI APIs with automatic failover. Zero local model download or background daemon required.</p>
+              <h2 class="card-title">Cloud AI Brain (APIs)</h2>
+              <p class="card-desc">PRIVACY68 operates via AI APIs with automatic failover. Zero local model download or background daemon required.</p>
             </div>
           </div>
 
           <!-- Active Model Selector -->
-          <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:center; background:#0f121a; padding:12px; border-radius:8px; border:1px solid var(--line);">
+          <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:center; background:#0f121a; padding:12px; border-radius:6px; border:1px solid var(--line);">
             <div style="flex:1; min-width:240px; display:flex; flex-direction:column; gap:4px;">
               <label style="font-size:11px; font-weight:700; color:var(--text-muted);">Active LLM Model Identifier</label>
               <input type="text" id="active-model-input" placeholder="gemini/gemini-1.5-flash">
@@ -592,16 +556,13 @@
                 <option value="ollama/qwen2.5-coder:7b">Local Ollama (Qwen 2.5 Coder)</option>
               </select>
             </div>
-            <button class="btn primary" id="apply-model-btn" style="align-self:flex-end; height:36px;">Apply Model</button>
+            <button class="btn primary" id="apply-model-btn" style="align-self:flex-end; height:34px;">Apply Model</button>
           </div>
 
           <!-- Auto-Failover Banner -->
-          <div style="background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.3); border-radius:8px; padding:12px; display:flex; gap:10px; align-items:center;">
-            <span style="font-size:20px;">🔄</span>
-            <div>
-              <div style="font-weight:700; color:var(--green); font-size:12px;">Multi-Provider Auto-Failover: Active</div>
-              <div style="font-size:11px; color:var(--text-muted);">If your primary provider encounters rate limits (429) or downtime, PRIVACY68 automatically cascades requests to your other configured API keys without interrupting your command.</div>
-            </div>
+          <div style="background:rgba(16,185,129,0.06); border:1px solid rgba(16,185,129,0.25); border-radius:6px; padding:12px;">
+            <div style="font-weight:700; color:var(--green); font-size:12px; margin-bottom:2px;">Multi-Provider Auto-Failover: Active</div>
+            <div style="font-size:11px; color:var(--text-muted);">If your primary provider encounters rate limits or downtime, PRIVACY68 automatically cascades requests to your other configured API keys without interrupting your command.</div>
           </div>
         </div>
 
@@ -610,16 +571,16 @@
           <!-- SLOT 1: Google Gemini -->
           <div class="api-slot-card" id="slot-gemini">
             <div class="api-slot-header">
-              <div class="api-slot-title">
-                <span>⚡ Google Gemini API</span>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span class="api-slot-title">Google Gemini API</span>
                 <span class="chip" id="badge-gemini">Checking...</span>
               </div>
-              <span class="chip good">Free Tier Available</span>
+              <span class="chip good">Free Tier</span>
             </div>
-            <p class="card-desc">Ultra-fast Google AI reasoning. Free daily API key from <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:var(--blue);">aistudio.google.com</a> (No credit card needed).</p>
+            <p class="card-desc">Ultra-fast Google AI reasoning. Free daily API key available from aistudio.google.com (No credit card needed).</p>
             <div class="api-key-input-row">
               <input type="password" id="key-gemini" placeholder="Paste Gemini API Key (AIzaSy...)">
-              <button class="btn primary" onclick="saveKey('gemini', 'key-gemini')">Save Gemini Key</button>
+              <button class="btn primary" onclick="saveKey('gemini', 'key-gemini')">Save Key</button>
               <button class="btn" onclick="testKey('gemini', 'key-gemini')">Test</button>
             </div>
           </div>
@@ -627,16 +588,16 @@
           <!-- SLOT 2: Groq Cloud -->
           <div class="api-slot-card" id="slot-groq">
             <div class="api-slot-header">
-              <div class="api-slot-title">
-                <span>⚡ Groq Cloud API</span>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span class="api-slot-title">Groq Cloud API</span>
                 <span class="chip" id="badge-groq">Checking...</span>
               </div>
               <span class="chip good">Free LPU Inference</span>
             </div>
-            <p class="card-desc">LPU-powered Llama 3.3 70B reasoning at ~200ms. Free daily API key from <a href="https://console.groq.com/keys" target="_blank" style="color:var(--blue);">console.groq.com</a> (No credit card needed).</p>
+            <p class="card-desc">LPU-powered Llama 3.3 70B reasoning at ~200ms. Free daily API key from console.groq.com (No credit card needed).</p>
             <div class="api-key-input-row">
               <input type="password" id="key-groq" placeholder="Paste Groq API Key (gsk_...)">
-              <button class="btn primary" onclick="saveKey('groq', 'key-groq')">Save Groq Key</button>
+              <button class="btn primary" onclick="saveKey('groq', 'key-groq')">Save Key</button>
               <button class="btn" onclick="testKey('groq', 'key-groq')">Test</button>
             </div>
           </div>
@@ -644,16 +605,16 @@
           <!-- SLOT 3: Anthropic Claude -->
           <div class="api-slot-card" id="slot-claude">
             <div class="api-slot-header">
-              <div class="api-slot-title">
-                <span>⚡ Anthropic Claude AI</span>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span class="api-slot-title">Anthropic Claude AI</span>
                 <span class="chip" id="badge-claude">Checking...</span>
               </div>
-              <span class="chip">Frontier Intelligence</span>
+              <span class="chip">Claude 3.5 Sonnet</span>
             </div>
             <p class="card-desc">Advanced reasoning with Claude 3.5 Sonnet. Paste your Anthropic API key below (sk-ant-...).</p>
             <div class="api-key-input-row">
               <input type="password" id="key-claude" placeholder="Paste Claude API Key (sk-ant-...)">
-              <button class="btn primary" onclick="saveKey('claude', 'key-claude')">Save Claude Key</button>
+              <button class="btn primary" onclick="saveKey('claude', 'key-claude')">Save Key</button>
               <button class="btn" onclick="testKey('claude', 'key-claude')">Test</button>
             </div>
           </div>
@@ -661,16 +622,16 @@
           <!-- SLOT 4: OpenAI -->
           <div class="api-slot-card" id="slot-openai">
             <div class="api-slot-header">
-              <div class="api-slot-title">
-                <span>⚡ OpenAI API</span>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span class="api-slot-title">OpenAI API</span>
                 <span class="chip" id="badge-openai">Checking...</span>
               </div>
-              <span class="chip">GPT-4o / GPT-4o-mini</span>
+              <span class="chip">GPT-4o-mini</span>
             </div>
             <p class="card-desc">OpenAI API intelligence for desktop tasks. Paste your OpenAI key below (sk-...).</p>
             <div class="api-key-input-row">
               <input type="password" id="key-openai" placeholder="Paste OpenAI API Key (sk-...)">
-              <button class="btn primary" onclick="saveKey('openai', 'key-openai')">Save OpenAI Key</button>
+              <button class="btn primary" onclick="saveKey('openai', 'key-openai')">Save Key</button>
               <button class="btn" onclick="testKey('openai', 'key-openai')">Test</button>
             </div>
           </div>
@@ -678,15 +639,15 @@
           <!-- SLOT 5: Ollama -->
           <div class="api-slot-card" id="slot-ollama">
             <div class="api-slot-header">
-              <div class="api-slot-title">
-                <span>🦙 Local / Remote Ollama Service</span>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span class="api-slot-title">Ollama Service</span>
                 <span class="chip" id="badge-ollama">Checking...</span>
               </div>
-              <span class="chip">100% Offline Capable</span>
+              <span class="chip">Local / Remote</span>
             </div>
-            <p class="card-desc">Connects to Ollama (http://127.0.0.1:11434). Pull models like <code>qwen2.5-coder:7b</code> for air-gapped offline task execution.</p>
+            <p class="card-desc">Connects to Ollama (http://127.0.0.1:11434). Pull models like qwen2.5-coder:7b for offline execution.</p>
             <div style="display:flex; gap:8px;">
-              <button class="btn primary sm" id="btn-start-ollama-service" style="display:none;">Start Ollama Service</button>
+              <button class="btn primary sm" id="btn-start-ollama-service" style="display:none;">Start Service</button>
               <button class="btn sm" id="btn-download-ollama-service" style="display:none;">Download Ollama</button>
             </div>
           </div>
@@ -698,10 +659,10 @@
         <div class="card">
           <div class="card-header">
             <div>
-              <h2 class="card-title">⚡ Self-Improving Skill Engine</h2>
-              <p class="card-desc">Autonomous Skill Crystallization & Fast-Path Recall: When PRIVACY68 successfully generates and executes desktop automation scripts, it crystallizes them into permanent local skills that execute in 0ms with zero LLM API cost.</p>
+              <h2 class="card-title">Self-Improving Skill Engine</h2>
+              <p class="card-desc">Autonomous Skill Crystallization: Successful automation scripts are saved as permanent local skills executing in 0ms with zero LLM API cost.</p>
             </div>
-            <button class="btn sm" id="refresh-skills-btn">↻ Refresh Skills</button>
+            <button class="btn sm" id="refresh-skills-btn">Refresh Skills</button>
           </div>
         </div>
 
@@ -715,15 +676,15 @@
         <div class="card">
           <div class="card-header">
             <div>
-              <h2 class="card-title">📱 Mobile Web Remote Server</h2>
-              <p class="card-desc">Control PRIVACY68 hands-free from your iPhone, Android, or tablet over your local Wi-Fi network.</p>
+              <h2 class="card-title">Mobile Web Remote Server</h2>
+              <p class="card-desc">Control PRIVACY68 hands-free from your phone or tablet over your local Wi-Fi network.</p>
             </div>
-            <span class="chip good" id="remote-server-status-pill">● Server Active</span>
+            <span class="chip good" id="remote-server-status-pill">Server Active</span>
           </div>
 
           <div style="display:grid; grid-template-columns:1fr auto; gap:20px; align-items:center; background:#0f121a; border:1px solid var(--line); border-radius:8px; padding:16px;">
             <div style="display:flex; flex-direction:column; gap:8px;">
-              <div style="font-size:12px; color:var(--text-muted);">Access URL for any device on your Wi-Fi:</div>
+              <div style="font-size:12px; color:var(--text-muted);">Access URL for devices on your Wi-Fi:</div>
               <div style="font-family:'Cascadia Code', Consolas, monospace; font-size:16px; font-weight:700; color:var(--blue);" id="remote-url-display">http://127.0.0.1:8765</div>
               <div style="display:flex; gap:8px; margin-top:6px;">
                 <button class="btn blue sm" id="open-remote-browser-btn">Open in Browser</button>
@@ -732,22 +693,22 @@
             </div>
             <!-- Dynamic QR Code Container -->
             <div style="text-align:center;">
-              <div id="remote-qr-box" style="background:white; padding:8px; border-radius:8px; display:inline-block;">
+              <div id="remote-qr-box" style="background:white; padding:8px; border-radius:6px; display:inline-block;">
                 <canvas id="qr-canvas" width="120" height="120"></canvas>
               </div>
-              <div style="font-size:10px; color:var(--text-muted); margin-top:4px;">Scan with Phone Camera</div>
+              <div style="font-size:10px; color:var(--text-muted); margin-top:4px;">Scan with Camera</div>
             </div>
           </div>
         </div>
 
         <div class="card">
           <div class="card-header">
-            <h2 class="card-title">💡 How Mobile Remote Works</h2>
+            <h2 class="card-title">Architecture Details</h2>
           </div>
           <ul style="color:var(--text-muted); font-size:12px; line-height:1.7; padding-left:18px;">
-            <li>PRIVACY68 hosts a lightweight, secure threaded HTTP server directly on port <strong>8765</strong>.</li>
-            <li>No cloud relay or external servers: communication stays strictly within your local Wi-Fi router.</li>
-            <li>From your phone, you can send voice messages, type commands, and monitor desktop outputs.</li>
+            <li>Hosts a lightweight threaded HTTP server directly on port 8765.</li>
+            <li>No cloud relay: network packets stay within your local Wi-Fi router.</li>
+            <li>Allows remote voice and text command execution from any mobile browser.</li>
           </ul>
         </div>
       </section>
@@ -757,36 +718,36 @@
         <div class="card">
           <div class="card-header">
             <div>
-              <h2 class="card-title">🛡️ 3-Tier Security & Permission Guard</h2>
-              <p class="card-desc">Guarantees that untrusted or destructive OS actions cannot execute without explicit confirmation.</p>
+              <h2 class="card-title">3-Tier Security & Permission Guard</h2>
+              <p class="card-desc">Enforces explicit confirmation before executing sensitive or high-risk OS operations.</p>
             </div>
             <span class="chip good">Active & Enforcing</span>
           </div>
 
           <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:12px;">
-            <div style="background:#0f1512; border:1px solid rgba(16,185,129,0.3); border-radius:8px; padding:12px;">
-              <div style="font-weight:700; color:var(--green); font-size:12px;">Level 1: SAFE (Instant)</div>
-              <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">Launch apps, navigation, volume, window controls, screenshot, search. (<span id="count-safe">14</span> rules)</div>
+            <div style="background:#0f1512; border:1px solid rgba(16,185,129,0.3); border-radius:6px; padding:12px;">
+              <div style="font-weight:700; color:var(--green); font-size:12px;">Level 1: Safe (Instant)</div>
+              <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">App launch, navigation, volume, window controls, screenshot. (<span id="count-safe">14</span> rules)</div>
             </div>
-            <div style="background:#1f1910; border:1px solid rgba(245,158,11,0.3); border-radius:8px; padding:12px;">
-              <div style="font-weight:700; color:var(--amber); font-size:12px;">Level 2: SENSITIVE (Prompt)</div>
-              <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">Delete files, kill processes, network toggle, shutdown, git push. (<span id="count-sensitive">13</span> rules)</div>
+            <div style="background:#1f1910; border:1px solid rgba(245,158,11,0.3); border-radius:6px; padding:12px;">
+              <div style="font-weight:700; color:var(--amber); font-size:12px;">Level 2: Sensitive (Prompt)</div>
+              <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">Delete files, kill processes, network toggle, shutdown. (<span id="count-sensitive">13</span> rules)</div>
             </div>
-            <div style="background:#1d1114; border:1px solid rgba(239,68,68,0.3); border-radius:8px; padding:12px;">
-              <div style="font-weight:700; color:var(--accent); font-size:12px;">Level 3: CRITICAL (Blocked)</div>
+            <div style="background:#1d1114; border:1px solid rgba(239,68,68,0.3); border-radius:6px; padding:12px;">
+              <div style="font-weight:700; color:var(--accent); font-size:12px;">Level 3: Critical (Blocked)</div>
               <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">Drive format, registry modification, system directory deletion. (<span id="count-critical">4</span> rules)</div>
             </div>
           </div>
         </div>
 
-        <!-- Pending Action Card (Hidden by default) -->
+        <!-- Pending Action Card -->
         <div class="card" id="pending-action-card" style="display:none; border-color:var(--amber); background:#1e180d;">
           <div class="card-header">
-            <h2 class="card-title" style="color:var(--amber);">⚠️ Confirmation Required (Sensitive Action)</h2>
+            <h2 class="card-title" style="color:var(--amber);">Confirmation Required</h2>
           </div>
           <p id="pending-action-text" style="font-size:12px; color:var(--text);"></p>
           <div style="display:flex; gap:8px;">
-            <button class="btn green" id="btn-confirm-action">Yes, Confirm Action</button>
+            <button class="btn green" id="btn-confirm-action">Confirm Action</button>
             <button class="btn sm" id="btn-cancel-action">Cancel / Abort</button>
           </div>
         </div>
@@ -794,8 +755,8 @@
         <!-- Recent Audit Log -->
         <div class="card">
           <div class="card-header">
-            <h2 class="card-title">📋 Security Audit Trail</h2>
-            <button class="btn sm" id="refresh-audit-btn">↻ Refresh</button>
+            <h2 class="card-title">Security Audit Trail</h2>
+            <button class="btn sm" id="refresh-audit-btn">Refresh</button>
           </div>
           <table class="audit-table">
             <thead>
@@ -817,16 +778,16 @@
       <section class="tab-view" id="tab-voice">
         <div class="card">
           <div class="card-header">
-            <h2 class="card-title">🎙️ Speech & Audio Configuration</h2>
+            <h2 class="card-title">Speech & Audio Configuration</h2>
           </div>
           <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:12px;">
-            <div style="background:#0f121a; border:1px solid var(--line); border-radius:8px; padding:12px;">
-              <div style="font-weight:700; margin-bottom:4px; color:var(--green);">✓ Google Web Speech (Free Cloud ASR)</div>
+            <div style="background:#0f121a; border:1px solid var(--line); border-radius:6px; padding:12px;">
+              <div style="font-weight:700; margin-bottom:4px; color:var(--green);">Google Web Speech (Free Cloud ASR)</div>
               <div style="font-size:11px; color:var(--text-muted); line-height:1.45;">Zero keys, zero setup required. Fast, highly accurate speech recognition out of the box with zero heavy model downloads.</div>
             </div>
-            <div style="background:#0f121a; border:1px solid var(--line); border-radius:8px; padding:12px;">
-              <div style="font-weight:700; margin-bottom:4px; color:var(--blue);">🔒 Strict Click-to-Speak Privacy</div>
-              <div style="font-size:11px; color:var(--text-muted); line-height:1.45;">Your microphone hardware is powered off at all times. Audio is recorded only when you click 'Click to Speak'. No room background eavesdropping.</div>
+            <div style="background:#0f121a; border:1px solid var(--line); border-radius:6px; padding:12px;">
+              <div style="font-weight:700; margin-bottom:4px; color:var(--blue);">Strict Click-to-Speak Privacy</div>
+              <div style="font-size:11px; color:var(--text-muted); line-height:1.45;">Your microphone hardware is powered off at all times. Audio is recorded only when you click 'Click to Speak'. No background eavesdropping.</div>
             </div>
           </div>
         </div>
@@ -846,8 +807,8 @@
       <section class="tab-view" id="tab-plugins">
         <div class="card">
           <div class="card-header">
-            <h2 class="card-title">🔌 Installed Desktop Automation Plugins</h2>
-            <button class="btn sm" id="refresh-plugins-btn">↻ Refresh</button>
+            <h2 class="card-title">Installed Desktop Automation Plugins</h2>
+            <button class="btn sm" id="refresh-plugins-btn">Refresh</button>
           </div>
         </div>
         <div class="skills-grid" id="plugins-container">
@@ -857,7 +818,7 @@
         <!-- GitHub Integration Card -->
         <div class="card" style="margin-top:10px;">
           <div class="card-header">
-            <h2 class="card-title">🐙 GitHub Integration</h2>
+            <h2 class="card-title">GitHub Integration</h2>
             <span class="chip" id="github-status-chip">Not connected</span>
           </div>
           <p class="card-desc">Connect a GitHub Personal Access Token to let PRIVACY68 manage repositories, pull requests, and commit issues.</p>
@@ -873,7 +834,7 @@
       <section class="tab-view" id="tab-settings">
         <div class="card">
           <div class="card-header">
-            <h2 class="card-title">👤 User Profile</h2>
+            <h2 class="card-title">User Profile</h2>
           </div>
           <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
             <div style="display:flex; flex-direction:column; gap:4px;">
@@ -891,7 +852,7 @@
         <!-- Hardware & CUDA Diagnostics -->
         <div class="card">
           <div class="card-header">
-            <h2 class="card-title">💻 System Hardware & NVIDIA CUDA</h2>
+            <h2 class="card-title">System Hardware & NVIDIA CUDA</h2>
             <button class="btn sm" id="refresh-sys-btn">Refresh</button>
           </div>
           <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:10px;" id="sys-diag-grid">
@@ -954,14 +915,14 @@
     const tabTitle = $('active-tab-title');
 
     const tabTitles = {
-      console: '💻 Live Command Console',
-      brain: '🧠 Cloud & Web AI Brain (APIs Only)',
-      skills: '⚡ Learned Skills Engine',
-      remote: '📱 Mobile Web Remote Server',
-      security: '🛡️ 3-Tier Security & Permission Guard',
-      voice: '🎙️ Voice & Audio Settings',
-      plugins: '🔌 Automation Plugins',
-      settings: '⚙️ Settings & Hardware'
+      console: 'Live Command Console',
+      brain: 'Cloud AI Brain (APIs)',
+      skills: 'Learned Skills Engine',
+      remote: 'Mobile Web Remote Server',
+      security: '3-Tier Security & Permission Guard',
+      voice: 'Voice & Audio Settings',
+      plugins: 'Automation Plugins',
+      settings: 'Settings & Hardware'
     };
 
     tabBtns.forEach(btn => {
@@ -1053,7 +1014,7 @@
         const res = await bridge().execute_system_quick_action(actionName);
         if (res && res.success) {
           showToast(res.message || 'Success');
-          appendFeed('assistant', `Quick Action: ${actionName}`, res.message || 'Action executed.');
+          appendFeed('assistant', `Action: ${actionName}`, res.message || 'Action executed.');
         } else {
           showToast(res?.message || 'Action failed', true);
         }
@@ -1071,7 +1032,6 @@
       isRecording = true;
       pttBtn.classList.add('recording');
       $('ptt-label').textContent = 'Listening (Speak now)...';
-      $('ptt-icon').textContent = '🔴';
       showToast('Microphone active. Speak your command now...');
 
       try {
@@ -1088,7 +1048,6 @@
         isRecording = false;
         pttBtn.classList.remove('recording');
         $('ptt-label').textContent = 'Click to Speak';
-        $('ptt-icon').textContent = '🎙️';
       }
     });
 
@@ -1100,7 +1059,7 @@
 
         const activeMod = det.active_model || 'gemini/gemini-1.5-flash';
         $('active-model-input').value = activeMod;
-        $('active-model-badge').textContent = '🧠 Model: ' + activeMod;
+        $('active-model-badge').textContent = 'Model: ' + activeMod;
         $('sidebar-brain-text').textContent = 'Brain: ' + activeMod.split('/')[0].toUpperCase();
 
         const sel = $('model-presets-select');
@@ -1118,11 +1077,11 @@
 
           if (slotData && slotData.configured) {
             card.classList.add('configured');
-            badge.textContent = '● Active (Saved: ' + slotData.preview + ')';
+            badge.textContent = 'Active (Saved: ' + slotData.preview + ')';
             badge.className = 'chip good';
           } else {
             card.classList.remove('configured');
-            badge.textContent = '○ Inactive';
+            badge.textContent = 'Inactive';
             badge.className = 'chip';
           }
         };
@@ -1137,17 +1096,17 @@
         const btnStart = $('btn-start-ollama-service');
         const btnDownload = $('btn-download-ollama-service');
         if (ol.running) {
-          olBadge.textContent = `● Running (${ol.models?.length || 0} models)`;
+          olBadge.textContent = `Running (${ol.models?.length || 0} models)`;
           olBadge.className = 'chip good';
           btnStart.style.display = 'none';
           btnDownload.style.display = 'none';
         } else if (ol.installed) {
-          olBadge.textContent = '○ Offline (Service stopped)';
+          olBadge.textContent = 'Offline (Service stopped)';
           olBadge.className = 'chip warn';
           btnStart.style.display = 'inline-flex';
           btnDownload.style.display = 'none';
         } else {
-          olBadge.textContent = '✕ Not Installed';
+          olBadge.textContent = 'Not Installed';
           olBadge.className = 'chip';
           btnStart.style.display = 'none';
           btnDownload.style.display = 'inline-flex';
@@ -1201,12 +1160,12 @@
         setTimeout(async () => {
           await loadBrainDetails();
           btn.disabled = false;
-          btn.textContent = 'Start Ollama Service';
+          btn.textContent = 'Start Service';
         }, 3000);
       } catch (e) {
         showToast(e.message, true);
         btn.disabled = false;
-        btn.textContent = 'Start Ollama Service';
+        btn.textContent = 'Start Service';
       }
     });
 
@@ -1233,7 +1192,7 @@
           const title = document.createElement('div');
           title.className = 'skill-title';
           const count = skill.success_count || 0;
-          title.innerHTML = `<span>⚡ ${skill.name || 'Skill'}</span><span class="chip good" style="font-size:10px;">${count > 0 ? '✓ Run ' + count + 'x (0ms)' : 'New'}</span>`;
+          title.innerHTML = `<span>${skill.name || 'Skill'}</span><span class="chip good" style="font-size:10px;">${count > 0 ? 'Run ' + count + 'x (0ms)' : 'New'}</span>`;
 
           const desc = document.createElement('div');
           desc.className = 'skill-desc';
@@ -1253,7 +1212,7 @@
 
           const runBtn = document.createElement('button');
           runBtn.className = 'btn green sm';
-          runBtn.textContent = '▶ Run Now';
+          runBtn.textContent = 'Run Now';
           runBtn.onclick = async () => {
             runBtn.disabled = true;
             runBtn.textContent = 'Running...';
@@ -1269,7 +1228,7 @@
             } catch (err) { showToast(err.message, true); }
             finally {
               runBtn.disabled = false;
-              runBtn.textContent = '▶ Run Now';
+              runBtn.textContent = 'Run Now';
             }
           };
           act.appendChild(runBtn);
@@ -1277,7 +1236,7 @@
           if (!skill.is_builtin) {
             const delBtn = document.createElement('button');
             delBtn.className = 'btn sm';
-            delBtn.textContent = '✕ Delete';
+            delBtn.textContent = 'Delete';
             delBtn.onclick = async () => {
               if (confirm(`Delete skill '${skill.name}'?`)) {
                 await bridge().delete_skill(skill.id);
@@ -1309,14 +1268,13 @@
         if (info && info.url) {
           remoteUrl = info.url;
           $('remote-url-display').textContent = info.url;
-          $('top-remote-chip').textContent = '📱 Mobile: ' + info.url.replace('http://', '');
+          $('top-remote-chip').textContent = 'Mobile: ' + info.url.replace('http://', '');
           $('sidebar-remote-text').textContent = 'Remote: ' + (info.local_ip || '8765');
           drawQuickQR(info.url);
         }
       } catch (e) { console.warn('loadRemoteServerInfo error:', e); }
     }
 
-    // Lightweight QR Canvas Pattern Renderer
     function drawQuickQR(text) {
       const canvas = $('qr-canvas');
       if (!canvas) return;
@@ -1325,7 +1283,6 @@
       ctx.fillRect(0, 0, 120, 120);
       ctx.fillStyle = '#0c0e12';
 
-      // Corner markers
       function drawCorner(x, y) {
         ctx.fillRect(x, y, 32, 32);
         ctx.fillStyle = '#ffffff';
@@ -1337,7 +1294,6 @@
       drawCorner(80, 8);
       drawCorner(8, 80);
 
-      // Procedural data dots based on text hash
       let hash = 0;
       for (let i = 0; i < text.length; i++) hash = ((hash << 5) - hash) + text.charCodeAt(i);
       for (let r = 0; r < 14; r++) {
@@ -1371,7 +1327,6 @@
         $('count-sensitive').textContent = sec.rules_summary?.sensitive_count || 13;
         $('count-critical').textContent = sec.rules_summary?.critical_count || 4;
 
-        // Pending action
         const pendingCard = $('pending-action-card');
         if (sec.has_pending) {
           pendingCard.style.display = 'block';
@@ -1380,7 +1335,6 @@
           pendingCard.style.display = 'none';
         }
 
-        // Audit Trail
         const tbody = $('audit-tbody');
         tbody.replaceChildren();
         if (!sec.audit_log || !sec.audit_log.length) {
@@ -1394,7 +1348,7 @@
             <td>${item.timestamp || '—'}</td>
             <td><strong>${item.action || '—'}</strong></td>
             <td><span class="chip ${item.risk_level === 'SAFE' ? 'good' : 'warn'}">${item.risk_level}</span></td>
-            <td>${item.approved ? '<span style="color:var(--green)">✓ Approved</span>' : '<span style="color:var(--accent)">✕ Blocked</span>'}</td>
+            <td>${item.approved ? '<span style="color:var(--green)">Approved</span>' : '<span style="color:var(--accent)">Blocked</span>'}</td>
           `;
           tbody.appendChild(tr);
         });
@@ -1436,7 +1390,7 @@
 
           const title = document.createElement('div');
           title.className = 'skill-title';
-          title.innerHTML = `<span>🔌 ${p.name}</span><span class="chip ${p.is_enabled ? 'good' : ''}">${p.is_enabled ? 'Active' : 'Disabled'}</span>`;
+          title.innerHTML = `<span>${p.name}</span><span class="chip ${p.is_enabled ? 'good' : ''}">${p.is_enabled ? 'Active' : 'Disabled'}</span>`;
 
           const desc = document.createElement('div');
           desc.className = 'skill-desc';
@@ -1469,7 +1423,7 @@
         const st = await bridge().get_github_status();
         const chip = $('github-status-chip');
         if (st && st.connected) {
-          chip.textContent = '● Connected: ' + (st.login || 'GitHub User');
+          chip.textContent = 'Connected: ' + (st.login || 'GitHub User');
           chip.className = 'chip good';
         } else {
           chip.textContent = 'Not connected';
@@ -1526,7 +1480,7 @@
         if (p) {
           $('setting-user-name').value = p.user_name || 'User';
           $('setting-assistant-name').value = p.assistant_name || 'Privacy68';
-          $('top-user-chip').textContent = '👤 ' + (p.user_name || 'User');
+          $('top-user-chip').textContent = p.user_name || 'User';
         }
       } catch (e) {}
     }
@@ -1551,7 +1505,7 @@
           <div class="chip ${cuda.is_ready ? 'good' : ''}">CUDA: ${cuda.is_ready ? 'Ready (GPU Acceleration)' : (cuda.has_gpu ? 'DLLs Missing' : 'CPU Mode')}</div>
           <div class="chip">${cuda.gpu_name ? 'GPU: ' + cuda.gpu_name : 'GPU: Integrated / CPU'}</div>
           <div class="chip good">Voice: Google Web Speech (Free)</div>
-          <div class="chip good">Privacy: 100% Click-to-Speak (No Snooping)</div>
+          <div class="chip good">Privacy: Push-to-Talk (Private)</div>
         `;
         const btnCuda = $('btn-download-cuda');
         if (btnCuda) btnCuda.style.display = (cuda.has_gpu && !cuda.is_ready) ? 'inline-flex' : 'none';

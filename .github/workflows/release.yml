@@ -69,13 +69,13 @@ jobs:
           tag_name: ${{ github.ref_name }}
           name: "PRIVACY68 ${{ github.ref_name }}"
           body: |
-                        ## What's Changed in ${{ github.ref_name }}
-            - **Google Gemini & Multi-Provider AI Brain**: Native support for Google Gemini (1.5/2.0 Flash) and Groq Cloud (Llama 3.3 70B) alongside Claude, OpenAI, and local Ollama.
-            - **Resilient Auto-Failover**: Seamless multi-provider fallback if an API limit or network error is reached.
-            - **100% Free Speech Recognition**: Zero-setup Google Web Speech Recognition with strict Click-to-Speak privacy (no background mic recording).
-            - **Self-Improving Skill Engine**: Automatically learns, registers, and executes desktop automation skills.
-            - **WebView2 Control Center Fixes**: Instant bridge initialization, Cloud AI Keys manager, and live execution console.
-            - **Streamlined Footprint**: Lightweight package without bulky local model weights.
+                                    ## What's Changed in ${{ github.ref_name }}
+            - **Clean Minimalist Control Center**: Removed emojis and cluttered icons for an ultra-sleek, professional desktop management interface.
+            - **Multi-Provider Cloud AI Slots**: Simultaneous slots for Google Gemini (Free 1.5/2.0 Flash), Groq Cloud (Free Llama 3.3 70B), Anthropic Claude, OpenAI, and Ollama.
+            - **Autonomous Skill Crystallization**: 0ms fast-path execution of learned desktop automation tasks.
+            - **Mobile Web Remote Server**: Control the assistant from your phone or tablet on local Wi-Fi (Port 8765).
+            - **3-Tier Security Guard**: Strict permission gating (Safe Level 1, Sensitive Level 2 with prompt, Critical Level 3 blocked).
+            - **100% Free Speech & Push-to-Talk Privacy**: Zero background mic recording; Google Web Speech ASR on-demand.
 
             ## Requirements
             - **Ollama**: Local Ollama service is recommended for executing agentic OS automation commands (or configure an API key).

@@ -1,6 +1,6 @@
 #define AppName "PRIVACY68"
 #ifndef AppVersion
-  #define AppVersion "1.6.0"
+  #define AppVersion "1.6.1"
 #endif
 #define AppPublisher "PRIVACY68"
 #define AppExeName "PRIVACY68.exe"
