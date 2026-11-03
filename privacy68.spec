@@ -8,6 +8,9 @@ datas = [
     (str(root / "assets"), "assets"),
     (str(root / "ui" / "dashboard"), "ui/dashboard"),
 ]
+if (root / "models" / "whispercpp").exists():
+    datas.append((str(root / "models" / "whispercpp"), "models/whispercpp"))
+
 binaries = []
 hiddenimports = []
 
@@ -20,11 +23,18 @@ for package in (
     "sounddevice",
     "pyttsx3",
     "ollama",
+    "customtkinter",
+    "darkdetect",
+    "pywhispercpp",
+    "requests",
 ):
-    package_datas, package_binaries, package_hiddenimports = collect_all(package)
-    datas += package_datas
-    binaries += package_binaries
-    hiddenimports += package_hiddenimports
+    try:
+        package_datas, package_binaries, package_hiddenimports = collect_all(package)
+        datas += package_datas
+        binaries += package_binaries
+        hiddenimports += package_hiddenimports
+    except Exception:
+        pass
 
 for package in ("actions", "computer_use", "plugins", "server", "speech", "ui", "utils"):
     hiddenimports += collect_submodules(package)
