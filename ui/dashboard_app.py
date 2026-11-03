@@ -434,10 +434,63 @@ class Privacy68Dashboard(ctk.CTk):
 
         ctk.CTkLabel(
             ctrl_frame,
-            text="🔒 Ollama Local Service (100% Offline & Private):",
+            text="🌐 Ollama API (Local Service or Remote Cloud/Website):",
             font=ctk.CTkFont(family="Segoe UI", size=12, weight="bold"),
             text_color=COLOR_TEXT_PRIMARY
-        ).pack(anchor="w", padx=14, pady=(10, 4))
+        ).pack(anchor="w", padx=14, pady=(10, 2))
+
+        ctk.CTkLabel(
+            ctrl_frame,
+            text="Connect to local Ollama (http://localhost:11434) or a remote Ollama server / website API URL.",
+            font=ctk.CTkFont(family="Segoe UI", size=11),
+            text_color=COLOR_TEXT_MUTED
+        ).pack(anchor="w", padx=14, pady=(0, 6))
+
+        # Ollama URL Row
+        url_row = ctk.CTkFrame(ctrl_frame, fg_color="transparent")
+        url_row.pack(fill="x", padx=14, pady=(0, 6))
+        url_row.grid_columnconfigure(0, weight=1)
+
+        self.ollama_url_entry = ctk.CTkEntry(
+            url_row,
+            placeholder_text="Ollama API URL (e.g. http://localhost:11434 or https://ollama.your-website.com)",
+            font=ctk.CTkFont(family="Segoe UI", size=12),
+            height=34,
+            fg_color=COLOR_CARD,
+            border_color=COLOR_CARD_HOVER
+        )
+        cur_ollama_url = getattr(config, "OLLAMA_BASE_URL", "") or os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
+        self.ollama_url_entry.insert(0, cur_ollama_url)
+        self.ollama_url_entry.grid(row=0, column=0, sticky="ew", padx=(0, 8))
+
+        save_ollama_btn = ctk.CTkButton(
+            url_row,
+            text="Save Ollama URL",
+            width=120,
+            height=34,
+            font=ctk.CTkFont(family="Segoe UI", size=11, weight="bold"),
+            command=self._save_ollama_config
+        )
+        save_ollama_btn.grid(row=0, column=1)
+
+        # Ollama Optional API Key Row
+        key_row = ctk.CTkFrame(ctrl_frame, fg_color="transparent")
+        key_row.pack(fill="x", padx=14, pady=(0, 8))
+        key_row.grid_columnconfigure(0, weight=1)
+
+        self.ollama_key_entry = ctk.CTkEntry(
+            key_row,
+            placeholder_text="Optional API Key / Bearer token (for cloud or secured Ollama website)",
+            font=ctk.CTkFont(family="Segoe UI", size=12),
+            height=30,
+            fg_color=COLOR_CARD,
+            border_color=COLOR_CARD_HOVER,
+            show="•"
+        )
+        cur_ollama_key = getattr(config, "OLLAMA_API_KEY", "") or os.environ.get("OLLAMA_API_KEY", "")
+        if cur_ollama_key:
+            self.ollama_key_entry.insert(0, cur_ollama_key)
+        self.ollama_key_entry.grid(row=0, column=0, sticky="ew", padx=(0, 8))
 
         self.ollama_detail_label = ctk.CTkLabel(
             ctrl_frame,
@@ -445,7 +498,7 @@ class Privacy68Dashboard(ctk.CTk):
             font=ctk.CTkFont(family="Segoe UI", size=11),
             text_color=COLOR_TEXT_MUTED
         )
-        self.ollama_detail_label.pack(anchor="w", padx=14, pady=(0, 8))
+        self.ollama_detail_label.pack(anchor="w", padx=14, pady=(0, 6))
 
         btn_row = ctk.CTkFrame(ctrl_frame, fg_color="transparent")
         btn_row.pack(anchor="w", padx=14, pady=(0, 10))
@@ -462,7 +515,7 @@ class Privacy68Dashboard(ctk.CTk):
 
         start_ollama_btn = ctk.CTkButton(
             btn_row,
-            text="Start Ollama ('ollama serve')",
+            text="Start Local Ollama",
             height=30,
             font=ctk.CTkFont(family="Segoe UI", size=11, weight="bold"),
             fg_color=COLOR_ACCENT_BLUE,
@@ -782,16 +835,17 @@ class Privacy68Dashboard(ctk.CTk):
             groq_key = getattr(config, "GROQ_API_KEY", "") or os.environ.get("GROQ_API_KEY", "")
 
             def update():
-                # 1. Update Ollama local service label if available
+                # 1. Update Ollama service label with active endpoint
+                ollama_url = getattr(config, "OLLAMA_BASE_URL", "") or os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
                 if hasattr(self, "ollama_detail_label"):
                     if ollama_ok:
                         self.ollama_detail_label.configure(
-                            text="Status: Online & Ready (http://localhost:11434)",
+                            text=f"Status: Online & Connected ({ollama_url})",
                             text_color=COLOR_ACCENT_GREEN
                         )
                     else:
                         self.ollama_detail_label.configure(
-                            text="Status: Offline (Local daemon not running)",
+                            text=f"Status: Offline ({ollama_url} not reachable)",
                             text_color="#EF4444"
                         )
 
@@ -828,6 +882,18 @@ class Privacy68Dashboard(ctk.CTk):
             self.after(0, update)
 
         threading.Thread(target=worker, daemon=True).start()
+
+    def _save_ollama_config(self):
+        url = self.ollama_url_entry.get().strip() or "http://localhost:11434"
+        key = self.ollama_key_entry.get().strip()
+        config.OLLAMA_BASE_URL = url
+        os.environ["OLLAMA_BASE_URL"] = url
+        os.environ["OLLAMA_HOST"] = url
+        os.environ["OLLAMA_API_BASE"] = url
+        config.OLLAMA_API_KEY = key
+        os.environ["OLLAMA_API_KEY"] = key
+        self._add_feed_card("Ollama Config", f"Saved Ollama API endpoint: {url}", card_type="system")
+        self._check_services()
 
     def _save_claude_key(self):
         key = self.claude_key_entry.get().strip()

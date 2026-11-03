@@ -71,6 +71,11 @@ WAKE_WORD_THRESHOLD = 0.50
 # Audio feedback sounds (True = beep on wake, False = silent)
 ENABLE_BEEP = False
 
+# Ollama API Configuration (Local daemon or remote Cloud/Website Ollama server)
+# Examples: "http://localhost:11434", "https://ollama.your-domain.com", "http://your-vps-ip:11434"
+OLLAMA_BASE_URL = os.environ.get("OLLAMA_BASE_URL", os.environ.get("OLLAMA_HOST", "http://localhost:11434"))
+OLLAMA_API_KEY = os.environ.get("OLLAMA_API_KEY", "")
+
 # Groq Cloud Whisper & LLM Configuration (Free 99% accuracy cloud LPU)
 # Get free API key in 10 seconds at https://console.groq.com/keys (No credit card needed)
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")

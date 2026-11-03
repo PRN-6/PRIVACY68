@@ -15,11 +15,16 @@ litellm.suppress_debug_info = True
 logger = logging.getLogger("PRIVACY68.AgentBrain")
 
 
-def is_ollama_online(host: str = "http://localhost:11434") -> bool:
-    """Quick non-blocking check if local Ollama daemon is reachable."""
+def is_ollama_online(host: Optional[str] = None) -> bool:
+    """Quick non-blocking check if local or remote Ollama website/host is reachable."""
+    target_host = host or getattr(config, "OLLAMA_BASE_URL", "") or os.environ.get("OLLAMA_BASE_URL", "") or os.environ.get("OLLAMA_HOST", "http://localhost:11434")
     try:
-        req = urllib.request.Request(f"{host.rstrip('/')}/api/tags", method="GET")
-        with urllib.request.urlopen(req, timeout=1.0) as resp:
+        headers = {}
+        api_key = getattr(config, "OLLAMA_API_KEY", "") or os.environ.get("OLLAMA_API_KEY", "")
+        if api_key:
+            headers["Authorization"] = f"Bearer {api_key.strip()}"
+        req = urllib.request.Request(f"{target_host.rstrip('/')}/api/tags", headers=headers, method="GET")
+        with urllib.request.urlopen(req, timeout=1.5) as resp:
             return resp.status == 200
     except Exception:
         return False
@@ -120,8 +125,9 @@ class AgentBrain:
                 )
             })
 
-        # Resolve API Key based on model provider
+        # Resolve API Key and Base URL based on model provider
         api_key = None
+        api_base = None
         model_lower = self.model.lower()
         if "claude" in model_lower or "anthropic" in model_lower:
             api_key = getattr(config, "ANTHROPIC_API_KEY", "") or os.environ.get("ANTHROPIC_API_KEY", "")
@@ -129,12 +135,19 @@ class AgentBrain:
             api_key = getattr(config, "GROQ_API_KEY", "") or os.environ.get("GROQ_API_KEY", "")
         elif "gpt" in model_lower or "openai" in model_lower:
             api_key = getattr(config, "OPENAI_API_KEY", "") or os.environ.get("OPENAI_API_KEY", "")
+        elif "ollama" in model_lower:
+            ollama_url = getattr(config, "OLLAMA_BASE_URL", "") or os.environ.get("OLLAMA_BASE_URL", "") or os.environ.get("OLLAMA_HOST", "http://localhost:11434")
+            api_base = ollama_url.rstrip("/")
+            api_key = getattr(config, "OLLAMA_API_KEY", "") or os.environ.get("OLLAMA_API_KEY", "")
+            os.environ["OLLAMA_API_BASE"] = api_base
 
         call_kwargs = {
             "model": self.model,
             "messages": messages,
             "temperature": 0,
         }
+        if api_base:
+            call_kwargs["api_base"] = api_base
         if api_key:
             call_kwargs["api_key"] = api_key.strip()
             if "claude" in model_lower or "anthropic" in model_lower:

@@ -52,6 +52,21 @@ class TestQuotedCommandsAndBrainConfig(unittest.TestCase):
             self.assertFalse(res["success"])
             self.assertIn("is not installed in Ollama", res["message"])
 
+    def test_agent_brain_ollama_remote_url_passed(self):
+        brain = AgentBrain(model="ollama/llama3.2:latest")
+        with patch("actions.agent_brain.litellm.completion") as mock_comp:
+            mock_resp = Mock()
+            mock_resp.choices = [Mock(message=Mock(content="print('hello')"))]
+            mock_comp.return_value = mock_resp
+
+            with patch("config.OLLAMA_BASE_URL", "https://ollama.my-remote-site.com"):
+                with patch("config.OLLAMA_API_KEY", "remote-secret-key"):
+                    brain._get_code_from_llm("test")
+                    mock_comp.assert_called_once()
+                    _, kwargs = mock_comp.call_args
+                    self.assertEqual(kwargs["api_base"], "https://ollama.my-remote-site.com")
+                    self.assertEqual(kwargs["api_key"], "remote-secret-key")
+
 
 if __name__ == "__main__":
     unittest.main()
