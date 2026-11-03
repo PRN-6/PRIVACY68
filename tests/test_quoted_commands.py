@@ -71,7 +71,7 @@ class TestQuotedCommandsAndBrainConfig(unittest.TestCase):
 
     def test_wake_word_no_false_positives(self):
         from speech.streamer import SpeechStreamer
-        streamer = SpeechStreamer(wake_word="alexa")
+        streamer = SpeechStreamer(wake_word="alexa", auto_init_hardware=False)
 
         # True wake triggers
         self.assertTrue(streamer.is_wake_word_detected("alexa open chrome"))
@@ -87,7 +87,7 @@ class TestQuotedCommandsAndBrainConfig(unittest.TestCase):
 
     def test_wake_word_hey_google(self):
         from speech.streamer import SpeechStreamer
-        streamer = SpeechStreamer(wake_word="hey google")
+        streamer = SpeechStreamer(wake_word="hey google", auto_init_hardware=False)
 
         self.assertTrue(streamer.is_wake_word_detected("hey google open chrome"))
         self.assertTrue(streamer.is_wake_word_detected("ok google search youtube"))
@@ -132,7 +132,12 @@ class TestQuotedCommandsAndBrainConfig(unittest.TestCase):
         # Fake audio frames (0.5s of 16kHz audio)
         ptt.frames = [np.ones((1280, 1), dtype=np.float32) for _ in range(10)]
 
-        with patch("speech_recognition.Recognizer.recognize_google", return_value="open chrome"):
+        mock_sr = MagicMock()
+        mock_rec = MagicMock()
+        mock_rec.recognize_google.return_value = "open chrome"
+        mock_sr.Recognizer.return_value = mock_rec
+
+        with patch.dict("sys.modules", {"speech_recognition": mock_sr}):
             text = ptt.stop_and_transcribe()
             self.assertEqual(text, "open chrome")
             self.assertFalse(ptt.is_recording)

@@ -290,8 +290,13 @@ class SpeechStreamer:
                 logger.error(f"faster_whisper transcription failed: {e}")
                 return ""
 
-    def __init__(self, wake_word: Optional[str] = None) -> None:
-        self.sample_rate = config.SAMPLE_RATE
+    def __init__(
+        self,
+        wake_word: Optional[str] = None,
+        sample_rate: int = config.SAMPLE_RATE,
+        auto_init_hardware: bool = True
+    ) -> None:
+        self.sample_rate = sample_rate
         self.silence_threshold = getattr(config, "SILENCE_THRESHOLD", 0.008)
         self.silence_duration_chunks = config.SILENCE_DURATION_CHUNKS
         self.vad = SileroVAD(threshold=getattr(config, "VAD_THRESHOLD", 0.50))
@@ -315,64 +320,70 @@ class SpeechStreamer:
         # Initialize Speech Recognition Engine (whispercpp or faster-whisper)
         self.model = None
         self.engine_type = "none"
+        self.stream = None
 
-        preferred_engine = getattr(config, "SPEECH_ENGINE", "auto")
+        if auto_init_hardware:
+            preferred_engine = getattr(config, "SPEECH_ENGINE", "auto")
 
-        # 1. Try pywhispercpp (pure C++ on CPU, AVX2, ultra-fast, zero CUDA required)
-        if preferred_engine in ("auto", "whispercpp") and WhisperCppModel is not None:
-            try:
-                import os
-                model_path = getattr(config, "WHISPERCPP_MODEL_PATH", "")
-                if not model_path or not os.path.exists(model_path):
-                    local_model = os.path.join(
-                        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                        "models", "whispercpp", "ggml-base.en.bin"
-                    )
-                    if os.path.exists(local_model):
-                        model_path = local_model
-                    else:
-                        model_path = "base.en"
+            # 1. Try pywhispercpp (pure C++ on CPU, AVX2, ultra-fast, zero CUDA required)
+            if preferred_engine in ("auto", "whispercpp") and WhisperCppModel is not None:
+                try:
+                    import os
+                    model_path = getattr(config, "WHISPERCPP_MODEL_PATH", "")
+                    if not model_path or not os.path.exists(model_path):
+                        local_model = os.path.join(
+                            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                            "models", "whispercpp", "ggml-base.en.bin"
+                        )
+                        if os.path.exists(local_model):
+                            model_path = local_model
+                        else:
+                            model_path = "base.en"
 
-                self.model = WhisperCppModel(model_path, redirect_whispercpp_logs_to=None)
-                self.engine_type = "whispercpp"
-                logger.info(f"Loaded whisper.cpp engine ({model_path}) on CPU.")
-            except Exception as e:
-                logger.warning(f"whisper.cpp engine failed to load ({e}), checking faster-whisper fallback...")
+                    self.model = WhisperCppModel(model_path, redirect_whispercpp_logs_to=None)
+                    self.engine_type = "whispercpp"
+                    logger.info(f"Loaded whisper.cpp engine ({model_path}) on CPU.")
+                except Exception as e:
+                    logger.warning(f"whisper.cpp engine failed to load ({e}), checking faster-whisper fallback...")
 
-        # 2. Fallback to faster-whisper if whispercpp didn't load or if explicitly selected
-        if self.model is None and WhisperModel is not None:
-            try:
-                self.model = WhisperModel(
-                    config.WHISPER_MODEL_SIZE,
-                    device=config.WHISPER_DEVICE,
-                    compute_type=config.WHISPER_COMPUTE_TYPE,
-                    num_workers=1,
-                    cpu_threads=2,
-                )
-                self.engine_type = "faster_whisper"
-                logger.info(f"Whisper loaded on {config.WHISPER_DEVICE} ({config.WHISPER_COMPUTE_TYPE}).")
-            except Exception as e:
-                logger.warning(f"Whisper CUDA init failed ({e}), falling back to CPU int8...")
+            # 2. Fallback to faster-whisper if whispercpp didn't load or if explicitly selected
+            if self.model is None and WhisperModel is not None:
                 try:
                     self.model = WhisperModel(
                         config.WHISPER_MODEL_SIZE,
-                        device="cpu",
-                        compute_type="int8",
+                        device=config.WHISPER_DEVICE,
+                        compute_type=config.WHISPER_COMPUTE_TYPE,
                         num_workers=1,
-                        cpu_threads=4,
+                        cpu_threads=2,
                     )
                     self.engine_type = "faster_whisper"
-                    logger.info("Whisper loaded in CPU int8 fallback mode.")
-                except Exception as ce:
-                    logger.error(f"Whisper CPU load failed: {ce}")
+                    logger.info(f"Whisper loaded on {config.WHISPER_DEVICE} ({config.WHISPER_COMPUTE_TYPE}).")
+                except Exception as e:
+                    logger.warning(f"Whisper CUDA init failed ({e}), falling back to CPU int8...")
+                    try:
+                        self.model = WhisperModel(
+                            config.WHISPER_MODEL_SIZE,
+                            device="cpu",
+                            compute_type="int8",
+                            num_workers=1,
+                            cpu_threads=4,
+                        )
+                        self.engine_type = "faster_whisper"
+                        logger.info("Whisper loaded in CPU int8 fallback mode.")
+                    except Exception as ce:
+                        logger.error(f"Whisper CPU load failed: {ce}")
 
-        self.stream = sd.InputStream(
-            samplerate=self.sample_rate,
-            channels=config.CHANNELS,
-            dtype=config.DTYPE,
-            blocksize=config.BLOCK_SIZE,
-            callback=self._audio_callback,
-        )
+            try:
+                self.stream = sd.InputStream(
+                    samplerate=self.sample_rate,
+                    channels=config.CHANNELS,
+                    dtype=config.DTYPE,
+                    blocksize=config.BLOCK_SIZE,
+                    callback=self._audio_callback,
+                )
+            except Exception as e:
+                logger.warning(f"Audio input device not available or could not open stream: {e}")
+                self.stream = None
 
     def set_muted(self, muted: bool) -> None:
         """Toggles the microphone mute state."""
@@ -417,6 +428,10 @@ class SpeechStreamer:
         idle_step_chunks = max(1, int(self.sample_rate * 0.6 / config.BLOCK_SIZE))
 
         logger.info(f"PRIVACY68 Voice Assistant online. Say '{self.wake_word}' to activate.")
+
+        if self.stream is None:
+            logger.warning("Audio input stream is not available; cannot start listening loop.")
+            return
 
         try:
             with self.stream:
@@ -610,14 +625,18 @@ class PushToTalkRecorder:
             if self.is_recording:
                 self.frames.append(indata.copy())
 
-        self._stream = sd.InputStream(
-            samplerate=self.sample_rate,
-            channels=1,
-            dtype="float32",
-            callback=callback,
-            blocksize=config.BLOCK_SIZE
-        )
-        self._stream.start()
+        try:
+            self._stream = sd.InputStream(
+                samplerate=self.sample_rate,
+                channels=1,
+                dtype="float32",
+                callback=callback,
+                blocksize=config.BLOCK_SIZE
+            )
+            self._stream.start()
+        except Exception as e:
+            logger.warning(f"Could not open PushToTalk audio stream: {e}")
+            self._stream = None
 
     def stop_and_transcribe(self, streamer: Optional[SpeechStreamer] = None) -> str:
         """Stops recording and returns the transcribed text."""

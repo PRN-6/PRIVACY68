@@ -9,6 +9,7 @@ description = "A Windows voice assistant for desktop automation"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+    "SpeechRecognition>=3.10.0",
     "faster-whisper>=1.0,<2",
     "huggingface-hub>=0.24,<2",
     "onnxruntime>=1.17,<2",
@@ -17,6 +18,7 @@ dependencies = [
     "sounddevice>=0.4.6,<1",
     "litellm>=1.50,<2",
     "ollama>=0.4,<1",
+    "customtkinter>=5.2.0",
     "Pillow>=10,<13",
     "pystray>=0.19,<1",
     "pyttsx3>=2.90,<3",
