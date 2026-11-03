@@ -69,30 +69,32 @@ class TestQuotedCommandsAndBrainConfig(unittest.TestCase):
                         self.assertEqual(kwargs["api_key"], "remote-secret-key")
 
 
-    def test_wake_word_no_false_positives(self):
+    def test_click_to_speak_recorder(self):
+        from speech.streamer import ClickToSpeakRecorder
+        import numpy as np
+
+        recorder = ClickToSpeakRecorder()
+        self.assertFalse(recorder.is_recording)
+        self.assertEqual(recorder.frames, [])
+
+        recorder.is_recording = True
+        recorder.frames = [np.zeros((1280, 1), dtype=np.float32) for _ in range(5)]
+
+        mock_sr = MagicMock()
+        mock_rec = MagicMock()
+        mock_rec.recognize_google.return_value = "open brave"
+        mock_sr.Recognizer.return_value = mock_rec
+
+        with patch.dict("sys.modules", {"speech_recognition": mock_sr}):
+            text = recorder.stop_and_transcribe()
+            self.assertEqual(text, "open brave")
+            self.assertFalse(recorder.is_recording)
+
+    def test_wake_words_disabled_for_privacy(self):
         from speech.streamer import SpeechStreamer
-        streamer = SpeechStreamer(wake_word="alexa", auto_init_hardware=False)
-
-        # True wake triggers
-        self.assertTrue(streamer.is_wake_word_detected("alexa open chrome"))
-        self.assertTrue(streamer.is_wake_word_detected("Hey Alexa"))
-        self.assertTrue(streamer.is_wake_word_detected("Alexa, what time is it?"))
-
-        # False triggers that previously tripped loose matching - MUST be False now!
-        self.assertFalse(streamer.is_wake_word_detected("electric car"))
-        self.assertFalse(streamer.is_wake_word_detected("the election results"))
-        self.assertFalse(streamer.is_wake_word_detected("Alexander the Great"))
-        self.assertFalse(streamer.is_wake_word_detected("select all text"))
-        self.assertFalse(streamer.is_wake_word_detected("already did that"))
-
-    def test_wake_word_hey_google(self):
-        from speech.streamer import SpeechStreamer
-        streamer = SpeechStreamer(wake_word="hey google", auto_init_hardware=False)
-
-        self.assertTrue(streamer.is_wake_word_detected("hey google open chrome"))
-        self.assertTrue(streamer.is_wake_word_detected("ok google search youtube"))
-        self.assertTrue(streamer.is_wake_word_detected("okay google what is the weather"))
-        self.assertFalse(streamer.is_wake_word_detected("search on google"))
+        streamer = SpeechStreamer(auto_init_hardware=False)
+        self.assertFalse(streamer.is_wake_word_detected("alexa open chrome"))
+        self.assertFalse(streamer.is_wake_word_detected("hey google search youtube"))
 
     def test_update_dotenv_var_persistence(self):
         import tempfile

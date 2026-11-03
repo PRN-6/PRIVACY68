@@ -1315,10 +1315,6 @@ class Privacy68Dashboard(ctk.CTk):
             self.badge_engine.configure(text="🎙️ Engine: Google Speech (Free)")
             self._add_feed_card("Voice Engine", "Groq API Key removed. Google Cloud Speech is active.", card_type="system")
 
-    def _on_wake_changed(self, choice: str):
-        config.WAKE_WORD_MODEL = choice
-        config.update_dotenv_var("WAKE_WORD_MODEL", choice)
-
 
 def run_dashboard_app():
     """Main entrypoint for the CustomTkinter Dashboard."""

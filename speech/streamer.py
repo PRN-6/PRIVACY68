@@ -61,82 +61,19 @@ def autocorrect_speech_command(text: str) -> str:
 
 
 class SpeechStreamer:
-    """Manages continuous microphone recording, wake-word gating, and command transcription."""
-
-    @staticmethod
-    def _build_wake_pattern(wake_input: str) -> re.Pattern:
-        """Builds a flexible regex matching the wake phrase and common phonetic aliases."""
-        words = [w.strip() for w in (wake_input or "alexa").replace("/", ",").split(",") if w.strip()]
-        if not words:
-            words = ["alexa"]
-
-        aliases = set()
-        for w in words:
-            clean = re.sub(r'[^a-zA-Z0-9\s\-]', ' ', w).lower().strip()
-            if not clean:
-                continue
-            aliases.add(clean)
-            if "google" in clean:
-                aliases.update({
-                    "hey google", "ok google", "okay google"
-                })
-            if "alexa" in clean or "alex" in clean:
-                aliases.update({
-                    "alexa", "alexia", "alex", "alixa", "elexa", "alecsa"
-                })
-            if "privacy" in clean or "68" in clean:
-                aliases.update({
-                    "privacy68", "privacy 68", "privacy sixty eight",
-                    "privacy sixty-eight", "privacy"
-                })
-            if "jarvis" in clean:
-                aliases.update({
-                    "jarvis", "jarvice", "jervis"
-                })
-            if "nova" in clean:
-                aliases.update({"nova", "noba"})
-            if "friday" in clean:
-                aliases.update({"friday", "frieda"})
-
-        escaped = [re.escape(a).replace(r'\ ', r'\s+') for a in sorted(aliases, key=len, reverse=True)]
-        pattern_str = r'(?:\b(?:hey|hi|hello|ok|okay|ah|oh)\s+)?\b(' + '|'.join(escaped) + r')\b'
-        return re.compile(pattern_str, re.IGNORECASE)
+    """Manages audio recording and command transcription with 100% Click-to-Speak privacy."""
 
     def is_wake_word_detected(self, text: str) -> bool:
-        """Evaluates whether the transcribed text contains the active wake word with strict matching."""
-        if not text:
-            return False
-        if self.wake_pattern.search(text):
-            return True
-
-        target_wake = self.wake_word.lower()
-        lowered = text.lower()
-
-        # Strict checks for compound wake phrases (Hey Google, etc.)
-        if "google" in target_wake:
-            if any(p in lowered for p in ("hey google", "ok google", "okay google")):
-                return True
-
-        if "privacy" in target_wake:
-            if "privacy 68" in lowered or "privacy68" in lowered:
-                return True
-
-        # Strict fuzzy whole-word match (ratio >= 0.88) to prevent phantom activations
-        cleaned_words = [w.strip(".!?, \t\n'\"`") for w in lowered.split()]
-        targets = [w.strip().lower() for w in self.wake_word.replace("/", ",").split(",") if w.strip()]
-        for target in targets:
-            for cw in cleaned_words:
-                if len(cw) >= 4 and len(target) >= 4:
-                    if difflib.SequenceMatcher(None, target, cw).ratio() >= 0.88:
-                        return True
+        """Wake words are permanently disabled in favor of Click-to-Speak privacy."""
         return False
 
     def strip_wake_word(self, text: str) -> str:
-        """Removes the wake phrase from the command utterance."""
-        res = self.wake_pattern.sub('', text)
-        res = re.sub(r'^(hey|ok|okay|hi|hello|ah|oh)\s+', '', res, flags=re.IGNORECASE)
-        res = re.sub(r"^['\"`‘“\s]+|['\"`’”\s]+$", "", res.strip())
-        return res.strip(".!?, \t\n")
+        """Removes filler or leading conversational particles if present."""
+        return re.sub(r'^(hey|ok|okay|hi|hello)\s+', '', text.strip(), flags=re.IGNORECASE).strip()
+
+    def set_wake_word(self, wake_word: str) -> None:
+        """No-op: wake words are disabled."""
+        pass
 
     def _transcribe_groq(self, audio_data: np.ndarray) -> str:
         """Transcribes audio using Groq Cloud Whisper Large-v3-Turbo (~99% accuracy, ~150ms)."""
@@ -239,18 +176,8 @@ class SpeechStreamer:
         self.is_muted = False
         self.audio_queue: queue.Queue = queue.Queue()
 
-        # Load wake word preference
-        if wake_word:
-            self.wake_word = wake_word
-        else:
-            try:
-                from plugins.profile_manager import profile_manager
-                self.wake_word = profile_manager.get("wake_word", getattr(config, "WAKE_WORD_MODEL", "alexa"))
-            except Exception:
-                self.wake_word = getattr(config, "WAKE_WORD_MODEL", "alexa")
-
-        self.wake_pattern = self._build_wake_pattern(self.wake_word)
-        logger.info(f"Wake word initialized: '{self.wake_word}'")
+        self.wake_word = "click-to-speak"
+        logger.info("PRIVACY68 Click-to-Speak Streamer initialized (100% private).")
 
         self.stream = None
         if auto_init_hardware:
@@ -279,12 +206,6 @@ class SpeechStreamer:
         self.set_muted(not self.is_muted)
         return self.is_muted
 
-    def set_wake_word(self, wake_word: str) -> None:
-        """Updates the active wake word at runtime."""
-        self.wake_word = wake_word.strip()
-        self.wake_pattern = self._build_wake_pattern(self.wake_word)
-        logger.info(f"Updated wake word to: '{self.wake_word}'")
-
     def _audio_callback(self, indata: np.ndarray, frames: int, time_info: dict, status: sd.CallbackFlags) -> None:
         if status:
             logger.warning(f"Audio stream status flag set: {status}")
@@ -308,7 +229,7 @@ class SpeechStreamer:
         idle_window_chunks = int(self.sample_rate * 2.2 / config.BLOCK_SIZE)
         idle_step_chunks = max(1, int(self.sample_rate * 0.6 / config.BLOCK_SIZE))
 
-        logger.info(f"PRIVACY68 Voice Assistant online. Say '{self.wake_word}' to activate.")
+        logger.info("PRIVACY68 Voice Assistant online in Click-to-Speak mode.")
 
         if self.stream is None:
             logger.warning("Audio input stream is not available; cannot start listening loop.")
@@ -330,62 +251,9 @@ class SpeechStreamer:
                     except queue.Empty:
                         continue
 
-                    # ── State 1: Idle Scanning for Wake Word ──
+                    # When not active, sleep cleanly with zero audio processing
                     if not self.is_active:
-                        idle_buffer.append(chunk)
-                        if len(idle_buffer) >= idle_window_chunks:
-                            idle_audio = np.concatenate(idle_buffer).flatten()
-                            idle_buffer = idle_buffer[idle_step_chunks:]
-
-                            # VAD + Energy check: require audible speech and reject ambient room noise / breathing
-                            rms = float(np.sqrt(np.mean(idle_audio**2)))
-                            peak = float(np.max(np.abs(idle_audio)))
-                            if rms < 0.008:
-                                continue
-
-                            # Verify sustained human voice (at least 3 voice frames in recent buffer ~240ms)
-                            speech_frames = sum(1 for c in idle_buffer[-8:] if self.vad.is_speech(c))
-                            if speech_frames < 3:
-                                continue
-
-                            norm_idle = (idle_audio / peak) * 0.9 if peak > 0.01 else idle_audio
-                            idle_text = self._transcribe(norm_idle, is_idle=True)
-
-                            # Filter common Whisper silence artifacts
-                            if idle_text.lower().strip(".!?, ") in {
-                                "thank you", "thanks", "thanks for watching", "silence", "you",
-                                "bye", "bye bye", "okay", "ok", "yeah", "yes", "mhm", "subtitles",
-                                "watching", "cough"
-                            }:
-                                continue
-
-                            if self.is_wake_word_detected(idle_text):
-                                logger.info(f"Wake word '{self.wake_word}' detected in: '{idle_text}'")
-                                if on_wake_word_callback:
-                                    on_wake_word_callback()
-
-                                self.is_active = True
-                                self.vad.reset()
-
-                                # Check if a command was spoken in the same utterance (e.g. "Alexa open Chrome")
-                                command_candidate = self.strip_wake_word(idle_text)
-                                command_candidate = autocorrect_speech_command(command_candidate)
-
-                                has_prior_command = len(command_candidate.split()) >= 1 and command_candidate.lower() not in {
-                                    "alexa", "jarvis", "privacy68", "hey", "hi", "hello", "yes", "ok", "okay"
-                                }
-
-                                if has_prior_command:
-                                    logger.info(f"One-shot command candidate detected: '{command_candidate}'")
-                                    has_spoken = True
-                                    speech_chunks = 3
-                                else:
-                                    has_spoken = False
-                                    speech_chunks = 0
-
-                                silence_counter = 0
-                                audio_buffer = list(idle_buffer)
-                                idle_buffer.clear()
+                        threading.Event().wait(0.05)
                         continue
 
                     # ── State 2: Active Command Recording ──
@@ -442,9 +310,9 @@ class SpeechStreamer:
                             text = self.strip_wake_word(text)
                             text = autocorrect_speech_command(text)
 
-                        # Filter standalone wake word / empty utterances
+                        # Filter empty or trivial utterances
                         if text.lower().strip(".!?, ") in {"alexa", "privacy68", "jarvis", "yes", "okay"} or len(text.strip()) <= 2:
-                            logger.info("Wake word received without command. Remaining in active listening...")
+                            logger.info("Utterance too short or empty. Remaining in active listening...")
                             audio_buffer.clear()
                             self.vad.reset()
                             speech_chunks = 0
@@ -467,7 +335,7 @@ class SpeechStreamer:
                         self.is_active = False
                         with self.audio_queue.mutex:
                             self.audio_queue.queue.clear()
-                        logger.info(f"Command cycle complete. Say '{self.wake_word}' to activate.")
+                        logger.info("Command cycle complete. Ready for next command.")
 
         except Exception as e:
             logger.error(f"Error in streaming pipeline: {e}")
@@ -540,11 +408,12 @@ class PushToTalkRecorder:
         peak = float(np.max(np.abs(audio_data)))
         norm_audio = (audio_data / peak) * 0.9 if peak > 0.005 else audio_data
 
+        text = ""
         if streamer is not None:
             text = streamer._transcribe(norm_audio, is_idle=False)
-        else:
+
+        if not text:
             # First try Google Web Speech (Free, zero keys)
-            text = ""
             try:
                 import speech_recognition as sr
                 rec = sr.Recognizer()

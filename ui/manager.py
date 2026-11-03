@@ -78,8 +78,7 @@ class UIManager:
     def on_sleep(self):
         """Triggered when speech times out or returns to idle."""
         if not self.is_muted:
-            wake_name = (self.streamer.wake_word if self.streamer else "Privacy68").title()
-            self.hud.set_state("idle", text=f"Say '{wake_name}' to begin")
+            self.hud.set_state("idle", text="Click to Speak to begin")
             self.tray.set_status_color("#EF4444")
 
     def toggle_hud(self):
@@ -122,13 +121,12 @@ class UIManager:
         if self.streamer:
             self.streamer.set_muted(self.is_muted)
 
-        wake_name = (self.streamer.wake_word if self.streamer else "Privacy68").title()
         if self.is_muted:
             self.hud.set_state("error", title="🔇 PRIVACY68 MUTED", text="Microphone input paused")
             self.tray.set_status_color("#EF4444")
             logger.info("PRIVACY68 Muted (Microphone Paused).")
         else:
-            self.hud.set_state("success", title="🎙️ PRIVACY68 ACTIVE", text=f"Listening for '{wake_name}'...")
+            self.hud.set_state("success", title="🎙️ PRIVACY68 ACTIVE", text="Ready (Click to speak)")
             self.tray.set_status_color("#EF4444")
             logger.info("PRIVACY68 Unmuted (Microphone Listening).")
 

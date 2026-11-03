@@ -56,17 +56,12 @@ WHISPER_HOTWORDS = (
 
 # Initial prompt: Whisper conditions its decoder on this text before your audio.
 INITIAL_PROMPT = (
-    "Voice commands for a desktop assistant named Alexa or Hey Google. Commands always start with a wake word "
-    "like Hey Google, Alexa, Jarvis, Nova, or Privacy68, followed by an action. Examples: 'Hey Google open Chrome', "
-    "'Alexa search YouTube for music', 'Jarvis open WhatsApp', "
-    "'Privacy 68 send message to mom', 'Hey Google take a screenshot', 'Jarvis lock the screen'."
+    "Desktop automation voice commands. Examples: 'Open Chrome and search for YouTube', "
+    "'Open brave', 'Search YouTube for music', 'Open WhatsApp', "
+    "'Send message to mom', 'Take a screenshot', 'Lock the screen', 'Create a new text file'."
 )
 
-# Wake word configuration: "alexa", "hey google", "jarvis", "privacy68"
-WAKE_WORD_MODEL = os.environ.get("WAKE_WORD_MODEL", "alexa")
-WAKE_WORD_THRESHOLD = 0.50
-
-# Audio feedback sounds (True = beep on wake, False = silent)
+# Audio feedback sounds (True = beep on activation, False = silent)
 ENABLE_BEEP = False
 
 # Ollama API Configuration (Local daemon or remote Cloud/Website Ollama server)
