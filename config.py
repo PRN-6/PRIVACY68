@@ -4,6 +4,10 @@
 
 import ctypes
 import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file if present
+load_dotenv()
 
 try:
     from utils.cuda_manager import register_cuda_dlls, get_cuda_status
@@ -78,8 +82,9 @@ ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
 
 # Agent Brain (LLM) Configuration
-# Local Ollama (e.g. "ollama/llama3.2:latest") or Cloud ("claude-3-5-sonnet-20241022", "groq/llama-3.3-70b-versatile")
-AGENT_BRAIN_MODEL = os.environ.get("AGENT_BRAIN_MODEL", "ollama/llama3.2:latest")
+# Auto-selects Claude 3.5 Sonnet if ANTHROPIC_API_KEY is present, else falls back to local Ollama
+_default_model = "claude-3-5-sonnet-20241022" if ANTHROPIC_API_KEY else "ollama/llama3.2:latest"
+AGENT_BRAIN_MODEL = os.environ.get("AGENT_BRAIN_MODEL", _default_model)
 AGENT_BRAIN_MAX_RETRIES = 2  # Open-Interpreter style self-healing code retry loop
 
 # Mobile Web Remote Server configuration
