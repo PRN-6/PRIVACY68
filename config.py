@@ -4,10 +4,51 @@
 
 import ctypes
 import os
+import sys
 from dotenv import load_dotenv
 
-# Load environment variables from .env file if present
-load_dotenv()
+
+def get_env_file_path() -> str:
+    """
+    Returns the persistent .env file path across standard Python and PyInstaller frozen modes.
+    Priority:
+    1. If frozen (compiled executable):
+       a. Beside the executable (e.g. <exe_folder>/.env) if writable or existing.
+       b. Fallback to %APPDATA%/PRIVACY68/.env (guaranteed writable across all Windows environments).
+    2. If running from source (development):
+       Project root directory (alongside config.py).
+    """
+    if getattr(sys, "frozen", False):
+        exe_dir = os.path.dirname(sys.executable)
+        exe_env = os.path.join(exe_dir, ".env")
+        if os.path.isfile(exe_env):
+            return exe_env
+        try:
+            test_file = os.path.join(exe_dir, ".perm_test")
+            with open(test_file, "w") as f:
+                f.write("test")
+            os.remove(test_file)
+            return exe_env
+        except (OSError, PermissionError):
+            pass
+        appdata_dir = os.path.join(os.getenv("APPDATA", os.path.expanduser("~")), "PRIVACY68")
+        os.makedirs(appdata_dir, exist_ok=True)
+        return os.path.join(appdata_dir, ".env")
+    return os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
+
+
+# Load environment variables across frozen executable and source modes:
+# 1. First check AppData .env if it exists
+_appdata_env = os.path.join(os.getenv("APPDATA", os.path.expanduser("~")), "PRIVACY68", ".env")
+if os.path.isfile(_appdata_env):
+    load_dotenv(_appdata_env, override=True)
+
+# 2. Then check primary env path (e.g. alongside .exe or in project root)
+_primary_env = get_env_file_path()
+if os.path.isfile(_primary_env):
+    load_dotenv(_primary_env, override=True)
+else:
+    load_dotenv()
 
 try:
     from utils.cuda_manager import register_cuda_dlls, get_cuda_status
@@ -111,7 +152,7 @@ def update_dotenv_var(key: str, value: str, env_path: str = None) -> None:
     globals()[key] = value
 
     if env_path is None:
-        env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
+        env_path = get_env_file_path()
 
     lines = []
     if os.path.exists(env_path):
@@ -137,9 +178,21 @@ def update_dotenv_var(key: str, value: str, env_path: str = None) -> None:
         new_lines.append(f'{key}="{value}"\n')
 
     try:
+        os.makedirs(os.path.dirname(os.path.abspath(env_path)), exist_ok=True)
         with open(env_path, "w", encoding="utf-8") as f:
             f.writelines(new_lines)
     except Exception as e:
+        # Fallback to user APPDATA if writing next to executable fails (e.g. read-only folder)
+        appdata_dir = os.path.join(os.getenv("APPDATA", os.path.expanduser("~")), "PRIVACY68")
+        fallback_env = os.path.join(appdata_dir, ".env")
+        if env_path != fallback_env:
+            try:
+                os.makedirs(appdata_dir, exist_ok=True)
+                with open(fallback_env, "w", encoding="utf-8") as f:
+                    f.writelines(new_lines)
+                return
+            except Exception:
+                pass
         import logging
         logging.getLogger("PRIVACY68.Config").warning(f"Could not persist {key} to {env_path}: {e}")
 
