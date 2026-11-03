@@ -715,8 +715,7 @@ class Privacy68Dashboard(ctk.CTk):
             values=[
                 "auto (Google Speech & Groq Cloud)",
                 "google (Google Cloud - 100% Free)",
-                "whispercpp (Fast Local CPU)",
-                "faster-whisper (CUDA/CPU)"
+                "groq (Groq Cloud Whisper Turbo)"
             ],
             width=320,
             height=30,
@@ -1322,10 +1321,6 @@ class Privacy68Dashboard(ctk.CTk):
             config.SPEECH_ENGINE = "groq"
             self.badge_engine.configure(text="🎙️ Engine: Groq Whisper (99%)")
             self._add_feed_card("Voice Engine", "Speech engine set to Groq Cloud Whisper Turbo.", card_type="system")
-        elif "whispercpp" in choice_low:
-            config.SPEECH_ENGINE = "whispercpp"
-            self.badge_engine.configure(text="🎙️ Engine: whispercpp")
-            self._add_feed_card("Voice Engine", "Speech engine set to local whispercpp CPU.", card_type="system")
         else:
             config.SPEECH_ENGINE = "auto"
             self.badge_engine.configure(text="🎙️ Engine: Google Speech (Free)")
@@ -1350,12 +1345,11 @@ class Privacy68Dashboard(ctk.CTk):
             )
         else:
             self.groq_status_label.configure(
-                text="● Status: Inactive (Using Local CPU Whisper)",
+                text="● Status: Inactive (Using Google Cloud Speech)",
                 text_color=COLOR_TEXT_MUTED
             )
-            engine = getattr(config, "SPEECH_ENGINE", "whispercpp")
-            self.badge_engine.configure(text=f"🎙️ Engine: {engine}")
-            self._add_feed_card("Voice Engine", "Groq API Key removed. Local CPU Whisper is active.", card_type="system")
+            self.badge_engine.configure(text="🎙️ Engine: Google Speech (Free)")
+            self._add_feed_card("Voice Engine", "Groq API Key removed. Google Cloud Speech is active.", card_type="system")
 
     def _on_wake_changed(self, choice: str):
         config.WAKE_WORD_MODEL = choice

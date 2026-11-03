@@ -8,8 +8,6 @@ datas = [
     (str(root / "assets"), "assets"),
     (str(root / "ui" / "dashboard"), "ui/dashboard"),
 ]
-if (root / "models" / "whispercpp").exists():
-    datas.append((str(root / "models" / "whispercpp"), "models/whispercpp"))
 
 binaries = []
 hiddenimports = []
@@ -21,11 +19,11 @@ for package in (
     "webview",
     "pystray",
     "sounddevice",
+    "speech_recognition",
     "pyttsx3",
     "ollama",
     "customtkinter",
     "darkdetect",
-    "pywhispercpp",
     "requests",
 ):
     try:

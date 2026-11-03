@@ -24,16 +24,6 @@ try:
 except Exception:
     pass
 
-try:
-    from faster_whisper import WhisperModel
-except Exception:
-    WhisperModel = None
-
-try:
-    from pywhispercpp.model import Model as WhisperCppModel
-except Exception:
-    WhisperCppModel = None
-
 from speech.vad import SileroVAD
 
 logger = logging.getLogger("PRIVACY68.SpeechStreamer")
@@ -209,86 +199,31 @@ class SpeechStreamer:
         return ""
 
     def _transcribe(self, audio_data: np.ndarray, is_idle: bool = False) -> str:
-        """Unified transcription method supporting Google Cloud Speech (Free), Groq Cloud Whisper, and local Whisper."""
+        """Unified transcription method using Google Cloud Speech (Free, zero keys) or Groq Cloud Whisper."""
         if len(audio_data) == 0:
             return ""
 
-        # For active command transcription, prefer Cloud engines (Google or Groq)
-        if not is_idle:
-            engine = getattr(config, "SPEECH_ENGINE", "auto").lower()
+        engine = getattr(config, "SPEECH_ENGINE", "auto").lower()
 
-            # 1. If explicit "google" engine selected
-            if "google" in engine:
-                g_res = self._transcribe_google(audio_data)
-                if g_res:
-                    return g_res
+        # 1. If explicit "google" engine selected
+        if "google" in engine:
+            g_res = self._transcribe_google(audio_data)
+            if g_res:
+                return g_res
 
-            # 2. Prefer Groq Cloud Whisper Large Turbo if API key is present
-            api_key = getattr(config, "GROQ_API_KEY", "") or os.environ.get("GROQ_API_KEY", "")
-            if api_key:
-                groq_res = self._transcribe_groq(audio_data)
-                if groq_res:
-                    return groq_res
+        # 2. Prefer Groq Cloud Whisper Large Turbo if API key is present
+        api_key = getattr(config, "GROQ_API_KEY", "") or os.environ.get("GROQ_API_KEY", "")
+        if api_key:
+            groq_res = self._transcribe_groq(audio_data)
+            if groq_res:
+                return groq_res
 
-            # 3. If in "auto" mode and no Groq key: Use Google Web Speech API (100% Free, zero setup)
-            if engine in {"auto", "default"}:
-                g_res = self._transcribe_google(audio_data)
-                if g_res:
-                    return g_res
+        # 3. Default / Fallback: Google Web Speech API (100% Free, zero setup)
+        g_res = self._transcribe_google(audio_data)
+        if g_res:
+            return g_res
 
-        if self.model is None:
-            return ""
-
-        if self.engine_type == "whispercpp":
-            try:
-                threads = 4
-                segs = self.model.transcribe(
-                    audio_data,
-                    n_threads=threads,
-                    initial_prompt=config.INITIAL_PROMPT,
-                    language='en',
-                    no_timestamps=True,
-                    single_segment=True if is_idle else False,
-                    print_progress=False,
-                    print_realtime=False,
-                    print_timestamps=False,
-                )
-                return " ".join([s.text.strip() for s in segs]).strip()
-            except Exception as e:
-                logger.error(f"whisper.cpp transcription failed: {e}")
-                return ""
-        else:
-            try:
-                if is_idle:
-                    segments, info = self.model.transcribe(
-                        audio_data,
-                        beam_size=2,
-                        temperature=0.0,
-                        without_timestamps=True,
-                        language='en',
-                        vad_filter=True,
-                        initial_prompt=config.INITIAL_PROMPT,
-                    )
-                    if info and getattr(info, "no_speech_prob", 0.0) > 0.55:
-                        return ""
-                else:
-                    segments, info = self.model.transcribe(
-                        audio_data,
-                        beam_size=config.WHISPER_BEAM_SIZE,
-                        temperature=0.0,
-                        condition_on_previous_text=False,
-                        without_timestamps=True,
-                        language='en',
-                        vad_filter=True,
-                        initial_prompt=config.INITIAL_PROMPT,
-                        hotwords=config.WHISPER_HOTWORDS,
-                    )
-                    if info and getattr(info, "no_speech_prob", 0.0) > 0.45:
-                        return ""
-                return " ".join([s.text.strip() for s in segments]).strip()
-            except Exception as e:
-                logger.error(f"faster_whisper transcription failed: {e}")
-                return ""
+        return ""
 
     def __init__(
         self,
@@ -317,62 +252,8 @@ class SpeechStreamer:
         self.wake_pattern = self._build_wake_pattern(self.wake_word)
         logger.info(f"Wake word initialized: '{self.wake_word}'")
 
-        # Initialize Speech Recognition Engine (whispercpp or faster-whisper)
-        self.model = None
-        self.engine_type = "none"
         self.stream = None
-
         if auto_init_hardware:
-            preferred_engine = getattr(config, "SPEECH_ENGINE", "auto")
-
-            # 1. Try pywhispercpp (pure C++ on CPU, AVX2, ultra-fast, zero CUDA required)
-            if preferred_engine in ("auto", "whispercpp") and WhisperCppModel is not None:
-                try:
-                    import os
-                    model_path = getattr(config, "WHISPERCPP_MODEL_PATH", "")
-                    if not model_path or not os.path.exists(model_path):
-                        local_model = os.path.join(
-                            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                            "models", "whispercpp", "ggml-base.en.bin"
-                        )
-                        if os.path.exists(local_model):
-                            model_path = local_model
-                        else:
-                            model_path = "base.en"
-
-                    self.model = WhisperCppModel(model_path, redirect_whispercpp_logs_to=None)
-                    self.engine_type = "whispercpp"
-                    logger.info(f"Loaded whisper.cpp engine ({model_path}) on CPU.")
-                except Exception as e:
-                    logger.warning(f"whisper.cpp engine failed to load ({e}), checking faster-whisper fallback...")
-
-            # 2. Fallback to faster-whisper if whispercpp didn't load or if explicitly selected
-            if self.model is None and WhisperModel is not None:
-                try:
-                    self.model = WhisperModel(
-                        config.WHISPER_MODEL_SIZE,
-                        device=config.WHISPER_DEVICE,
-                        compute_type=config.WHISPER_COMPUTE_TYPE,
-                        num_workers=1,
-                        cpu_threads=2,
-                    )
-                    self.engine_type = "faster_whisper"
-                    logger.info(f"Whisper loaded on {config.WHISPER_DEVICE} ({config.WHISPER_COMPUTE_TYPE}).")
-                except Exception as e:
-                    logger.warning(f"Whisper CUDA init failed ({e}), falling back to CPU int8...")
-                    try:
-                        self.model = WhisperModel(
-                            config.WHISPER_MODEL_SIZE,
-                            device="cpu",
-                            compute_type="int8",
-                            num_workers=1,
-                            cpu_threads=4,
-                        )
-                        self.engine_type = "faster_whisper"
-                        logger.info("Whisper loaded in CPU int8 fallback mode.")
-                    except Exception as ce:
-                        logger.error(f"Whisper CPU load failed: {ce}")
-
             try:
                 self.stream = sd.InputStream(
                     samplerate=self.sample_rate,
@@ -459,7 +340,7 @@ class SpeechStreamer:
                             # VAD + Energy check: require audible speech and reject ambient room noise / breathing
                             rms = float(np.sqrt(np.mean(idle_audio**2)))
                             peak = float(np.max(np.abs(idle_audio)))
-                            if rms < 0.008 or self.model is None:
+                            if rms < 0.008:
                                 continue
 
                             # Verify sustained human voice (at least 3 voice frames in recent buffer ~240ms)

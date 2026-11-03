@@ -36,18 +36,15 @@ VAD_IDLE_THRESHOLD = 0.30        # Lower threshold for idle wake-word scan gatin
 SILENCE_DURATION_CHUNKS = 8      # 8 chunks * 80ms = ~0.64s pause after speech for rapid cut-off
 SILENCE_THRESHOLD = 0.008        # Fallback RMS noise floor
 
-# Speech Engine Selection: "auto" (Google Web Speech + Groq), "google", "groq", "whispercpp", or "faster_whisper"
+# Speech Engine Selection: "auto" (Google Web Speech + Groq), "google", or "groq"
 # "google": 100% Free, NO API key required. Google's cloud voice system (same as Android / Hey Google).
 # "groq": Whisper-large-v3-turbo running on Groq LPUs (~150ms).
-# "whispercpp": Local whisper.cpp in pure C++ on CPU.
 SPEECH_ENGINE = os.environ.get("SPEECH_ENGINE", "auto")
-WHISPERCPP_MODEL_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "models", "whispercpp", "ggml-base.en.bin")
 
-# Faster Whisper model configuration (for CUDA fallback)
-WHISPER_MODEL_SIZE   = "medium.en"
-WHISPER_DEVICE       = "cuda"     if _HAS_CUDA else "cpu"      # auto-detected
-WHISPER_COMPUTE_TYPE = "float16"  if _HAS_CUDA else "int8"     # float16=GPU, int8=CPU
-WHISPER_BEAM_SIZE    = 8          # wider beam = higher accuracy
+# Runtime diagnostics compatibility
+WHISPER_MODEL_SIZE = "google-speech-free"
+WHISPER_DEVICE = "cloud"
+WHISPER_COMPUTE_TYPE = "cloud-api"
 
 # Hotwords: Whisper boosts log-probability for these tokens during decoding.
 WHISPER_HOTWORDS = (
