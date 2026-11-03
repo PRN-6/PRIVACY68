@@ -69,5 +69,31 @@ class TestQuotedCommandsAndBrainConfig(unittest.TestCase):
                         self.assertEqual(kwargs["api_key"], "remote-secret-key")
 
 
+    def test_wake_word_no_false_positives(self):
+        from speech.streamer import SpeechStreamer
+        streamer = SpeechStreamer(wake_word="alexa")
+
+        # True wake triggers
+        self.assertTrue(streamer.is_wake_word_detected("alexa open chrome"))
+        self.assertTrue(streamer.is_wake_word_detected("Hey Alexa"))
+        self.assertTrue(streamer.is_wake_word_detected("Alexa, what time is it?"))
+
+        # False triggers that previously tripped loose matching - MUST be False now!
+        self.assertFalse(streamer.is_wake_word_detected("electric car"))
+        self.assertFalse(streamer.is_wake_word_detected("the election results"))
+        self.assertFalse(streamer.is_wake_word_detected("Alexander the Great"))
+        self.assertFalse(streamer.is_wake_word_detected("select all text"))
+        self.assertFalse(streamer.is_wake_word_detected("already did that"))
+
+    def test_wake_word_hey_google(self):
+        from speech.streamer import SpeechStreamer
+        streamer = SpeechStreamer(wake_word="hey google")
+
+        self.assertTrue(streamer.is_wake_word_detected("hey google open chrome"))
+        self.assertTrue(streamer.is_wake_word_detected("ok google search youtube"))
+        self.assertTrue(streamer.is_wake_word_detected("okay google what is the weather"))
+        self.assertFalse(streamer.is_wake_word_detected("search on google"))
+
+
 if __name__ == "__main__":
     unittest.main()

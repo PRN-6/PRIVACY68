@@ -86,59 +86,58 @@ class SpeechStreamer:
             if not clean:
                 continue
             aliases.add(clean)
+            if "google" in clean:
+                aliases.update({
+                    "hey google", "ok google", "okay google"
+                })
             if "alexa" in clean or "alex" in clean:
                 aliases.update({
-                    "alexa", "alexia", "alexis", "alex", "elixa", "elexa",
-                    "alixa", "alyssa", "olexa", "ilexa", "alecsa", "allexa"
+                    "alexa", "alexia", "alex", "alixa", "elexa", "alecsa"
                 })
             if "privacy" in clean or "68" in clean:
                 aliases.update({
                     "privacy68", "privacy 68", "privacy sixty eight",
-                    "privacy sixty-eight", "privacy", "private 68", "private sixty eight"
+                    "privacy sixty-eight", "privacy"
                 })
             if "jarvis" in clean:
                 aliases.update({
-                    "jarvis", "jarvice", "jervis", "jarves", "travis", "javis", "charvis"
+                    "jarvis", "jarvice", "jervis"
                 })
             if "nova" in clean:
-                aliases.update({"nova", "noba", "noah"})
+                aliases.update({"nova", "noba"})
             if "friday" in clean:
-                aliases.update({"friday", "frieda", "fryday"})
+                aliases.update({"friday", "frieda"})
 
         escaped = [re.escape(a).replace(r'\ ', r'\s+') for a in sorted(aliases, key=len, reverse=True)]
         pattern_str = r'(?:\b(?:hey|hi|hello|ok|okay|ah|oh)\s+)?\b(' + '|'.join(escaped) + r')\b'
         return re.compile(pattern_str, re.IGNORECASE)
 
     def is_wake_word_detected(self, text: str) -> bool:
-        """Evaluates whether the transcribed text contains the active wake word."""
+        """Evaluates whether the transcribed text contains the active wake word with strict matching."""
         if not text:
             return False
         if self.wake_pattern.search(text):
             return True
 
-        # Quick phonetic prefix check for common wake words
-        lowered = text.lower()
-        cleaned_words = [w.strip(".!?, \t\n") for w in lowered.split()]
-
         target_wake = self.wake_word.lower()
-        if "alexa" in target_wake or "alex" in target_wake:
-            for cw in cleaned_words:
-                if cw.startswith(("alex", "elix", "elex", "alix", "olex", "alec")):
-                    return True
-        if "jarvis" in target_wake:
-            for cw in cleaned_words:
-                if cw.startswith(("jarv", "jerv", "javis", "charv")):
-                    return True
-        if "privacy" in target_wake:
-            if "privacy" in lowered or "private 68" in lowered:
+        lowered = text.lower()
+
+        # Strict checks for compound wake phrases (Hey Google, etc.)
+        if "google" in target_wake:
+            if any(p in lowered for p in ("hey google", "ok google", "okay google")):
                 return True
 
-        # Fuzzy fallback for minor ASR variations
+        if "privacy" in target_wake:
+            if "privacy 68" in lowered or "privacy68" in lowered:
+                return True
+
+        # Strict fuzzy whole-word match (ratio >= 0.88) to prevent phantom activations
+        cleaned_words = [w.strip(".!?, \t\n'\"`") for w in lowered.split()]
         targets = [w.strip().lower() for w in self.wake_word.replace("/", ",").split(",") if w.strip()]
         for target in targets:
             for cw in cleaned_words:
-                if len(cw) >= 3 and len(target) >= 3:
-                    if difflib.SequenceMatcher(None, target, cw).ratio() >= 0.68:
+                if len(cw) >= 4 and len(target) >= 4:
+                    if difflib.SequenceMatcher(None, target, cw).ratio() >= 0.88:
                         return True
         return False
 
@@ -192,18 +191,50 @@ class SpeechStreamer:
             logger.warning(f"Groq Whisper cloud call failed ({e}), falling back to local engine...")
             return ""
 
+    def _transcribe_google(self, audio_data: np.ndarray) -> str:
+        """Transcribes active command using Google Web Speech Recognition (100% Free, Zero API Key)."""
+        try:
+            import speech_recognition as sr
+            recognizer = sr.Recognizer()
+            int16_arr = (audio_data * 32767).astype(np.int16)
+            audio = sr.AudioData(int16_arr.tobytes(), self.sample_rate, 2)
+            text = recognizer.recognize_google(audio, language="en-US")
+            if text:
+                logger.info(f"[GOOGLE SPEECH FREE] Transcribed: '{text}'")
+                return text.strip()
+        except Exception as e:
+            err_name = type(e).__name__
+            if "UnknownValueError" not in err_name:
+                logger.debug(f"Google Speech note: {e}")
+        return ""
+
     def _transcribe(self, audio_data: np.ndarray, is_idle: bool = False) -> str:
-        """Unified transcription method supporting Groq Cloud Whisper, whisper.cpp, and faster-whisper."""
+        """Unified transcription method supporting Google Cloud Speech (Free), Groq Cloud Whisper, and local Whisper."""
         if len(audio_data) == 0:
             return ""
 
-        # For active command transcription, prefer Groq Cloud Whisper Large Turbo if API key is present
+        # For active command transcription, prefer Cloud engines (Google or Groq)
         if not is_idle:
+            engine = getattr(config, "SPEECH_ENGINE", "auto").lower()
+
+            # 1. If explicit "google" engine selected
+            if "google" in engine:
+                g_res = self._transcribe_google(audio_data)
+                if g_res:
+                    return g_res
+
+            # 2. Prefer Groq Cloud Whisper Large Turbo if API key is present
             api_key = getattr(config, "GROQ_API_KEY", "") or os.environ.get("GROQ_API_KEY", "")
             if api_key:
                 groq_res = self._transcribe_groq(audio_data)
                 if groq_res:
                     return groq_res
+
+            # 3. If in "auto" mode and no Groq key: Use Google Web Speech API (100% Free, zero setup)
+            if engine in {"auto", "default"}:
+                g_res = self._transcribe_google(audio_data)
+                if g_res:
+                    return g_res
 
         if self.model is None:
             return ""
@@ -410,15 +441,15 @@ class SpeechStreamer:
                             idle_audio = np.concatenate(idle_buffer).flatten()
                             idle_buffer = idle_buffer[idle_step_chunks:]
 
-                            # VAD + Energy check: skip silence and non-speech background noise
+                            # VAD + Energy check: require audible speech and reject ambient room noise / breathing
                             rms = float(np.sqrt(np.mean(idle_audio**2)))
                             peak = float(np.max(np.abs(idle_audio)))
-                            if rms < 0.003 or self.model is None:
+                            if rms < 0.008 or self.model is None:
                                 continue
 
-                            # Verify human voice is present in the audio window via neural VAD
-                            has_voice = any(self.vad.is_speech(c) for c in idle_buffer[-6:])
-                            if not has_voice:
+                            # Verify sustained human voice (at least 3 voice frames in recent buffer ~240ms)
+                            speech_frames = sum(1 for c in idle_buffer[-8:] if self.vad.is_speech(c))
+                            if speech_frames < 3:
                                 continue
 
                             norm_idle = (idle_audio / peak) * 0.9 if peak > 0.01 else idle_audio
@@ -427,7 +458,8 @@ class SpeechStreamer:
                             # Filter common Whisper silence artifacts
                             if idle_text.lower().strip(".!?, ") in {
                                 "thank you", "thanks", "thanks for watching", "silence", "you",
-                                "bye", "okay", "ok", "yeah", "yes", "mhm"
+                                "bye", "bye bye", "okay", "ok", "yeah", "yes", "mhm", "subtitles",
+                                "watching", "cough"
                             }:
                                 continue
 

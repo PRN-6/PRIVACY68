@@ -36,10 +36,11 @@ VAD_IDLE_THRESHOLD = 0.30        # Lower threshold for idle wake-word scan gatin
 SILENCE_DURATION_CHUNKS = 8      # 8 chunks * 80ms = ~0.64s pause after speech for rapid cut-off
 SILENCE_THRESHOLD = 0.008        # Fallback RMS noise floor
 
-# Speech Engine Selection: "auto", "whispercpp", or "faster_whisper"
-# "whispercpp" runs whisper.cpp in pure C++ on CPU (AVX2), ~180ms latency, zero GPU/CUDA dependencies.
-# "faster_whisper" uses CTranslate2 (CUDA if available, or CPU int8).
-SPEECH_ENGINE = "auto"
+# Speech Engine Selection: "auto" (Google Web Speech + Groq), "google", "groq", "whispercpp", or "faster_whisper"
+# "google": 100% Free, NO API key required. Google's cloud voice system (same as Android / Hey Google).
+# "groq": Whisper-large-v3-turbo running on Groq LPUs (~150ms).
+# "whispercpp": Local whisper.cpp in pure C++ on CPU.
+SPEECH_ENGINE = os.environ.get("SPEECH_ENGINE", "auto")
 WHISPERCPP_MODEL_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "models", "whispercpp", "ggml-base.en.bin")
 
 # Faster Whisper model configuration (for CUDA fallback)
@@ -50,22 +51,22 @@ WHISPER_BEAM_SIZE    = 8          # wider beam = higher accuracy
 
 # Hotwords: Whisper boosts log-probability for these tokens during decoding.
 WHISPER_HOTWORDS = (
-    "Jarvis, Jarvice, Alexa, Nova, Friday, Leo, Serena, Privacy68, open, close, launch, search, go to, "
-    "Chrome, Brave, WhatsApp, YouTube, Google, Notepad, "
+    "Hey Google, OK Google, Google, Alexa, Jarvis, Jarvice, Nova, Friday, Leo, Serena, Privacy68, open, close, launch, search, go to, "
+    "Chrome, Brave, WhatsApp, YouTube, Notepad, "
     "volume, mute, screenshot, lock, tab, new tab, enter, "
     "send message, message, chat, call"
 )
 
 # Initial prompt: Whisper conditions its decoder on this text before your audio.
 INITIAL_PROMPT = (
-    "Voice commands for a desktop assistant named Alexa. Commands always start with a wake word "
-    "like Jarvis, Alexa, Nova, Friday, or Privacy68, followed by an action. Examples: 'Jarvis open Chrome', "
+    "Voice commands for a desktop assistant named Alexa or Hey Google. Commands always start with a wake word "
+    "like Hey Google, Alexa, Jarvis, Nova, or Privacy68, followed by an action. Examples: 'Hey Google open Chrome', "
     "'Alexa search YouTube for music', 'Jarvis open WhatsApp', "
-    "'Privacy 68 send message to mom', 'Jarvis take a screenshot', 'Jarvis lock the screen'."
+    "'Privacy 68 send message to mom', 'Hey Google take a screenshot', 'Jarvis lock the screen'."
 )
 
-# Wake word configuration
-WAKE_WORD_MODEL = "alexa"
+# Wake word configuration: "alexa", "hey google", "jarvis", "privacy68"
+WAKE_WORD_MODEL = os.environ.get("WAKE_WORD_MODEL", "alexa")
 WAKE_WORD_THRESHOLD = 0.50
 
 # Audio feedback sounds (True = beep on wake, False = silent)
