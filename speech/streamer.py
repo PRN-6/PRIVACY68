@@ -68,7 +68,7 @@ class SpeechStreamer:
 
     @staticmethod
     def _build_wake_pattern(wake_input: str) -> re.Pattern:
-        """Builds a flexible regex matching the wake phrase and common aliases."""
+        """Builds a flexible regex matching the wake phrase and common phonetic aliases."""
         words = [w.strip() for w in (wake_input or "alexa").replace("/", ",").split(",") if w.strip()]
         if not words:
             words = ["alexa"]
@@ -79,15 +79,27 @@ class SpeechStreamer:
             if not clean:
                 continue
             aliases.add(clean)
-            if "alexa" in clean:
-                aliases.update({"alexa", "alexia", "alex"})
+            if "alexa" in clean or "alex" in clean:
+                aliases.update({
+                    "alexa", "alexia", "alexis", "alex", "elixa", "elexa",
+                    "alixa", "alyssa", "olexa", "ilexa", "alecsa", "allexa"
+                })
             if "privacy" in clean or "68" in clean:
-                aliases.update({"privacy68", "privacy 68", "privacy sixty eight", "privacy"})
+                aliases.update({
+                    "privacy68", "privacy 68", "privacy sixty eight",
+                    "privacy sixty-eight", "privacy", "private 68", "private sixty eight"
+                })
             if "jarvis" in clean:
-                aliases.update({"jarvis", "jarvice"})
+                aliases.update({
+                    "jarvis", "jarvice", "jervis", "jarves", "travis", "javis", "charvis"
+                })
+            if "nova" in clean:
+                aliases.update({"nova", "noba", "noah"})
+            if "friday" in clean:
+                aliases.update({"friday", "frieda", "fryday"})
 
         escaped = [re.escape(a).replace(r'\ ', r'\s+') for a in sorted(aliases, key=len, reverse=True)]
-        pattern_str = r'(?:\b(?:hey|hi|hello|ok|okay)\s+)?\b(' + '|'.join(escaped) + r')\b'
+        pattern_str = r'(?:\b(?:hey|hi|hello|ok|okay|ah|oh)\s+)?\b(' + '|'.join(escaped) + r')\b'
         return re.compile(pattern_str, re.IGNORECASE)
 
     def is_wake_word_detected(self, text: str) -> bool:
@@ -97,20 +109,36 @@ class SpeechStreamer:
         if self.wake_pattern.search(text):
             return True
 
+        # Quick phonetic prefix check for common wake words
+        lowered = text.lower()
+        cleaned_words = [w.strip(".!?, \t\n") for w in lowered.split()]
+
+        target_wake = self.wake_word.lower()
+        if "alexa" in target_wake or "alex" in target_wake:
+            for cw in cleaned_words:
+                if cw.startswith(("alex", "elix", "elex", "alix", "olex", "alec")):
+                    return True
+        if "jarvis" in target_wake:
+            for cw in cleaned_words:
+                if cw.startswith(("jarv", "jerv", "javis", "charv")):
+                    return True
+        if "privacy" in target_wake:
+            if "privacy" in lowered or "private 68" in lowered:
+                return True
+
         # Fuzzy fallback for minor ASR variations
-        cleaned_words = [w.strip(".!?, \t\n").lower() for w in text.split()]
         targets = [w.strip().lower() for w in self.wake_word.replace("/", ",").split(",") if w.strip()]
         for target in targets:
             for cw in cleaned_words:
-                if len(cw) >= 3 and len(target) >= 4:
-                    if difflib.SequenceMatcher(None, target, cw).ratio() >= 0.75:
+                if len(cw) >= 3 and len(target) >= 3:
+                    if difflib.SequenceMatcher(None, target, cw).ratio() >= 0.68:
                         return True
         return False
 
     def strip_wake_word(self, text: str) -> str:
         """Removes the wake phrase from the command utterance."""
         res = self.wake_pattern.sub('', text)
-        res = re.sub(r'^(hey|ok|okay|hi|hello)\s+', '', res, flags=re.IGNORECASE)
+        res = re.sub(r'^(hey|ok|okay|hi|hello|ah|oh)\s+', '', res, flags=re.IGNORECASE)
         return res.strip(".!?, \t\n")
 
     def _transcribe(self, audio_data: np.ndarray, is_idle: bool = False) -> str:
@@ -121,7 +149,14 @@ class SpeechStreamer:
         if self.engine_type == "whispercpp":
             try:
                 threads = 2 if is_idle else 4
-                segs = self.model.transcribe(audio_data, n_threads=threads)
+                segs = self.model.transcribe(
+                    audio_data,
+                    n_threads=threads,
+                    initial_prompt=config.INITIAL_PROMPT,
+                    language='en',
+                    no_timestamps=True,
+                    single_segment=True if is_idle else False,
+                )
                 return " ".join([s.text.strip() for s in segs]).strip()
             except Exception as e:
                 logger.error(f"whisper.cpp transcription failed: {e}")
@@ -282,8 +317,8 @@ class SpeechStreamer:
         has_spoken = False
         speech_chunks = 0
 
-        idle_window_chunks = int(self.sample_rate * 1.6 / config.BLOCK_SIZE)
-        idle_overlap_chunks = idle_window_chunks // 2
+        idle_window_chunks = int(self.sample_rate * 2.2 / config.BLOCK_SIZE)
+        idle_step_chunks = max(1, int(self.sample_rate * 0.6 / config.BLOCK_SIZE))
 
         logger.info(f"PRIVACY68 Voice Assistant online. Say '{self.wake_word}' to activate.")
 
@@ -308,12 +343,12 @@ class SpeechStreamer:
                         idle_buffer.append(chunk)
                         if len(idle_buffer) >= idle_window_chunks:
                             idle_audio = np.concatenate(idle_buffer).flatten()
-                            idle_buffer = idle_buffer[idle_overlap_chunks:]
+                            idle_buffer = idle_buffer[idle_step_chunks:]
 
                             # Energy check: skip silence / faint background hum
                             rms = float(np.sqrt(np.mean(idle_audio**2)))
                             peak = float(np.max(np.abs(idle_audio)))
-                            if rms < 0.005 or peak < 0.015 or self.model is None:
+                            if (rms < 0.002 and peak < 0.007) or self.model is None:
                                 continue
 
                             norm_idle = (idle_audio / peak) * 0.9 if peak > 0.01 else idle_audio
@@ -326,16 +361,30 @@ class SpeechStreamer:
                             }:
                                 continue
 
-                            first_words = " ".join(idle_text.split()[:6])
-                            if self.is_wake_word_detected(first_words):
+                            if self.is_wake_word_detected(idle_text):
                                 logger.info(f"Wake word '{self.wake_word}' detected in: '{idle_text}'")
                                 if on_wake_word_callback:
                                     on_wake_word_callback()
 
                                 self.is_active = True
                                 self.vad.reset()
-                                has_spoken = False
-                                speech_chunks = 0
+
+                                # Check if a command was spoken in the same utterance (e.g. "Alexa open Chrome")
+                                command_candidate = self.strip_wake_word(idle_text)
+                                command_candidate = autocorrect_speech_command(command_candidate)
+
+                                has_prior_command = len(command_candidate.split()) >= 1 and command_candidate.lower() not in {
+                                    "alexa", "jarvis", "privacy68", "hey", "hi", "hello", "yes", "ok", "okay"
+                                }
+
+                                if has_prior_command:
+                                    logger.info(f"One-shot command candidate detected: '{command_candidate}'")
+                                    has_spoken = True
+                                    speech_chunks = 3
+                                else:
+                                    has_spoken = False
+                                    speech_chunks = 0
+
                                 silence_counter = 0
                                 audio_buffer = list(idle_buffer)
                                 idle_buffer.clear()
