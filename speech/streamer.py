@@ -408,6 +408,7 @@ class SpeechStreamer:
 
                             # VAD + Energy check: skip silence and non-speech background noise
                             rms = float(np.sqrt(np.mean(idle_audio**2)))
+                            peak = float(np.max(np.abs(idle_audio)))
                             if rms < 0.003 or self.model is None:
                                 continue
 
