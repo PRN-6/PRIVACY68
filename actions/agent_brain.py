@@ -1,22 +1,42 @@
 import os
+os.environ["LITELLM_LOCAL_MODEL_COST_MAP"] = "True"
 from pathlib import Path
 import logging
-from typing import Any, Dict
+import urllib.request
+from typing import Any, Dict, Optional
 import litellm
+import config
 from actions.agent_runner import run_agent_code
 
+# Disable telemetry and remote network calls for offline/sandboxed stability
+litellm.telemetry = False
+litellm.suppress_debug_info = True
+
 logger = logging.getLogger("PRIVACY68.AgentBrain")
+
+
+def is_ollama_online(host: str = "http://localhost:11434") -> bool:
+    """Quick non-blocking check if local Ollama daemon is reachable."""
+    try:
+        req = urllib.request.Request(f"{host.rstrip('/')}/api/tags", method="GET")
+        with urllib.request.urlopen(req, timeout=1.0) as resp:
+            return resp.status == 200
+    except Exception:
+        return False
+
 
 class AgentBrain:
     """
     The 'Brain' of the Agentic System.
-    Uses LiteLLM to communicate with the configured Ollama model and a specialized
-    subprocess runner for persistent-like execution.
+    Uses LiteLLM to communicate with the configured Ollama or cloud model,
+    with an Open-Interpreter style self-healing execution loop.
     """
 
-    def __init__(self):
-        # LiteLLM uses the user's local Ollama service, which may proxy a cloud model.
-        self.model = "ollama/gemma4:31b-cloud"
+    def __init__(self, model: Optional[str] = None):
+        self.model = model or getattr(config, "AGENT_BRAIN_MODEL", "ollama/llama3.2:latest")
+        self.max_retries = getattr(config, "AGENT_BRAIN_MAX_RETRIES", 2)
+        self.last_code = ""
+        self.last_reasoning = ""
 
     def _resolve_user_paths(self) -> Dict[str, str]:
         """Resolves active user directory paths, including OneDrive redirections."""
@@ -84,14 +104,25 @@ class AgentBrain:
     def system_prompt(self) -> str:
         return self._build_system_prompt()
 
-    def _get_code_from_llm(self, text: str) -> str:
-        """Uses LiteLLM to get Python code from the configured model."""
+    def _get_code_from_llm(self, text: str, error_context: Optional[str] = None) -> str:
+        """Uses LiteLLM to get Python code from the configured model, supporting error repair."""
+        messages = [
+            {"role": "system", "content": self.system_prompt},
+            {"role": "user", "content": text},
+        ]
+        if error_context and self.last_code:
+            messages.append({"role": "assistant", "content": self.last_code})
+            messages.append({
+                "role": "user",
+                "content": (
+                    f"The previous script failed with this error:\n{error_context}\n"
+                    "Please fix the Python script to resolve this error. Output ONLY valid Python code."
+                )
+            })
+
         response = litellm.completion(
             model=self.model,
-            messages=[
-                {"role": "system", "content": self.system_prompt},
-                {"role": "user", "content": text},
-            ],
+            messages=messages,
             temperature=0,
         )
         code = response.choices[0].message.content.strip()
@@ -104,42 +135,70 @@ class AgentBrain:
 
     def generate_and_execute(self, text: str) -> Dict[str, Any]:
         """
-        Generates code via LiteLLM and executes it in a separate process.
+        Generates code via LiteLLM and executes it in a separate process,
+        with automated self-repair on error (Open-Interpreter pattern).
         """
         self.last_code = ""
         self.last_reasoning = f"Analyzing request: {text}"
         try:
             logger.info(f"[AGENT BRAIN] Reasoning via {self.model}: {text}")
 
-            # Step 1: Get the code from Local LLM
-            code = self._get_code_from_llm(text)
+            # Step 1: Get code from LLM
+            try:
+                code = self._get_code_from_llm(text)
+            except Exception as e:
+                err_str = str(e)
+                if "10061" in err_str or "Connection refused" in err_str or "APIConnectionError" in type(e).__name__:
+                    logger.error(f"[AGENT BRAIN] Ollama is not running: {e}")
+                    return {
+                        "success": False,
+                        "message": "Ollama service is not reachable. Start Ollama ('ollama serve') to enable AI reasoning.",
+                        "output": "Connection refused to http://localhost:11434",
+                        "method": "agentic_engine",
+                    }
+                raise e
 
-            # Store for UI visibility
             self.last_code = code
 
             if not code:
                 return {"success": False, "message": "LLM failed to generate code.", "method": "agentic_brain"}
 
-            logger.info(f"[AGENT BRAIN] Executing generated code:\n{code}")
+            # Self-healing execution loop
+            attempt = 0
+            current_code = code
 
-            # Run in a separate process; the runner uses a Python subprocess in
-            # source mode and the executable's internal runner in frozen builds.
-            result = run_agent_code(code, timeout=30)
+            while attempt <= self.max_retries:
+                logger.info(f"[AGENT BRAIN] Executing generated code (attempt {attempt + 1}):\n{current_code}")
+                result = run_agent_code(current_code, timeout=30)
 
-            if result.returncode == 0:
-                return {
-                    "success": True,
-                    "message": "Task executed successfully via Agent Brain.",
-                    "output": result.stdout,
-                    "method": "agentic_engine",
-                }
-            else:
-                return {
-                    "success": False,
-                    "message": f"Execution error: {result.stderr}",
-                    "output": result.stderr,
-                    "method": "agentic_engine",
-                }
+                if result.returncode == 0:
+                    return {
+                        "success": True,
+                        "message": "Task executed successfully via Agent Brain.",
+                        "output": result.stdout,
+                        "method": "agentic_engine",
+                    }
+
+                attempt += 1
+                if attempt <= self.max_retries:
+                    logger.warning(f"[AGENT BRAIN] Execution error (attempt {attempt}). Initiating self-correction...")
+                    self.last_reasoning = f"Self-repairing code: {result.stderr.strip()[:80]}..."
+                    try:
+                        repaired = self._get_code_from_llm(text, error_context=result.stderr)
+                        if repaired:
+                            current_code = repaired
+                            self.last_code = current_code
+                            continue
+                    except Exception as re_err:
+                        logger.warning(f"[AGENT BRAIN] Self-healing attempt failed: {re_err}")
+                        break
+
+            return {
+                "success": False,
+                "message": f"Execution error: {result.stderr}",
+                "output": result.stderr,
+                "method": "agentic_engine",
+            }
 
         except Exception as e:
             logger.error(f"[AGENT BRAIN] Critical Failure: {e}")
@@ -148,5 +207,6 @@ class AgentBrain:
                 "message": f"Agent Brain Error: {str(e)}",
                 "method": "agentic_engine",
             }
+
 
 agent_brain = AgentBrain()

@@ -25,6 +25,11 @@ try:
 except Exception:
     WhisperModel = None
 
+try:
+    from pywhispercpp.model import Model as WhisperCppModel
+except Exception:
+    WhisperCppModel = None
+
 from speech.vad import SileroVAD
 
 logger = logging.getLogger("PRIVACY68.SpeechStreamer")
@@ -108,6 +113,52 @@ class SpeechStreamer:
         res = re.sub(r'^(hey|ok|okay|hi|hello)\s+', '', res, flags=re.IGNORECASE)
         return res.strip(".!?, \t\n")
 
+    def _transcribe(self, audio_data: np.ndarray, is_idle: bool = False) -> str:
+        """Unified transcription method supporting both whisper.cpp and faster-whisper."""
+        if self.model is None or len(audio_data) == 0:
+            return ""
+
+        if self.engine_type == "whispercpp":
+            try:
+                threads = 2 if is_idle else 4
+                segs = self.model.transcribe(audio_data, n_threads=threads)
+                return " ".join([s.text.strip() for s in segs]).strip()
+            except Exception as e:
+                logger.error(f"whisper.cpp transcription failed: {e}")
+                return ""
+        else:
+            try:
+                if is_idle:
+                    segments, info = self.model.transcribe(
+                        audio_data,
+                        beam_size=2,
+                        temperature=0.0,
+                        without_timestamps=True,
+                        language='en',
+                        vad_filter=True,
+                        initial_prompt=config.INITIAL_PROMPT,
+                    )
+                    if info and getattr(info, "no_speech_prob", 0.0) > 0.55:
+                        return ""
+                else:
+                    segments, info = self.model.transcribe(
+                        audio_data,
+                        beam_size=config.WHISPER_BEAM_SIZE,
+                        temperature=0.0,
+                        condition_on_previous_text=False,
+                        without_timestamps=True,
+                        language='en',
+                        vad_filter=True,
+                        initial_prompt=config.INITIAL_PROMPT,
+                        hotwords=config.WHISPER_HOTWORDS,
+                    )
+                    if info and getattr(info, "no_speech_prob", 0.0) > 0.45:
+                        return ""
+                return " ".join([s.text.strip() for s in segments]).strip()
+            except Exception as e:
+                logger.error(f"faster_whisper transcription failed: {e}")
+                return ""
+
     def __init__(self, wake_word: Optional[str] = None) -> None:
         self.sample_rate = config.SAMPLE_RATE
         self.silence_threshold = getattr(config, "SILENCE_THRESHOLD", 0.008)
@@ -130,9 +181,35 @@ class SpeechStreamer:
         self.wake_pattern = self._build_wake_pattern(self.wake_word)
         logger.info(f"Wake word initialized: '{self.wake_word}'")
 
-        # Initialize Whisper
+        # Initialize Speech Recognition Engine (whispercpp or faster-whisper)
         self.model = None
-        if WhisperModel is not None:
+        self.engine_type = "none"
+
+        preferred_engine = getattr(config, "SPEECH_ENGINE", "auto")
+
+        # 1. Try pywhispercpp (pure C++ on CPU, AVX2, ultra-fast, zero CUDA required)
+        if preferred_engine in ("auto", "whispercpp") and WhisperCppModel is not None:
+            try:
+                import os
+                model_path = getattr(config, "WHISPERCPP_MODEL_PATH", "")
+                if not model_path or not os.path.exists(model_path):
+                    local_model = os.path.join(
+                        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                        "models", "whispercpp", "ggml-base.en.bin"
+                    )
+                    if os.path.exists(local_model):
+                        model_path = local_model
+                    else:
+                        model_path = "base.en"
+
+                self.model = WhisperCppModel(model_path)
+                self.engine_type = "whispercpp"
+                logger.info(f"Loaded whisper.cpp engine ({model_path}) on CPU.")
+            except Exception as e:
+                logger.warning(f"whisper.cpp engine failed to load ({e}), checking faster-whisper fallback...")
+
+        # 2. Fallback to faster-whisper if whispercpp didn't load or if explicitly selected
+        if self.model is None and WhisperModel is not None:
             try:
                 self.model = WhisperModel(
                     config.WHISPER_MODEL_SIZE,
@@ -141,6 +218,7 @@ class SpeechStreamer:
                     num_workers=1,
                     cpu_threads=2,
                 )
+                self.engine_type = "faster_whisper"
                 logger.info(f"Whisper loaded on {config.WHISPER_DEVICE} ({config.WHISPER_COMPUTE_TYPE}).")
             except Exception as e:
                 logger.warning(f"Whisper CUDA init failed ({e}), falling back to CPU int8...")
@@ -152,6 +230,7 @@ class SpeechStreamer:
                         num_workers=1,
                         cpu_threads=4,
                     )
+                    self.engine_type = "faster_whisper"
                     logger.info("Whisper loaded in CPU int8 fallback mode.")
                 except Exception as ce:
                     logger.error(f"Whisper CPU load failed: {ce}")
@@ -238,20 +317,7 @@ class SpeechStreamer:
                                 continue
 
                             norm_idle = (idle_audio / peak) * 0.9 if peak > 0.01 else idle_audio
-                            segments, info = self.model.transcribe(
-                                norm_idle,
-                                beam_size=2,
-                                temperature=0.0,
-                                without_timestamps=True,
-                                language='en',
-                                vad_filter=True,
-                                initial_prompt=config.INITIAL_PROMPT,
-                            )
-
-                            if info and getattr(info, "no_speech_prob", 0.0) > 0.55:
-                                continue
-
-                            idle_text = " ".join([s.text.strip() for s in segments]).strip()
+                            idle_text = self._transcribe(norm_idle, is_idle=True)
 
                             # Filter common Whisper silence artifacts
                             if idle_text.lower().strip(".!?, ") in {
@@ -323,24 +389,7 @@ class SpeechStreamer:
                             continue
 
                         norm_audio = (full_audio / peak) * 0.9 if peak > 0.005 else full_audio
-                        if self.model is None:
-                            text = ""
-                        else:
-                            segments, info = self.model.transcribe(
-                                norm_audio,
-                                beam_size=config.WHISPER_BEAM_SIZE,
-                                temperature=0.0,
-                                condition_on_previous_text=False,
-                                without_timestamps=True,
-                                language='en',
-                                vad_filter=True,
-                                initial_prompt=config.INITIAL_PROMPT,
-                                hotwords=config.WHISPER_HOTWORDS,
-                            )
-                            if info and getattr(info, "no_speech_prob", 0.0) > 0.45:
-                                text = ""
-                            else:
-                                text = " ".join([segment.text.strip() for segment in segments]).strip()
+                        text = self._transcribe(norm_audio, is_idle=False)
 
                         if text:
                             text = self.strip_wake_word(text)

@@ -3,6 +3,7 @@
 """
 
 import ctypes
+import os
 
 try:
     from utils.cuda_manager import register_cuda_dlls, get_cuda_status
@@ -31,16 +32,19 @@ VAD_IDLE_THRESHOLD = 0.30        # Lower threshold for idle wake-word scan gatin
 SILENCE_DURATION_CHUNKS = 8      # 8 chunks * 80ms = ~0.64s pause after speech for rapid cut-off
 SILENCE_THRESHOLD = 0.008        # Fallback RMS noise floor
 
-# Whisper model configuration
-# medium.en: ~30% better word accuracy over small.en for short commands.
-# On CUDA this runs at ~120-160ms per transcription — imperceptible to the user.
+# Speech Engine Selection: "auto", "whispercpp", or "faster_whisper"
+# "whispercpp" runs whisper.cpp in pure C++ on CPU (AVX2), ~180ms latency, zero GPU/CUDA dependencies.
+# "faster_whisper" uses CTranslate2 (CUDA if available, or CPU int8).
+SPEECH_ENGINE = "auto"
+WHISPERCPP_MODEL_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "models", "whispercpp", "ggml-base.en.bin")
+
+# Faster Whisper model configuration (for CUDA fallback)
 WHISPER_MODEL_SIZE   = "medium.en"
 WHISPER_DEVICE       = "cuda"     if _HAS_CUDA else "cpu"      # auto-detected
 WHISPER_COMPUTE_TYPE = "float16"  if _HAS_CUDA else "int8"     # float16=GPU, int8=CPU
-WHISPER_BEAM_SIZE    = 8          # wider beam = higher accuracy (was 5)
+WHISPER_BEAM_SIZE    = 8          # wider beam = higher accuracy
 
 # Hotwords: Whisper boosts log-probability for these tokens during decoding.
-# List every app name, action word, and proper noun the assistant might hear.
 WHISPER_HOTWORDS = (
     "Jarvis, Jarvice, Alexa, Nova, Friday, Leo, Serena, Privacy68, open, close, launch, search, go to, "
     "Chrome, Brave, WhatsApp, YouTube, Google, Notepad, "
@@ -49,7 +53,6 @@ WHISPER_HOTWORDS = (
 )
 
 # Initial prompt: Whisper conditions its decoder on this text before your audio.
-# A precise, command-style prompt dramatically reduces misrecognition of app names.
 INITIAL_PROMPT = (
     "Voice commands for a desktop assistant named Alexa. Commands always start with a wake word "
     "like Jarvis, Alexa, Nova, Friday, or Privacy68, followed by an action. Examples: 'Jarvis open Chrome', "
@@ -63,6 +66,11 @@ WAKE_WORD_THRESHOLD = 0.50
 
 # Audio feedback sounds (True = beep on wake, False = silent)
 ENABLE_BEEP = False
+
+# Agent Brain (LLM) Configuration
+# Models can be local Ollama (e.g. "ollama/llama3.2", "ollama/gemma4:31b-cloud") or cloud (Groq/OpenAI)
+AGENT_BRAIN_MODEL = "ollama/llama3.2:latest"
+AGENT_BRAIN_MAX_RETRIES = 2  # Open-Interpreter style self-healing code retry loop
 
 # Mobile Web Remote Server configuration
 ENABLE_REMOTE_SERVER = True

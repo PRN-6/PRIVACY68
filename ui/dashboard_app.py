@@ -1,0 +1,730 @@
+"""
+PRIVACY68 Control Center - Modern CustomTkinter Native Desktop GUI
+Pure Python, zero-browser / zero-WebView2 dependency. Works on any computer.
+"""
+
+import os
+import sys
+import threading
+import subprocess
+import time
+import urllib.request
+from typing import Optional
+
+import customtkinter as ctk
+
+# Ensure project root is in sys.path
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+
+import config
+from actions.agent_brain import is_ollama_online, agent_brain
+from actions.executor import execute_system_command_detailed
+
+
+# Theme setup
+ctk.set_appearance_mode("Dark")
+ctk.set_default_color_theme("dark-blue")
+
+# Color palette
+COLOR_BG_DARK = "#0F1117"
+COLOR_SIDEBAR = "#161922"
+COLOR_CARD = "#1E222D"
+COLOR_CARD_HOVER = "#262C3A"
+COLOR_ACCENT_RED = "#E50914"
+COLOR_ACCENT_RED_HOVER = "#B80710"
+COLOR_ACCENT_BLUE = "#3B82F6"
+COLOR_ACCENT_GREEN = "#10B981"
+COLOR_TEXT_PRIMARY = "#F3F4F6"
+COLOR_TEXT_MUTED = "#9CA3AF"
+COLOR_CODE_BG = "#111827"
+
+
+class Privacy68Dashboard(ctk.CTk):
+    def __init__(self):
+        super().__init__()
+
+        self.title("PRIVACY68 Control Center - Smart Assistant")
+        self.geometry("1060x720")
+        self.minsize(920, 620)
+        self.configure(fg_color=COLOR_BG_DARK)
+
+        # State
+        self.streamer = None
+        self.streamer_thread = None
+        self.is_listening = False
+        self.active_tab = "console"
+
+        # Build UI layout
+        self._build_layout()
+
+        # Initial background checks
+        self.after(500, self._check_services)
+
+    def _build_layout(self):
+        self.grid_rowconfigure(0, weight=1)
+        self.grid_columnconfigure(1, weight=1)
+
+        # ── Left Navigation Sidebar ──
+        self.sidebar = ctk.CTkFrame(self, width=220, corner_radius=0, fg_color=COLOR_SIDEBAR)
+        self.sidebar.grid(row=0, column=0, sticky="nsew")
+        self.sidebar.grid_rowconfigure(8, weight=1)
+
+        # Brand header
+        brand_label = ctk.CTkLabel(
+            self.sidebar,
+            text="PRIVACY 68",
+            font=ctk.CTkFont(family="Segoe UI", size=22, weight="bold"),
+            text_color=COLOR_ACCENT_RED
+        )
+        brand_label.grid(row=0, column=0, padx=20, pady=(20, 4), sticky="w")
+
+        subtitle = ctk.CTkLabel(
+            self.sidebar,
+            text="AI Desktop Assistant",
+            font=ctk.CTkFont(family="Segoe UI", size=12),
+            text_color=COLOR_TEXT_MUTED
+        )
+        subtitle.grid(row=1, column=0, padx=20, pady=(0, 20), sticky="w")
+
+        # Nav Buttons
+        self.nav_console_btn = ctk.CTkButton(
+            self.sidebar,
+            text="💻 Live Console",
+            anchor="w",
+            font=ctk.CTkFont(family="Segoe UI", size=13, weight="bold"),
+            fg_color=COLOR_ACCENT_RED,
+            hover_color=COLOR_ACCENT_RED_HOVER,
+            command=lambda: self._switch_tab("console")
+        )
+        self.nav_console_btn.grid(row=2, column=0, padx=15, pady=6, sticky="ew")
+
+        self.nav_brain_btn = ctk.CTkButton(
+            self.sidebar,
+            text="🧠 AI Brain & Ollama",
+            anchor="w",
+            font=ctk.CTkFont(family="Segoe UI", size=13),
+            fg_color="transparent",
+            hover_color=COLOR_CARD_HOVER,
+            command=lambda: self._switch_tab("brain")
+        )
+        self.nav_brain_btn.grid(row=3, column=0, padx=15, pady=6, sticky="ew")
+
+        self.nav_voice_btn = ctk.CTkButton(
+            self.sidebar,
+            text="🎙️ Voice & Audio",
+            anchor="w",
+            font=ctk.CTkFont(family="Segoe UI", size=13),
+            fg_color="transparent",
+            hover_color=COLOR_CARD_HOVER,
+            command=lambda: self._switch_tab("voice")
+        )
+        self.nav_voice_btn.grid(row=4, column=0, padx=15, pady=6, sticky="ew")
+
+        self.nav_settings_btn = ctk.CTkButton(
+            self.sidebar,
+            text="⚙️ Settings",
+            anchor="w",
+            font=ctk.CTkFont(family="Segoe UI", size=13),
+            fg_color="transparent",
+            hover_color=COLOR_CARD_HOVER,
+            command=lambda: self._switch_tab("settings")
+        )
+        self.nav_settings_btn.grid(row=5, column=0, padx=15, pady=6, sticky="ew")
+
+        # Service Status Indicators
+        status_frame = ctk.CTkFrame(self.sidebar, fg_color=COLOR_CARD, corner_radius=8)
+        status_frame.grid(row=6, column=0, padx=15, pady=(20, 10), sticky="ew")
+
+        self.voice_status_label = ctk.CTkLabel(
+            status_frame,
+            text="● Voice: Idle",
+            font=ctk.CTkFont(family="Segoe UI", size=11),
+            text_color="#F59E0B"
+        )
+        self.voice_status_label.pack(anchor="w", padx=12, pady=(8, 4))
+
+        self.brain_status_label = ctk.CTkLabel(
+            status_frame,
+            text="● Brain: Checking...",
+            font=ctk.CTkFont(family="Segoe UI", size=11),
+            text_color=COLOR_TEXT_MUTED
+        )
+        self.brain_status_label.pack(anchor="w", padx=12, pady=(0, 8))
+
+        # Voice Streamer Toggle Button
+        self.streamer_btn = ctk.CTkButton(
+            self.sidebar,
+            text="▶ Start Voice",
+            font=ctk.CTkFont(family="Segoe UI", size=13, weight="bold"),
+            fg_color=COLOR_ACCENT_GREEN,
+            hover_color="#059669",
+            command=self._toggle_voice_streamer
+        )
+        self.streamer_btn.grid(row=7, column=0, padx=15, pady=10, sticky="ew")
+
+        # Footer
+        footer_label = ctk.CTkLabel(
+            self.sidebar,
+            text="PRIVACY68 v2.0 • Pure Native",
+            font=ctk.CTkFont(family="Segoe UI", size=10),
+            text_color=COLOR_TEXT_MUTED
+        )
+        footer_label.grid(row=9, column=0, padx=15, pady=15, sticky="s")
+
+        # ── Main Content Area ──
+        self.content_frame = ctk.CTkFrame(self, fg_color=COLOR_BG_DARK, corner_radius=0)
+        self.content_frame.grid(row=0, column=1, sticky="nsew", padx=15, pady=15)
+        self.content_frame.grid_rowconfigure(1, weight=1)
+        self.content_frame.grid_columnconfigure(0, weight=1)
+
+        # Tab Frames container
+        self.views = {}
+        self._build_console_view()
+        self._build_brain_view()
+        self._build_voice_view()
+        self._build_settings_view()
+
+        self._switch_tab("console")
+
+    # ── TAB 1: Console View ──
+    def _build_console_view(self):
+        view = ctk.CTkFrame(self.content_frame, fg_color="transparent")
+        view.grid_rowconfigure(1, weight=1)
+        view.grid_columnconfigure(0, weight=1)
+
+        # Top Stat Badges
+        header_bar = ctk.CTkFrame(view, fg_color=COLOR_CARD, corner_radius=8, height=45)
+        header_bar.grid(row=0, column=0, sticky="ew", pady=(0, 10))
+
+        engine_name = getattr(config, "SPEECH_ENGINE", "whispercpp")
+        self.badge_engine = ctk.CTkLabel(
+            header_bar,
+            text=f"🎙️ Engine: {engine_name}",
+            font=ctk.CTkFont(family="Segoe UI", size=11, weight="bold"),
+            text_color=COLOR_TEXT_PRIMARY,
+            fg_color=COLOR_BG_DARK,
+            corner_radius=6,
+            padx=10, pady=4
+        )
+        self.badge_engine.pack(side="left", padx=10, pady=8)
+
+        wake_word = getattr(config, "WAKE_WORD_MODEL", "alexa")
+        self.badge_wake = ctk.CTkLabel(
+            header_bar,
+            text=f"⚡ Wake: \"{wake_word}\"",
+            font=ctk.CTkFont(family="Segoe UI", size=11, weight="bold"),
+            text_color=COLOR_TEXT_PRIMARY,
+            fg_color=COLOR_BG_DARK,
+            corner_radius=6,
+            padx=10, pady=4
+        )
+        self.badge_wake.pack(side="left", padx=6, pady=8)
+
+        self.clear_feed_btn = ctk.CTkButton(
+            header_bar,
+            text="Clear Log",
+            width=70,
+            height=28,
+            font=ctk.CTkFont(family="Segoe UI", size=11),
+            fg_color="transparent",
+            hover_color=COLOR_CARD_HOVER,
+            text_color=COLOR_TEXT_MUTED,
+            command=self._clear_feed
+        )
+        self.clear_feed_btn.pack(side="right", padx=10, pady=8)
+
+        # Scrollable Feed Container
+        self.feed_scroll = ctk.CTkScrollableFrame(view, fg_color=COLOR_CARD, corner_radius=8)
+        self.feed_scroll.grid(row=1, column=0, sticky="nsew", pady=(0, 10))
+        self.feed_scroll.grid_columnconfigure(0, weight=1)
+
+        # Bottom Input Bar
+        input_bar = ctk.CTkFrame(view, fg_color="transparent")
+        input_bar.grid(row=2, column=0, sticky="ew")
+        input_bar.grid_columnconfigure(0, weight=1)
+
+        self.command_entry = ctk.CTkEntry(
+            input_bar,
+            placeholder_text="Type an instruction (e.g. 'open brave and search github', 'what time is it?')...",
+            font=ctk.CTkFont(family="Segoe UI", size=13),
+            height=44,
+            corner_radius=8,
+            fg_color=COLOR_CARD,
+            border_color=COLOR_CARD_HOVER,
+            text_color=COLOR_TEXT_PRIMARY
+        )
+        self.command_entry.grid(row=0, column=0, sticky="ew", padx=(0, 10))
+        self.command_entry.bind("<Return>", lambda e: self._send_manual_command())
+
+        self.send_btn = ctk.CTkButton(
+            input_bar,
+            text="Execute",
+            font=ctk.CTkFont(family="Segoe UI", size=13, weight="bold"),
+            width=100,
+            height=44,
+            corner_radius=8,
+            fg_color=COLOR_ACCENT_RED,
+            hover_color=COLOR_ACCENT_RED_HOVER,
+            command=self._send_manual_command
+        )
+        self.send_btn.grid(row=0, column=1)
+
+        self.views["console"] = view
+
+        # Initial welcome message in feed
+        self._add_feed_card(
+            title="PRIVACY68 Ready",
+            body="Welcome to PRIVACY68 Control Center.\n• Type a command below or click 'Start Voice' in the sidebar to use wake word 'alexa'.\n• Built-in plugins: Chrome, Brave, WhatsApp, YouTube, Windows volume, screenshot, and files.",
+            card_type="system"
+        )
+
+    # ── TAB 2: AI Brain View ──
+    def _build_brain_view(self):
+        view = ctk.CTkScrollableFrame(self.content_frame, fg_color=COLOR_CARD, corner_radius=8)
+        view.grid_columnconfigure(0, weight=1)
+
+        title = ctk.CTkLabel(
+            view,
+            text="AI Brain & Ollama Integration",
+            font=ctk.CTkFont(family="Segoe UI", size=18, weight="bold"),
+            text_color=COLOR_TEXT_PRIMARY
+        )
+        title.pack(anchor="w", padx=20, pady=(20, 10))
+
+        desc = ctk.CTkLabel(
+            view,
+            text="PRIVACY68 features an agentic reasoning engine with Open-Interpreter style self-healing.\nWhen a complex command is received, the Brain writes Python code and auto-fixes execution errors.",
+            font=ctk.CTkFont(family="Segoe UI", size=12),
+            text_color=COLOR_TEXT_MUTED,
+            justify="left"
+        )
+        desc.pack(anchor="w", padx=20, pady=(0, 20))
+
+        # Model configuration section
+        model_frame = ctk.CTkFrame(view, fg_color=COLOR_BG_DARK, corner_radius=8)
+        model_frame.pack(fill="x", padx=20, pady=10)
+
+        ctk.CTkLabel(
+            model_frame,
+            text="Active LLM Model:",
+            font=ctk.CTkFont(family="Segoe UI", size=13, weight="bold"),
+            text_color=COLOR_TEXT_PRIMARY
+        ).pack(anchor="w", padx=15, pady=(15, 5))
+
+        self.brain_model_entry = ctk.CTkEntry(
+            model_frame,
+            font=ctk.CTkFont(family="Segoe UI", size=13),
+            height=36,
+            fg_color=COLOR_CARD,
+            border_color=COLOR_CARD_HOVER,
+            text_color=COLOR_TEXT_PRIMARY
+        )
+        self.brain_model_entry.insert(0, getattr(config, "AGENT_BRAIN_MODEL", "ollama/llama3.2:latest"))
+        self.brain_model_entry.pack(fill="x", padx=15, pady=(0, 10))
+
+        # Ollama Controller Frame
+        ctrl_frame = ctk.CTkFrame(view, fg_color=COLOR_BG_DARK, corner_radius=8)
+        ctrl_frame.pack(fill="x", padx=20, pady=10)
+
+        ctk.CTkLabel(
+            ctrl_frame,
+            text="Ollama Service Status:",
+            font=ctk.CTkFont(family="Segoe UI", size=13, weight="bold"),
+            text_color=COLOR_TEXT_PRIMARY
+        ).pack(anchor="w", padx=15, pady=(15, 5))
+
+        self.ollama_detail_label = ctk.CTkLabel(
+            ctrl_frame,
+            text="Status: Checking...",
+            font=ctk.CTkFont(family="Segoe UI", size=12),
+            text_color=COLOR_TEXT_MUTED
+        )
+        self.ollama_detail_label.pack(anchor="w", padx=15, pady=(0, 10))
+
+        btn_row = ctk.CTkFrame(ctrl_frame, fg_color="transparent")
+        btn_row.pack(anchor="w", padx=15, pady=(0, 15))
+
+        check_btn = ctk.CTkButton(
+            btn_row,
+            text="Check Status",
+            width=120,
+            command=self._check_services
+        )
+        check_btn.pack(side="left", padx=(0, 10))
+
+        start_ollama_btn = ctk.CTkButton(
+            btn_row,
+            text="Start Ollama ('ollama serve')",
+            fg_color=COLOR_ACCENT_BLUE,
+            hover_color="#2563EB",
+            command=self._launch_ollama_service
+        )
+        start_ollama_btn.pack(side="left")
+
+        # Test reasoning frame
+        test_frame = ctk.CTkFrame(view, fg_color=COLOR_BG_DARK, corner_radius=8)
+        test_frame.pack(fill="x", padx=20, pady=10)
+
+        ctk.CTkLabel(
+            test_frame,
+            text="Test AI Reasoning Prompt:",
+            font=ctk.CTkFont(family="Segoe UI", size=13, weight="bold"),
+            text_color=COLOR_TEXT_PRIMARY
+        ).pack(anchor="w", padx=15, pady=(15, 5))
+
+        self.test_prompt_entry = ctk.CTkEntry(
+            test_frame,
+            placeholder_text="Enter test prompt (e.g. 'open notepad and type hello')...",
+            font=ctk.CTkFont(family="Segoe UI", size=13),
+            height=36,
+            fg_color=COLOR_CARD,
+            border_color=COLOR_CARD_HOVER
+        )
+        self.test_prompt_entry.pack(fill="x", padx=15, pady=(0, 10))
+
+        run_test_btn = ctk.CTkButton(
+            test_frame,
+            text="Test Brain Generation",
+            fg_color=COLOR_ACCENT_RED,
+            hover_color=COLOR_ACCENT_RED_HOVER,
+            command=self._test_brain_generation
+        )
+        run_test_btn.pack(anchor="w", padx=15, pady=(0, 15))
+
+        self.views["brain"] = view
+
+    # ── TAB 3: Voice View ──
+    def _build_voice_view(self):
+        view = ctk.CTkScrollableFrame(self.content_frame, fg_color=COLOR_CARD, corner_radius=8)
+        view.grid_columnconfigure(0, weight=1)
+
+        title = ctk.CTkLabel(
+            view,
+            text="Voice & Speech Settings",
+            font=ctk.CTkFont(family="Segoe UI", size=18, weight="bold"),
+            text_color=COLOR_TEXT_PRIMARY
+        )
+        title.pack(anchor="w", padx=20, pady=(20, 10))
+
+        # Engine Selection
+        box1 = ctk.CTkFrame(view, fg_color=COLOR_BG_DARK, corner_radius=8)
+        box1.pack(fill="x", padx=20, pady=10)
+
+        ctk.CTkLabel(
+            box1,
+            text="Speech Engine:",
+            font=ctk.CTkFont(family="Segoe UI", size=13, weight="bold")
+        ).pack(anchor="w", padx=15, pady=(15, 5))
+
+        self.engine_selector = ctk.CTkOptionMenu(
+            box1,
+            values=["whispercpp (Fast CPU - Recommended)", "faster-whisper (CUDA/CPU)"],
+            width=320,
+            command=self._on_engine_changed
+        )
+        self.engine_selector.pack(anchor="w", padx=15, pady=(0, 15))
+
+        # Wake Word Selection
+        box2 = ctk.CTkFrame(view, fg_color=COLOR_BG_DARK, corner_radius=8)
+        box2.pack(fill="x", padx=20, pady=10)
+
+        ctk.CTkLabel(
+            box2,
+            text="Wake Word:",
+            font=ctk.CTkFont(family="Segoe UI", size=13, weight="bold")
+        ).pack(anchor="w", padx=15, pady=(15, 5))
+
+        self.wake_selector = ctk.CTkOptionMenu(
+            box2,
+            values=["alexa", "jarvis", "privacy68", "nova"],
+            width=200,
+            command=self._on_wake_changed
+        )
+        self.wake_selector.pack(anchor="w", padx=15, pady=(0, 15))
+
+        # Mic Test
+        box3 = ctk.CTkFrame(view, fg_color=COLOR_BG_DARK, corner_radius=8)
+        box3.pack(fill="x", padx=20, pady=10)
+
+        ctk.CTkLabel(
+            box3,
+            text="Microphone Test:",
+            font=ctk.CTkFont(family="Segoe UI", size=13, weight="bold")
+        ).pack(anchor="w", padx=15, pady=(15, 5))
+
+        self.mic_level_bar = ctk.CTkProgressBar(box3, width=300, height=14)
+        self.mic_level_bar.set(0.0)
+        self.mic_level_bar.pack(anchor="w", padx=15, pady=(5, 15))
+
+        self.views["voice"] = view
+
+    # ── TAB 4: Settings View ──
+    def _build_settings_view(self):
+        view = ctk.CTkScrollableFrame(self.content_frame, fg_color=COLOR_CARD, corner_radius=8)
+        view.grid_columnconfigure(0, weight=1)
+
+        title = ctk.CTkLabel(
+            view,
+            text="General Assistant Settings",
+            font=ctk.CTkFont(family="Segoe UI", size=18, weight="bold"),
+            text_color=COLOR_TEXT_PRIMARY
+        )
+        title.pack(anchor="w", padx=20, pady=(20, 10))
+
+        # Environment Info
+        info_frame = ctk.CTkFrame(view, fg_color=COLOR_BG_DARK, corner_radius=8)
+        info_frame.pack(fill="x", padx=20, pady=10)
+
+        ctk.CTkLabel(
+            info_frame,
+            text="System Environment:",
+            font=ctk.CTkFont(family="Segoe UI", size=13, weight="bold")
+        ).pack(anchor="w", padx=15, pady=(15, 5))
+
+        paths = agent_brain._resolve_user_paths()
+        env_text = (
+            f"• User Home: {paths['home']}\n"
+            f"• Desktop: {paths['desktop']}\n"
+            f"• Downloads: {paths['downloads']}\n"
+            f"• Remote Web Server: http://localhost:{getattr(config, 'REMOTE_SERVER_PORT', 8765)}"
+        )
+        ctk.CTkLabel(
+            info_frame,
+            text=env_text,
+            font=ctk.CTkFont(family="Segoe UI", size=12),
+            text_color=COLOR_TEXT_MUTED,
+            justify="left"
+        ).pack(anchor="w", padx=15, pady=(0, 15))
+
+        self.views["settings"] = view
+
+    # ── Tab Navigation ──
+    def _switch_tab(self, tab_name: str):
+        self.active_tab = tab_name
+        for name, frame in self.views.items():
+            if name == tab_name:
+                frame.grid(row=0, column=0, sticky="nsew")
+            else:
+                frame.grid_forget()
+
+        # Update button highlights
+        buttons = {
+            "console": self.nav_console_btn,
+            "brain": self.nav_brain_btn,
+            "voice": self.nav_voice_btn,
+            "settings": self.nav_settings_btn,
+        }
+        for name, btn in buttons.items():
+            if name == tab_name:
+                btn.configure(fg_color=COLOR_ACCENT_RED)
+            else:
+                btn.configure(fg_color="transparent")
+
+    # ── Live Feed UI Card Helpers ──
+    def _add_feed_card(self, title: str, body: str, card_type: str = "user", code: Optional[str] = None):
+        card = ctk.CTkFrame(self.feed_scroll, fg_color=COLOR_BG_DARK, corner_radius=8)
+        card.pack(fill="x", padx=10, pady=6)
+
+        header_frame = ctk.CTkFrame(card, fg_color="transparent")
+        header_frame.pack(fill="x", padx=12, pady=(10, 4))
+
+        color = COLOR_ACCENT_BLUE if card_type == "user" else (COLOR_ACCENT_RED if card_type == "code" else COLOR_TEXT_PRIMARY)
+        icon = "👤 " if card_type == "user" else ("🤖 " if card_type == "assistant" else "⚙️ ")
+
+        ctk.CTkLabel(
+            header_frame,
+            text=f"{icon}{title}",
+            font=ctk.CTkFont(family="Segoe UI", size=13, weight="bold"),
+            text_color=color
+        ).pack(side="left")
+
+        time_str = time.strftime("%H:%M:%S")
+        ctk.CTkLabel(
+            header_frame,
+            text=time_str,
+            font=ctk.CTkFont(family="Segoe UI", size=10),
+            text_color=COLOR_TEXT_MUTED
+        ).pack(side="right")
+
+        if body:
+            ctk.CTkLabel(
+                card,
+                text=body,
+                font=ctk.CTkFont(family="Segoe UI", size=12),
+                text_color=COLOR_TEXT_PRIMARY,
+                justify="left",
+                wraplength=680
+            ).pack(anchor="w", padx=14, pady=(2, 8))
+
+        if code:
+            code_box = ctk.CTkTextbox(
+                card,
+                height=min(140, 20 + code.count("\n") * 18),
+                font=ctk.CTkFont(family="Consolas", size=11),
+                fg_color=COLOR_CODE_BG,
+                text_color="#60A5FA",
+                corner_radius=6
+            )
+            code_box.insert("1.0", code)
+            code_box.configure(state="disabled")
+            code_box.pack(fill="x", padx=12, pady=(0, 10))
+
+    def _clear_feed(self):
+        for widget in self.feed_scroll.winfo_children():
+            widget.destroy()
+
+    # ── Background Logic & Actions ──
+    def _send_manual_command(self):
+        cmd = self.command_entry.get().strip()
+        if not cmd:
+            return
+        self.command_entry.delete(0, "end")
+
+        self._add_feed_card("User Command", cmd, card_type="user")
+
+        # Run command execution in background thread
+        threading.Thread(target=self._execute_command_async, args=(cmd,), daemon=True).start()
+
+    def _execute_command_async(self, cmd: str):
+        try:
+            result = execute_system_command_detailed(cmd)
+            success = result.get("success", False)
+            message = result.get("message", "")
+            method = result.get("method", "system")
+            code = getattr(agent_brain, "last_code", None)
+
+            def update_ui():
+                status_icon = "✅ " if success else "⚠️ "
+                self._add_feed_card(
+                    f"{status_icon}Execution Result ({method})",
+                    message,
+                    card_type="code" if code else "assistant",
+                    code=code if code else None
+                )
+
+            self.after(0, update_ui)
+        except Exception as e:
+            err_msg = str(e)
+            self.after(0, lambda: self._add_feed_card("⚠️ Execution Error", err_msg, card_type="assistant"))
+
+    def _check_services(self):
+        def worker():
+            ollama_ok = is_ollama_online()
+
+            def update():
+                if ollama_ok:
+                    self.brain_status_label.configure(text="● Brain: Online (Ollama)", text_color=COLOR_ACCENT_GREEN)
+                    self.ollama_detail_label.configure(text="Status: Online & Ready (http://localhost:11434)", text_color=COLOR_ACCENT_GREEN)
+                else:
+                    self.brain_status_label.configure(text="● Brain: Offline (Ollama)", text_color="#EF4444")
+                    self.ollama_detail_label.configure(text="Status: Offline (Target machine actively refused it / Not running)", text_color="#EF4444")
+
+            self.after(0, update)
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _launch_ollama_service(self):
+        try:
+            subprocess.Popen(["ollama", "serve"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            self._add_feed_card("System", "Initiating 'ollama serve' in background...", card_type="system")
+            self.after(2000, self._check_services)
+        except Exception as e:
+            self._add_feed_card("System Error", f"Could not launch ollama: {e}", card_type="system")
+
+    def _test_brain_generation(self):
+        prompt = self.test_prompt_entry.get().strip() or "open notepad and type hello"
+        self._add_feed_card("AI Brain Test", f"Testing LLM code generation for: '{prompt}'", card_type="user")
+
+        def worker():
+            model = self.brain_model_entry.get().strip()
+            agent_brain.model = model
+            res = agent_brain.generate_and_execute(prompt)
+
+            def update():
+                self._add_feed_card(
+                    f"Brain Result: {'Success' if res['success'] else 'Failed'}",
+                    res.get("message", ""),
+                    card_type="code",
+                    code=agent_brain.last_code
+                )
+            self.after(0, update)
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _toggle_voice_streamer(self):
+        if not self.is_listening:
+            self._start_voice_streamer()
+        else:
+            self._stop_voice_streamer()
+
+    def _start_voice_streamer(self):
+        try:
+            from speech.streamer import SpeechStreamer, set_speech_streamer
+            self.streamer = SpeechStreamer()
+            set_speech_streamer(self.streamer)
+
+            def on_text(text: str):
+                self.after(0, lambda: self._add_feed_card("Transcribed Speech", text, card_type="user"))
+                return self._execute_command_async(text)
+
+            def on_wake():
+                self.after(0, lambda: self._add_feed_card("Wake Word", "Listening for command...", card_type="system"))
+
+            def on_energy(vol: float):
+                # Update meter safely
+                meter_val = min(1.0, vol * 15.0)
+                self.after(0, lambda: self.mic_level_bar.set(meter_val))
+
+            self.streamer_thread = threading.Thread(
+                target=self.streamer.start,
+                kwargs={
+                    "on_text_callback": on_text,
+                    "on_wake_word_callback": on_wake,
+                    "on_audio_energy_callback": on_energy
+                },
+                daemon=True
+            )
+            self.streamer_thread.start()
+            self.is_listening = True
+            self.streamer_btn.configure(text="⏹ Stop Voice", fg_color="#DC2626", hover_color="#991B1B")
+            self.voice_status_label.configure(text="● Voice: Active", text_color=COLOR_ACCENT_GREEN)
+            self._add_feed_card("Voice Streamer", "Voice recognition active. Say 'alexa' followed by your command.", card_type="system")
+        except Exception as e:
+            self._add_feed_card("Voice Error", f"Could not start speech streamer: {e}", card_type="system")
+
+    def _stop_voice_streamer(self):
+        if self.streamer:
+            try:
+                self.streamer.stop()
+            except Exception:
+                pass
+        self.is_listening = False
+        self.streamer_btn.configure(text="▶ Start Voice", fg_color=COLOR_ACCENT_GREEN, hover_color="#059669")
+        self.voice_status_label.configure(text="● Voice: Idle", text_color="#F59E0B")
+        self._add_feed_card("Voice Streamer", "Voice recognition stopped.", card_type="system")
+
+    def _on_engine_changed(self, choice: str):
+        if "whispercpp" in choice:
+            config.SPEECH_ENGINE = "whispercpp"
+            self.badge_engine.configure(text="🎙️ Engine: whispercpp")
+        else:
+            config.SPEECH_ENGINE = "faster_whisper"
+            self.badge_engine.configure(text="🎙️ Engine: faster_whisper")
+
+    def _on_wake_changed(self, choice: str):
+        config.WAKE_WORD_MODEL = choice
+        self.badge_wake.configure(text=f"⚡ Wake: \"{choice}\"")
+        if self.streamer:
+            self.streamer.set_wake_word(choice)
+
+
+def run_dashboard_app():
+    """Main entrypoint for the CustomTkinter Dashboard."""
+    app = Privacy68Dashboard()
+    app.mainloop()
+
+
+if __name__ == "__main__":
+    run_dashboard_app()
