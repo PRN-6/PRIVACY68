@@ -10,33 +10,49 @@ if PROJECT_ROOT not in sys.path:
 logger = logging.getLogger("PRIVACY68.DashboardRunner")
 
 
-def run_dashboard():
-    """Launches the modern PRIVACY68 Control Center (Native CustomTkinter Desktop GUI)."""
-    try:
-        from ui.dashboard_app import run_dashboard_app
-        logger.info("Launching PRIVACY68 Control Center Native GUI (CustomTkinter)...")
-        run_dashboard_app()
-    except Exception as e:
-        logger.warning(f"CustomTkinter GUI launch failed ({e}), attempting legacy WebView2 fallback...")
-        try:
-            import webview
-            from ui.dashboard_bridge import DashboardAPI
+def get_dashboard_html_path() -> str:
+    """Resolves the path to index.html supporting both source and PyInstaller frozen modes."""
+    is_frozen = getattr(sys, "frozen", False)
+    if is_frozen:
+        base = getattr(sys, "_MEIPASS", os.path.dirname(sys.executable))
+    else:
+        base = PROJECT_ROOT
 
-            html_path = os.path.join(PROJECT_ROOT, "ui", "dashboard", "index.html")
-            api = DashboardAPI()
-            window = webview.create_window(
-                title="PRIVACY68 Control Center",
-                url=html_path,
-                js_api=api,
-                width=1000,
-                height=740,
-                min_size=(800, 620),
-                text_select=True
-            )
-            api.set_window(window)
-            webview.start(debug=False)
-        except Exception as webview_err:
-            logger.error(f"Both Native GUI and WebView2 fallback failed: {webview_err}")
+    html_path = os.path.join(base, "ui", "dashboard", "index.html")
+    if not os.path.exists(html_path):
+        alt_path = os.path.join(os.path.dirname(__file__), "dashboard", "index.html")
+        if os.path.exists(alt_path):
+            return alt_path
+    return html_path
+
+
+def run_dashboard():
+    """Launches the modern PRIVACY68 Control Center (WebView2 HTML/JS GUI with native fallback)."""
+    html_path = get_dashboard_html_path()
+    try:
+        import webview
+        from ui.dashboard_bridge import DashboardAPI
+
+        logger.info(f"Opening PRIVACY68 Control Center via WebView2 ({html_path})...")
+        api = DashboardAPI()
+        window = webview.create_window(
+            title="PRIVACY68 Control Center",
+            url=html_path,
+            js_api=api,
+            width=1000,
+            height=740,
+            min_size=(800, 620),
+            text_select=True
+        )
+        api.set_window(window)
+        webview.start(debug=False)
+    except Exception as webview_err:
+        logger.warning(f"WebView2 launch failed ({webview_err}), falling back to native CustomTkinter GUI...")
+        try:
+            from ui.dashboard_app import run_dashboard_app
+            run_dashboard_app()
+        except Exception as e:
+            logger.error(f"Both WebView2 and Native GUI fallback failed: {e}")
             raise
 
 

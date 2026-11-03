@@ -231,6 +231,45 @@ class DashboardAPI:
         except Exception as e:
             return {"success": False, "message": f"Authentication failed: {e}"}
 
+    def save_api_key(self, provider: str, api_key: str, model: str = "") -> Dict[str, Any]:
+        """Saves API key and active model to .env and updates runtime config."""
+        import config
+        provider = provider.lower().strip()
+        api_key = api_key.strip()
+        key_var = None
+        if "gemini" in provider or "google" in provider:
+            key_var = "GEMINI_API_KEY"
+            config.GEMINI_API_KEY = api_key
+            os.environ["GEMINI_API_KEY"] = api_key
+            os.environ["GOOGLE_API_KEY"] = api_key
+        elif "groq" in provider:
+            key_var = "GROQ_API_KEY"
+            config.GROQ_API_KEY = api_key
+            os.environ["GROQ_API_KEY"] = api_key
+        elif "claude" in provider or "anthropic" in provider:
+            key_var = "ANTHROPIC_API_KEY"
+            config.ANTHROPIC_API_KEY = api_key
+            os.environ["ANTHROPIC_API_KEY"] = api_key
+        elif "openai" in provider:
+            key_var = "OPENAI_API_KEY"
+            config.OPENAI_API_KEY = api_key
+            os.environ["OPENAI_API_KEY"] = api_key
+        elif "ollama" in provider:
+            key_var = "OLLAMA_API_KEY"
+            config.OLLAMA_API_KEY = api_key
+            os.environ["OLLAMA_API_KEY"] = api_key
+
+        if key_var:
+            config.update_dotenv_var(key_var, api_key)
+
+        if model:
+            config.AGENT_BRAIN_MODEL = model
+            from actions.agent_brain import agent_brain
+            agent_brain.model = model
+            config.update_dotenv_var("AGENT_BRAIN_MODEL", model)
+
+        return {"success": True, "message": f"{provider.capitalize()} API key saved successfully!"}
+
     def get_available_llm_models(self) -> List[Dict[str, Any]]:
         """Returns a list of all models installed in local Ollama instance."""
         try:
