@@ -1,14 +1,11 @@
 """
 PRIVACY68 Speech Streamer
-On-demand microphone audio capture and Whisper/Google Speech transcription with 100% Click-to-Speak privacy.
+On-demand microphone audio capture and Google Speech transcription with 100% Click-to-Speak privacy.
 The microphone is NEVER open automatically; hardware is only accessed when the user clicks speak.
 """
 
 from typing import Callable, Optional
 import os
-import io
-import wave
-import requests
 import logging
 import queue
 import re
@@ -122,7 +119,7 @@ class PushToTalkRecorder:
             text = streamer._transcribe(norm_audio, is_idle=False)
 
         if not text:
-            # First try Google Web Speech (Free, zero keys)
+            # Google Web Speech (Free, zero keys)
             try:
                 import speech_recognition as sr
                 rec = sr.Recognizer()
@@ -131,39 +128,6 @@ class PushToTalkRecorder:
                 text = rec.recognize_google(aud, language="en-US").strip()
             except Exception as ge:
                 logger.debug(f"Google speech recognition error: {ge}")
-
-            # If Google speech didn't return text and Groq API key is present, try Groq Cloud
-            if not text:
-                groq_key = getattr(config, "GROQ_API_KEY", "") or os.environ.get("GROQ_API_KEY", "")
-                if groq_key:
-                    try:
-                        int16_arr = (norm_audio * 32767).astype(np.int16)
-                        buf = io.BytesIO()
-                        with wave.open(buf, 'wb') as wf:
-                            wf.setnchannels(1)
-                            wf.setsampwidth(2)
-                            wf.setframerate(self.sample_rate)
-                            wf.writeframes(int16_arr.tobytes())
-                        buf.seek(0)
-                        files = {"file": ("command.wav", buf.getvalue(), "audio/wav")}
-                        data = {
-                            "model": getattr(config, "GROQ_WHISPER_MODEL", "whisper-large-v3-turbo"),
-                            "language": "en",
-                            "temperature": "0.0",
-                            "prompt": config.INITIAL_PROMPT,
-                        }
-                        headers = {"Authorization": f"Bearer {groq_key.strip()}"}
-                        resp = requests.post(
-                            "https://api.groq.com/openai/v1/audio/transcriptions",
-                            headers=headers,
-                            files=files,
-                            data=data,
-                            timeout=5.0
-                        )
-                        if resp.status_code == 200:
-                            text = resp.json().get("text", "").strip()
-                    except Exception as qe:
-                        logger.debug(f"Groq speech transcription error: {qe}")
 
         if text:
             text = autocorrect_speech_command(text)
@@ -238,49 +202,6 @@ class SpeechStreamer:
         if not self.is_muted:
             self.audio_queue.put(indata.copy())
 
-    def _transcribe_groq(self, audio_data: np.ndarray) -> str:
-        """Transcribes audio using Groq Cloud Whisper Large-v3-Turbo (~99% accuracy, ~150ms)."""
-        api_key = getattr(config, "GROQ_API_KEY", "") or os.environ.get("GROQ_API_KEY", "")
-        if not api_key:
-            return ""
-
-        try:
-            int16_arr = (audio_data * 32767).astype(np.int16)
-            buf = io.BytesIO()
-            with wave.open(buf, 'wb') as wf:
-                wf.setnchannels(1)
-                wf.setsampwidth(2)
-                wf.setframerate(self.sample_rate)
-                wf.writeframes(int16_arr.tobytes())
-            buf.seek(0)
-
-            files = {"file": ("command.wav", buf.getvalue(), "audio/wav")}
-            data = {
-                "model": getattr(config, "GROQ_WHISPER_MODEL", "whisper-large-v3-turbo"),
-                "language": "en",
-                "temperature": "0.0",
-                "prompt": config.INITIAL_PROMPT,
-            }
-            headers = {"Authorization": f"Bearer {api_key.strip()}"}
-
-            resp = requests.post(
-                "https://api.groq.com/openai/v1/audio/transcriptions",
-                headers=headers,
-                files=files,
-                data=data,
-                timeout=4.5
-            )
-            if resp.status_code == 200:
-                result_text = resp.json().get("text", "").strip()
-                logger.info(f"[GROQ WHISPER TURBO] Transcribed: '{result_text}'")
-                return result_text
-            else:
-                logger.warning(f"Groq API returned {resp.status_code}: {resp.text}")
-                return ""
-        except Exception as e:
-            logger.warning(f"Groq Whisper cloud call failed ({e}), falling back to local engine...")
-            return ""
-
     def _transcribe_google(self, audio_data: np.ndarray) -> str:
         """Transcribes active command using Google Web Speech Recognition (100% Free, Zero API Key)."""
         try:
@@ -299,31 +220,10 @@ class SpeechStreamer:
         return ""
 
     def _transcribe(self, audio_data: np.ndarray, is_idle: bool = False) -> str:
-        """Unified transcription method using Google Cloud Speech (Free, zero keys) or Groq Cloud Whisper."""
+        """Unified transcription method using Google Web Speech Recognition (100% Free, zero keys)."""
         if len(audio_data) == 0:
             return ""
-
-        engine = getattr(config, "SPEECH_ENGINE", "auto").lower()
-
-        # 1. If explicit "google" engine selected
-        if "google" in engine:
-            g_res = self._transcribe_google(audio_data)
-            if g_res:
-                return g_res
-
-        # 2. Prefer Groq Cloud Whisper Large Turbo if API key is present
-        api_key = getattr(config, "GROQ_API_KEY", "") or os.environ.get("GROQ_API_KEY", "")
-        if api_key:
-            groq_res = self._transcribe_groq(audio_data)
-            if groq_res:
-                return groq_res
-
-        # 3. Default / Fallback: Google Web Speech API (100% Free, zero setup)
-        g_res = self._transcribe_google(audio_data)
-        if g_res:
-            return g_res
-
-        return ""
+        return self._transcribe_google(audio_data)
 
     def start_recording(self) -> None:
         """Starts recording audio on-demand when the user clicks speak."""

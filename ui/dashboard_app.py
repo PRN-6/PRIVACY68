@@ -204,17 +204,9 @@ class Privacy68Dashboard(ctk.CTk):
         header_bar = ctk.CTkFrame(view, fg_color=COLOR_CARD, corner_radius=8, height=42)
         header_bar.grid(row=0, column=0, sticky="ew", pady=(0, 8))
 
-        groq_active = bool(getattr(config, "GROQ_API_KEY", "") or os.environ.get("GROQ_API_KEY", ""))
-        engine_cfg = getattr(config, "SPEECH_ENGINE", "auto")
-        if groq_active:
-            engine_name = "Groq Whisper (99%)"
-        elif engine_cfg in {"google", "auto"}:
-            engine_name = "Google Speech (Free)"
-        else:
-            engine_name = engine_cfg
         self.badge_engine = ctk.CTkLabel(
             header_bar,
-            text=f"🎙️ Engine: {engine_name}",
+            text="🎙️ Voice: Google Speech (Free)",
             font=ctk.CTkFont(family="Segoe UI", size=11, weight="bold"),
             text_color=COLOR_TEXT_PRIMARY,
             fg_color=COLOR_BG_DARK,
@@ -700,101 +692,25 @@ class Privacy68Dashboard(ctk.CTk):
         )
         title.pack(anchor="w", padx=16, pady=(12, 4))
 
-        # Engine Selection
-        box1 = ctk.CTkFrame(view, fg_color=COLOR_BG_DARK, corner_radius=8)
-        box1.pack(fill="x", padx=16, pady=6)
-
-        ctk.CTkLabel(
-            box1,
-            text="Speech-to-Text Recognition Engine:",
-            font=ctk.CTkFont(family="Segoe UI", size=12, weight="bold")
-        ).pack(anchor="w", padx=14, pady=(10, 4))
-
-        self.engine_selector = ctk.CTkOptionMenu(
-            box1,
-            values=[
-                "auto (Google Speech & Groq Cloud)",
-                "google (Google Cloud - 100% Free)",
-                "groq (Groq Cloud Whisper Turbo)"
-            ],
-            width=320,
-            height=30,
-            font=ctk.CTkFont(family="Segoe UI", size=11),
-            command=self._on_engine_changed
-        )
-        self.engine_selector.pack(anchor="w", padx=14, pady=(0, 10))
-
-        # Google Speech Recognition Box (Free, Zero API Key)
+        # Google Speech Recognition Box (100% Free, Zero API Key)
         box_google = ctk.CTkFrame(view, fg_color=COLOR_BG_DARK, corner_radius=8)
         box_google.pack(fill="x", padx=16, pady=6)
 
         ctk.CTkLabel(
             box_google,
-            text="🌐 Google Speech Recognition (100% Free - Zero Keys Required)",
+            text="🌐 Google Web Speech Recognition (100% Free - Zero Keys Required)",
             font=ctk.CTkFont(family="Segoe UI", size=12, weight="bold"),
             text_color=COLOR_TEXT_PRIMARY
         ).pack(anchor="w", padx=14, pady=(10, 2))
 
         ctk.CTkLabel(
             box_google,
-            text="Same voice model that powers Android and 'Hey Google'. Unlimited recognition, zero sign-up or card needed.",
+            text="● Status: Active & Ready (Free Out-of-the-Box)\n"
+                 "Transcribes desktop commands instantly with zero API keys, zero cost, and zero account signups.",
             font=ctk.CTkFont(family="Segoe UI", size=11),
-            text_color=COLOR_ACCENT_GREEN
+            text_color=COLOR_ACCENT_GREEN,
+            justify="left"
         ).pack(anchor="w", padx=14, pady=(0, 10))
-
-        # Groq Cloud Whisper Turbo Integration Box
-        box_groq = ctk.CTkFrame(view, fg_color=COLOR_BG_DARK, corner_radius=8)
-        box_groq.pack(fill="x", padx=16, pady=6)
-
-        ctk.CTkLabel(
-            box_groq,
-            text="⚡ Groq Cloud Whisper Turbo (~99% Accuracy, ~150ms)",
-            font=ctk.CTkFont(family="Segoe UI", size=12, weight="bold"),
-            text_color=COLOR_TEXT_PRIMARY
-        ).pack(anchor="w", padx=14, pady=(10, 2))
-
-        ctk.CTkLabel(
-            box_groq,
-            text="Free tier on console.groq.com/keys (No credit card needed). State-of-the-art cloud model.",
-            font=ctk.CTkFont(family="Segoe UI", size=10),
-            text_color=COLOR_TEXT_MUTED
-        ).pack(anchor="w", padx=14, pady=(0, 6))
-
-        groq_row = ctk.CTkFrame(box_groq, fg_color="transparent")
-        groq_row.pack(fill="x", padx=14, pady=(0, 10))
-        groq_row.grid_columnconfigure(0, weight=1)
-
-        self.groq_key_entry = ctk.CTkEntry(
-            groq_row,
-            placeholder_text="Paste your Groq API Key (gsk_...)",
-            font=ctk.CTkFont(family="Segoe UI", size=11),
-            show="*",
-            height=32,
-            fg_color=COLOR_CARD,
-            border_color=COLOR_CARD_HOVER
-        )
-        cur_key = getattr(config, "GROQ_API_KEY", "") or os.environ.get("GROQ_API_KEY", "")
-        if cur_key:
-            self.groq_key_entry.insert(0, cur_key)
-        self.groq_key_entry.grid(row=0, column=0, sticky="ew", padx=(0, 8))
-
-        save_key_btn = ctk.CTkButton(
-            groq_row,
-            text="Save Key",
-            width=80,
-            height=32,
-            font=ctk.CTkFont(family="Segoe UI", size=11, weight="bold"),
-            command=self._save_groq_key
-        )
-        save_key_btn.grid(row=0, column=1)
-
-        self.groq_status_label = ctk.CTkLabel(
-            box_groq,
-            text="● Status: " + ("Groq Cloud Whisper Active (~99% accuracy)" if cur_key else "Inactive (Using Local CPU Whisper)"),
-            font=ctk.CTkFont(family="Segoe UI", size=11),
-            text_color=COLOR_ACCENT_GREEN if cur_key else COLOR_TEXT_MUTED
-        )
-        self.groq_status_label.pack(anchor="w", padx=14, pady=(0, 10))
 
         # Privacy Activation Mode
         box2 = ctk.CTkFrame(view, fg_color=COLOR_BG_DARK, corner_radius=8)
@@ -809,9 +725,11 @@ class Privacy68Dashboard(ctk.CTk):
 
         ctk.CTkLabel(
             box2,
-            text="Continuous background listening and wake words are disabled.\nMicrophone only records when you click '🎙️ Click to Speak', ensuring zero false activations.",
+            text="Continuous background listening and wake words are permanently disabled.\n"
+                 "Microphone only records when you click '🎙️ Click to Speak', ensuring zero false activations.",
             font=ctk.CTkFont(family="Segoe UI", size=11),
-            text_color=COLOR_TEXT_MUTED
+            text_color=COLOR_TEXT_MUTED,
+            justify="left"
         ).pack(anchor="w", padx=14, pady=(0, 10))
 
         # Mic Test
@@ -1133,9 +1051,6 @@ class Privacy68Dashboard(ctk.CTk):
         config.GROQ_API_KEY = key
         os.environ["GROQ_API_KEY"] = key
         config.update_dotenv_var("GROQ_API_KEY", key)
-        if hasattr(self, "groq_key_entry"):
-            self.groq_key_entry.delete(0, "end")
-            self.groq_key_entry.insert(0, key)
         if key:
             if hasattr(self, "groq_brain_status_label"):
                 self.groq_brain_status_label.configure(
@@ -1274,46 +1189,6 @@ class Privacy68Dashboard(ctk.CTk):
             self.after(0, update)
 
         threading.Thread(target=worker, daemon=True).start()
-
-    def _on_engine_changed(self, choice: str):
-        choice_low = choice.lower()
-        if "google" in choice_low:
-            config.SPEECH_ENGINE = "google"
-            self.badge_engine.configure(text="🎙️ Engine: Google Speech (Free)")
-            self._add_feed_card("Voice Engine", "Speech engine set to Google Cloud Speech (100% Free, zero keys).", card_type="system")
-        elif "groq" in choice_low:
-            config.SPEECH_ENGINE = "groq"
-            self.badge_engine.configure(text="🎙️ Engine: Groq Whisper (99%)")
-            self._add_feed_card("Voice Engine", "Speech engine set to Groq Cloud Whisper Turbo.", card_type="system")
-        else:
-            config.SPEECH_ENGINE = "auto"
-            self.badge_engine.configure(text="🎙️ Engine: Google Speech (Free)")
-            self._add_feed_card("Voice Engine", "Speech engine set to Auto (Google Cloud Speech).", card_type="system")
-        config.update_dotenv_var("SPEECH_ENGINE", config.SPEECH_ENGINE)
-
-    def _save_groq_key(self):
-        key = self.groq_key_entry.get().strip()
-        config.GROQ_API_KEY = key
-        os.environ["GROQ_API_KEY"] = key
-        config.update_dotenv_var("GROQ_API_KEY", key)
-        if key:
-            self.groq_status_label.configure(
-                text="● Status: Groq Cloud Whisper Active (~99% accuracy)",
-                text_color=COLOR_ACCENT_GREEN
-            )
-            self.badge_engine.configure(text="🎙️ Engine: Groq Whisper (99%)")
-            self._add_feed_card(
-                "Voice Engine",
-                "Groq Cloud Whisper Large-v3-Turbo activated! Voice commands will now be transcribed with ~99% accuracy in ~150ms.",
-                card_type="system"
-            )
-        else:
-            self.groq_status_label.configure(
-                text="● Status: Inactive (Using Google Cloud Speech)",
-                text_color=COLOR_TEXT_MUTED
-            )
-            self.badge_engine.configure(text="🎙️ Engine: Google Speech (Free)")
-            self._add_feed_card("Voice Engine", "Groq API Key removed. Google Cloud Speech is active.", card_type="system")
 
 
 def run_dashboard_app():

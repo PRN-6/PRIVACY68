@@ -36,10 +36,9 @@ VAD_IDLE_THRESHOLD = 0.30        # Lower threshold for idle wake-word scan gatin
 SILENCE_DURATION_CHUNKS = 8      # 8 chunks * 80ms = ~0.64s pause after speech for rapid cut-off
 SILENCE_THRESHOLD = 0.008        # Fallback RMS noise floor
 
-# Speech Engine Selection: "auto" (Google Web Speech + Groq), "google", or "groq"
-# "google": 100% Free, NO API key required. Google's cloud voice system (same as Android / Hey Google).
-# "groq": Whisper-large-v3-turbo running on Groq LPUs (~150ms).
-SPEECH_ENGINE = os.environ.get("SPEECH_ENGINE", "auto")
+# Speech Engine: 100% Free Google Web Speech Recognition (zero keys, zero cost)
+# Always uses Google's reliable cloud voice API with zero setup or API credentials needed.
+SPEECH_ENGINE = "google"
 
 # Runtime diagnostics compatibility
 WHISPER_MODEL_SIZE = "google-speech-free"
@@ -69,10 +68,9 @@ ENABLE_BEEP = False
 OLLAMA_BASE_URL = os.environ.get("OLLAMA_BASE_URL", os.environ.get("OLLAMA_HOST", "http://localhost:11434"))
 OLLAMA_API_KEY = os.environ.get("OLLAMA_API_KEY", "")
 
-# Groq Cloud Whisper & LLM Configuration (Free 99% accuracy cloud LPU)
+# Groq Cloud LLM Configuration (Free fast reasoning LPU for AI Brain)
 # Get free API key in 10 seconds at https://console.groq.com/keys (No credit card needed)
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
-GROQ_WHISPER_MODEL = "whisper-large-v3-turbo"
 
 # Anthropic Claude API Configuration (OpenClaw style out-of-the-box frontier intelligence)
 # Set ANTHROPIC_API_KEY in environment or configure via dashboard UI

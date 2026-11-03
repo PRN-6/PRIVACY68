@@ -69,7 +69,7 @@ PRIVACY68 uses **Ollama** via LiteLLM as its reasoning engine for desktop automa
 
 ### 3. CUDA & GPU Acceleration (Optional, for High-Speed Audio Inference)
 
-PRIVACY68 uses **Google Web Speech** (100% free, zero keys) and **Groq Cloud Whisper** for high-accuracy speech transcription with zero background listening.
+PRIVACY68 uses **Google Web Speech** (100% free, zero keys required) for high-accuracy speech transcription with zero background listening.
 
 | Compute Mode | Audio Inference Latency | Memory Footprint | Setup Required |
 |---|---|---|---|
