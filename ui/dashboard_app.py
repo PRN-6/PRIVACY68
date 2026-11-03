@@ -144,9 +144,9 @@ class Privacy68Dashboard(ctk.CTk):
 
         self.voice_status_label = ctk.CTkLabel(
             status_frame,
-            text="● Voice: Idle",
+            text="● Voice: Ready (Click to Speak)",
             font=ctk.CTkFont(family="Segoe UI", size=11),
-            text_color="#F59E0B"
+            text_color=COLOR_ACCENT_GREEN
         )
         self.voice_status_label.pack(anchor="w", padx=10, pady=(6, 2))
 
@@ -161,12 +161,12 @@ class Privacy68Dashboard(ctk.CTk):
         # Voice Streamer Toggle Button
         self.streamer_btn = ctk.CTkButton(
             self.sidebar,
-            text="▶ Start Voice",
+            text="🎙️ Click to Speak",
             height=36,
             font=ctk.CTkFont(family="Segoe UI", size=12, weight="bold"),
             fg_color=COLOR_ACCENT_GREEN,
             hover_color="#059669",
-            command=self._toggle_voice_streamer
+            command=self._toggle_voice_recording
         )
         self.streamer_btn.grid(row=7, column=0, padx=12, pady=6, sticky="ew")
 
@@ -223,17 +223,16 @@ class Privacy68Dashboard(ctk.CTk):
         )
         self.badge_engine.pack(side="left", padx=8, pady=6)
 
-        wake_word = getattr(config, "WAKE_WORD_MODEL", "alexa")
-        self.badge_wake = ctk.CTkLabel(
+        self.badge_privacy = ctk.CTkLabel(
             header_bar,
-            text=f"⚡ Wake: \"{wake_word}\"",
+            text="🔒 100% Private (Click-to-Speak)",
             font=ctk.CTkFont(family="Segoe UI", size=11, weight="bold"),
-            text_color=COLOR_TEXT_PRIMARY,
+            text_color=COLOR_ACCENT_GREEN,
             fg_color=COLOR_BG_DARK,
             corner_radius=6,
             padx=10, pady=3
         )
-        self.badge_wake.pack(side="left", padx=4, pady=6)
+        self.badge_privacy.pack(side="left", padx=4, pady=6)
 
         self.clear_feed_btn = ctk.CTkButton(
             header_bar,
@@ -273,13 +272,14 @@ class Privacy68Dashboard(ctk.CTk):
 
         self.ptt_btn = ctk.CTkButton(
             input_bar,
-            text="🎙️ Hold to Speak",
+            text="🎙️ Click to Speak",
             font=ctk.CTkFont(family="Segoe UI", size=12, weight="bold"),
-            width=135,
+            width=140,
             height=40,
             corner_radius=8,
             fg_color=COLOR_ACCENT_BLUE,
-            hover_color="#2563EB"
+            hover_color="#2563EB",
+            command=self._toggle_voice_recording
         )
         self.ptt_btn.grid(row=0, column=1, padx=(0, 8))
         self.ptt_btn.bind("<ButtonPress-1>", self._on_ptt_press)
@@ -302,8 +302,8 @@ class Privacy68Dashboard(ctk.CTk):
 
         # Initial welcome message in feed
         self._add_feed_card(
-            title="PRIVACY68 Ready",
-            body="Welcome to PRIVACY68 Control Center.\n• Hold '🎙️ Hold to Speak' (Push-to-Talk) to talk with zero wake-word false alarms.\n• Or click 'Start Voice' in the sidebar for hands-free wake words ('hey google' or 'alexa').\n• Free cloud speech recognition and AI automation ready out-of-the-box.",
+            title="PRIVACY68 Ready (100% Private)",
+            body="Welcome to PRIVACY68 Control Center.\n• Click '🎙️ Click to Speak' to give any voice command (e.g. 'open chrome and search for youtube').\n• Zero background listening: your microphone is 100% off when not speaking.\n• Powered by Google Cloud Speech (Free) and your configured AI API.",
             card_type="system"
         )
 
@@ -796,25 +796,23 @@ class Privacy68Dashboard(ctk.CTk):
         )
         self.groq_status_label.pack(anchor="w", padx=14, pady=(0, 10))
 
-        # Wake Word Selection
+        # Privacy Activation Mode
         box2 = ctk.CTkFrame(view, fg_color=COLOR_BG_DARK, corner_radius=8)
         box2.pack(fill="x", padx=16, pady=6)
 
         ctk.CTkLabel(
             box2,
-            text="Wake Word:",
-            font=ctk.CTkFont(family="Segoe UI", size=12, weight="bold")
-        ).pack(anchor="w", padx=14, pady=(10, 4))
+            text="🔒 100% Privacy Mode (Click-to-Speak)",
+            font=ctk.CTkFont(family="Segoe UI", size=12, weight="bold"),
+            text_color=COLOR_ACCENT_GREEN
+        ).pack(anchor="w", padx=14, pady=(10, 2))
 
-        self.wake_selector = ctk.CTkOptionMenu(
+        ctk.CTkLabel(
             box2,
-            values=["alexa", "hey google", "jarvis", "privacy68", "nova"],
-            width=180,
-            height=30,
+            text="Continuous background listening and wake words are disabled.\nMicrophone only records when you click '🎙️ Click to Speak', ensuring zero false activations.",
             font=ctk.CTkFont(family="Segoe UI", size=11),
-            command=self._on_wake_changed
-        )
-        self.wake_selector.pack(anchor="w", padx=14, pady=(0, 10))
+            text_color=COLOR_TEXT_MUTED
+        ).pack(anchor="w", padx=14, pady=(0, 10))
 
         # Mic Test
         box3 = ctk.CTkFrame(view, fg_color=COLOR_BG_DARK, corner_radius=8)
@@ -946,46 +944,63 @@ class Privacy68Dashboard(ctk.CTk):
             widget.destroy()
 
     # ── Background Logic & Actions ──
+    def _toggle_voice_recording(self):
+        """Starts or stops Click-to-Speak microphone recording with 100% privacy."""
+        from speech.streamer import PushToTalkRecorder
+        if self.ptt_recorder is None:
+            self.ptt_recorder = PushToTalkRecorder()
+
+        if not self.ptt_recorder.is_recording:
+            try:
+                self.ptt_recorder.start()
+                self.ptt_btn.configure(text="🔴 Stop & Send", fg_color="#DC2626", hover_color="#991B1B")
+                self.streamer_btn.configure(text="🔴 Stop & Send", fg_color="#DC2626", hover_color="#991B1B")
+                self.voice_status_label.configure(text="● Voice: Listening...", text_color="#EF4444")
+                self._add_feed_card("Voice Input", "Microphone listening... Speak your command, then click 'Stop & Send'.", card_type="system")
+            except Exception as e:
+                self._add_feed_card("Voice Error", f"Could not access microphone: {e}", card_type="system")
+        else:
+            self.ptt_btn.configure(text="⏳ Transcribing...", fg_color="#D97706")
+            self.streamer_btn.configure(text="⏳ Transcribing...", fg_color="#D97706")
+            self.voice_status_label.configure(text="● Voice: Transcribing...", text_color="#F59E0B")
+
+            def worker():
+                try:
+                    text = self.ptt_recorder.stop_and_transcribe()
+                except Exception as e:
+                    text = ""
+                    logger.error(f"Voice transcription failed: {e}")
+
+                def on_done():
+                    self.ptt_btn.configure(text="🎙️ Click to Speak", fg_color=COLOR_ACCENT_BLUE, hover_color="#2563EB")
+                    self.streamer_btn.configure(text="🎙️ Click to Speak", fg_color=COLOR_ACCENT_GREEN, hover_color="#059669")
+                    self.voice_status_label.configure(text="● Voice: Ready (Click to Speak)", text_color=COLOR_ACCENT_GREEN)
+                    if text:
+                        self.command_entry.delete(0, "end")
+                        self.command_entry.insert(0, text)
+                        self._add_feed_card("User Voice", text, card_type="user")
+                        threading.Thread(target=self._execute_command_async, args=(text,), daemon=True).start()
+                    else:
+                        self._add_feed_card(
+                            "Voice Input",
+                            "No speech detected. Click '🎙️ Click to Speak', speak clearly, then click Stop.",
+                            card_type="system"
+                        )
+
+                self.after(0, on_done)
+
+            threading.Thread(target=worker, daemon=True).start()
+
     def _on_ptt_press(self, event=None):
-        try:
-            from speech.streamer import PushToTalkRecorder
-            if self.ptt_recorder is None:
-                self.ptt_recorder = PushToTalkRecorder()
-            self.ptt_btn.configure(text="🔴 Listening...", fg_color="#DC2626")
-            self.ptt_recorder.start()
-        except Exception as e:
-            self._add_feed_card("Voice Error", f"Push-to-Talk failed: {e}", card_type="system")
+        if not self.ptt_recorder or not self.ptt_recorder.is_recording:
+            self._toggle_voice_recording()
 
     def _on_ptt_release(self, event=None):
-        if not self.ptt_recorder or not self.ptt_recorder.is_recording:
-            return
+        if self.ptt_recorder and self.ptt_recorder.is_recording and len(getattr(self.ptt_recorder, "frames", [])) >= 4:
+            self._toggle_voice_recording()
 
-        self.ptt_btn.configure(text="⏳ Transcribing...", fg_color="#D97706")
-
-        def worker():
-            try:
-                text = self.ptt_recorder.stop_and_transcribe(self.streamer)
-            except Exception as e:
-                text = ""
-                logger.error(f"PTT transcription failed: {e}")
-
-            def on_done():
-                self.ptt_btn.configure(text="🎙️ Hold to Speak", fg_color=COLOR_ACCENT_BLUE)
-                if text:
-                    self.command_entry.delete(0, "end")
-                    self.command_entry.insert(0, text)
-                    self._add_feed_card("User Voice (PTT)", text, card_type="user")
-                    threading.Thread(target=self._execute_command_async, args=(text,), daemon=True).start()
-                else:
-                    self._add_feed_card(
-                        "Voice Note",
-                        "No voice detected. Hold the button while speaking your command, then release.",
-                        card_type="system"
-                    )
-
-            self.after(0, on_done)
-
-        threading.Thread(target=worker, daemon=True).start()
+    def _toggle_voice_streamer(self):
+        return self._toggle_voice_recording()
 
     def _send_manual_command(self):
         cmd = self.command_entry.get().strip()
@@ -1260,57 +1275,6 @@ class Privacy68Dashboard(ctk.CTk):
 
         threading.Thread(target=worker, daemon=True).start()
 
-    def _toggle_voice_streamer(self):
-        if not self.is_listening:
-            self._start_voice_streamer()
-        else:
-            self._stop_voice_streamer()
-
-    def _start_voice_streamer(self):
-        try:
-            from speech.streamer import SpeechStreamer, set_speech_streamer
-            self.streamer = SpeechStreamer()
-            set_speech_streamer(self.streamer)
-
-            def on_text(text: str):
-                self.after(0, lambda: self._add_feed_card("Transcribed Speech", text, card_type="user"))
-                return self._execute_command_async(text)
-
-            def on_wake():
-                self.after(0, lambda: self._add_feed_card("Wake Word", "Listening for command...", card_type="system"))
-
-            def on_energy(vol: float):
-                meter_val = min(1.0, vol * 15.0)
-                self.after(0, lambda: self.mic_level_bar.set(meter_val))
-
-            self.streamer_thread = threading.Thread(
-                target=self.streamer.start,
-                kwargs={
-                    "on_text_callback": on_text,
-                    "on_wake_word_callback": on_wake,
-                    "on_audio_energy_callback": on_energy
-                },
-                daemon=True
-            )
-            self.streamer_thread.start()
-            self.is_listening = True
-            self.streamer_btn.configure(text="⏹ Stop Voice", fg_color="#DC2626", hover_color="#991B1B")
-            self.voice_status_label.configure(text="● Voice: Active", text_color=COLOR_ACCENT_GREEN)
-            self._add_feed_card("Voice Streamer", "Voice recognition active. Say 'alexa' followed by your command.", card_type="system")
-        except Exception as e:
-            self._add_feed_card("Voice Error", f"Could not start speech streamer: {e}", card_type="system")
-
-    def _stop_voice_streamer(self):
-        if self.streamer:
-            try:
-                self.streamer.stop()
-            except Exception:
-                pass
-        self.is_listening = False
-        self.streamer_btn.configure(text="▶ Start Voice", fg_color=COLOR_ACCENT_GREEN, hover_color="#059669")
-        self.voice_status_label.configure(text="● Voice: Idle", text_color="#F59E0B")
-        self._add_feed_card("Voice Streamer", "Voice recognition stopped.", card_type="system")
-
     def _on_engine_changed(self, choice: str):
         choice_low = choice.lower()
         if "google" in choice_low:
@@ -1354,9 +1318,6 @@ class Privacy68Dashboard(ctk.CTk):
     def _on_wake_changed(self, choice: str):
         config.WAKE_WORD_MODEL = choice
         config.update_dotenv_var("WAKE_WORD_MODEL", choice)
-        self.badge_wake.configure(text=f"⚡ Wake: \"{choice}\"")
-        if self.streamer:
-            self.streamer.set_wake_word(choice)
 
 
 def run_dashboard_app():

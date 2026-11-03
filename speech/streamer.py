@@ -590,3 +590,7 @@ class PushToTalkRecorder:
         if text:
             text = autocorrect_speech_command(text)
         return text
+
+
+# Alias for explicit Click-to-Speak usage
+ClickToSpeakRecorder = PushToTalkRecorder
