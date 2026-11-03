@@ -4,6 +4,10 @@ Real-time microphone audio capture, Silero VAD gating, and Whisper transcription
 """
 
 from typing import Callable, Optional
+import os
+import io
+import wave
+import requests
 import logging
 import queue
 import re
@@ -141,9 +145,63 @@ class SpeechStreamer:
         res = re.sub(r'^(hey|ok|okay|hi|hello|ah|oh)\s+', '', res, flags=re.IGNORECASE)
         return res.strip(".!?, \t\n")
 
+    def _transcribe_groq(self, audio_data: np.ndarray) -> str:
+        """Transcribes audio using Groq Cloud Whisper Large-v3-Turbo (~99% accuracy, ~150ms)."""
+        api_key = getattr(config, "GROQ_API_KEY", "") or os.environ.get("GROQ_API_KEY", "")
+        if not api_key:
+            return ""
+
+        try:
+            int16_arr = (audio_data * 32767).astype(np.int16)
+            buf = io.BytesIO()
+            with wave.open(buf, 'wb') as wf:
+                wf.setnchannels(1)
+                wf.setsampwidth(2)
+                wf.setframerate(self.sample_rate)
+                wf.writeframes(int16_arr.tobytes())
+            buf.seek(0)
+
+            files = {"file": ("command.wav", buf.getvalue(), "audio/wav")}
+            data = {
+                "model": getattr(config, "GROQ_WHISPER_MODEL", "whisper-large-v3-turbo"),
+                "language": "en",
+                "temperature": "0.0",
+                "prompt": config.INITIAL_PROMPT,
+            }
+            headers = {"Authorization": f"Bearer {api_key.strip()}"}
+
+            resp = requests.post(
+                "https://api.groq.com/openai/v1/audio/transcriptions",
+                headers=headers,
+                files=files,
+                data=data,
+                timeout=4.5
+            )
+            if resp.status_code == 200:
+                result_text = resp.json().get("text", "").strip()
+                logger.info(f"[GROQ WHISPER TURBO] Transcribed: '{result_text}'")
+                return result_text
+            else:
+                logger.warning(f"Groq API returned {resp.status_code}: {resp.text}")
+                return ""
+        except Exception as e:
+            logger.warning(f"Groq Whisper cloud call failed ({e}), falling back to local engine...")
+            return ""
+
     def _transcribe(self, audio_data: np.ndarray, is_idle: bool = False) -> str:
-        """Unified transcription method supporting both whisper.cpp and faster-whisper."""
-        if self.model is None or len(audio_data) == 0:
+        """Unified transcription method supporting Groq Cloud Whisper, whisper.cpp, and faster-whisper."""
+        if len(audio_data) == 0:
+            return ""
+
+        # For active command transcription, prefer Groq Cloud Whisper Large Turbo if API key is present
+        if not is_idle:
+            api_key = getattr(config, "GROQ_API_KEY", "") or os.environ.get("GROQ_API_KEY", "")
+            if api_key:
+                groq_res = self._transcribe_groq(audio_data)
+                if groq_res:
+                    return groq_res
+
+        if self.model is None:
             return ""
 
         if self.engine_type == "whispercpp":

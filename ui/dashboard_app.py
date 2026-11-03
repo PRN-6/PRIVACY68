@@ -203,7 +203,8 @@ class Privacy68Dashboard(ctk.CTk):
         header_bar = ctk.CTkFrame(view, fg_color=COLOR_CARD, corner_radius=8, height=42)
         header_bar.grid(row=0, column=0, sticky="ew", pady=(0, 8))
 
-        engine_name = getattr(config, "SPEECH_ENGINE", "whispercpp")
+        groq_active = bool(getattr(config, "GROQ_API_KEY", "") or os.environ.get("GROQ_API_KEY", ""))
+        engine_name = "Groq Whisper (99%)" if groq_active else getattr(config, "SPEECH_ENGINE", "whispercpp")
         self.badge_engine = ctk.CTkLabel(
             header_bar,
             text=f"🎙️ Engine: {engine_name}",
@@ -465,7 +466,7 @@ class Privacy68Dashboard(ctk.CTk):
 
         ctk.CTkLabel(
             box1,
-            text="Speech Engine:",
+            text="Local Speech Engine:",
             font=ctk.CTkFont(family="Segoe UI", size=12, weight="bold")
         ).pack(anchor="w", padx=14, pady=(10, 4))
 
@@ -478,6 +479,60 @@ class Privacy68Dashboard(ctk.CTk):
             command=self._on_engine_changed
         )
         self.engine_selector.pack(anchor="w", padx=14, pady=(0, 10))
+
+        # Groq Cloud Whisper Turbo Integration Box
+        box_groq = ctk.CTkFrame(view, fg_color=COLOR_BG_DARK, corner_radius=8)
+        box_groq.pack(fill="x", padx=16, pady=6)
+
+        ctk.CTkLabel(
+            box_groq,
+            text="⚡ Groq Cloud Whisper Turbo (~99% Accuracy, ~150ms)",
+            font=ctk.CTkFont(family="Segoe UI", size=12, weight="bold"),
+            text_color=COLOR_TEXT_PRIMARY
+        ).pack(anchor="w", padx=14, pady=(10, 2))
+
+        ctk.CTkLabel(
+            box_groq,
+            text="Free tier on console.groq.com/keys (No credit card needed). State-of-the-art cloud model.",
+            font=ctk.CTkFont(family="Segoe UI", size=10),
+            text_color=COLOR_TEXT_MUTED
+        ).pack(anchor="w", padx=14, pady=(0, 6))
+
+        groq_row = ctk.CTkFrame(box_groq, fg_color="transparent")
+        groq_row.pack(fill="x", padx=14, pady=(0, 10))
+        groq_row.grid_columnconfigure(0, weight=1)
+
+        self.groq_key_entry = ctk.CTkEntry(
+            groq_row,
+            placeholder_text="Paste your Groq API Key (gsk_...)",
+            font=ctk.CTkFont(family="Segoe UI", size=11),
+            show="*",
+            height=32,
+            fg_color=COLOR_CARD,
+            border_color=COLOR_CARD_HOVER
+        )
+        cur_key = getattr(config, "GROQ_API_KEY", "") or os.environ.get("GROQ_API_KEY", "")
+        if cur_key:
+            self.groq_key_entry.insert(0, cur_key)
+        self.groq_key_entry.grid(row=0, column=0, sticky="ew", padx=(0, 8))
+
+        save_key_btn = ctk.CTkButton(
+            groq_row,
+            text="Save Key",
+            width=80,
+            height=32,
+            font=ctk.CTkFont(family="Segoe UI", size=11, weight="bold"),
+            command=self._save_groq_key
+        )
+        save_key_btn.grid(row=0, column=1)
+
+        self.groq_status_label = ctk.CTkLabel(
+            box_groq,
+            text="● Status: " + ("Groq Cloud Whisper Active (~99% accuracy)" if cur_key else "Inactive (Using Local CPU Whisper)"),
+            font=ctk.CTkFont(family="Segoe UI", size=11),
+            text_color=COLOR_ACCENT_GREEN if cur_key else COLOR_TEXT_MUTED
+        )
+        self.groq_status_label.pack(anchor="w", padx=14, pady=(0, 10))
 
         # Wake Word Selection
         box2 = ctk.CTkFrame(view, fg_color=COLOR_BG_DARK, corner_radius=8)
@@ -775,6 +830,30 @@ class Privacy68Dashboard(ctk.CTk):
         else:
             config.SPEECH_ENGINE = "faster_whisper"
             self.badge_engine.configure(text="🎙️ Engine: faster_whisper")
+
+    def _save_groq_key(self):
+        key = self.groq_key_entry.get().strip()
+        config.GROQ_API_KEY = key
+        os.environ["GROQ_API_KEY"] = key
+        if key:
+            self.groq_status_label.configure(
+                text="● Status: Groq Cloud Whisper Active (~99% accuracy)",
+                text_color=COLOR_ACCENT_GREEN
+            )
+            self.badge_engine.configure(text="🎙️ Engine: Groq Whisper (99%)")
+            self._add_feed_card(
+                "Voice Engine",
+                "Groq Cloud Whisper Large-v3-Turbo activated! Voice commands will now be transcribed with ~99% accuracy in ~150ms.",
+                card_type="system"
+            )
+        else:
+            self.groq_status_label.configure(
+                text="● Status: Inactive (Using Local CPU Whisper)",
+                text_color=COLOR_TEXT_MUTED
+            )
+            engine = getattr(config, "SPEECH_ENGINE", "whispercpp")
+            self.badge_engine.configure(text=f"🎙️ Engine: {engine}")
+            self._add_feed_card("Voice Engine", "Groq API Key removed. Local CPU Whisper is active.", card_type="system")
 
     def _on_wake_changed(self, choice: str):
         config.WAKE_WORD_MODEL = choice

@@ -67,6 +67,11 @@ WAKE_WORD_THRESHOLD = 0.50
 # Audio feedback sounds (True = beep on wake, False = silent)
 ENABLE_BEEP = False
 
+# Groq Cloud Whisper Configuration (Free 99% accuracy cloud LPU)
+# Get free API key in 10 seconds at https://console.groq.com/keys (No credit card needed)
+GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
+GROQ_WHISPER_MODEL = "whisper-large-v3-turbo"
+
 # Agent Brain (LLM) Configuration
 # Models can be local Ollama (e.g. "ollama/llama3.2", "ollama/gemma4:31b-cloud") or cloud (Groq/OpenAI)
 AGENT_BRAIN_MODEL = "ollama/llama3.2:latest"
