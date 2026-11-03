@@ -70,5 +70,20 @@ class TestAgentBrain(unittest.TestCase):
         self.assertEqual(self.brain.last_reasoning, "Analyzing request: do something")
 
 
+
+    @patch.object(AgentBrain, "get_fallback_models", return_value=["gemini/gemini-1.5-flash"])
+    def test_auto_failover_switches_to_fallback_provider(self, mock_fallbacks):
+        def mock_call(model, messages):
+            if "groq" in model:
+                raise RuntimeError("Groq Rate Limit Exceeded: 429")
+            return "print('fallback succeeded')"
+
+        self.brain.model = "groq/llama-3.3-70b-versatile"
+        with patch.object(self.brain, "_call_single_model", side_effect=mock_call):
+            code = self.brain._get_code_from_llm("test task")
+
+        self.assertEqual(code, "print('fallback succeeded')")
+        self.assertEqual(self.brain.active_provider_used, "gemini/gemini-1.5-flash")
+
 if __name__ == "__main__":
     unittest.main()

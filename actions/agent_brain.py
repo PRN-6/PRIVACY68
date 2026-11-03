@@ -3,7 +3,7 @@ os.environ["LITELLM_LOCAL_MODEL_COST_MAP"] = "True"
 from pathlib import Path
 import logging
 import urllib.request
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 import litellm
 import config
 from actions.agent_runner import run_agent_code
@@ -38,10 +38,46 @@ class AgentBrain:
     """
 
     def __init__(self, model: Optional[str] = None):
-        self.model = model or getattr(config, "AGENT_BRAIN_MODEL", "ollama/llama3.2:latest")
+        self.model = model or getattr(config, "AGENT_BRAIN_MODEL", "groq/llama-3.3-70b-versatile")
         self.max_retries = getattr(config, "AGENT_BRAIN_MAX_RETRIES", 2)
         self.last_code = ""
         self.last_reasoning = ""
+        self.active_provider_used = self.model
+
+    def get_fallback_models(self, current_model: str) -> List[str]:
+        """
+        Returns an ordered list of alternative models that are configured and ready to use,
+        excluding the currently selected model.
+        """
+        fallbacks: List[str] = []
+        cur_low = (current_model or "").lower()
+
+        gemini_key = getattr(config, "GEMINI_API_KEY", "") or os.environ.get("GEMINI_API_KEY", "") or os.environ.get("GOOGLE_API_KEY", "")
+        groq_key = getattr(config, "GROQ_API_KEY", "") or os.environ.get("GROQ_API_KEY", "")
+        claude_key = getattr(config, "ANTHROPIC_API_KEY", "") or os.environ.get("ANTHROPIC_API_KEY", "")
+        openai_key = getattr(config, "OPENAI_API_KEY", "") or os.environ.get("OPENAI_API_KEY", "")
+
+        # 1. Google Gemini (Fast & Generous Free Tier)
+        if gemini_key and "gemini" not in cur_low:
+            fallbacks.append("gemini/gemini-1.5-flash")
+
+        # 2. Groq Cloud (Ultra-Fast 70B Free Tier)
+        if groq_key and "groq" not in cur_low:
+            fallbacks.append("groq/llama-3.3-70b-versatile")
+
+        # 3. Anthropic Claude (Frontier Intelligence)
+        if claude_key and "claude" not in cur_low and "anthropic" not in cur_low:
+            fallbacks.append("claude-3-5-sonnet-20241022")
+
+        # 4. OpenAI (GPT-4o mini)
+        if openai_key and "openai" not in cur_low and "gpt" not in cur_low:
+            fallbacks.append("openai/gpt-4o-mini")
+
+        # 5. Local Ollama (if running)
+        if "ollama" not in cur_low and is_ollama_online():
+            fallbacks.append("ollama/llama3.2:latest")
+
+        return fallbacks
 
     def _resolve_user_paths(self) -> Dict[str, str]:
         """Resolves active user directory paths, including OneDrive redirections."""
@@ -109,8 +145,75 @@ class AgentBrain:
     def system_prompt(self) -> str:
         return self._build_system_prompt()
 
+    def _call_single_model(self, model: str, messages: list) -> str:
+        """Executes a single LiteLLM completion with provider credential binding."""
+        api_key = None
+        api_base = None
+        model_lower = model.lower()
+
+        if "gemini" in model_lower:
+            api_key = getattr(config, "GEMINI_API_KEY", "") or os.environ.get("GEMINI_API_KEY", "") or os.environ.get("GOOGLE_API_KEY", "")
+            if api_key:
+                os.environ["GEMINI_API_KEY"] = api_key.strip()
+                os.environ["GOOGLE_API_KEY"] = api_key.strip()
+            is_mocked = hasattr(litellm.completion, "mock_calls") or hasattr(litellm.completion, "return_value")
+            if not is_mocked and not api_key:
+                raise ValueError("Google Gemini API key is not configured. Go to the 'AI Brain' tab in the dashboard and paste your Gemini API key.")
+
+        elif "claude" in model_lower or "anthropic" in model_lower:
+            api_key = getattr(config, "ANTHROPIC_API_KEY", "") or os.environ.get("ANTHROPIC_API_KEY", "")
+            if api_key:
+                os.environ["ANTHROPIC_API_KEY"] = api_key.strip()
+            is_mocked = hasattr(litellm.completion, "mock_calls") or hasattr(litellm.completion, "return_value")
+            if not is_mocked and not api_key:
+                raise ValueError("Anthropic Claude API key is not configured. Go to the 'AI Brain' tab in the dashboard and paste your Claude API key.")
+
+        elif "groq" in model_lower:
+            api_key = getattr(config, "GROQ_API_KEY", "") or os.environ.get("GROQ_API_KEY", "")
+            if api_key:
+                os.environ["GROQ_API_KEY"] = api_key.strip()
+            is_mocked = hasattr(litellm.completion, "mock_calls") or hasattr(litellm.completion, "return_value")
+            if not is_mocked and not api_key:
+                raise ValueError("Groq API key is not configured. Go to the 'AI Brain' tab in the dashboard and paste your free Groq API key.")
+
+        elif "gpt" in model_lower or "openai" in model_lower:
+            api_key = getattr(config, "OPENAI_API_KEY", "") or os.environ.get("OPENAI_API_KEY", "")
+            if api_key:
+                os.environ["OPENAI_API_KEY"] = api_key.strip()
+            is_mocked = hasattr(litellm.completion, "mock_calls") or hasattr(litellm.completion, "return_value")
+            if not is_mocked and not api_key:
+                raise ValueError("OpenAI API key is not configured. Go to the 'AI Brain' tab in the dashboard and paste your OpenAI API key.")
+
+        elif "ollama" in model_lower:
+            ollama_url = getattr(config, "OLLAMA_BASE_URL", "") or os.environ.get("OLLAMA_BASE_URL", "") or os.environ.get("OLLAMA_HOST", "http://localhost:11434")
+            api_base = ollama_url.rstrip("/")
+            api_key = getattr(config, "OLLAMA_API_KEY", "") or os.environ.get("OLLAMA_API_KEY", "")
+            os.environ["OLLAMA_API_BASE"] = api_base
+            is_mocked = hasattr(litellm.completion, "mock_calls") or hasattr(litellm.completion, "return_value")
+            if not is_mocked and not is_ollama_online():
+                raise ConnectionError(f"Cannot reach Ollama API at {api_base}. Use a Cloud API (Gemini, Claude, or Groq [Free]) in the AI Brain tab, or check your Ollama API endpoint.")
+
+        call_kwargs = {
+            "model": model,
+            "messages": messages,
+            "temperature": 0,
+        }
+        if api_base:
+            call_kwargs["api_base"] = api_base
+        if api_key:
+            call_kwargs["api_key"] = api_key.strip()
+
+        response = litellm.completion(**call_kwargs)
+        code = response.choices[0].message.content.strip()
+
+        if code.startswith("```python"):
+            code = code.split("```python")[1].split("```")[0].strip()
+        elif code.startswith("```"):
+            code = code.split("```")[1].split("```")[0].strip()
+        return code
+
     def _get_code_from_llm(self, text: str, error_context: Optional[str] = None) -> str:
-        """Uses LiteLLM to get Python code from the configured model, supporting error repair."""
+        """Uses LiteLLM to get Python code from configured models with automated multi-provider failover."""
         messages = [
             {"role": "system", "content": self.system_prompt},
             {"role": "user", "content": text},
@@ -125,59 +228,32 @@ class AgentBrain:
                 )
             })
 
-        # Resolve API Key and Base URL based on model provider
-        api_key = None
-        api_base = None
-        model_lower = self.model.lower()
-        if "claude" in model_lower or "anthropic" in model_lower:
-            api_key = getattr(config, "ANTHROPIC_API_KEY", "") or os.environ.get("ANTHROPIC_API_KEY", "")
-        elif "groq" in model_lower:
-            api_key = getattr(config, "GROQ_API_KEY", "") or os.environ.get("GROQ_API_KEY", "")
-        elif "gpt" in model_lower or "openai" in model_lower:
-            api_key = getattr(config, "OPENAI_API_KEY", "") or os.environ.get("OPENAI_API_KEY", "")
-        elif "ollama" in model_lower:
-            ollama_url = getattr(config, "OLLAMA_BASE_URL", "") or os.environ.get("OLLAMA_BASE_URL", "") or os.environ.get("OLLAMA_HOST", "http://localhost:11434")
-            api_base = ollama_url.rstrip("/")
-            api_key = getattr(config, "OLLAMA_API_KEY", "") or os.environ.get("OLLAMA_API_KEY", "")
-            os.environ["OLLAMA_API_BASE"] = api_base
+        # Try primary model first, then auto-failover through any other configured providers
+        models_to_try = [self.model] + self.get_fallback_models(self.model)
+        primary_exception = None
+        last_exception = None
 
-        # Validate API keys before network call (unless litellm.completion is mocked in tests)
-        is_mocked = hasattr(litellm.completion, "mock_calls") or hasattr(litellm.completion, "return_value")
-        if not is_mocked:
-            if ("claude" in model_lower or "anthropic" in model_lower) and not api_key:
-                raise ValueError("Anthropic Claude API key is not configured. Go to the 'AI Brain' tab in the dashboard and paste your Claude API key.")
-            if "groq" in model_lower and not api_key:
-                raise ValueError("Groq API key is not configured. Go to the 'AI Brain' tab in the dashboard and paste your free Groq API key.")
-            if ("gpt" in model_lower or "openai" in model_lower) and not api_key:
-                raise ValueError("OpenAI API key is not configured. Go to the 'AI Brain' tab in the dashboard and paste your OpenAI API key.")
-            if "ollama" in model_lower:
-                if not is_ollama_online():
-                    raise ConnectionError(f"Cannot reach Ollama API at {api_base}. Use a Cloud API (Claude or Groq [Free]) in the AI Brain tab, or check your Ollama API endpoint.")
+        for idx, model_name in enumerate(models_to_try):
+            try:
+                if idx > 0:
+                    logger.warning(f"[AGENT BRAIN] Auto-Failover: Primary provider failed. Switching to fallback provider '{model_name}'...")
+                code = self._call_single_model(model_name, messages)
+                if code:
+                    self.active_provider_used = model_name
+                    if idx > 0:
+                        logger.info(f"[AGENT BRAIN] Auto-Failover succeeded via '{model_name}'!")
+                    return code
+            except Exception as exc:
+                if idx == 0:
+                    primary_exception = exc
+                last_exception = exc
+                logger.warning(f"[AGENT BRAIN] Model '{model_name}' call failed ({exc}).")
 
-        call_kwargs = {
-            "model": self.model,
-            "messages": messages,
-            "temperature": 0,
-        }
-        if api_base:
-            call_kwargs["api_base"] = api_base
-        if api_key:
-            call_kwargs["api_key"] = api_key.strip()
-            if "claude" in model_lower or "anthropic" in model_lower:
-                os.environ["ANTHROPIC_API_KEY"] = api_key.strip()
-            elif "groq" in model_lower:
-                os.environ["GROQ_API_KEY"] = api_key.strip()
-            elif "gpt" in model_lower or "openai" in model_lower:
-                os.environ["OPENAI_API_KEY"] = api_key.strip()
-
-        response = litellm.completion(**call_kwargs)
-        code = response.choices[0].message.content.strip()
-
-        if code.startswith("```python"):
-            code = code.split("```python")[1].split("```")[0].strip()
-        elif code.startswith("```"):
-            code = code.split("```")[1].split("```")[0].strip()
-        return code
+        if primary_exception:
+            raise primary_exception
+        if last_exception:
+            raise last_exception
+        return ""
 
     def generate_and_execute(self, text: str) -> Dict[str, Any]:
         """
@@ -266,9 +342,10 @@ class AgentBrain:
                     except Exception as learn_err:
                         logger.debug(f"[SELF-IMPROVING] Could not save skill: {learn_err}")
 
+                    provider_note = f" (via {self.active_provider_used})" if self.active_provider_used != self.model else ""
                     return {
                         "success": True,
-                        "message": "Task executed successfully via Agent Brain.",
+                        "message": f"Task executed successfully via Agent Brain{provider_note}.",
                         "output": result.stdout,
                         "method": "agentic_engine",
                     }

@@ -68,6 +68,10 @@ ENABLE_BEEP = False
 OLLAMA_BASE_URL = os.environ.get("OLLAMA_BASE_URL", os.environ.get("OLLAMA_HOST", "http://localhost:11434"))
 OLLAMA_API_KEY = os.environ.get("OLLAMA_API_KEY", "")
 
+# Google Gemini API Configuration (Ultra-fast reasoning with free tier)
+# Get free API key in seconds at https://aistudio.google.com/app/apikey (No credit card needed)
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", os.environ.get("GOOGLE_API_KEY", ""))
+
 # Groq Cloud LLM Configuration (Free fast reasoning LPU for AI Brain)
 # Get free API key in 10 seconds at https://console.groq.com/keys (No credit card needed)
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
@@ -77,10 +81,12 @@ GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
 
-# Agent Brain (LLM) Configuration - Pure API Mode (No local LLM required)
-# Priority: Custom env -> Claude (if key set) -> Groq (if key set) -> Remote Ollama -> Groq Cloud Llama 3.3 (Free default)
+# Agent Brain (LLM) Configuration - Pure API Mode with Auto-Failover (No local LLM required)
+# Priority: Custom env -> Gemini (if key set) -> Claude (if key set) -> Groq (if key set) -> Remote Ollama -> Gemini 1.5 Flash (Free default)
 if os.environ.get("AGENT_BRAIN_MODEL"):
     _default_model = os.environ.get("AGENT_BRAIN_MODEL")
+elif GEMINI_API_KEY:
+    _default_model = "gemini/gemini-1.5-flash"
 elif ANTHROPIC_API_KEY:
     _default_model = "claude-3-5-sonnet-20241022"
 elif GROQ_API_KEY:
@@ -88,7 +94,7 @@ elif GROQ_API_KEY:
 elif OLLAMA_BASE_URL and OLLAMA_BASE_URL != "http://localhost:11434":
     _default_model = "ollama/llama3.2:latest"
 else:
-    _default_model = "groq/llama-3.3-70b-versatile"
+    _default_model = "gemini/gemini-1.5-flash" if GEMINI_API_KEY else "groq/llama-3.3-70b-versatile"
 
 AGENT_BRAIN_MODEL = _default_model
 AGENT_BRAIN_MAX_RETRIES = 2  # Open-Interpreter style self-healing code retry loop

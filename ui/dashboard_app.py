@@ -561,9 +561,10 @@ class Privacy68Dashboard(ctk.CTk):
         self.preset_menu = ctk.CTkOptionMenu(
             preset_row,
             values=[
+                "gemini/gemini-1.5-flash",
+                "gemini/gemini-2.0-flash",
                 "groq/llama-3.3-70b-versatile",
                 "claude-3-5-sonnet-20241022",
-                "claude-3-5-haiku-20241022",
                 "openai/gpt-4o-mini",
                 "ollama/llama3.2:latest",
                 "ollama/qwen2.5-coder:7b"
@@ -574,6 +575,79 @@ class Privacy68Dashboard(ctk.CTk):
             command=self._on_preset_selected
         )
         self.preset_menu.pack(side="left")
+
+        # Auto-Failover Resilience Banner
+        failover_box = ctk.CTkFrame(view, fg_color=COLOR_BG_DARK, corner_radius=8)
+        failover_box.pack(fill="x", padx=16, pady=6)
+
+        ctk.CTkLabel(
+            failover_box,
+            text="🔄 Multi-Provider Auto-Failover: Active",
+            font=ctk.CTkFont(family="Segoe UI", size=12, weight="bold"),
+            text_color=COLOR_ACCENT_GREEN
+        ).pack(anchor="w", padx=14, pady=(10, 2))
+
+        ctk.CTkLabel(
+            failover_box,
+            text="If your active model hits rate limits or experiences downtime, PRIVACY68 automatically cascades requests to your other saved API keys without interrupting your command.",
+            font=ctk.CTkFont(family="Segoe UI", size=11),
+            text_color=COLOR_TEXT_MUTED,
+            justify="left"
+        ).pack(anchor="w", padx=14, pady=(0, 10))
+
+        # Google Gemini API Frame (Free tier)
+        gemini_frame = ctk.CTkFrame(view, fg_color=COLOR_BG_DARK, corner_radius=8)
+        gemini_frame.pack(fill="x", padx=16, pady=6)
+
+        ctk.CTkLabel(
+            gemini_frame,
+            text="⚡ Google Gemini API (Free Tier - Gemini 1.5 & 2.0 Flash)",
+            font=ctk.CTkFont(family="Segoe UI", size=12, weight="bold"),
+            text_color=COLOR_TEXT_PRIMARY
+        ).pack(anchor="w", padx=14, pady=(10, 2))
+
+        ctk.CTkLabel(
+            gemini_frame,
+            text="Ultra-fast Google AI reasoning. Free API key at aistudio.google.com/app/apikey (No credit card needed).",
+            font=ctk.CTkFont(family="Segoe UI", size=11),
+            text_color=COLOR_TEXT_MUTED
+        ).pack(anchor="w", padx=14, pady=(0, 6))
+
+        gemini_key_row = ctk.CTkFrame(gemini_frame, fg_color="transparent")
+        gemini_key_row.pack(fill="x", padx=14, pady=(0, 6))
+        gemini_key_row.grid_columnconfigure(0, weight=1)
+
+        self.gemini_key_entry = ctk.CTkEntry(
+            gemini_key_row,
+            placeholder_text="Paste Google Gemini API Key (AIzaSy...)",
+            font=ctk.CTkFont(family="Segoe UI", size=12),
+            height=34,
+            fg_color=COLOR_CARD,
+            border_color=COLOR_CARD_HOVER,
+            show="•"
+        )
+        cur_gemini = getattr(config, "GEMINI_API_KEY", "") or os.environ.get("GEMINI_API_KEY", "") or os.environ.get("GOOGLE_API_KEY", "")
+        if cur_gemini:
+            self.gemini_key_entry.insert(0, cur_gemini)
+        self.gemini_key_entry.grid(row=0, column=0, sticky="ew", padx=(0, 8))
+
+        save_gemini_btn = ctk.CTkButton(
+            gemini_key_row,
+            text="Save Gemini Key",
+            width=120,
+            height=34,
+            font=ctk.CTkFont(family="Segoe UI", size=11, weight="bold"),
+            command=self._save_gemini_key
+        )
+        save_gemini_btn.grid(row=0, column=1)
+
+        self.gemini_status_label = ctk.CTkLabel(
+            gemini_frame,
+            text="● Status: " + ("Gemini Active (Key Saved)" if cur_gemini else "Inactive (Enter API key to activate)"),
+            font=ctk.CTkFont(family="Segoe UI", size=11),
+            text_color=COLOR_ACCENT_GREEN if cur_gemini else COLOR_TEXT_MUTED
+        )
+        self.gemini_status_label.pack(anchor="w", padx=14, pady=(0, 10))
 
         # Groq Cloud API Frame (Free tier)
         groq_frame = ctk.CTkFrame(view, fg_color=COLOR_BG_DARK, corner_radius=8)
@@ -1156,6 +1230,7 @@ class Privacy68Dashboard(ctk.CTk):
         def worker():
             ollama_ok = is_ollama_online()
             cur_model = getattr(config, "AGENT_BRAIN_MODEL", "groq/llama-3.3-70b-versatile").lower()
+            gemini_key = getattr(config, "GEMINI_API_KEY", "") or os.environ.get("GEMINI_API_KEY", "") or os.environ.get("GOOGLE_API_KEY", "")
             claude_key = getattr(config, "ANTHROPIC_API_KEY", "") or os.environ.get("ANTHROPIC_API_KEY", "")
             groq_key = getattr(config, "GROQ_API_KEY", "") or os.environ.get("GROQ_API_KEY", "")
             openai_key = getattr(config, "OPENAI_API_KEY", "") or os.environ.get("OPENAI_API_KEY", "")
@@ -1175,7 +1250,20 @@ class Privacy68Dashboard(ctk.CTk):
                             text_color="#EF4444"
                         )
 
-                # 2. Update Claude status label if available
+                # 2. Update Gemini status label if available
+                if hasattr(self, "gemini_status_label"):
+                    if gemini_key:
+                        self.gemini_status_label.configure(
+                            text="● Status: Gemini Active (API Key Saved)",
+                            text_color=COLOR_ACCENT_GREEN
+                        )
+                    else:
+                        self.gemini_status_label.configure(
+                            text="● Status: Inactive (Enter API key to activate)",
+                            text_color=COLOR_TEXT_MUTED
+                        )
+
+                # 3. Update Claude status label if available
                 if hasattr(self, "claude_status_label"):
                     if claude_key:
                         self.claude_status_label.configure(
@@ -1188,7 +1276,7 @@ class Privacy68Dashboard(ctk.CTk):
                             text_color=COLOR_TEXT_MUTED
                         )
 
-                # 3. Update Groq brain status label if available
+                # 4. Update Groq brain status label if available
                 if hasattr(self, "groq_brain_status_label"):
                     if groq_key:
                         self.groq_brain_status_label.configure(
@@ -1201,7 +1289,7 @@ class Privacy68Dashboard(ctk.CTk):
                             text_color=COLOR_TEXT_MUTED
                         )
 
-                # 4. Update OpenAI status label if available
+                # 5. Update OpenAI status label if available
                 if hasattr(self, "openai_status_label"):
                     if openai_key:
                         self.openai_status_label.configure(
@@ -1214,8 +1302,13 @@ class Privacy68Dashboard(ctk.CTk):
                             text_color=COLOR_TEXT_MUTED
                         )
 
-                # 5. Update Left Sidebar Brain Status
-                if "claude" in cur_model or "anthropic" in cur_model:
+                # 6. Update Left Sidebar Brain Status
+                if "gemini" in cur_model:
+                    if gemini_key:
+                        self.brain_status_label.configure(text="● Brain: Online (Gemini)", text_color=COLOR_ACCENT_GREEN)
+                    else:
+                        self.brain_status_label.configure(text="● Brain: Needs Gemini Key", text_color="#F59E0B")
+                elif "claude" in cur_model or "anthropic" in cur_model:
                     if claude_key:
                         self.brain_status_label.configure(text="● Brain: Online (Claude)", text_color=COLOR_ACCENT_GREEN)
                     else:
@@ -1239,6 +1332,36 @@ class Privacy68Dashboard(ctk.CTk):
             self.after(0, update)
 
         threading.Thread(target=worker, daemon=True).start()
+
+    def _save_gemini_key(self):
+        key = self.gemini_key_entry.get().strip()
+        config.GEMINI_API_KEY = key
+        os.environ["GEMINI_API_KEY"] = key
+        os.environ["GOOGLE_API_KEY"] = key
+        config.update_dotenv_var("GEMINI_API_KEY", key)
+        if key:
+            if hasattr(self, "gemini_status_label"):
+                self.gemini_status_label.configure(
+                    text="● Status: Gemini Active (Key Saved)",
+                    text_color=COLOR_ACCENT_GREEN
+                )
+            self._add_feed_card(
+                "Gemini API",
+                "Google Gemini API key activated & saved to .env! Gemini 1.5/2.0 Flash is ready (Free tier).",
+                card_type="system"
+            )
+            if "ollama" in self.brain_model_entry.get().lower() or not self.brain_model_entry.get().strip():
+                self.brain_model_entry.delete(0, "end")
+                self.brain_model_entry.insert(0, "gemini/gemini-1.5-flash")
+                self._apply_model_choice()
+        else:
+            if hasattr(self, "gemini_status_label"):
+                self.gemini_status_label.configure(
+                    text="● Status: Inactive (Enter API key to activate)",
+                    text_color=COLOR_TEXT_MUTED
+                )
+            self._add_feed_card("Gemini API", "Gemini API key removed.", card_type="system")
+        self._check_services()
 
     def _save_groq_brain_key(self):
         key = self.groq_brain_entry.get().strip()
