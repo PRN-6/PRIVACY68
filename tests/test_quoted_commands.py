@@ -96,6 +96,18 @@ class TestQuotedCommandsAndBrainConfig(unittest.TestCase):
         self.assertFalse(streamer.is_wake_word_detected("alexa open chrome"))
         self.assertFalse(streamer.is_wake_word_detected("hey google search youtube"))
 
+    def test_microphone_hardware_never_opened_at_startup_or_idle(self):
+        from speech.streamer import SpeechStreamer, PushToTalkRecorder
+        streamer = SpeechStreamer()
+        self.assertIsNone(streamer.stream)
+        self.assertFalse(streamer.is_active)
+        self.assertFalse(streamer.recorder.is_recording)
+        self.assertIsNone(streamer.recorder._stream)
+
+        ptt = PushToTalkRecorder()
+        self.assertFalse(ptt.is_recording)
+        self.assertIsNone(ptt._stream)
+
     def test_update_dotenv_var_persistence(self):
         import tempfile
         import os
