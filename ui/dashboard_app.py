@@ -53,6 +53,7 @@ class Privacy68Dashboard(ctk.CTk):
         # State
         self.streamer = None
         self.streamer_thread = None
+        self.ptt_recorder = None
         self.is_listening = False
         self.active_tab = "console"
 
@@ -270,6 +271,20 @@ class Privacy68Dashboard(ctk.CTk):
         self.command_entry.grid(row=0, column=0, sticky="ew", padx=(0, 8))
         self.command_entry.bind("<Return>", lambda e: self._send_manual_command())
 
+        self.ptt_btn = ctk.CTkButton(
+            input_bar,
+            text="🎙️ Hold to Speak",
+            font=ctk.CTkFont(family="Segoe UI", size=12, weight="bold"),
+            width=135,
+            height=40,
+            corner_radius=8,
+            fg_color=COLOR_ACCENT_BLUE,
+            hover_color="#2563EB"
+        )
+        self.ptt_btn.grid(row=0, column=1, padx=(0, 8))
+        self.ptt_btn.bind("<ButtonPress-1>", self._on_ptt_press)
+        self.ptt_btn.bind("<ButtonRelease-1>", self._on_ptt_release)
+
         self.send_btn = ctk.CTkButton(
             input_bar,
             text="Execute",
@@ -281,14 +296,14 @@ class Privacy68Dashboard(ctk.CTk):
             hover_color=COLOR_ACCENT_RED_HOVER,
             command=self._send_manual_command
         )
-        self.send_btn.grid(row=0, column=1)
+        self.send_btn.grid(row=0, column=2)
 
         self.views["console"] = view
 
         # Initial welcome message in feed
         self._add_feed_card(
             title="PRIVACY68 Ready",
-            body="Welcome to PRIVACY68 Control Center.\n• Type a command below or click 'Start Voice' in the sidebar to use wake word 'alexa'.\n• Built-in plugins: Chrome, Brave, WhatsApp, YouTube, Windows volume, screenshot, and files.",
+            body="Welcome to PRIVACY68 Control Center.\n• Hold '🎙️ Hold to Speak' (Push-to-Talk) to talk with zero wake-word false alarms.\n• Or click 'Start Voice' in the sidebar for hands-free wake words ('hey google' or 'alexa').\n• Free cloud speech recognition and AI automation ready out-of-the-box.",
             card_type="system"
         )
 
@@ -487,6 +502,60 @@ class Privacy68Dashboard(ctk.CTk):
             text_color=COLOR_ACCENT_GREEN if cur_claude else COLOR_TEXT_MUTED
         )
         self.claude_status_label.pack(anchor="w", padx=14, pady=(0, 10))
+
+        # OpenAI API Frame (GPT-4o / GPT-4o-mini)
+        openai_frame = ctk.CTkFrame(view, fg_color=COLOR_BG_DARK, corner_radius=8)
+        openai_frame.pack(fill="x", padx=16, pady=6)
+
+        ctk.CTkLabel(
+            openai_frame,
+            text="⚡ OpenAI API (GPT-4o & GPT-4o-mini)",
+            font=ctk.CTkFont(family="Segoe UI", size=12, weight="bold"),
+            text_color=COLOR_TEXT_PRIMARY
+        ).pack(anchor="w", padx=14, pady=(10, 2))
+
+        ctk.CTkLabel(
+            openai_frame,
+            text="Automate desktop workflows via OpenAI API. Paste your OpenAI key below (sk-...).",
+            font=ctk.CTkFont(family="Segoe UI", size=11),
+            text_color=COLOR_TEXT_MUTED
+        ).pack(anchor="w", padx=14, pady=(0, 6))
+
+        openai_row = ctk.CTkFrame(openai_frame, fg_color="transparent")
+        openai_row.pack(fill="x", padx=14, pady=(0, 6))
+        openai_row.grid_columnconfigure(0, weight=1)
+
+        self.openai_key_entry = ctk.CTkEntry(
+            openai_row,
+            placeholder_text="Paste OpenAI API Key (sk-...)",
+            font=ctk.CTkFont(family="Segoe UI", size=12),
+            height=34,
+            fg_color=COLOR_CARD,
+            border_color=COLOR_CARD_HOVER,
+            show="•"
+        )
+        cur_openai = getattr(config, "OPENAI_API_KEY", "") or os.environ.get("OPENAI_API_KEY", "")
+        if cur_openai:
+            self.openai_key_entry.insert(0, cur_openai)
+        self.openai_key_entry.grid(row=0, column=0, sticky="ew", padx=(0, 8))
+
+        save_openai_btn = ctk.CTkButton(
+            openai_row,
+            text="Save OpenAI Key",
+            width=120,
+            height=34,
+            font=ctk.CTkFont(family="Segoe UI", size=11, weight="bold"),
+            command=self._save_openai_key
+        )
+        save_openai_btn.grid(row=0, column=1)
+
+        self.openai_status_label = ctk.CTkLabel(
+            openai_frame,
+            text="● Status: " + ("OpenAI Active (API Key Saved)" if cur_openai else "Inactive (Enter API key to activate)"),
+            font=ctk.CTkFont(family="Segoe UI", size=11),
+            text_color=COLOR_ACCENT_GREEN if cur_openai else COLOR_TEXT_MUTED
+        )
+        self.openai_status_label.pack(anchor="w", padx=14, pady=(0, 10))
 
         # Ollama Controller Frame
         ctrl_frame = ctk.CTkFrame(view, fg_color=COLOR_BG_DARK, corner_radius=8)
@@ -878,6 +947,47 @@ class Privacy68Dashboard(ctk.CTk):
             widget.destroy()
 
     # ── Background Logic & Actions ──
+    def _on_ptt_press(self, event=None):
+        try:
+            from speech.streamer import PushToTalkRecorder
+            if self.ptt_recorder is None:
+                self.ptt_recorder = PushToTalkRecorder()
+            self.ptt_btn.configure(text="🔴 Listening...", fg_color="#DC2626")
+            self.ptt_recorder.start()
+        except Exception as e:
+            self._add_feed_card("Voice Error", f"Push-to-Talk failed: {e}", card_type="system")
+
+    def _on_ptt_release(self, event=None):
+        if not self.ptt_recorder or not self.ptt_recorder.is_recording:
+            return
+
+        self.ptt_btn.configure(text="⏳ Transcribing...", fg_color="#D97706")
+
+        def worker():
+            try:
+                text = self.ptt_recorder.stop_and_transcribe(self.streamer)
+            except Exception as e:
+                text = ""
+                logger.error(f"PTT transcription failed: {e}")
+
+            def on_done():
+                self.ptt_btn.configure(text="🎙️ Hold to Speak", fg_color=COLOR_ACCENT_BLUE)
+                if text:
+                    self.command_entry.delete(0, "end")
+                    self.command_entry.insert(0, text)
+                    self._add_feed_card("User Voice (PTT)", text, card_type="user")
+                    threading.Thread(target=self._execute_command_async, args=(text,), daemon=True).start()
+                else:
+                    self._add_feed_card(
+                        "Voice Note",
+                        "No voice detected. Hold the button while speaking your command, then release.",
+                        card_type="system"
+                    )
+
+            self.after(0, on_done)
+
+        threading.Thread(target=worker, daemon=True).start()
+
     def _send_manual_command(self):
         cmd = self.command_entry.get().strip()
         if not cmd:
@@ -904,6 +1014,12 @@ class Privacy68Dashboard(ctk.CTk):
                     card_type="code" if code else "assistant",
                     code=code if code else None
                 )
+                if not success and any(err in message for err in ("API key is not configured", "Cannot reach Ollama", "connection failed", "not found")):
+                    self._add_feed_card(
+                        "💡 Setup Tip",
+                        "Go to the '🧠 AI Brain' tab and paste your API key (Groq Cloud is 100% Free with no card, or use Claude/OpenAI) and click Save to activate.",
+                        card_type="system"
+                    )
 
             self.after(0, update_ui)
         except Exception as e:
@@ -913,9 +1029,10 @@ class Privacy68Dashboard(ctk.CTk):
     def _check_services(self):
         def worker():
             ollama_ok = is_ollama_online()
-            cur_model = getattr(config, "AGENT_BRAIN_MODEL", "ollama/llama3.2:latest").lower()
+            cur_model = getattr(config, "AGENT_BRAIN_MODEL", "groq/llama-3.3-70b-versatile").lower()
             claude_key = getattr(config, "ANTHROPIC_API_KEY", "") or os.environ.get("ANTHROPIC_API_KEY", "")
             groq_key = getattr(config, "GROQ_API_KEY", "") or os.environ.get("GROQ_API_KEY", "")
+            openai_key = getattr(config, "OPENAI_API_KEY", "") or os.environ.get("OPENAI_API_KEY", "")
 
             def update():
                 # 1. Update Ollama service label with active endpoint
@@ -958,7 +1075,20 @@ class Privacy68Dashboard(ctk.CTk):
                             text_color=COLOR_TEXT_MUTED
                         )
 
-                # 4. Update Left Sidebar Brain Status
+                # 4. Update OpenAI status label if available
+                if hasattr(self, "openai_status_label"):
+                    if openai_key:
+                        self.openai_status_label.configure(
+                            text="● Status: OpenAI Active (API Key Saved)",
+                            text_color=COLOR_ACCENT_GREEN
+                        )
+                    else:
+                        self.openai_status_label.configure(
+                            text="● Status: Inactive (Enter API key to activate)",
+                            text_color=COLOR_TEXT_MUTED
+                        )
+
+                # 5. Update Left Sidebar Brain Status
                 if "claude" in cur_model or "anthropic" in cur_model:
                     if claude_key:
                         self.brain_status_label.configure(text="● Brain: Online (Claude)", text_color=COLOR_ACCENT_GREEN)
@@ -969,6 +1099,11 @@ class Privacy68Dashboard(ctk.CTk):
                         self.brain_status_label.configure(text="● Brain: Online (Groq)", text_color=COLOR_ACCENT_GREEN)
                     else:
                         self.brain_status_label.configure(text="● Brain: Needs Groq Key", text_color="#F59E0B")
+                elif "openai" in cur_model or "gpt" in cur_model:
+                    if openai_key:
+                        self.brain_status_label.configure(text="● Brain: Online (OpenAI)", text_color=COLOR_ACCENT_GREEN)
+                    else:
+                        self.brain_status_label.configure(text="● Brain: Needs OpenAI Key", text_color="#F59E0B")
                 else:
                     if ollama_ok:
                         self.brain_status_label.configure(text="● Brain: Online (Ollama)", text_color=COLOR_ACCENT_GREEN)
@@ -983,6 +1118,7 @@ class Privacy68Dashboard(ctk.CTk):
         key = self.groq_brain_entry.get().strip()
         config.GROQ_API_KEY = key
         os.environ["GROQ_API_KEY"] = key
+        config.update_dotenv_var("GROQ_API_KEY", key)
         if hasattr(self, "groq_key_entry"):
             self.groq_key_entry.delete(0, "end")
             self.groq_key_entry.insert(0, key)
@@ -994,7 +1130,7 @@ class Privacy68Dashboard(ctk.CTk):
                 )
             self._add_feed_card(
                 "Groq API",
-                "Groq Cloud API key activated! Llama 3.3 70B cloud reasoning is ready (Free).",
+                "Groq Cloud API key activated & saved to .env! Llama 3.3 70B reasoning is ready (Free).",
                 card_type="system"
             )
             if "ollama" in self.brain_model_entry.get():
@@ -1019,6 +1155,8 @@ class Privacy68Dashboard(ctk.CTk):
         os.environ["OLLAMA_API_BASE"] = url
         config.OLLAMA_API_KEY = key
         os.environ["OLLAMA_API_KEY"] = key
+        config.update_dotenv_var("OLLAMA_BASE_URL", url)
+        config.update_dotenv_var("OLLAMA_API_KEY", key)
         self._add_feed_card("Ollama Config", f"Saved Ollama API endpoint: {url}", card_type="system")
         self._check_services()
 
@@ -1026,6 +1164,7 @@ class Privacy68Dashboard(ctk.CTk):
         key = self.claude_key_entry.get().strip()
         config.ANTHROPIC_API_KEY = key
         os.environ["ANTHROPIC_API_KEY"] = key
+        config.update_dotenv_var("ANTHROPIC_API_KEY", key)
         if key:
             if hasattr(self, "claude_status_label"):
                 self.claude_status_label.configure(
@@ -1034,7 +1173,7 @@ class Privacy68Dashboard(ctk.CTk):
                 )
             self._add_feed_card(
                 "AI Brain",
-                "Anthropic Claude API key activated! Out-of-the-box OpenClaw reasoning is now enabled.",
+                "Anthropic Claude API key activated & saved to .env! Out-of-the-box OpenClaw reasoning is enabled.",
                 card_type="system"
             )
             # If current model was still ollama, auto-switch to claude-3-5-sonnet
@@ -1049,6 +1188,35 @@ class Privacy68Dashboard(ctk.CTk):
                     text_color=COLOR_TEXT_MUTED
                 )
             self._add_feed_card("AI Brain", "Claude API key removed.", card_type="system")
+        self._check_services()
+
+    def _save_openai_key(self):
+        key = self.openai_key_entry.get().strip()
+        config.OPENAI_API_KEY = key
+        os.environ["OPENAI_API_KEY"] = key
+        config.update_dotenv_var("OPENAI_API_KEY", key)
+        if key:
+            if hasattr(self, "openai_status_label"):
+                self.openai_status_label.configure(
+                    text="● Status: OpenAI Active (API Key Saved)",
+                    text_color=COLOR_ACCENT_GREEN
+                )
+            self._add_feed_card(
+                "AI Brain",
+                "OpenAI API key saved & activated! Models like openai/gpt-4o-mini are ready.",
+                card_type="system"
+            )
+            if "ollama" in self.brain_model_entry.get():
+                self.brain_model_entry.delete(0, "end")
+                self.brain_model_entry.insert(0, "openai/gpt-4o-mini")
+                self._apply_model_choice()
+        else:
+            if hasattr(self, "openai_status_label"):
+                self.openai_status_label.configure(
+                    text="● Status: Inactive (Enter API key to activate)",
+                    text_color=COLOR_TEXT_MUTED
+                )
+            self._add_feed_card("AI Brain", "OpenAI API key removed.", card_type="system")
         self._check_services()
 
     def _launch_ollama_service(self):
@@ -1069,6 +1237,7 @@ class Privacy68Dashboard(ctk.CTk):
         if model:
             config.AGENT_BRAIN_MODEL = model
             agent_brain.model = model
+            config.update_dotenv_var("AGENT_BRAIN_MODEL", model)
             self._add_feed_card("Settings", f"AI Brain model set to: {model}", card_type="system")
             self._check_services()
 
@@ -1161,11 +1330,13 @@ class Privacy68Dashboard(ctk.CTk):
             config.SPEECH_ENGINE = "auto"
             self.badge_engine.configure(text="🎙️ Engine: Google Speech (Free)")
             self._add_feed_card("Voice Engine", "Speech engine set to Auto (Google Cloud Speech).", card_type="system")
+        config.update_dotenv_var("SPEECH_ENGINE", config.SPEECH_ENGINE)
 
     def _save_groq_key(self):
         key = self.groq_key_entry.get().strip()
         config.GROQ_API_KEY = key
         os.environ["GROQ_API_KEY"] = key
+        config.update_dotenv_var("GROQ_API_KEY", key)
         if key:
             self.groq_status_label.configure(
                 text="● Status: Groq Cloud Whisper Active (~99% accuracy)",
@@ -1188,6 +1359,7 @@ class Privacy68Dashboard(ctk.CTk):
 
     def _on_wake_changed(self, choice: str):
         config.WAKE_WORD_MODEL = choice
+        config.update_dotenv_var("WAKE_WORD_MODEL", choice)
         self.badge_wake.configure(text=f"⚡ Wake: \"{choice}\"")
         if self.streamer:
             self.streamer.set_wake_word(choice)

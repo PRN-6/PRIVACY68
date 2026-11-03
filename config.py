@@ -107,3 +107,43 @@ AGENT_BRAIN_MAX_RETRIES = 2  # Open-Interpreter style self-healing code retry lo
 ENABLE_REMOTE_SERVER = True
 REMOTE_SERVER_HOST = "0.0.0.0"
 REMOTE_SERVER_PORT = 8765
+
+
+def update_dotenv_var(key: str, value: str, env_path: str = None) -> None:
+    """Persists a key-value pair to the .env file and updates runtime config & environment."""
+    os.environ[key] = value
+    globals()[key] = value
+
+    if env_path is None:
+        env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
+
+    lines = []
+    if os.path.exists(env_path):
+        try:
+            with open(env_path, "r", encoding="utf-8") as f:
+                lines = f.readlines()
+        except Exception:
+            lines = []
+
+    key_found = False
+    new_lines = []
+    for line in lines:
+        stripped = line.strip()
+        if stripped.startswith(f"{key}=") or stripped.startswith(f"{key} ="):
+            new_lines.append(f'{key}="{value}"\n')
+            key_found = True
+        else:
+            new_lines.append(line)
+
+    if not key_found:
+        if new_lines and not new_lines[-1].endswith("\n"):
+            new_lines[-1] += "\n"
+        new_lines.append(f'{key}="{value}"\n')
+
+    try:
+        with open(env_path, "w", encoding="utf-8") as f:
+            f.writelines(new_lines)
+    except Exception as e:
+        import logging
+        logging.getLogger("PRIVACY68.Config").warning(f"Could not persist {key} to {env_path}: {e}")
+

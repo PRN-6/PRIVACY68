@@ -589,3 +589,104 @@ def set_speech_streamer(instance: SpeechStreamer) -> None:
 
 def get_speech_streamer() -> Optional[SpeechStreamer]:
     return speech_streamer
+
+
+class PushToTalkRecorder:
+    """Manages hold-to-talk audio recording and transcription with zero wake-word false alarms."""
+
+    def __init__(self, sample_rate: int = config.SAMPLE_RATE):
+        self.sample_rate = sample_rate
+        self.is_recording = False
+        self.frames = []
+        self._stream = None
+
+    def start(self):
+        """Starts recording mic audio."""
+        import sounddevice as sd
+        self.frames = []
+        self.is_recording = True
+
+        def callback(indata, frames, time_info, status):
+            if self.is_recording:
+                self.frames.append(indata.copy())
+
+        self._stream = sd.InputStream(
+            samplerate=self.sample_rate,
+            channels=1,
+            dtype="float32",
+            callback=callback,
+            blocksize=config.BLOCK_SIZE
+        )
+        self._stream.start()
+
+    def stop_and_transcribe(self, streamer: Optional[SpeechStreamer] = None) -> str:
+        """Stops recording and returns the transcribed text."""
+        self.is_recording = False
+        if self._stream is not None:
+            try:
+                self._stream.stop()
+                self._stream.close()
+            except Exception:
+                pass
+            self._stream = None
+
+        if not self.frames:
+            return ""
+
+        audio_data = np.concatenate(self.frames).flatten()
+        if len(audio_data) < self.sample_rate * 0.25:  # less than 250ms
+            return ""
+
+        peak = float(np.max(np.abs(audio_data)))
+        norm_audio = (audio_data / peak) * 0.9 if peak > 0.005 else audio_data
+
+        if streamer is not None:
+            text = streamer._transcribe(norm_audio, is_idle=False)
+        else:
+            # First try Google Web Speech (Free, zero keys)
+            text = ""
+            try:
+                import speech_recognition as sr
+                rec = sr.Recognizer()
+                int16_arr = (norm_audio * 32767).astype(np.int16)
+                aud = sr.AudioData(int16_arr.tobytes(), self.sample_rate, 2)
+                text = rec.recognize_google(aud, language="en-US").strip()
+            except Exception as ge:
+                logger.debug(f"Google speech recognition error: {ge}")
+
+            # If Google speech didn't return text and Groq API key is present, try Groq Cloud
+            if not text:
+                groq_key = getattr(config, "GROQ_API_KEY", "") or os.environ.get("GROQ_API_KEY", "")
+                if groq_key:
+                    try:
+                        int16_arr = (norm_audio * 32767).astype(np.int16)
+                        buf = io.BytesIO()
+                        with wave.open(buf, 'wb') as wf:
+                            wf.setnchannels(1)
+                            wf.setsampwidth(2)
+                            wf.setframerate(self.sample_rate)
+                            wf.writeframes(int16_arr.tobytes())
+                        buf.seek(0)
+                        files = {"file": ("command.wav", buf.getvalue(), "audio/wav")}
+                        data = {
+                            "model": getattr(config, "GROQ_WHISPER_MODEL", "whisper-large-v3-turbo"),
+                            "language": "en",
+                            "temperature": "0.0",
+                            "prompt": config.INITIAL_PROMPT,
+                        }
+                        headers = {"Authorization": f"Bearer {groq_key.strip()}"}
+                        resp = requests.post(
+                            "https://api.groq.com/openai/v1/audio/transcriptions",
+                            headers=headers,
+                            files=files,
+                            data=data,
+                            timeout=5.0
+                        )
+                        if resp.status_code == 200:
+                            text = resp.json().get("text", "").strip()
+                    except Exception as qe:
+                        logger.debug(f"Groq speech transcription error: {qe}")
+
+        if text:
+            text = autocorrect_speech_command(text)
+        return text
