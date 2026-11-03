@@ -528,20 +528,20 @@ class DashboardAPI:
                 "link": "https://ollama.com/download"
             })
 
-        # faster-whisper
+        # Google Web Speech Recognition
         try:
-            import faster_whisper
+            import speech_recognition as sr
             ai_checks.append({
-                "name": "faster-whisper (ASR)",
+                "name": "Google Web Speech (ASR)",
                 "status": "ok",
-                "detail": f"Loaded v{getattr(faster_whisper, '__version__', '1.0+')} • High-speed Whisper Engine",
+                "detail": f"SpeechRecognition v{getattr(sr, '__version__', '3.10+')} • Free Cloud Voice Engine",
                 "link": None
             })
         except ImportError:
             ai_checks.append({
-                "name": "faster-whisper (ASR)",
+                "name": "Google Web Speech (ASR)",
                 "status": "fail",
-                "detail": "Not installed in environment.",
+                "detail": "SpeechRecognition library not installed.",
                 "link": None
             })
 

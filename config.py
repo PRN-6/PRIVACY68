@@ -65,41 +65,22 @@ except Exception:
     _HAS_CUDA = _cuda_available()
 
 
-# Audio Stream Settings (16kHz, 1280 samples = 80ms frames required by openWakeWord)
+# Audio Stream Settings (16kHz standard for voice)
 SAMPLE_RATE = 16000
 BLOCK_SIZE = 1280
 CHANNELS = 1
 DTYPE = "float32"
 
-# Silence / Voice Activity Detection (VAD)
-VAD_THRESHOLD = 0.50             # Silero neural VAD speech probability threshold (0.0 to 1.0)
-VAD_IDLE_THRESHOLD = 0.30        # Lower threshold for idle wake-word scan gating (skip Whisper on silence)
+# Silence & Recording thresholds
 SILENCE_DURATION_CHUNKS = 8      # 8 chunks * 80ms = ~0.64s pause after speech for rapid cut-off
-SILENCE_THRESHOLD = 0.008        # Fallback RMS noise floor
+SILENCE_THRESHOLD = 0.008        # RMS noise floor
 
 # Speech Engine: 100% Free Google Web Speech Recognition (zero keys, zero cost)
 # Always uses Google's reliable cloud voice API with zero setup or API credentials needed.
 SPEECH_ENGINE = "google"
-
-# Runtime diagnostics compatibility
 WHISPER_MODEL_SIZE = "google-speech-free"
 WHISPER_DEVICE = "cloud"
 WHISPER_COMPUTE_TYPE = "cloud-api"
-
-# Hotwords: Whisper boosts log-probability for these tokens during decoding.
-WHISPER_HOTWORDS = (
-    "Hey Google, OK Google, Google, Alexa, Jarvis, Jarvice, Nova, Friday, Leo, Serena, Privacy68, open, close, launch, search, go to, "
-    "Chrome, Brave, WhatsApp, YouTube, Notepad, "
-    "volume, mute, screenshot, lock, tab, new tab, enter, "
-    "send message, message, chat, call"
-)
-
-# Initial prompt: Whisper conditions its decoder on this text before your audio.
-INITIAL_PROMPT = (
-    "Desktop automation voice commands. Examples: 'Open Chrome and search for YouTube', "
-    "'Open brave', 'Search YouTube for music', 'Open WhatsApp', "
-    "'Send message to mom', 'Take a screenshot', 'Lock the screen', 'Create a new text file'."
-)
 
 # Audio feedback sounds (True = beep on activation, False = silent)
 ENABLE_BEEP = False

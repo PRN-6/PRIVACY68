@@ -1,24 +1,18 @@
 # PRIVACY68 runtime dependencies (Windows, Python 3.11+)
 
-# Speech input, transcription, and local ASR.
+# Speech input and transcription (100% Free Google Web Speech API)
 SpeechRecognition>=3.10.0
-faster-whisper>=1.0,<2
-huggingface-hub>=0.24,<2
-onnxruntime>=1.17,<2
 numpy>=1.26,<3
-scipy>=1.11,<2
 sounddevice>=0.4.6,<1
 
-# NVIDIA GPU acceleration for Faster-Whisper (CUDA 12)
-nvidia-cublas-cu12
-nvidia-cudnn-cu12
-
-# Agent Brain and the dashboard's Ollama model-management controls.
+# Agent Brain and Multi-Provider LLM reasoning (Gemini, Groq, Claude, OpenAI, Ollama)
 litellm>=1.50,<2
 ollama>=0.4,<1
+requests>=2.31.0
 
-# Windows UI and automation.
+# Windows UI, System Tray, and Automation
 customtkinter>=5.2.0
+darkdetect>=0.8.0
 Pillow>=10,<13
 pystray>=0.19,<1
 pyttsx3>=2.90,<3
@@ -26,6 +20,7 @@ pywebview>=5,<7
 pyautogui>=0.9.54,<1
 pywinauto>=0.6.8,<1
 pywin32>=306
+python-dotenv>=1.0.0
 
-# Used by the repository's Windows release workflow to package the application.
+# Windows release workflow and standalone executable packaging
 pyinstaller>=6,<7

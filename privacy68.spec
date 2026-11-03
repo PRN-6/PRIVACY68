@@ -13,8 +13,6 @@ binaries = []
 hiddenimports = []
 
 for package in (
-    "faster_whisper",
-    "onnxruntime",
     "litellm",
     "webview",
     "pystray",

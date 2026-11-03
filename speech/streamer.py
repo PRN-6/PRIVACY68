@@ -21,8 +21,6 @@ try:
 except Exception:
     pass
 
-from speech.vad import SileroVAD
-
 logger = logging.getLogger("PRIVACY68.SpeechStreamer")
 
 
@@ -154,7 +152,6 @@ class SpeechStreamer:
         self.sample_rate = sample_rate
         self.silence_threshold = getattr(config, "SILENCE_THRESHOLD", 0.008)
         self.silence_duration_chunks = config.SILENCE_DURATION_CHUNKS
-        self.vad = SileroVAD(threshold=getattr(config, "VAD_THRESHOLD", 0.50))
         self.is_active = False
         self.is_muted = False
         self.audio_queue: queue.Queue = queue.Queue()
