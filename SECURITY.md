@@ -20,7 +20,7 @@ We actively release security patches and improvements for the following versions
 ## 🛡️ Security Architecture & Privacy Commitments
 
 1. **Zero Background Audio Recording**
-   - No continuous background listening or wake word scanning. The microphone is 100% disconnected until you press 'Click to Speak' or the laptop Copilot key.
+   - No continuous background listening or wake word scanning. The microphone is 100% disconnected until you click 'Click to Speak'.
    - Zero telemetry or audio recordings are stored or collected.
 
 2. **Direct API Integration & Credential Privacy**

@@ -144,24 +144,6 @@ def main() -> None:
         set_speech_streamer(streamer)
         ui_manager.set_streamer(streamer)
 
-        # Hook physical Copilot key for global Push-to-Talk / Click-to-Speak
-        try:
-            from speech.copilot_hook import start_copilot_hook
-
-            def on_copilot_press():
-                if not streamer.is_active:
-                    streamer.start_recording()
-                else:
-                    streamer.stop_and_transcribe()
-
-            def on_copilot_release():
-                if streamer.is_active:
-                    streamer.stop_and_transcribe()
-
-            start_copilot_hook(on_press=on_copilot_press, on_release=on_copilot_release)
-        except Exception as e:
-            logger.debug(f"Could not initialize Copilot key hook in app: {e}")
-
         # Run speech streamer in a dedicated worker thread
         audio_thread = threading.Thread(
             target=streamer.start,
@@ -185,11 +167,6 @@ def main() -> None:
         logger.critical(f"Unhandled fatal error in main thread: {e}", exc_info=True)
         sys.exit(1)
     finally:
-        try:
-            from speech.copilot_hook import stop_copilot_hook
-            stop_copilot_hook()
-        except Exception:
-            pass
         stop_remote_server()
         logger.info("Cleanup completed. PRIVACY68 is offline.")
 

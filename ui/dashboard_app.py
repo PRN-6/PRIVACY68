@@ -54,20 +54,8 @@ class Privacy68Dashboard(ctk.CTk):
         self.streamer = None
         self.streamer_thread = None
         self.ptt_recorder = None
-        self.copilot_hook = None
         self.is_listening = False
         self.active_tab = "console"
-
-        # Initialize hardware Copilot Key hook
-        try:
-            from speech.copilot_hook import CopilotKeyHook
-            self.copilot_hook = CopilotKeyHook(
-                on_press=lambda: self.after(0, self._on_copilot_press),
-                on_release=lambda: self.after(0, self._on_copilot_release)
-            )
-            self.copilot_hook.start()
-        except Exception as e:
-            logger.debug(f"Could not initialize Copilot key hook: {e}")
 
         # Build UI layout
         self._build_layout()
@@ -246,17 +234,6 @@ class Privacy68Dashboard(ctk.CTk):
         )
         self.badge_privacy.pack(side="left", padx=4, pady=6)
 
-        self.badge_copilot = ctk.CTkLabel(
-            header_bar,
-            text="⌨️ Copilot Key: Active",
-            font=ctk.CTkFont(family="Segoe UI", size=11, weight="bold"),
-            text_color="#38BDF8",
-            fg_color=COLOR_BG_DARK,
-            corner_radius=6,
-            padx=10, pady=3
-        )
-        self.badge_copilot.pack(side="left", padx=4, pady=6)
-
         self.clear_feed_btn = ctk.CTkButton(
             header_bar,
             text="Clear Log",
@@ -326,7 +303,7 @@ class Privacy68Dashboard(ctk.CTk):
         # Initial welcome message in feed
         self._add_feed_card(
             title="PRIVACY68 Ready (100% Private)",
-            body="Welcome to PRIVACY68 Control Center.\n• Press the Copilot key on your laptop keyboard or click '🎙️ Click to Speak' to give any voice command (e.g. 'open chrome and search for youtube').\n• Zero background listening: your microphone is 100% off when not speaking.\n• Powered by Google Cloud Speech (Free) and your configured AI API.",
+            body="Welcome to PRIVACY68 Control Center.\n• Click '🎙️ Click to Speak' to give any voice command (e.g. 'open chrome and search for youtube').\n• Zero background listening: your microphone is 100% off when not speaking.\n• Powered by Google Cloud Speech (Free) and your configured AI API.",
             card_type="system"
         )
 
@@ -1021,26 +998,6 @@ class Privacy68Dashboard(ctk.CTk):
     def _on_ptt_release(self, event=None):
         if self.ptt_recorder and self.ptt_recorder.is_recording and len(getattr(self.ptt_recorder, "frames", [])) >= 4:
             self._toggle_voice_recording()
-
-    def _on_copilot_press(self):
-        """Called when physical Copilot key on laptop keyboard is pressed."""
-        if not self.ptt_recorder or not self.ptt_recorder.is_recording:
-            self._toggle_voice_recording()
-
-    def _on_copilot_release(self):
-        """Called when physical Copilot key on laptop keyboard is released after being held."""
-        if self.ptt_recorder and self.ptt_recorder.is_recording:
-            self._toggle_voice_recording()
-
-    def destroy(self):
-        """Cleanly unhooks background hooks and shuts down dashboard."""
-        if hasattr(self, "copilot_hook") and self.copilot_hook:
-            try:
-                self.copilot_hook.stop()
-                self.copilot_hook = None
-            except Exception as e:
-                logger.debug(f"copilot_hook stop note: {e}")
-        super().destroy()
 
     def _toggle_voice_streamer(self):
         return self._toggle_voice_recording()
