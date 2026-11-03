@@ -38,7 +38,7 @@ class TestQuotedCommandsAndBrainConfig(unittest.TestCase):
 
     def test_agent_brain_claude_without_api_key(self):
         brain = AgentBrain(model="claude-3-5-sonnet-20241022")
-        with patch.dict("os.environ", {"ANTHROPIC_API_KEY": ""}, clear=True):
+        with patch.dict("os.environ", {"ANTHROPIC_API_KEY": ""}):
             with patch("config.ANTHROPIC_API_KEY", ""):
                 res = brain.generate_and_execute("Write a script")
                 self.assertFalse(res["success"])
@@ -61,11 +61,12 @@ class TestQuotedCommandsAndBrainConfig(unittest.TestCase):
 
             with patch("config.OLLAMA_BASE_URL", "https://ollama.my-remote-site.com"):
                 with patch("config.OLLAMA_API_KEY", "remote-secret-key"):
-                    brain._get_code_from_llm("test")
-                    mock_comp.assert_called_once()
-                    _, kwargs = mock_comp.call_args
-                    self.assertEqual(kwargs["api_base"], "https://ollama.my-remote-site.com")
-                    self.assertEqual(kwargs["api_key"], "remote-secret-key")
+                    with patch("actions.agent_brain.is_ollama_online", return_value=True):
+                        brain._get_code_from_llm("test")
+                        mock_comp.assert_called_once()
+                        _, kwargs = mock_comp.call_args
+                        self.assertEqual(kwargs["api_base"], "https://ollama.my-remote-site.com")
+                        self.assertEqual(kwargs["api_key"], "remote-secret-key")
 
 
 if __name__ == "__main__":

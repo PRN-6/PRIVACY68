@@ -103,7 +103,7 @@ class Privacy68Dashboard(ctk.CTk):
 
         self.nav_brain_btn = ctk.CTkButton(
             self.sidebar,
-            text="🧠 AI Brain & Ollama",
+            text="🧠 AI Brain (APIs)",
             anchor="w",
             height=34,
             font=ctk.CTkFont(family="Segoe UI", size=12),
@@ -293,7 +293,7 @@ class Privacy68Dashboard(ctk.CTk):
 
         title = ctk.CTkLabel(
             view,
-            text="AI Brain & Ollama Integration",
+            text="Cloud & Web AI Brain (APIs Only)",
             font=ctk.CTkFont(family="Segoe UI", size=16, weight="bold"),
             text_color=COLOR_TEXT_PRIMARY
         )
@@ -301,7 +301,7 @@ class Privacy68Dashboard(ctk.CTk):
 
         desc = ctk.CTkLabel(
             view,
-            text="PRIVACY68 features an agentic reasoning engine with self-healing code execution.\nWhen a complex command is received, the Brain writes Python code and auto-repairs runtime errors.",
+            text="PRIVACY68 operates 100% via AI APIs. No local LLM download, installation, or background daemon is required.\nSelect an API provider below (Groq [Free], Anthropic Claude, or a Remote Ollama Website URL).",
             font=ctk.CTkFont(family="Segoe UI", size=11),
             text_color=COLOR_TEXT_MUTED,
             justify="left"
@@ -331,7 +331,7 @@ class Privacy68Dashboard(ctk.CTk):
             border_color=COLOR_CARD_HOVER,
             text_color=COLOR_TEXT_PRIMARY
         )
-        self.brain_model_entry.insert(0, getattr(config, "AGENT_BRAIN_MODEL", "ollama/llama3.2:latest"))
+        self.brain_model_entry.insert(0, getattr(config, "AGENT_BRAIN_MODEL", "groq/llama-3.3-70b-versatile"))
         self.brain_model_entry.grid(row=0, column=0, sticky="ew", padx=(0, 8))
 
         save_model_btn = ctk.CTkButton(
@@ -358,12 +358,12 @@ class Privacy68Dashboard(ctk.CTk):
         self.preset_menu = ctk.CTkOptionMenu(
             preset_row,
             values=[
+                "groq/llama-3.3-70b-versatile",
                 "claude-3-5-sonnet-20241022",
                 "claude-3-5-haiku-20241022",
-                "groq/llama-3.3-70b-versatile",
+                "openai/gpt-4o-mini",
                 "ollama/llama3.2:latest",
-                "ollama/qwen2.5-coder:7b",
-                "ollama/mistral:latest"
+                "ollama/qwen2.5-coder:7b"
             ],
             width=240,
             height=28,
@@ -371,6 +371,60 @@ class Privacy68Dashboard(ctk.CTk):
             command=self._on_preset_selected
         )
         self.preset_menu.pack(side="left")
+
+        # Groq Cloud API Frame (Free tier)
+        groq_frame = ctk.CTkFrame(view, fg_color=COLOR_BG_DARK, corner_radius=8)
+        groq_frame.pack(fill="x", padx=16, pady=6)
+
+        ctk.CTkLabel(
+            groq_frame,
+            text="⚡ Groq Cloud API (100% Free - LPU Powered Llama 3.3 70B)",
+            font=ctk.CTkFont(family="Segoe UI", size=12, weight="bold"),
+            text_color=COLOR_TEXT_PRIMARY
+        ).pack(anchor="w", padx=14, pady=(10, 2))
+
+        ctk.CTkLabel(
+            groq_frame,
+            text="State-of-the-art 70B intelligence at ~200ms. Free daily API key at console.groq.com/keys (No card needed).",
+            font=ctk.CTkFont(family="Segoe UI", size=11),
+            text_color=COLOR_TEXT_MUTED
+        ).pack(anchor="w", padx=14, pady=(0, 6))
+
+        groq_key_row = ctk.CTkFrame(groq_frame, fg_color="transparent")
+        groq_key_row.pack(fill="x", padx=14, pady=(0, 6))
+        groq_key_row.grid_columnconfigure(0, weight=1)
+
+        self.groq_brain_entry = ctk.CTkEntry(
+            groq_key_row,
+            placeholder_text="Paste Groq API Key (gsk_...)",
+            font=ctk.CTkFont(family="Segoe UI", size=12),
+            height=34,
+            fg_color=COLOR_CARD,
+            border_color=COLOR_CARD_HOVER,
+            show="•"
+        )
+        cur_groq = getattr(config, "GROQ_API_KEY", "") or os.environ.get("GROQ_API_KEY", "")
+        if cur_groq:
+            self.groq_brain_entry.insert(0, cur_groq)
+        self.groq_brain_entry.grid(row=0, column=0, sticky="ew", padx=(0, 8))
+
+        save_groq_brain_btn = ctk.CTkButton(
+            groq_key_row,
+            text="Save Groq Key",
+            width=120,
+            height=34,
+            font=ctk.CTkFont(family="Segoe UI", size=11, weight="bold"),
+            command=self._save_groq_brain_key
+        )
+        save_groq_brain_btn.grid(row=0, column=1)
+
+        self.groq_brain_status_label = ctk.CTkLabel(
+            groq_frame,
+            text="● Status: " + ("Groq Cloud Active (Key Saved)" if cur_groq else "Inactive (Enter API key to activate)"),
+            font=ctk.CTkFont(family="Segoe UI", size=11),
+            text_color=COLOR_ACCENT_GREEN if cur_groq else COLOR_TEXT_MUTED
+        )
+        self.groq_brain_status_label.pack(anchor="w", padx=14, pady=(0, 10))
 
         # Claude Cloud Intelligence Frame (Out of the Box / OpenClaw)
         claude_frame = ctk.CTkFrame(view, fg_color=COLOR_BG_DARK, corner_radius=8)
@@ -862,7 +916,20 @@ class Privacy68Dashboard(ctk.CTk):
                             text_color=COLOR_TEXT_MUTED
                         )
 
-                # 3. Update Left Sidebar Brain Status
+                # 3. Update Groq brain status label if available
+                if hasattr(self, "groq_brain_status_label"):
+                    if groq_key:
+                        self.groq_brain_status_label.configure(
+                            text="● Status: Groq Cloud Active (Key Saved)",
+                            text_color=COLOR_ACCENT_GREEN
+                        )
+                    else:
+                        self.groq_brain_status_label.configure(
+                            text="● Status: Inactive (Enter API key to activate)",
+                            text_color=COLOR_TEXT_MUTED
+                        )
+
+                # 4. Update Left Sidebar Brain Status
                 if "claude" in cur_model or "anthropic" in cur_model:
                     if claude_key:
                         self.brain_status_label.configure(text="● Brain: Online (Claude)", text_color=COLOR_ACCENT_GREEN)
@@ -877,11 +944,42 @@ class Privacy68Dashboard(ctk.CTk):
                     if ollama_ok:
                         self.brain_status_label.configure(text="● Brain: Online (Ollama)", text_color=COLOR_ACCENT_GREEN)
                     else:
-                        self.brain_status_label.configure(text="● Brain: Offline (Ollama)", text_color="#EF4444")
+                        self.brain_status_label.configure(text="● Brain: Ollama Offline", text_color="#EF4444")
 
             self.after(0, update)
 
         threading.Thread(target=worker, daemon=True).start()
+
+    def _save_groq_brain_key(self):
+        key = self.groq_brain_entry.get().strip()
+        config.GROQ_API_KEY = key
+        os.environ["GROQ_API_KEY"] = key
+        if hasattr(self, "groq_key_entry"):
+            self.groq_key_entry.delete(0, "end")
+            self.groq_key_entry.insert(0, key)
+        if key:
+            if hasattr(self, "groq_brain_status_label"):
+                self.groq_brain_status_label.configure(
+                    text="● Status: Groq Cloud Active (Key Saved)",
+                    text_color=COLOR_ACCENT_GREEN
+                )
+            self._add_feed_card(
+                "Groq API",
+                "Groq Cloud API key activated! Llama 3.3 70B cloud reasoning is ready (Free).",
+                card_type="system"
+            )
+            if "ollama" in self.brain_model_entry.get():
+                self.brain_model_entry.delete(0, "end")
+                self.brain_model_entry.insert(0, "groq/llama-3.3-70b-versatile")
+                self._apply_model_choice()
+        else:
+            if hasattr(self, "groq_brain_status_label"):
+                self.groq_brain_status_label.configure(
+                    text="● Status: Inactive (Enter API key to activate)",
+                    text_color=COLOR_TEXT_MUTED
+                )
+            self._add_feed_card("Groq API", "Groq API key removed.", card_type="system")
+        self._check_services()
 
     def _save_ollama_config(self):
         url = self.ollama_url_entry.get().strip() or "http://localhost:11434"

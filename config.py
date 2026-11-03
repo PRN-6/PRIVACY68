@@ -86,10 +86,20 @@ GROQ_WHISPER_MODEL = "whisper-large-v3-turbo"
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
 
-# Agent Brain (LLM) Configuration
-# Auto-selects Claude 3.5 Sonnet if ANTHROPIC_API_KEY is present, else falls back to local Ollama
-_default_model = "claude-3-5-sonnet-20241022" if ANTHROPIC_API_KEY else "ollama/llama3.2:latest"
-AGENT_BRAIN_MODEL = os.environ.get("AGENT_BRAIN_MODEL", _default_model)
+# Agent Brain (LLM) Configuration - Pure API Mode (No local LLM required)
+# Priority: Custom env -> Claude (if key set) -> Groq (if key set) -> Remote Ollama -> Groq Cloud Llama 3.3 (Free default)
+if os.environ.get("AGENT_BRAIN_MODEL"):
+    _default_model = os.environ.get("AGENT_BRAIN_MODEL")
+elif ANTHROPIC_API_KEY:
+    _default_model = "claude-3-5-sonnet-20241022"
+elif GROQ_API_KEY:
+    _default_model = "groq/llama-3.3-70b-versatile"
+elif OLLAMA_BASE_URL and OLLAMA_BASE_URL != "http://localhost:11434":
+    _default_model = "ollama/llama3.2:latest"
+else:
+    _default_model = "groq/llama-3.3-70b-versatile"
+
+AGENT_BRAIN_MODEL = _default_model
 AGENT_BRAIN_MAX_RETRIES = 2  # Open-Interpreter style self-healing code retry loop
 
 # Mobile Web Remote Server configuration

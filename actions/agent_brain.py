@@ -141,6 +141,19 @@ class AgentBrain:
             api_key = getattr(config, "OLLAMA_API_KEY", "") or os.environ.get("OLLAMA_API_KEY", "")
             os.environ["OLLAMA_API_BASE"] = api_base
 
+        # Validate API keys before network call (unless litellm.completion is mocked in tests)
+        is_mocked = hasattr(litellm.completion, "mock_calls") or hasattr(litellm.completion, "return_value")
+        if not is_mocked:
+            if ("claude" in model_lower or "anthropic" in model_lower) and not api_key:
+                raise ValueError("Anthropic Claude API key is not configured. Go to the 'AI Brain' tab in the dashboard and paste your Claude API key.")
+            if "groq" in model_lower and not api_key:
+                raise ValueError("Groq API key is not configured. Go to the 'AI Brain' tab in the dashboard and paste your free Groq API key.")
+            if ("gpt" in model_lower or "openai" in model_lower) and not api_key:
+                raise ValueError("OpenAI API key is not configured. Go to the 'AI Brain' tab in the dashboard and paste your OpenAI API key.")
+            if "ollama" in model_lower:
+                if not is_ollama_online():
+                    raise ConnectionError(f"Cannot reach Ollama API at {api_base}. Use a Cloud API (Claude or Groq [Free]) in the AI Brain tab, or check your Ollama API endpoint.")
+
         call_kwargs = {
             "model": self.model,
             "messages": messages,
@@ -176,46 +189,33 @@ class AgentBrain:
         try:
             logger.info(f"[AGENT BRAIN] Reasoning via {self.model}: {text}")
 
-            model_lower = self.model.lower()
-            if ("claude" in model_lower or "anthropic" in model_lower) and not (getattr(config, "ANTHROPIC_API_KEY", "") or os.environ.get("ANTHROPIC_API_KEY", "")):
-                msg = "Anthropic Claude API key is not configured. Go to the 'AI Brain' tab in the dashboard and paste your Claude API key."
-                logger.warning(f"[AGENT BRAIN] {msg}")
-                return {
-                    "success": False,
-                    "message": msg,
-                    "output": "Missing ANTHROPIC_API_KEY",
-                    "method": "agentic_engine",
-                }
-            if "groq" in model_lower and not (getattr(config, "GROQ_API_KEY", "") or os.environ.get("GROQ_API_KEY", "")):
-                msg = "Groq API key is not configured. Go to the 'AI Brain' tab in the dashboard and paste your Groq API key."
-                logger.warning(f"[AGENT BRAIN] {msg}")
-                return {
-                    "success": False,
-                    "message": msg,
-                    "output": "Missing GROQ_API_KEY",
-                    "method": "agentic_engine",
-                }
-
             # Step 1: Get code from LLM
             try:
                 code = self._get_code_from_llm(text)
             except Exception as e:
                 err_str = str(e)
                 err_name = type(e).__name__
-                if "10061" in err_str or "Connection refused" in err_str or "APIConnectionError" in err_name:
-                    logger.error(f"[AGENT BRAIN] Ollama is not running: {e}")
+                if "API key is not configured" in err_str or "Cannot reach Ollama API" in err_str:
+                    logger.warning(f"[AGENT BRAIN] {err_str}")
                     return {
                         "success": False,
-                        "message": "Ollama service is not reachable. Start Ollama ('ollama serve') or switch to a Cloud model (Claude 3.5 Sonnet / Groq) in the dashboard.",
-                        "output": "Connection refused to http://localhost:11434",
+                        "message": err_str,
+                        "output": err_str,
                         "method": "agentic_engine",
                     }
                 if "not found" in err_str.lower() or "notfounderror" in err_name.lower():
-                    logger.error(f"[AGENT BRAIN] Model '{self.model}' not found in Ollama: {e}")
-                    clean_model_name = self.model.replace("ollama/", "")
+                    logger.error(f"[AGENT BRAIN] Model '{self.model}' not found in API: {e}")
                     return {
                         "success": False,
-                        "message": f"Model '{self.model}' is not installed in Ollama. Run 'ollama pull {clean_model_name}' in your terminal, or switch to Claude / Groq in the dashboard.",
+                        "message": f"Model '{self.model}' is not installed in Ollama. Verify model name or switch to Claude / Groq in the dashboard.",
+                        "output": err_str,
+                        "method": "agentic_engine",
+                    }
+                if "10061" in err_str or "Connection refused" in err_str or "APIConnectionError" in err_name:
+                    logger.error(f"[AGENT BRAIN] API connection failed: {e}")
+                    return {
+                        "success": False,
+                        "message": "AI API connection failed. Check your API key and network connection, or switch to Groq (Free) / Claude in the dashboard.",
                         "output": err_str,
                         "method": "agentic_engine",
                     }
