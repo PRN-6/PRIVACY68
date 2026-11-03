@@ -102,6 +102,18 @@ class Privacy68Dashboard(ctk.CTk):
         )
         self.nav_console_btn.grid(row=2, column=0, padx=12, pady=3, sticky="ew")
 
+        self.nav_skills_btn = ctk.CTkButton(
+            self.sidebar,
+            text="⚡ Learned Skills",
+            anchor="w",
+            height=34,
+            font=ctk.CTkFont(family="Segoe UI", size=12),
+            fg_color="transparent",
+            hover_color=COLOR_CARD_HOVER,
+            command=lambda: self._switch_tab("skills")
+        )
+        self.nav_skills_btn.grid(row=3, column=0, padx=12, pady=3, sticky="ew")
+
         self.nav_brain_btn = ctk.CTkButton(
             self.sidebar,
             text="🧠 AI Brain (APIs)",
@@ -112,7 +124,7 @@ class Privacy68Dashboard(ctk.CTk):
             hover_color=COLOR_CARD_HOVER,
             command=lambda: self._switch_tab("brain")
         )
-        self.nav_brain_btn.grid(row=3, column=0, padx=12, pady=3, sticky="ew")
+        self.nav_brain_btn.grid(row=4, column=0, padx=12, pady=3, sticky="ew")
 
         self.nav_voice_btn = ctk.CTkButton(
             self.sidebar,
@@ -124,7 +136,7 @@ class Privacy68Dashboard(ctk.CTk):
             hover_color=COLOR_CARD_HOVER,
             command=lambda: self._switch_tab("voice")
         )
-        self.nav_voice_btn.grid(row=4, column=0, padx=12, pady=3, sticky="ew")
+        self.nav_voice_btn.grid(row=5, column=0, padx=12, pady=3, sticky="ew")
 
         self.nav_settings_btn = ctk.CTkButton(
             self.sidebar,
@@ -136,11 +148,11 @@ class Privacy68Dashboard(ctk.CTk):
             hover_color=COLOR_CARD_HOVER,
             command=lambda: self._switch_tab("settings")
         )
-        self.nav_settings_btn.grid(row=5, column=0, padx=12, pady=3, sticky="ew")
+        self.nav_settings_btn.grid(row=6, column=0, padx=12, pady=3, sticky="ew")
 
         # Service Status Indicators
         status_frame = ctk.CTkFrame(self.sidebar, fg_color=COLOR_CARD, corner_radius=8)
-        status_frame.grid(row=6, column=0, padx=12, pady=(12, 6), sticky="ew")
+        status_frame.grid(row=7, column=0, padx=12, pady=(12, 6), sticky="ew")
 
         self.voice_status_label = ctk.CTkLabel(
             status_frame,
@@ -168,7 +180,7 @@ class Privacy68Dashboard(ctk.CTk):
             hover_color="#059669",
             command=self._toggle_voice_recording
         )
-        self.streamer_btn.grid(row=7, column=0, padx=12, pady=6, sticky="ew")
+        self.streamer_btn.grid(row=8, column=0, padx=12, pady=6, sticky="ew")
 
         # Footer
         footer_label = ctk.CTkLabel(
@@ -188,6 +200,7 @@ class Privacy68Dashboard(ctk.CTk):
         # Tab Frames container
         self.views = {}
         self._build_console_view()
+        self._build_skills_view()
         self._build_brain_view()
         self._build_voice_view()
         self._build_settings_view()
@@ -299,7 +312,184 @@ class Privacy68Dashboard(ctk.CTk):
             card_type="system"
         )
 
-    # ── TAB 2: AI Brain View ──
+    # ── TAB 2: Learned Skills View (Self-Improving Engine) ──
+    def _build_skills_view(self):
+        view = ctk.CTkScrollableFrame(self.content_frame, fg_color=COLOR_CARD, corner_radius=8)
+        view.grid_columnconfigure(0, weight=1)
+
+        title_frame = ctk.CTkFrame(view, fg_color="transparent")
+        title_frame.pack(fill="x", padx=16, pady=(12, 4))
+
+        ctk.CTkLabel(
+            title_frame,
+            text="⚡ Self-Improving Skill Engine",
+            font=ctk.CTkFont(family="Segoe UI", size=16, weight="bold"),
+            text_color=COLOR_TEXT_PRIMARY
+        ).pack(side="left")
+
+        refresh_btn = ctk.CTkButton(
+            title_frame,
+            text="↻ Refresh Skills",
+            width=110,
+            height=28,
+            font=ctk.CTkFont(family="Segoe UI", size=11, weight="bold"),
+            fg_color=COLOR_BG_DARK,
+            hover_color=COLOR_CARD_HOVER,
+            command=self._refresh_skills_view
+        )
+        refresh_btn.pack(side="right")
+
+        # Top Information Box
+        info_box = ctk.CTkFrame(view, fg_color=COLOR_BG_DARK, corner_radius=8)
+        info_box.pack(fill="x", padx=16, pady=6)
+
+        ctk.CTkLabel(
+            info_box,
+            text="🧠 Autonomous Skill Crystallization & Fast-Path Recall",
+            font=ctk.CTkFont(family="Segoe UI", size=12, weight="bold"),
+            text_color=COLOR_ACCENT_GREEN
+        ).pack(anchor="w", padx=14, pady=(10, 2))
+
+        ctk.CTkLabel(
+            info_box,
+            text="When PRIVACY68 successfully generates and executes desktop automation scripts, it crystallizes them into permanent local skills.\n"
+                 "Matching commands execute in 0ms with zero LLM API cost, zero network lag, and self-healing reliability.",
+            font=ctk.CTkFont(family="Segoe UI", size=11),
+            text_color=COLOR_TEXT_MUTED,
+            justify="left"
+        ).pack(anchor="w", padx=14, pady=(0, 10))
+
+        # Container for Skill Cards
+        self.skills_cards_container = ctk.CTkFrame(view, fg_color="transparent")
+        self.skills_cards_container.pack(fill="x", padx=16, pady=6)
+
+        self.views["skills"] = view
+        self._refresh_skills_view()
+
+    def _refresh_skills_view(self):
+        if not hasattr(self, "skills_cards_container"):
+            return
+
+        for w in self.skills_cards_container.winfo_children():
+            w.destroy()
+
+        try:
+            from actions.skill_manager import skill_manager
+            skills = skill_manager.list_skills()
+        except Exception as e:
+            skills = []
+            logger.warning(f"Failed to list skills: {e}")
+
+        if not skills:
+            empty_card = ctk.CTkFrame(self.skills_cards_container, fg_color=COLOR_BG_DARK, corner_radius=8)
+            empty_card.pack(fill="x", pady=8)
+            ctk.CTkLabel(
+                empty_card,
+                text="No skills learned yet.\nAsk PRIVACY68 to automate any Windows task (e.g. 'Organize my Downloads folder'),\nand it will automatically learn and save the skill!",
+                font=ctk.CTkFont(family="Segoe UI", size=12),
+                text_color=COLOR_TEXT_MUTED,
+                justify="center"
+            ).pack(padx=20, pady=24)
+            return
+
+        for skill in skills:
+            card = ctk.CTkFrame(self.skills_cards_container, fg_color=COLOR_BG_DARK, corner_radius=8)
+            card.pack(fill="x", pady=6)
+
+            hdr = ctk.CTkFrame(card, fg_color="transparent")
+            hdr.pack(fill="x", padx=14, pady=(10, 4))
+
+            title_text = skill.get("name", "Unnamed Skill")
+            ctk.CTkLabel(
+                hdr,
+                text=f"⚡ {title_text}",
+                font=ctk.CTkFont(family="Segoe UI", size=13, weight="bold"),
+                text_color=COLOR_TEXT_PRIMARY
+            ).pack(side="left")
+
+            count = skill.get("success_count", 0)
+            badge_text = f"✓ Run {count}x (0ms)" if count > 0 else "New"
+            ctk.CTkLabel(
+                hdr,
+                text=badge_text,
+                font=ctk.CTkFont(family="Segoe UI", size=10, weight="bold"),
+                text_color=COLOR_ACCENT_GREEN if count > 0 else COLOR_TEXT_MUTED,
+                fg_color=COLOR_CARD,
+                corner_radius=4,
+                padx=6, pady=2
+            ).pack(side="right")
+
+            desc = skill.get("description", "")
+            if desc:
+                ctk.CTkLabel(
+                    card,
+                    text=desc,
+                    font=ctk.CTkFont(family="Segoe UI", size=11),
+                    text_color=COLOR_TEXT_MUTED,
+                    justify="left"
+                ).pack(anchor="w", padx=14, pady=(0, 4))
+
+            triggers = ", ".join(f"'{p}'" for p in skill.get("trigger_phrases", [])[:3])
+            if triggers:
+                ctk.CTkLabel(
+                    card,
+                    text=f"Trigger keywords: {triggers}",
+                    font=ctk.CTkFont(family="Segoe UI", size=10, slant="italic"),
+                    text_color=COLOR_ACCENT_BLUE,
+                    justify="left"
+                ).pack(anchor="w", padx=14, pady=(0, 8))
+
+            actions_frame = ctk.CTkFrame(card, fg_color="transparent")
+            actions_frame.pack(fill="x", padx=14, pady=(0, 10))
+
+            sid = skill.get("id", "")
+            run_btn = ctk.CTkButton(
+                actions_frame,
+                text="▶ Run Now",
+                width=80,
+                height=26,
+                font=ctk.CTkFont(family="Segoe UI", size=10, weight="bold"),
+                fg_color=COLOR_ACCENT_GREEN,
+                hover_color="#059669",
+                command=lambda s=skill: self._run_skill_from_dashboard(s)
+            )
+            run_btn.pack(side="left", padx=(0, 8))
+
+            if not skill.get("is_builtin"):
+                del_btn = ctk.CTkButton(
+                    actions_frame,
+                    text="✕ Delete",
+                    width=70,
+                    height=26,
+                    font=ctk.CTkFont(family="Segoe UI", size=10),
+                    fg_color="#374151",
+                    hover_color="#DC2626",
+                    command=lambda s_id=sid: self._delete_skill_from_dashboard(s_id)
+                )
+                del_btn.pack(side="left")
+
+    def _run_skill_from_dashboard(self, skill: Dict[str, Any]):
+        title = skill.get("name", "Skill")
+        self._add_feed_card("Learned Skill", f"Executing '{title}' via 0ms fast-path...", card_type="system")
+        def worker():
+            from actions.skill_manager import skill_manager
+            res = skill_manager.execute_skill(skill)
+            def update():
+                if res.get("success"):
+                    skill_manager.record_execution(skill.get("id", ""), success=True)
+                    self._add_feed_card(f"Skill: {title}", res.get("output", "Completed successfully."), card_type="assistant", code=skill.get("code"))
+                else:
+                    self._add_feed_card(f"Skill: {title}", f"Execution failed: {res.get('error')}", card_type="system")
+                self._refresh_skills_view()
+            self.after(0, update)
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _delete_skill_from_dashboard(self, skill_id: str):
+        from actions.skill_manager import skill_manager
+        skill_manager.delete_skill(skill_id)
+        self._refresh_skills_view()
+
+    # ── TAB 3: AI Brain View ──
     def _build_brain_view(self):
         view = ctk.CTkScrollableFrame(self.content_frame, fg_color=COLOR_CARD, corner_radius=8)
         view.grid_columnconfigure(0, weight=1)
@@ -798,6 +988,7 @@ class Privacy68Dashboard(ctk.CTk):
 
         buttons = {
             "console": self.nav_console_btn,
+            "skills": self.nav_skills_btn,
             "brain": self.nav_brain_btn,
             "voice": self.nav_voice_btn,
             "settings": self.nav_settings_btn,
@@ -807,6 +998,9 @@ class Privacy68Dashboard(ctk.CTk):
                 btn.configure(fg_color=COLOR_ACCENT_RED)
             else:
                 btn.configure(fg_color="transparent")
+
+        if tab_name == "skills":
+            self._refresh_skills_view()
 
     # ── Live Feed UI Card Helpers ──
     def _add_feed_card(self, title: str, body: str, card_type: str = "user", code: Optional[str] = None):

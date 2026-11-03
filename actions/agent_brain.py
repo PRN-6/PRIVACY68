@@ -186,6 +186,30 @@ class AgentBrain:
         """
         self.last_code = ""
         self.last_reasoning = f"Analyzing request: {text}"
+
+        # Fast-Path: Check Learned Skills library first (0ms latency, zero API tokens)
+        try:
+            from actions.skill_manager import skill_manager
+            matched_skill = skill_manager.find_matching_skill(text)
+            if matched_skill:
+                logger.info(f"[SKILL RECALL] Running learned skill '{matched_skill['name']}' for '{text}' (0ms fast-path)")
+                skill_res = skill_manager.execute_skill(matched_skill)
+                if skill_res.get("success"):
+                    self.last_code = matched_skill.get("code", "")
+                    self.last_reasoning = f"Executed learned skill: {matched_skill['name']} (0ms)"
+                    skill_manager.record_execution(matched_skill["id"], success=True)
+                    return {
+                        "success": True,
+                        "message": f"Executed learned skill: {matched_skill['name']}",
+                        "output": skill_res.get("output", ""),
+                        "method": "learned_skill",
+                        "tool": "learned_skill",
+                    }
+                else:
+                    logger.warning(f"[SKILL RECALL] Skill '{matched_skill['name']}' failed; escalating to LLM self-healing...")
+        except Exception as sm_err:
+            logger.debug(f"[SKILL RECALL] Lookup note: {sm_err}")
+
         try:
             logger.info(f"[AGENT BRAIN] Reasoning via {self.model}: {text}")
 
@@ -235,6 +259,13 @@ class AgentBrain:
                 result = run_agent_code(current_code, timeout=30)
 
                 if result.returncode == 0:
+                    # Self-improving loop: crystallize working code into a reusable skill
+                    try:
+                        from actions.skill_manager import skill_manager
+                        skill_manager.learn_skill(trigger_command=text, code=current_code)
+                    except Exception as learn_err:
+                        logger.debug(f"[SELF-IMPROVING] Could not save skill: {learn_err}")
+
                     return {
                         "success": True,
                         "message": "Task executed successfully via Agent Brain.",
