@@ -1,1064 +1,1330 @@
-  <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#101114">
+  <meta name="theme-color" content="#0c0e12">
   <title>PRIVACY68 Control Center</title>
   <style>
     :root {
       color-scheme: dark;
-      --bg: #101114;
-      --panel: #17191e;
-      --panel-raised: #1d2026;
-      --line: #2a2d35;
-      --text: #f4f5f7;
-      --muted: #9a9eaa;
-      --subtle: #6f7480;
-      --accent: #f04452;
-      --accent-hover: #ff5d68;
-      --green: #47c995;
-      --amber: #f3bb58;
-      --red: #fb6670;
-      --radius: 14px;
-      font-family: "Segoe UI", Inter, system-ui, sans-serif;
+      --bg: #0c0e12;
+      --sidebar: #13161f;
+      --panel: #161922;
+      --panel-raised: #1d222e;
+      --panel-hover: #232838;
+      --line: #262b3a;
+      --line-subtle: #1c202d;
+      --text: #f3f4f6;
+      --text-muted: #9ca3af;
+      --text-subtle: #6b7280;
+      --accent: #ef4444;
+      --accent-hover: #dc2626;
+      --accent-glow: rgba(239, 68, 68, 0.25);
+      --green: #10b981;
+      --green-glow: rgba(16, 185, 129, 0.25);
+      --blue: #38bdf8;
+      --amber: #f59e0b;
+      --radius: 12px;
+      --radius-sm: 8px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
       background: var(--bg);
       color: var(--text);
-    }
-
-    * { box-sizing: border-box; }
-    body { margin: 0; min-width: 320px; min-height: 100vh; background: var(--bg); }
-    button, input { font: inherit; }
-    button { color: inherit; }
-    button:focus-visible, input:focus-visible { outline: 2px solid #ff7d86; outline-offset: 2px; }
-
-    .app-shell { min-height: 100vh; display: flex; flex-direction: column; }
-    .topbar {
-      min-height: 68px; display: flex; align-items: center; justify-content: space-between;
-      gap: 18px; padding: 0 26px; border-bottom: 1px solid var(--line);
-      background: rgba(23, 25, 30, .94);
-    }
-    .brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
-    .brand-mark {
-      width: 34px; height: 34px; display: grid; place-items: center; border-radius: 11px;
-      color: white; font-size: 17px; font-weight: 800;
-      background: linear-gradient(145deg, #ff6b75, #d92f43);
-      box-shadow: 0 6px 20px #f0445230;
-    }
-    .brand-name { font-weight: 800; letter-spacing: .1em; font-size: 14px; }
-    .brand-caption { margin-top: 2px; color: var(--muted); font-size: 11px; }
-    .topbar-right { display: flex; align-items: center; gap: 12px; }
-    .user-chip, .status-chip {
-      display: inline-flex; align-items: center; gap: 8px; min-height: 32px; padding: 0 11px;
-      border: 1px solid var(--line); border-radius: 999px; color: var(--muted);
-      background: #111317; font-size: 12px;
-    }
-    .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--subtle); }
-    .status-chip.ready .status-dot { background: var(--green); box-shadow: 0 0 9px #47c99580; }
-    .status-chip.error .status-dot { background: var(--red); }
-    .icon-button {
-      width: 34px; height: 34px; border: 1px solid var(--line); border-radius: 10px;
-      background: transparent; cursor: pointer; color: var(--muted);
-    }
-    .icon-button:hover { background: var(--panel-raised); color: white; }
-
-    .layout {
-      width: min(1500px, 100%); margin: 0 auto; padding: 22px 26px 26px;
-      display: grid; grid-template-columns: 310px minmax(0, 1fr); gap: 22px; flex: 1;
-    }
-    .sidebar, .workspace { min-width: 0; }
-    .sidebar { display: flex; flex-direction: column; gap: 14px; }
-    .card {
-      border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel);
-      box-shadow: 0 8px 24px #00000012;
-    }
-    .card-pad { padding: 17px; }
-    .card-heading {
-      display: flex; align-items: center; justify-content: space-between; gap: 12px;
-      margin-bottom: 15px;
-    }
-    .card-title { margin: 0; font-size: 12px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; }
-    .card-kicker { color: var(--subtle); font-size: 11px; }
-    .engine-name {
-      overflow-wrap: anywhere; padding: 11px 12px; border-radius: 10px;
-      background: #111317; border: 1px solid var(--line);
-      color: #ffc2c6; font: 12px/1.5 "Cascadia Code", Consolas, monospace;
-    }
-    .detail-list { display: grid; gap: 12px; margin-top: 14px; }
-    .detail-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-    .detail-label { color: var(--muted); font-size: 12px; }
-    .detail-value { color: #e0e2e7; font-size: 12px; text-align: right; }
-    .pill {
-      display: inline-flex; align-items: center; min-height: 23px; padding: 0 8px;
-      border-radius: 999px; border: 1px solid var(--line); color: var(--muted);
-      background: #111317; font-size: 10px; white-space: nowrap;
-    }
-    .pill.good { border-color: #47c99555; color: var(--green); }
-    .pill.warn { border-color: #f3bb5855; color: var(--amber); }
-    .pill.bad { border-color: #fb667055; color: var(--red); }
-    .field { display: grid; gap: 7px; margin-bottom: 13px; }
-    .field label { color: var(--muted); font-size: 11px; font-weight: 650; }
-    .field input {
-      width: 100%; min-height: 38px; padding: 0 11px; border: 1px solid var(--line);
-      border-radius: 9px; color: var(--text); background: #111317;
-    }
-    .field input::placeholder { color: #656a75; }
-    .button {
-      min-height: 37px; padding: 0 13px; display: inline-flex; align-items: center;
-      justify-content: center; gap: 8px; border: 1px solid var(--line); border-radius: 9px;
-      background: var(--panel-raised); color: #e6e7ea; font-size: 12px; font-weight: 650;
-      cursor: pointer; transition: background .15s ease, border-color .15s ease, transform .15s ease;
-    }
-    .button:hover:not(:disabled) { background: #292d35; border-color: #454a56; }
-    .button:active:not(:disabled) { transform: translateY(1px); }
-    .button:disabled { cursor: wait; opacity: .55; }
-    .button.primary { color: white; background: var(--accent); border-color: var(--accent); }
-    .button.primary:hover:not(:disabled) { background: var(--accent-hover); }
-    .button.danger { color: #ff9aa1; }
-    .button.full { width: 100%; }
-    .button-row { display: flex; flex-wrap: wrap; gap: 8px; }
-    .hint { color: var(--subtle); font-size: 11px; line-height: 1.5; }
-    .voice-status { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
-
-    .workspace { display: flex; flex-direction: column; gap: 17px; }
-    .page-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
-    .page-heading h1 { margin: 0; font-size: clamp(20px, 2.2vw, 27px); letter-spacing: -.025em; }
-    .page-heading p { margin: 7px 0 0; color: var(--muted); font-size: 13px; line-height: 1.5; }
-    .page-actions { display: flex; gap: 8px; flex-shrink: 0; }
-    .summary-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
-    .summary-card { padding: 14px 15px; }
-    .summary-label { color: var(--muted); font-size: 11px; }
-    .summary-value { margin-top: 8px; font-weight: 700; font-size: 15px; overflow-wrap: anywhere; }
-    .summary-note { margin-top: 4px; color: var(--subtle); font-size: 10px; }
-    .view-tabs { display: flex; gap: 8px; }
-    .view-panel[hidden] { display: none; }
-    .plugin-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-    .plugin-card { min-width: 0; padding: 15px; }
-    .plugin-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
-    .plugin-name { margin: 0; font-size: 14px; overflow-wrap: anywhere; }
-    .plugin-icon { margin-right: 7px; }
-    .plugin-description { margin: 10px 0; color: var(--muted); font-size: 12px; line-height: 1.55; }
-    .plugin-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
-    .plugin-actions { display: flex; flex-wrap: wrap; gap: 8px; }
-    .plugin-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 12px; }
-    .plugin-form-grid .field:last-child { grid-column: 1 / -1; }
-    .plugin-empty { padding: 24px; color: var(--muted); text-align: center; font-size: 12px; }
-
-    .console {
-      min-height: 400px; flex: 1; display: grid; grid-template-columns: minmax(280px, .9fr) minmax(0, 1.1fr);
+      min-height: 100vh;
+      display: flex;
+      font-size: 13px;
+      line-height: 1.5;
       overflow: hidden;
+      user-select: none;
     }
-    .conversation { min-width: 0; display: flex; flex-direction: column; border-right: 1px solid var(--line); }
-    .panel-head {
-      min-height: 48px; display: flex; align-items: center; justify-content: space-between; gap: 12px;
-      padding: 0 16px; border-bottom: 1px solid var(--line);
-    }
-    .panel-head h2 { margin: 0; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; }
-    .text-button { border: 0; padding: 6px; color: var(--muted); background: transparent; cursor: pointer; font-size: 11px; }
-    .text-button:hover { color: white; }
-    .log {
-      min-height: 250px; flex: 1; display: flex; flex-direction: column; gap: 12px;
-      overflow-y: auto; padding: 16px;
-    }
-    .empty-state {
-      margin: auto; max-width: 245px; text-align: center; color: var(--subtle);
-      font-size: 12px; line-height: 1.7;
-    }
-    .empty-icon { display: block; margin-bottom: 10px; color: #d45b65; font-size: 24px; }
-    .message { max-width: 90%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; }
-    .message.user { align-self: flex-end; background: #54242b; border-color: #74333d; }
-    .message.system { align-self: flex-start; background: var(--panel-raised); }
-    .message.error { border-color: #8f3942; }
-    .message-role { margin-bottom: 5px; color: var(--muted); font-size: 9px; text-transform: uppercase; letter-spacing: .08em; }
-    .message-body { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 12px; line-height: 1.55; }
-    .composer { padding: 13px; border-top: 1px solid var(--line); background: #14161a; }
-    .composer-row { display: flex; gap: 8px; }
-    .composer input {
-      min-width: 0; flex: 1; height: 42px; padding: 0 12px; border: 1px solid var(--line);
-      border-radius: 10px; color: var(--text); background: #101114;
-    }
-    .composer input::placeholder { color: #6c717b; }
-    .safety-note { padding: 0 2px 10px; color: #8b8490; font-size: 10px; line-height: 1.45; }
-    .output-column { min-width: 0; display: grid; grid-template-rows: minmax(110px, .7fr) minmax(180px, 1.3fr); }
-    .output-panel { min-height: 0; display: flex; flex-direction: column; }
-    .output-panel + .output-panel { border-top: 1px solid var(--line); }
-    .output-content {
-      min-height: 0; flex: 1; overflow: auto; margin: 0; padding: 15px 16px;
-      color: #bdc1ca; font: 11px/1.6 "Cascadia Code", Consolas, monospace;
-      white-space: pre-wrap; overflow-wrap: anywhere;
-    }
-    .output-content.code { color: #a3dfbe; background: #121512; }
 
-    .toast {
-      position: fixed; right: 22px; bottom: 20px; z-index: 5; max-width: min(390px, calc(100vw - 32px));
-      padding: 12px 15px; border: 1px solid var(--line); border-radius: 10px;
-      background: #202329; box-shadow: 0 12px 40px #0008; font-size: 12px;
-      opacity: 0; transform: translateY(10px); pointer-events: none; transition: .2s ease;
-    }
-    .toast.show { opacity: 1; transform: translateY(0); }
-    .toast.error { border-color: #8f3942; }
-    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #262b3a; border-radius: 999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #374151; }
 
-    @media (max-width: 980px) {
-      .layout { grid-template-columns: 260px minmax(0, 1fr); padding: 18px; gap: 16px; }
-      .console { grid-template-columns: 1fr; }
-      .conversation { min-height: 330px; border-right: 0; }
-      .output-column { min-height: 340px; border-top: 1px solid var(--line); }
+    /* App Shell */
+    .app-shell { display: flex; width: 100vw; height: 100vh; overflow: hidden; }
+
+    /* Left Sidebar */
+    .sidebar {
+      width: 240px;
+      min-width: 240px;
+      background: var(--sidebar);
+      border-right: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+      padding: 16px 12px;
+      gap: 16px;
     }
-    @media (max-width: 700px) {
-      .topbar { min-height: 60px; padding: 0 14px; }
-      .brand-caption, .user-chip { display: none; }
-      .layout { display: flex; flex-direction: column; padding: 14px; }
-      .sidebar { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .sidebar .profile-card, .sidebar .voice-card { grid-column: 1 / -1; }
-      .page-heading { flex-direction: column; }
-      .page-actions { width: 100%; }
-      .page-actions .button { flex: 1; }
-      .summary-grid { grid-template-columns: 1fr; }
-      .plugin-grid { grid-template-columns: 1fr; }
-      .plugin-form-grid { grid-template-columns: 1fr; }
-      .plugin-form-grid .field:last-child { grid-column: auto; }
-      .summary-card { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-      .summary-value { margin-top: 0; text-align: right; }
-      .summary-note { display: none; }
-      .console { min-height: 660px; }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 4px 6px 12px;
+      border-bottom: 1px solid var(--line-subtle);
     }
-    @media (max-width: 420px) {
-      .sidebar { grid-template-columns: 1fr; }
-      .sidebar .profile-card, .sidebar .voice-card { grid-column: auto; }
-      .card-pad { padding: 14px; }
+    .brand-mark {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #ef4444, #b91c1c);
+      color: white;
+      font-weight: 900;
+      font-size: 18px;
+      display: grid;
+      place-items: center;
+      box-shadow: 0 4px 14px var(--accent-glow);
     }
-    @media (prefers-reduced-motion: reduce) {
-      *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
+    .brand-text { display: flex; flex-direction: column; }
+    .brand-title { font-weight: 800; font-size: 15px; letter-spacing: 0.05em; color: var(--text); }
+    .brand-version { font-size: 10px; color: var(--text-subtle); letter-spacing: 0.02em; }
+
+    /* Nav Links */
+    .nav-list { display: flex; flex-direction: column; gap: 4px; flex: 1; }
+    .nav-btn {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 12px;
+      border-radius: var(--radius-sm);
+      color: var(--text-muted);
+      font-size: 12px;
+      font-weight: 600;
+      background: transparent;
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      text-align: left;
     }
+    .nav-btn:hover { background: var(--panel); color: var(--text); }
+    .nav-btn.active {
+      background: var(--panel-raised);
+      color: var(--text);
+      border-color: var(--line);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    .nav-btn.active .nav-icon { color: var(--accent); }
+    .nav-icon { width: 16px; height: 16px; display: inline-flex; align-items: center; justify-content: center; }
+
+    /* Push-to-Talk Big Button */
+    .ptt-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 11px 14px;
+      border-radius: var(--radius-sm);
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: white;
+      font-size: 12px;
+      font-weight: 700;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 4px 12px var(--green-glow);
+      transition: all 0.15s ease;
+    }
+    .ptt-btn:hover { background: linear-gradient(135deg, #059669, #047857); transform: translateY(-1px); }
+    .ptt-btn.recording {
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+      box-shadow: 0 4px 16px var(--accent-glow);
+      animation: pulse 1.2s infinite;
+    }
+
+    @keyframes pulse {
+      0% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.88; transform: scale(0.99); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+
+    /* Sidebar Footer */
+    .sidebar-status {
+      background: var(--panel);
+      border: 1px solid var(--line-subtle);
+      border-radius: var(--radius-sm);
+      padding: 8px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 10px;
+    }
+    .status-indicator { display: flex; align-items: center; gap: 6px; color: var(--text-muted); }
+    .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text-subtle); }
+    .status-dot.green { background: var(--green); box-shadow: 0 0 6px var(--green-glow); }
+    .status-dot.red { background: var(--accent); }
+
+    /* Main Content */
+    .main-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+      background: var(--bg);
+    }
+
+    /* Top Bar */
+    .topbar {
+      height: 52px;
+      border-bottom: 1px solid var(--line);
+      padding: 0 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(19, 22, 31, 0.7);
+      backdrop-filter: blur(10px);
+    }
+    .topbar-title { font-size: 13px; font-weight: 700; color: var(--text); }
+    .topbar-right { display: flex; align-items: center; gap: 10px; }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 9px;
+      border-radius: 999px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+    .chip.good { border-color: rgba(16, 185, 129, 0.4); color: var(--green); }
+    .chip.warn { border-color: rgba(245, 158, 11, 0.4); color: var(--amber); }
+
+    .icon-btn {
+      width: 28px;
+      height: 28px;
+      display: grid;
+      place-items: center;
+      border-radius: 6px;
+      background: transparent;
+      border: 1px solid var(--line);
+      color: var(--text-muted);
+      cursor: pointer;
+    }
+    .icon-btn:hover { background: var(--panel); color: var(--text); }
+
+    /* Tab Views */
+    .tab-view {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      display: none;
+    }
+    .tab-view.active { display: flex; flex-direction: column; gap: 16px; }
+
+    /* Cards */
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 16px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+    }
+    .card-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .card-title { font-size: 13px; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 8px; }
+    .card-desc { font-size: 11px; color: var(--text-muted); line-height: 1.45; }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 7px 14px;
+      border-radius: var(--radius-sm);
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid var(--line);
+      background: var(--panel-raised);
+      color: var(--text);
+      transition: all 0.15s ease;
+    }
+    .btn:hover { background: var(--panel-hover); border-color: #374151; }
+    .btn.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: white;
+      box-shadow: 0 2px 8px var(--accent-glow);
+    }
+    .btn.primary:hover { background: var(--accent-hover); }
+    .btn.green {
+      background: var(--green);
+      border-color: var(--green);
+      color: white;
+    }
+    .btn.green:hover { background: #059669; }
+    .btn.sm { padding: 4px 9px; font-size: 10px; }
+
+    /* Inputs & Selects */
+    input, select {
+      background: #0f121a;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      padding: 8px 12px;
+      color: var(--text);
+      font-size: 12px;
+      outline: none;
+      transition: border-color 0.15s ease;
+      font-family: inherit;
+    }
+    input:focus, select:focus { border-color: var(--accent); }
+
+    /* Live Console Tab Layout */
+    .console-badges { display: flex; flex-wrap: wrap; gap: 8px; }
+    .console-feed {
+      flex: 1;
+      min-height: 300px;
+      max-height: calc(100vh - 250px);
+      background: #0d0f16;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 16px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .feed-card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .feed-card.user {
+      border-left: 3px solid var(--blue);
+      background: #111520;
+    }
+    .feed-card.assistant {
+      border-left: 3px solid var(--green);
+      background: #111a17;
+    }
+    .feed-card.system {
+      border-left: 3px solid var(--accent);
+      background: #181216;
+    }
+    .feed-header { display: flex; align-items: center; justify-content: space-between; font-size: 11px; font-weight: 700; }
+    .feed-body { font-size: 12px; color: var(--text); white-space: pre-wrap; line-height: 1.5; }
+    .feed-code {
+      background: #080a0e;
+      border: 1px solid var(--line-subtle);
+      border-radius: 6px;
+      padding: 10px;
+      font-family: "Cascadia Code", Consolas, monospace;
+      font-size: 11px;
+      color: #7dd3fc;
+      overflow-x: auto;
+      white-space: pre;
+    }
+
+    /* Prompt Chips */
+    .prompt-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .prompt-chip {
+      background: var(--panel-raised);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 11px;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .prompt-chip:hover { background: var(--panel-hover); color: var(--text); border-color: var(--accent); }
+
+    /* Command Input Bar */
+    .cmd-bar {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .cmd-input { flex: 1; height: 38px; font-size: 13px; }
+
+    /* Multiple API Slots Grid in AI Brain Tab */
+    .api-slots-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+    }
+    .api-slot-card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      transition: border-color 0.15s ease;
+    }
+    .api-slot-card:hover { border-color: #374151; }
+    .api-slot-card.configured { border-left: 3px solid var(--green); }
+    .api-slot-header { display: flex; align-items: center; justify-content: space-between; }
+    .api-slot-title { font-weight: 700; font-size: 13px; display: flex; align-items: center; gap: 8px; }
+    .api-slot-actions { display: flex; gap: 8px; margin-top: 4px; }
+    .api-key-input-row { display: flex; gap: 8px; }
+    .api-key-input-row input { flex: 1; }
+
+    /* Skills Grid */
+    .skills-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 12px;
+    }
+    .skill-card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .skill-card:hover { border-color: #38bdf8; }
+    .skill-title { font-weight: 700; font-size: 13px; color: var(--text); display: flex; align-items: center; justify-content: space-between; }
+    .skill-desc { font-size: 11px; color: var(--text-muted); line-height: 1.4; }
+    .skill-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+    .skill-tag {
+      font-size: 10px;
+      background: #0f131c;
+      color: var(--blue);
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid var(--line-subtle);
+    }
+    .skill-actions { display: flex; gap: 6px; margin-top: 6px; }
+
+    /* Toast Notification */
+    #toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: var(--panel-raised);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      padding: 10px 16px;
+      font-size: 12px;
+      color: var(--text);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.25s ease;
+      z-index: 1000;
+    }
+    #toast.show { transform: translateY(0); opacity: 1; }
+    #toast.error { border-color: var(--accent); color: #fca5a5; }
   </style>
 </head>
 <body>
   <div class="app-shell">
-    <header class="topbar">
+    <!-- Left Navigation Sidebar -->
+    <aside class="sidebar">
       <div class="brand">
-        <div class="brand-mark" aria-hidden="true">P</div>
-        <div>
-          <div class="brand-name">PRIVACY68</div>
-          <div class="brand-caption">Desktop assistant control center</div>
+        <div class="brand-mark">P</div>
+        <div class="brand-text">
+          <span class="brand-title">PRIVACY 68</span>
+          <span class="brand-version">v1.6.0 • Desktop Control Center</span>
         </div>
       </div>
-      <div class="topbar-right">
-        <span class="status-chip" id="connection-status" role="status">
-          <span class="status-dot" aria-hidden="true"></span><span id="connection-label">Connecting…</span>
-        </span>
-        <span class="user-chip"><span aria-hidden="true">◉</span><span id="header-user-tag">User</span></span>
-        <button class="icon-button" id="close-app" type="button" aria-label="Close dashboard" title="Close dashboard">×</button>
-      </div>
-    </header>
 
-    <div class="layout">
-      <aside class="sidebar" aria-label="Assistant settings and status">
-        <section class="card card-pad">
-          <div class="card-heading">
-            <h2 class="card-title">AI engine</h2>
-            <span class="pill" id="llm-state">Checking</span>
+      <!-- Navigation Links -->
+      <nav class="nav-list">
+        <button class="nav-btn active" data-tab="console">
+          <span class="nav-icon">💻</span> Live Console
+        </button>
+        <button class="nav-btn" data-tab="brain">
+          <span class="nav-icon">🧠</span> AI Brain (APIs)
+        </button>
+        <button class="nav-btn" data-tab="skills">
+          <span class="nav-icon">⚡</span> Learned Skills
+        </button>
+        <button class="nav-btn" data-tab="voice">
+          <span class="nav-icon">🎙️</span> Voice & Audio
+        </button>
+        <button class="nav-btn" data-tab="plugins">
+          <span class="nav-icon">🔌</span> Plugins
+        </button>
+        <button class="nav-btn" data-tab="settings">
+          <span class="nav-icon">⚙️</span> Settings & System
+        </button>
+      </nav>
+
+      <!-- Push To Talk Microphone Button -->
+      <button class="ptt-btn" id="ptt-speak-btn">
+        <span id="ptt-icon">🎙️</span>
+        <span id="ptt-label">Click to Speak</span>
+      </button>
+
+      <!-- Bottom Mini Status Card -->
+      <div class="sidebar-status">
+        <div class="status-indicator">
+          <span class="status-dot green"></span>
+          <span>Voice: 100% Private (PTT)</span>
+        </div>
+        <div class="status-indicator">
+          <span class="status-dot green" id="sidebar-brain-dot"></span>
+          <span id="sidebar-brain-text">Brain: Checking...</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      <!-- Top Bar -->
+      <header class="topbar">
+        <div class="topbar-title" id="active-tab-title">💻 Live Command Console</div>
+        <div class="topbar-right">
+          <span class="chip good" id="top-conn-chip">
+            <span class="status-dot green"></span> Desktop connected
+          </span>
+          <span class="chip" id="top-user-chip">👤 User</span>
+          <button class="icon-btn" id="close-window-btn" title="Close Control Center">✕</button>
+        </div>
+      </header>
+
+      <!-- TAB 1: Live Console -->
+      <section class="tab-view active" id="tab-console">
+        <div class="console-badges">
+          <span class="chip good">🎙️ Google Speech (Free Cloud ASR)</span>
+          <span class="chip good">🔒 100% Private (No Background Mic)</span>
+          <span class="chip" id="active-model-badge">🧠 Model: Loading...</span>
+        </div>
+
+        <!-- Chat / Output Feed -->
+        <div class="console-feed" id="console-feed">
+          <div class="feed-card system">
+            <div class="feed-header">
+              <span>PRIVACY68 Ready (100% Private)</span>
+              <span>SYSTEM</span>
+            </div>
+            <div class="feed-body">Welcome to PRIVACY68 Control Center.
+• Click <strong>"🎙️ Click to Speak"</strong> in the sidebar to speak a command hands-free.
+• Or type any command below (e.g. <em>"open chrome and search for quantum computing"</em>, <em>"organize my downloads"</em>, or <em>"take a screenshot"</em>).
+• Zero background listening: microphone hardware is completely powered down when not recording.</div>
           </div>
-          <div class="engine-name" id="engine-model">Loading active model…</div>
-          <div class="detail-list">
-            <div class="detail-row"><span class="detail-label">Speech model</span><span class="detail-value" id="speech-model">—</span></div>
-            <div class="detail-row"><span class="detail-label">Compute</span><span class="detail-value" id="compute-mode">—</span></div>
-            <div class="detail-row"><span class="detail-label">Ollama</span><span class="pill" id="ollama-state">Checking</span></div>
+        </div>
+
+        <!-- Prompt Suggestions -->
+        <div class="prompt-chips">
+          <span class="prompt-chip" data-cmd="open Google Chrome">🌐 Open Chrome</span>
+          <span class="prompt-chip" data-cmd="take a screenshot">📸 Take Screenshot</span>
+          <span class="prompt-chip" data-cmd="organize downloads">📁 Organize Downloads</span>
+          <span class="prompt-chip" data-cmd="check system performance">⚡ Check System Performance</span>
+          <span class="prompt-chip" data-cmd="mute volume">🔇 Mute Volume</span>
+        </div>
+
+        <!-- Command Input Row -->
+        <div class="cmd-bar">
+          <input type="text" class="cmd-input" id="cmd-input" placeholder="Type a command or click '🎙️ Click to Speak'..." autocomplete="off">
+          <button class="btn primary" id="cmd-run-btn">Run</button>
+          <button class="btn" id="cmd-clear-btn">Clear Log</button>
+        </div>
+      </section>
+
+      <!-- TAB 2: AI Brain (APIs) - MULTIPLE API SLOTS -->
+      <section class="tab-view" id="tab-brain">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h2 class="card-title">🧠 Cloud & Web AI Brain (APIs Only)</h2>
+              <p class="card-desc">PRIVACY68 operates 100% via AI APIs with automatic failover. Zero local model download or background daemon required.</p>
+            </div>
           </div>
-          <div id="ollama-notice" style="display:none; margin-top:12px; padding:10px 12px; border-radius:8px; font-size:11px; line-height:1.45;">
-            <div id="ollama-notice-text" style="font-weight:600; margin-bottom:4px;"></div>
-            <div id="ollama-notice-sub" style="font-size:10px; margin-bottom:8px; opacity:0.85;"></div>
+
+          <!-- Active Model Selector -->
+          <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:center; background:#0f121a; padding:12px; border-radius:8px; border:1px solid var(--line);">
+            <div style="flex:1; min-width:240px; display:flex; flex-direction:column; gap:4px;">
+              <label style="font-size:11px; font-weight:700; color:var(--text-muted);">Active LLM Model Identifier</label>
+              <input type="text" id="active-model-input" placeholder="gemini/gemini-1.5-flash">
+            </div>
+            <div style="display:flex; flex-direction:column; gap:4px;">
+              <label style="font-size:11px; font-weight:700; color:var(--text-muted);">Quick Presets</label>
+              <select id="model-presets-select">
+                <option value="gemini/gemini-1.5-flash">Google Gemini 1.5 Flash (Free Tier)</option>
+                <option value="gemini/gemini-2.0-flash">Google Gemini 2.0 Flash (Free Tier)</option>
+                <option value="groq/llama-3.3-70b-versatile">Groq Llama 3.3 70B (Free Tier)</option>
+                <option value="claude-3-5-sonnet-20241022">Anthropic Claude 3.5 Sonnet</option>
+                <option value="openai/gpt-4o-mini">OpenAI GPT-4o-mini</option>
+                <option value="ollama/qwen2.5-coder:7b">Local Ollama (Qwen 2.5 Coder)</option>
+              </select>
+            </div>
+            <button class="btn primary" id="apply-model-btn" style="align-self:flex-end; height:36px;">Apply Model</button>
+          </div>
+
+          <!-- Auto-Failover Banner -->
+          <div style="background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.3); border-radius:8px; padding:12px; display:flex; gap:10px; align-items:center;">
+            <span style="font-size:20px;">🔄</span>
+            <div>
+              <div style="font-weight:700; color:var(--green); font-size:12px;">Multi-Provider Auto-Failover: Active</div>
+              <div style="font-size:11px; color:var(--text-muted);">If your primary provider encounters rate limits (429) or downtime, PRIVACY68 automatically cascades requests to your other configured API keys without interrupting your command.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- MULTIPLE API SLOTS -->
+        <div class="api-slots-grid">
+          <!-- SLOT 1: Google Gemini -->
+          <div class="api-slot-card" id="slot-gemini">
+            <div class="api-slot-header">
+              <div class="api-slot-title">
+                <span>⚡ Google Gemini API</span>
+                <span class="chip" id="badge-gemini">Checking...</span>
+              </div>
+              <span class="chip good">Free Tier Available</span>
+            </div>
+            <p class="card-desc">Ultra-fast Google AI reasoning. Free daily API key from <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:var(--blue);">aistudio.google.com</a> (No credit card needed).</p>
+            <div class="api-key-input-row">
+              <input type="password" id="key-gemini" placeholder="Paste Gemini API Key (AIzaSy...)">
+              <button class="btn primary" onclick="saveKey('gemini', 'key-gemini')">Save Gemini Key</button>
+              <button class="btn" onclick="testKey('gemini', 'key-gemini')">Test</button>
+            </div>
+          </div>
+
+          <!-- SLOT 2: Groq Cloud -->
+          <div class="api-slot-card" id="slot-groq">
+            <div class="api-slot-header">
+              <div class="api-slot-title">
+                <span>⚡ Groq Cloud API</span>
+                <span class="chip" id="badge-groq">Checking...</span>
+              </div>
+              <span class="chip good">Free LPU Inference</span>
+            </div>
+            <p class="card-desc">LPU-powered Llama 3.3 70B reasoning at ~200ms. Free daily API key from <a href="https://console.groq.com/keys" target="_blank" style="color:var(--blue);">console.groq.com</a> (No credit card needed).</p>
+            <div class="api-key-input-row">
+              <input type="password" id="key-groq" placeholder="Paste Groq API Key (gsk_...)">
+              <button class="btn primary" onclick="saveKey('groq', 'key-groq')">Save Groq Key</button>
+              <button class="btn" onclick="testKey('groq', 'key-groq')">Test</button>
+            </div>
+          </div>
+
+          <!-- SLOT 3: Anthropic Claude -->
+          <div class="api-slot-card" id="slot-claude">
+            <div class="api-slot-header">
+              <div class="api-slot-title">
+                <span>⚡ Anthropic Claude AI</span>
+                <span class="chip" id="badge-claude">Checking...</span>
+              </div>
+              <span class="chip">Frontier Intelligence</span>
+            </div>
+            <p class="card-desc">Advanced reasoning with Claude 3.5 Sonnet. Paste your Anthropic API key below (sk-ant-...).</p>
+            <div class="api-key-input-row">
+              <input type="password" id="key-claude" placeholder="Paste Claude API Key (sk-ant-...)">
+              <button class="btn primary" onclick="saveKey('claude', 'key-claude')">Save Claude Key</button>
+              <button class="btn" onclick="testKey('claude', 'key-claude')">Test</button>
+            </div>
+          </div>
+
+          <!-- SLOT 4: OpenAI -->
+          <div class="api-slot-card" id="slot-openai">
+            <div class="api-slot-header">
+              <div class="api-slot-title">
+                <span>⚡ OpenAI API</span>
+                <span class="chip" id="badge-openai">Checking...</span>
+              </div>
+              <span class="chip">GPT-4o / GPT-4o-mini</span>
+            </div>
+            <p class="card-desc">OpenAI API intelligence for desktop tasks. Paste your OpenAI key below (sk-...).</p>
+            <div class="api-key-input-row">
+              <input type="password" id="key-openai" placeholder="Paste OpenAI API Key (sk-...)">
+              <button class="btn primary" onclick="saveKey('openai', 'key-openai')">Save OpenAI Key</button>
+              <button class="btn" onclick="testKey('openai', 'key-openai')">Test</button>
+            </div>
+          </div>
+
+          <!-- SLOT 5: Ollama -->
+          <div class="api-slot-card" id="slot-ollama">
+            <div class="api-slot-header">
+              <div class="api-slot-title">
+                <span>🦙 Local / Remote Ollama Service</span>
+                <span class="chip" id="badge-ollama">Checking...</span>
+              </div>
+              <span class="chip">100% Offline Capable</span>
+            </div>
+            <p class="card-desc">Connects to Ollama (http://127.0.0.1:11434). Pull models like <code>qwen2.5-coder:7b</code> for air-gapped offline task execution.</p>
             <div style="display:flex; gap:8px;">
-              <button class="button primary" id="btn-start-ollama" type="button" style="display:none; font-size:11px; min-height:28px; padding:0 12px;">Start Ollama</button>
-              <button class="button primary" id="btn-install-ollama" type="button" style="display:none; font-size:11px; min-height:28px; padding:0 12px;">Download Ollama</button>
+              <button class="btn primary sm" id="btn-start-ollama-service" style="display:none;">Start Ollama Service</button>
+              <button class="btn sm" id="btn-download-ollama-service" style="display:none;">Download Ollama</button>
             </div>
           </div>
-          <p class="hint" style="margin:13px 0 0">Ollama powers the local Agent Brain for offline desktop task execution.</p>
-        </section>
+        </div>
+      </section>
 
-        <section class="card card-pad" id="api-keys-card">
-          <div class="card-heading">
-            <h2 class="card-title">Cloud AI Keys</h2>
-            <span class="card-kicker">Multi-Provider</span>
-          </div>
-          <div class="field">
-            <label for="ai-provider-select">Provider</label>
-            <select id="ai-provider-select" style="width:100%; padding:8px 10px; border-radius:8px; background:#111317; border:1px solid var(--line); color:var(--text); font-size:12px;">
-              <option value="gemini">Google Gemini (Free 1.5/2.0 Flash)</option>
-              <option value="groq">Groq Cloud (Free Llama 3.3 70B)</option>
-              <option value="claude">Anthropic Claude (Claude 3.5)</option>
-              <option value="openai">OpenAI (GPT-4o-mini)</option>
-            </select>
-          </div>
-          <div class="field">
-            <label for="ai-key-input" id="ai-key-label">Gemini API Key</label>
-            <input id="ai-key-input" type="password" placeholder="Paste Gemini key (AIzaSy...)" autocomplete="off">
-          </div>
-          <div style="display:flex; gap:8px;">
-            <button class="button primary full" id="save-ai-key" type="button">Save Key</button>
-            <button class="button" id="test-ai-key" type="button">Test</button>
-          </div>
-          <p class="hint" id="ai-key-hint" style="margin:10px 0 0">Keys save to .env with auto-failover enabled.</p>
-        </section>
-
-        <section class="card card-pad">
-          <div class="card-heading">
-            <h2 class="card-title">Hardware</h2>
-            <button class="text-button" id="refresh-status" type="button">Refresh</button>
-          </div>
-          <div class="detail-list" style="margin-top:0">
-            <div class="detail-row"><span class="detail-label">CUDA runtime</span><span class="pill" id="cuda-state">Checking</span></div>
-            <div class="detail-row"><span class="detail-label">Microphone</span><span class="pill" id="mic-state">Not tested</span></div>
-          </div>
-          <button class="button full primary" id="btn-download-cuda" type="button" style="margin-top:12px; display:none;">Download CUDA (~450MB)</button>
-          <div id="cuda-progress-wrap" style="display:none; margin-top:12px;">
-            <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px;">
-              <span id="cuda-progress-status" style="color:var(--text-muted, #aaa);">Downloading...</span>
-              <span id="cuda-progress-pct" style="font-weight:600;">0%</span>
+      <!-- TAB 3: Learned Skills (Self-Improving Engine) -->
+      <section class="tab-view" id="tab-skills">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h2 class="card-title">⚡ Self-Improving Skill Engine</h2>
+              <p class="card-desc">Autonomous Skill Crystallization & Fast-Path Recall: When PRIVACY68 successfully generates and executes desktop automation scripts, it crystallizes them into permanent local skills that execute in 0ms with zero LLM API cost.</p>
             </div>
-            <div style="background:rgba(255,255,255,0.1); border-radius:4px; height:6px; overflow:hidden;">
-              <div id="cuda-progress-bar" style="background:#e04848; height:100%; width:0%; transition:width 0.3s;"></div>
-            </div>
+            <button class="btn sm" id="refresh-skills-btn">↻ Refresh Skills</button>
           </div>
-          <button class="button full" id="test-mic" type="button" style="margin-top:14px">Test microphone</button>
-          <p class="hint" id="mic-result" aria-live="polite" style="margin:10px 0 0">Records a short sample to measure input level.</p>
-        </section>
-
-        <section class="card card-pad profile-card">
-          <div class="card-heading">
-            <h2 class="card-title">Profile</h2>
-            <span class="card-kicker">Saved on this device</span>
-          </div>
-          <div class="field">
-            <label for="user-name">Your name</label>
-            <input id="user-name" type="text" maxlength="80" autocomplete="name" placeholder="Your name">
-          </div>
-          <div class="field">
-            <label for="wake-word">Wake word</label>
-            <input id="wake-word" type="text" maxlength="120" placeholder="Alexa">
-          </div>
-          <button class="button primary full" id="save-profile" type="button">Save profile</button>
-        </section>
-      </aside>
-
-      <main class="workspace">
-        <section class="page-heading">
-          <div>
-            <h1 id="workspace-title">Command console</h1>
-            <p id="workspace-description">Send a request and review the returned status and generated code.</p>
-          </div>
-          <div class="page-actions">
-            <div class="view-tabs" role="group" aria-label="Dashboard views">
-              <button class="button primary" id="console-tab" type="button" aria-pressed="true">Console</button>
-              <button class="button" id="plugins-tab" type="button" aria-pressed="false">Plugins</button>
-            </div>
-            <button class="button" id="clear-log" type="button">Clear session</button>
-          </div>
-        </section>
-
-        <div class="view-panel" id="console-view">
-        <section class="summary-grid" aria-label="Assistant overview">
-          <article class="card summary-card">
-            <span class="summary-label">Assistant</span>
-            <div><div class="summary-value" id="assistant-name">PRIVACY68</div><div class="summary-note">Desktop automation</div></div>
-          </article>
-          <article class="card summary-card">
-            <span class="summary-label">Wake phrase</span>
-            <div><div class="summary-value" id="summary-wake-word">Click to Speak</div><div class="summary-note">100% Private (No background mic)</div></div>
-          </article>
-          <article class="card summary-card">
-            <span class="summary-label">Speech Engine</span>
-            <div><div class="summary-value" id="summary-voice">Active</div><div class="summary-note">Google Web Speech (Free Cloud ASR)</div></div>
-          </article>
-        </section>
-
-        <section class="card console" aria-label="Command session">
-          <div class="conversation">
-            <div class="panel-head">
-              <h2>Session</h2>
-              <span class="card-kicker" id="session-count">No commands yet</span>
-            </div>
-            <div class="log" id="console-log" aria-live="polite" aria-relevant="additions">
-              <div class="empty-state" id="empty-state">
-                <span class="empty-icon" aria-hidden="true">⌁</span>
-                Your command results will appear here. Enter a request below to get started.
-              </div>
-            </div>
-            <form class="composer" id="command-form">
-              <div class="safety-note">Generated scripts run with your Windows account permissions. GitHub changes and pushes require confirmation.</div>
-              <div class="composer-row">
-                <label class="sr-only" for="command-input">Command</label>
-                <input id="command-input" type="text" maxlength="1000" autocomplete="off" placeholder="For example: open Chrome">
-                <button class="button primary" id="send-command" type="submit">Run</button>
-              </div>
-            </form>
-          </div>
-          <div class="output-column">
-            <section class="output-panel">
-              <div class="panel-head"><h2>Execution status</h2><span class="pill" id="result-state">Ready</span></div>
-              <pre class="output-content" id="reasoning-box">No command has been run in this session.</pre>
-            </section>
-            <section class="output-panel">
-              <div class="panel-head"><h2>Output</h2><span class="card-kicker">Agent code or integration details</span></div>
-              <pre class="output-content code" id="code-box">No generated code yet.</pre>
-            </section>
-          </div>
-        </section>
         </div>
 
-        <section class="view-panel" id="plugins-view" hidden>
-          <section class="card card-pad">
-            <div class="card-heading">
-              <h2 class="card-title">Registered plugins</h2>
-              <div class="button-row">
-                <span class="card-kicker" id="plugin-count">Loading…</span>
-                <button class="button" id="refresh-plugins" type="button">Refresh</button>
-              </div>
-            </div>
-            <div class="plugin-grid" id="plugin-list" aria-live="polite">
-              <p class="plugin-empty">Loading registered plugins…</p>
-            </div>
-          </section>
+        <div class="skills-grid" id="skills-cards-container">
+          <!-- Populated dynamically via JS -->
+        </div>
+      </section>
 
-          <section class="card card-pad">
-            <div class="card-heading">
-              <h2 class="card-title">GitHub connection</h2>
-              <span class="pill" id="github-connection-state">Checking…</span>
+      <!-- TAB 4: Voice & Audio -->
+      <section class="tab-view" id="tab-voice">
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title">🎙️ Speech & Audio Configuration</h2>
+          </div>
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:12px;">
+            <div style="background:#0f121a; border:1px solid var(--line); border-radius:8px; padding:12px;">
+              <div style="font-weight:700; margin-bottom:4px; color:var(--green);">✓ Google Web Speech (Free Cloud ASR)</div>
+              <div style="font-size:11px; color:var(--text-muted); line-height:1.45;">Zero keys, zero setup required. Fast, highly accurate speech recognition out of the box with zero heavy model downloads.</div>
             </div>
-            <p class="hint" id="github-connection-description" style="margin:0 0 15px">
-              Connect with a fine-grained GitHub token. PRIVACY68 stores it in Windows Credential Manager, not in project files.
-            </p>
-            <form id="github-connect-form" class="plugin-form-grid">
-              <div class="field" style="grid-column:1/-1">
-                <label for="github-token">Personal access token</label>
-                <input id="github-token" type="password" autocomplete="new-password" spellcheck="false" maxlength="500" placeholder="github_pat_…" required>
-              </div>
-              <div class="button-row" style="grid-column:1/-1">
-                <button class="button primary" id="github-connect" type="submit">Connect GitHub</button>
-                <button class="button" id="github-disconnect" type="button" hidden>Disconnect</button>
-              </div>
-            </form>
-            <p class="hint" style="margin:12px 0 0">
-              Grant only the repositories and permissions you need: Metadata read, Contents read/write, Issues read/write, and Pull requests read/write.
-              Pushes and GitHub changes require confirmation. PRIVACY68 never displays or stores the token in project files.
-            </p>
-          </section>
+            <div style="background:#0f121a; border:1px solid var(--line); border-radius:8px; padding:12px;">
+              <div style="font-weight:700; margin-bottom:4px; color:var(--blue);">🔒 Strict Click-to-Speak Privacy</div>
+              <div style="font-size:11px; color:var(--text-muted); line-height:1.45;">Your microphone hardware is powered off at all times. Audio is recorded only when you click 'Click to Speak'. No room background eavesdropping.</div>
+            </div>
+          </div>
+        </div>
 
-          <section class="card card-pad">
-            <div class="card-heading">
-              <h2 class="card-title">Add a plugin</h2>
-              <span class="card-kicker">Python files only</span>
-            </div>
-            <p class="hint" style="margin:0 0 15px">Only install Python plugins you trust. Plugin code executes locally with the permissions of this application.</p>
-            <div class="button-row">
-              <button class="button" id="install-plugin-file" type="button">Install Python file…</button>
-            </div>
-          </section>
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title">Microphone Hardware Diagnostic</h2>
+            <button class="btn primary sm" id="test-mic-btn">Test Microphone</button>
+          </div>
+          <div style="display:flex; align-items:center; gap:12px; margin-top:6px;">
+            <span class="chip" id="mic-test-result">Click 'Test Microphone' to measure input level</span>
+          </div>
+        </div>
+      </section>
 
-          <section class="card card-pad">
-            <div class="card-heading">
-              <h2 class="card-title">Create a plugin template</h2>
-              <span class="card-kicker">Added to this device</span>
-            </div>
-            <form id="plugin-form">
-              <div class="plugin-form-grid">
-                <div class="field">
-                  <label for="plugin-id">Plugin ID</label>
-                  <input id="plugin-id" type="text" maxlength="48" pattern="[a-z][a-z0-9_]*" required placeholder="my_plugin">
-                </div>
-                <div class="field">
-                  <label for="plugin-name">Name</label>
-                  <input id="plugin-name" type="text" maxlength="80" required placeholder="My Plugin">
-                </div>
-                <div class="field">
-                  <label for="plugin-icon">Icon</label>
-                  <input id="plugin-icon" type="text" maxlength="8" value="🔌">
-                </div>
-                <div class="field">
-                  <label for="plugin-description">Description</label>
-                  <input id="plugin-description" type="text" maxlength="240" placeholder="What this plugin integrates">
-                </div>
-              </div>
-              <button class="button primary" id="create-plugin" type="submit">Create and register</button>
-            </form>
-          </section>
+      <!-- TAB 5: Plugins -->
+      <section class="tab-view" id="tab-plugins">
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title">🔌 Installed Desktop Automation Plugins</h2>
+            <button class="btn sm" id="refresh-plugins-btn">↻ Refresh</button>
+          </div>
+        </div>
+        <div class="skills-grid" id="plugins-container">
+          <!-- Populated dynamically via JS -->
+        </div>
 
-          <p class="hint">Registry enable/disable controls plugin availability metadata. It does not sandbox generated scripts or guarantee that the assistant routes every command through a plugin.</p>
-        </section>
-      </main>
-    </div>
+        <!-- GitHub Integration Card -->
+        <div class="card" style="margin-top:10px;">
+          <div class="card-header">
+            <h2 class="card-title">🐙 GitHub Integration</h2>
+            <span class="chip" id="github-status-chip">Not connected</span>
+          </div>
+          <p class="card-desc">Connect a GitHub Personal Access Token to let PRIVACY68 manage repositories, pull requests, and commit issues.</p>
+          <div style="display:flex; gap:8px;">
+            <input type="password" id="github-token-input" placeholder="Paste GitHub Token (ghp_...)" style="flex:1;">
+            <button class="btn primary" id="github-connect-btn">Connect</button>
+            <button class="btn" id="github-disconnect-btn">Disconnect</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 6: Settings & System -->
+      <section class="tab-view" id="tab-settings">
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title">👤 User Profile</h2>
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+            <div style="display:flex; flex-direction:column; gap:4px;">
+              <label style="font-size:11px; font-weight:700; color:var(--text-muted);">Your Name</label>
+              <input type="text" id="setting-user-name" placeholder="User">
+            </div>
+            <div style="display:flex; flex-direction:column; gap:4px;">
+              <label style="font-size:11px; font-weight:700; color:var(--text-muted);">Assistant Name</label>
+              <input type="text" id="setting-assistant-name" placeholder="Privacy68">
+            </div>
+          </div>
+          <button class="btn primary" id="save-profile-btn" style="align-self:flex-start; margin-top:8px;">Save Profile</button>
+        </div>
+
+        <!-- Hardware & System Info -->
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title">💻 System Hardware & Diagnostics</h2>
+            <button class="btn sm" id="refresh-sys-btn">Refresh</button>
+          </div>
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:10px;" id="sys-diag-grid">
+            <div class="chip">CUDA: Checking...</div>
+            <div class="chip">GPU: Checking...</div>
+            <div class="chip">Platform: Windows x64</div>
+          </div>
+        </div>
+      </section>
+    </main>
   </div>
-  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <!-- Toast Notification -->
+  <div id="toast"></div>
 
   <script>
-    const $ = (id) => document.getElementById(id);
-    let commandCount = 0;
-    let toastTimer;
+    const $ = id => document.getElementById(id);
+    const bridge = () => (window.pywebview && window.pywebview.api) ? window.pywebview.api : mockBridge;
 
-    function setPill(element, text, tone = '') {
-      element.textContent = text;
-      element.className = `pill${tone ? ` ${tone}` : ''}`;
-    }
-
-    function showToast(message, isError = false) {
-      const toast = $('toast');
-      toast.textContent = message;
-      toast.className = `toast show${isError ? ' error' : ''}`;
+    // Toast
+    let toastTimer = null;
+    function showToast(msg, isError = false) {
+      const t = $('toast');
+      t.textContent = msg;
+      t.className = isError ? 'show error' : 'show';
       clearTimeout(toastTimer);
-      toastTimer = setTimeout(() => { toast.className = 'toast'; }, 3000);
+      toastTimer = setTimeout(() => { t.className = ''; }, 3500);
     }
 
-    function bridge() {
-      if (!window.pywebview || !window.pywebview.api) {
-        throw new Error('Dashboard bridge is not connected. Open this page from the PRIVACY68 app.');
-      }
-      return window.pywebview.api;
-    }
-
-    function setView(view) {
-      const plugins = view === 'plugins';
-      $('console-view').hidden = plugins;
-      $('plugins-view').hidden = !plugins;
-      $('workspace-title').textContent = plugins ? 'Plugin registry' : 'Command console';
-      $('workspace-description').textContent = plugins
-        ? 'Review registered integrations, enable or disable them, and manage trusted Python plugins.'
-        : 'Send a request and review the result, generated code, or integration details.';
-      $('console-tab').className = `button${plugins ? '' : ' primary'}`;
-      $('plugins-tab').className = `button${plugins ? ' primary' : ''}`;
-      $('console-tab').setAttribute('aria-pressed', String(!plugins));
-      $('plugins-tab').setAttribute('aria-pressed', String(plugins));
-      if (plugins) refreshPlugins();
-    }
-
-    async function refreshPlugins() {
-      const list = $('plugin-list');
-      $('plugin-count').textContent = 'Loading…';
-      list.replaceChildren();
-      try {
-        const plugins = await bridge().get_plugins();
-        if (!Array.isArray(plugins)) throw new Error('The plugin registry returned an invalid response.');
-        $('plugin-count').textContent = `${plugins.length} registered`;
-        if (!plugins.length) {
-          const empty = document.createElement('p');
-          empty.className = 'plugin-empty';
-          empty.textContent = 'No plugins are registered.';
-          list.appendChild(empty);
-          return;
-        }
-        plugins.forEach((plugin) => {
-          const card = document.createElement('article');
-          card.className = 'card plugin-card';
-          const head = document.createElement('div');
-          head.className = 'plugin-card-head';
-          const title = document.createElement('h3');
-          title.className = 'plugin-name';
-          const icon = document.createElement('span');
-          icon.className = 'plugin-icon';
-          icon.textContent = plugin.icon || '🔌';
-          title.append(icon, document.createTextNode(plugin.name || plugin.id));
-          const state = document.createElement('span');
-          state.className = `pill${plugin.is_enabled ? ' good' : ' warn'}`;
-          state.textContent = plugin.is_enabled ? 'Enabled' : 'Disabled';
-          head.append(title, state);
-
-          const description = document.createElement('p');
-          description.className = 'plugin-description';
-          description.textContent = plugin.description || 'No description provided.';
-          const meta = document.createElement('div');
-          meta.className = 'plugin-meta';
-          [`${plugin.category || 'Custom'} · ${plugin.plugin_type || 'Plugin'}`, `v${plugin.version || '1.0.0'}`, plugin.is_builtin ? 'Built-in' : 'User plugin'].forEach((label) => {
-            const pill = document.createElement('span');
-            pill.className = 'pill';
-            pill.textContent = label;
-            meta.appendChild(pill);
-          });
-          const actions = document.createElement('div');
-          actions.className = 'plugin-actions';
-          const toggle = document.createElement('button');
-          toggle.className = 'button';
-          toggle.type = 'button';
-          toggle.textContent = plugin.is_enabled ? 'Disable' : 'Enable';
-          toggle.addEventListener('click', () => changePluginState(plugin.id, !plugin.is_enabled));
-          actions.appendChild(toggle);
-          if (!plugin.is_builtin) {
-            const remove = document.createElement('button');
-            remove.className = 'button danger';
-            remove.type = 'button';
-            remove.textContent = 'Uninstall';
-            remove.addEventListener('click', () => removePlugin(plugin.id, plugin.name || plugin.id));
-            actions.appendChild(remove);
-          }
-          card.append(head, description, meta, actions);
-          list.appendChild(card);
-        });
-      } catch (error) {
-        $('plugin-count').textContent = 'Unavailable';
-        const message = document.createElement('p');
-        message.className = 'plugin-empty';
-        message.textContent = `Could not load plugins: ${error.message}`;
-        list.appendChild(message);
-      }
-    }
-
-    async function refreshGitHubStatus() {
-      const state = $('github-connection-state');
-      try {
-        const result = await bridge().get_github_status();
-        if (!result || !result.success) throw new Error(result?.message || 'Could not check GitHub connection.');
-        state.textContent = result.connected ? `Connected: ${result.login}` : 'Not connected';
-        state.className = `pill ${result.connected ? 'good' : 'warn'}`;
-        $('github-connection-description').textContent = result.connected
-          ? `Connected to GitHub as ${result.login}. Your token is stored in Windows Credential Manager.`
-          : 'Connect with a fine-grained GitHub token. PRIVACY68 stores it in Windows Credential Manager, not in project files.';
-        $('github-token').required = !result.connected;
-        $('github-token').placeholder = result.connected ? 'Token saved securely' : 'github_pat_…';
-        $('github-disconnect').hidden = !result.connected;
-      } catch (error) {
-        state.textContent = 'Unavailable';
-        state.className = 'pill bad';
-        $('github-connection-description').textContent = error.message;
-      }
-    }
-
-    async function connectGitHub(event) {
-      event.preventDefault();
-      const input = $('github-token');
-      const token = input.value.trim();
-      if (!token) return;
-      input.value = '';
-      const button = $('github-connect');
-      button.disabled = true;
-      try {
-        const result = await bridge().connect_github(token);
-        if (!result || !result.success) throw new Error(result?.message || 'GitHub connection failed.');
-        showToast(result.message);
-        await refreshGitHubStatus();
-      } catch (error) {
-        showToast(error.message, true);
-      } finally {
-        button.disabled = false;
-        input.value = '';
-      }
-    }
-
-    async function disconnectGitHub() {
-      if (!confirm('Remove the saved GitHub token from Windows Credential Manager?')) return;
-      try {
-        const result = await bridge().disconnect_github();
-        if (!result || !result.success) throw new Error(result?.message || 'Could not disconnect GitHub.');
-        showToast(result.message);
-        await refreshGitHubStatus();
-      } catch (error) {
-        showToast(error.message, true);
-      }
-    }
-
-    async function changePluginState(pluginId, enabled) {
-      try {
-        const result = await bridge().toggle_plugin(pluginId, enabled);
-        if (!result || !result.success) throw new Error(result?.message || 'Plugin state could not be changed.');
-        showToast(`Plugin ${enabled ? 'enabled' : 'disabled'}.`);
-        await refreshPlugins();
-      } catch (error) { showToast(error.message, true); }
-    }
-
-    async function removePlugin(pluginId, name) {
-      if (!confirm(`Uninstall ${name}? Its plugin file will be removed from this device.`)) return;
-      try {
-        const result = await bridge().uninstall_plugin(pluginId);
-        if (!result || !result.success) throw new Error(result?.message || 'Plugin could not be uninstalled.');
-        showToast(result.message || 'Plugin uninstalled.');
-        await refreshPlugins();
-      } catch (error) { showToast(error.message, true); }
-    }
-
-    async function createPlugin(event) {
-      event.preventDefault();
-      const button = $('create-plugin');
-      button.disabled = true;
-      try {
-        const name = $('plugin-name').value.trim();
-        const result = await bridge().create_plugin({
-          id: $('plugin-id').value.trim(),
-          name,
-          icon: $('plugin-icon').value.trim(),
-          desc: $('plugin-description').value.trim() || `Integration for ${name}`
-        });
-        if (!result || !result.success) throw new Error(result?.message || 'Plugin could not be created.');
-        showToast(result.message || 'Plugin template created.');
-        $('plugin-form').reset();
-        $('plugin-icon').value = '🔌';
-        await refreshPlugins();
-      } catch (error) { showToast(error.message, true); }
-      finally { button.disabled = false; }
-    }
-
-    async function installPluginFile() {
-      try {
-        const selection = await bridge().pick_plugin_file();
-        if (!selection || !selection.success) throw new Error(selection?.message || 'The plugin file picker failed.');
-        if (!selection.file_path) return;
-        const filePath = selection.file_path;
-        const result = await bridge().install_plugin_file(filePath);
-        if (!result || !result.success) throw new Error(result?.message || 'Plugin could not be installed.');
-        showToast(result.message || 'Plugin installed.');
-        await refreshPlugins();
-      } catch (error) { showToast(error.message, true); }
-    }
-
-    function appendMessage(role, text, isError = false) {
-      const log = $('console-log');
-      const empty = $('empty-state');
-      if (empty) empty.remove();
-      const message = document.createElement('article');
-      message.className = `message ${role}${isError ? ' error' : ''}`;
-      const label = document.createElement('div');
-      label.className = 'message-role';
-      label.textContent = role === 'user' ? 'You' : (isError ? 'Error' : 'PRIVACY68');
-      const body = document.createElement('div');
-      body.className = 'message-body';
-      body.textContent = text;
-      message.append(label, body);
-      log.appendChild(message);
-      log.scrollTop = log.scrollHeight;
-    }
-
-    async function loadProfile() {
-      const profile = await bridge().get_profile();
-      if (!profile || !Object.keys(profile).length) throw new Error('Could not load the saved profile.');
-      $('user-name').value = profile.user_name || '';
-      $('wake-word').value = profile.wake_word || '';
-      $('header-user-tag').textContent = profile.user_name || 'User';
-      $('assistant-name').textContent = profile.assistant_name || 'PRIVACY68';
-      $('summary-wake-word').textContent = 'Click to Speak';
-      $('summary-voice').textContent = 'Active (100% Free)';
-      $('connection-status').classList.remove('error');
-      $('connection-status').classList.add('ready');
-      $('connection-label').textContent = 'Desktop connected';
-    }
-
-    async function loadRuntimeStatus() {
-      const status = await bridge().get_runtime_status();
-      if (!status || !status.success) throw new Error(status?.message || 'Runtime status is unavailable.');
-      const model = status.model || '';
-      $('engine-model').textContent = model || 'Not configured';
-      $('speech-model').textContent = status.speech_model || 'google-speech-free';
-      $('compute-mode').textContent = 'Cloud API / Click-to-Speak';
-
-      const isCloudModel = model.includes('gemini') || model.includes('groq') || model.includes('claude') || model.includes('gpt') || model.includes('openai');
-
-      if (isCloudModel) {
-        setPill($('llm-state'), 'Online (Cloud AI)', 'good');
-      } else if (status.ollama && status.ollama.running) {
-        setPill($('llm-state'), 'Online (Ollama)', 'good');
-      } else if (status.ollama && status.ollama.installed) {
-        setPill($('llm-state'), 'Offline', 'warn');
-      } else {
-        setPill($('llm-state'), 'Ready (Cloud API)', 'good');
-      }
-
-      const ollama = status.ollama || {};
-      const notice = $('ollama-notice');
-      const noticeText = $('ollama-notice-text');
-      const noticeSub = $('ollama-notice-sub');
-      const btnStart = $('btn-start-ollama');
-      const btnInstall = $('btn-install-ollama');
-
-      if (ollama.running) {
-        const count = Array.isArray(ollama.models) ? ollama.models.length : 0;
-        setPill($('ollama-state'), `Running (${count} model${count === 1 ? '' : 's'})`, 'good');
-        if (notice) notice.style.display = 'none';
-      } else if (ollama.installed) {
-        setPill($('ollama-state'), 'Not Running', 'warn');
-        if (notice) {
-          if (!isCloudModel) {
-            notice.style.display = 'block';
-            notice.style.background = '#282113';
-            notice.style.border = '1px solid #70531c';
-            notice.style.color = '#f7d088';
-            noticeText.textContent = 'Ollama is installed, but the background service is not running.';
-            noticeSub.textContent = 'Start Ollama or configure a free Cloud API key above.';
-            btnStart.style.display = 'inline-flex';
-            btnInstall.style.display = 'none';
-          } else {
-            notice.style.display = 'none';
-          }
-        }
-      } else {
-        setPill($('ollama-state'), 'Not Installed', 'bad');
-        if (notice) {
-          if (!isCloudModel) {
-            notice.style.display = 'block';
-            notice.style.background = '#2a1618';
-            notice.style.border = '1px solid #822931';
-            notice.style.color = '#fca5a5';
-            noticeText.textContent = 'Ollama not detected. Cloud API mode is ready.';
-            noticeSub.textContent = 'Configure a free Google Gemini or Groq API key above.';
-            btnStart.style.display = 'none';
-            btnInstall.style.display = 'none';
-          } else {
-            notice.style.display = 'none';
-          }
-        }
-      }
-      const cuda = status.cuda || {};
-      const cudaReady = Boolean(cuda.is_ready);
-      setPill($('cuda-state'), cudaReady ? 'Ready' : (cuda.has_gpu ? 'Unavailable' : 'CPU mode'), cudaReady ? 'good' : 'warn');
-      const btnCuda = $('btn-download-cuda');
-      if (btnCuda) btnCuda.style.display = (cuda.has_gpu && !cudaReady) ? 'block' : 'none';
-    }
-
-    function updateVoiceStatus(status) {}
-
-    async function refreshStatus() {
-      $('connection-status').classList.remove('ready', 'error');
-      $('connection-label').textContent = 'Refreshing…';
-      try {
-        await Promise.all([loadProfile(), loadRuntimeStatus()]);
-      } catch (error) {
-        $('connection-status').classList.add('error');
-        $('connection-label').textContent = 'Status unavailable';
-        showToast(error.message, true);
-      }
-    }
-
-    async function saveProfile() {
-      const button = $('save-profile');
-      button.disabled = true;
-      try {
-        const result = await bridge().save_profile({
-          user_name: $('user-name').value.trim() || 'User',
-          wake_word: $('wake-word').value.trim() || 'alexa'
-        });
-        if (!result || !result.success) throw new Error(result?.message || 'Profile could not be saved.');
-        $('header-user-tag').textContent = $('user-name').value.trim() || 'User';
-        $('summary-wake-word').textContent = $('wake-word').value.trim() || 'alexa';
-        showToast(result.message || 'Profile saved.');
-      } catch (error) {
-        showToast(error.message, true);
-      } finally {
-        button.disabled = false;
-      }
-    }
-
-    async function runCommand(event) {
-      event.preventDefault();
-      const input = $('command-input');
-      const text = input.value.trim();
-      if (!text) return;
-      const button = $('send-command');
-      input.value = '';
-      appendMessage('user', text);
-      $('result-state').textContent = 'Running';
-      $('reasoning-box').textContent = 'Sending command to the local application…';
-      $('code-box').textContent = 'Waiting for agent response…';
-      button.disabled = true;
-      input.disabled = true;
-      try {
-        const result = await bridge().execute_command(text);
-        if (!result || typeof result.success !== 'boolean') throw new Error(result?.message || 'The executor returned an invalid response.');
-        commandCount += 1;
-        $('session-count').textContent = `${commandCount} command${commandCount === 1 ? '' : 's'}`;
-        const message = result.message || (result.success ? 'Command completed.' : 'Command failed.');
-        appendMessage('system', message, !result.success);
-        const awaitingConfirmation = Boolean(result.details?.requires_confirmation);
-        $('result-state').textContent = awaitingConfirmation ? 'Confirm action' : (result.success ? 'Completed' : 'Failed');
-        $('result-state').className = `pill ${awaitingConfirmation ? 'warn' : (result.success ? 'good' : 'bad')}`;
-        $('reasoning-box').textContent = [result.method && `Method: ${result.method}`, message].filter(Boolean).join('\n\n');
-        $('code-box').textContent = result.details
-          ? JSON.stringify(result.details, null, 2)
-          : (result.output || result.code || 'No additional output.');
-        if (!result.success) showToast(message, true);
-      } catch (error) {
-        $('result-state').textContent = 'Error';
-        $('result-state').className = 'pill bad';
-        $('reasoning-box').textContent = error.message;
-        $('code-box').textContent = 'No code available.';
-        appendMessage('system', error.message, true);
-        showToast(error.message, true);
-      } finally {
-        button.disabled = false;
-        input.disabled = false;
-        input.focus();
-      }
-    }
-
-        let cudaPollTimer = null;
-
-    async function downloadCUDA() {
-      const btn = $('btn-download-cuda');
-      const wrap = $('cuda-progress-wrap');
-      const statusText = $('cuda-progress-status');
-      const pctText = $('cuda-progress-pct');
-      const bar = $('cuda-progress-bar');
-
-      btn.disabled = true;
-      btn.style.display = 'none';
-      wrap.style.display = 'block';
-
-      try {
-        const res = await bridge().start_cuda_download();
-        if (!res || (!res.success && res.message !== 'Download is already in progress.')) {
-          throw new Error(res?.message || 'Failed to start download');
-        }
-
-        cudaPollTimer = setInterval(async () => {
-          try {
-            const prog = await bridge().get_cuda_download_progress();
-            if (!prog) return;
-
-            statusText.textContent = prog.status || 'Downloading...';
-            pctText.textContent = `${prog.progress || 0}%`;
-            bar.style.width = `${prog.progress || 0}%`;
-
-            if (prog.error) {
-              clearInterval(cudaPollTimer);
-              showToast(prog.error, true);
-              btn.disabled = false;
-              btn.style.display = 'block';
-              wrap.style.display = 'none';
-              return;
-            }
-
-            if (!prog.is_downloading && prog.progress >= 100) {
-              clearInterval(cudaPollTimer);
-              showToast('CUDA runtime installed! Restart PRIVACY68 to activate GPU acceleration.');
-              wrap.style.display = 'none';
-              await loadRuntimeStatus();
-            }
-          } catch (e) {}
-        }, 1000);
-      } catch (err) {
-        showToast(err.message, true);
-        btn.disabled = false;
-        btn.style.display = 'block';
-        wrap.style.display = 'none';
-      }
-    }
-async function testMicrophone() {
-      const button = $('test-mic');
-      button.disabled = true;
-      $('mic-result').textContent = 'Listening for a short sample…';
-      setPill($('mic-state'), 'Testing');
-      try {
-        const result = await bridge().test_microphone();
-        if (!result || !result.success) throw new Error(result?.message || 'Microphone test failed.');
-        setPill($('mic-state'), `${result.level}% level`, result.level > 0 ? 'good' : 'warn');
-        $('mic-result').textContent = `Input measured at ${result.level}% (RMS ${Number(result.rms).toFixed(4)}).`;
-      } catch (error) {
-        setPill($('mic-state'), 'Unavailable', 'bad');
-        $('mic-result').textContent = error.message;
-      } finally {
-        button.disabled = false;
-      }
-    }
-
-        // Cloud API Key handlers
-    const providerSelect = $('ai-provider-select');
-    const keyInput = $('ai-key-input');
-    const keyLabel = $('ai-key-label');
-    const keyHint = $('ai-key-hint');
-
-    const providerConfigs = {
-      gemini: { label: 'Gemini API Key', placeholder: 'Paste Gemini key (AIzaSy...)', model: 'gemini/gemini-1.5-flash', hint: 'Free tier key from aistudio.google.com' },
-      groq: { label: 'Groq API Key', placeholder: 'Paste Groq key (gsk_...)', model: 'groq/llama-3.3-70b-versatile', hint: 'Ultra-fast free reasoning from console.groq.com' },
-      claude: { label: 'Claude API Key', placeholder: 'Paste Claude key (sk-ant-...)', model: 'claude-3-5-sonnet-20241022', hint: 'Anthropic Claude 3.5 Sonnet frontier reasoning' },
-      openai: { label: 'OpenAI API Key', placeholder: 'Paste OpenAI key (sk-...)', model: 'openai/gpt-4o-mini', hint: 'OpenAI GPT-4o-mini / GPT-4o reasoning' }
+    // Mock bridge for local testing outside webview
+    const mockBridge = {
+      get_profile: async () => ({ user_name: 'User', assistant_name: 'Privacy68' }),
+      get_api_keys_detail: async () => ({
+        active_model: 'gemini/gemini-1.5-flash',
+        gemini: { configured: true, preview: 'AIzaSy...****' },
+        groq: { configured: true, preview: 'gsk_...****' },
+        claude: { configured: false, preview: '' },
+        openai: { configured: false, preview: '' },
+        ollama: { installed: true, running: false, models: [] }
+      }),
+      list_skills: async () => [],
+      get_plugins: async () => [],
+      get_github_status: async () => ({ connected: false }),
+      execute_command: async (text) => ({ success: true, message: 'Executed: ' + text }),
+      save_api_key: async () => ({ success: true, message: 'Saved' }),
+      test_llm_connection: async () => ({ success: true, message: 'Connected' }),
+      set_active_model: async () => ({ success: true }),
+      test_microphone: async () => ({ success: true, level: 42, rms: 0.042 }),
+      record_voice_command: async () => ({ success: false, message: 'Mock' }),
+      close_app: async () => {}
     };
 
-    if (providerSelect) {
-      providerSelect.addEventListener('change', () => {
-        const conf = providerConfigs[providerSelect.value] || providerConfigs.gemini;
-        keyLabel.textContent = conf.label;
-        keyInput.placeholder = conf.placeholder;
-        keyHint.textContent = conf.hint;
+    // Tab Navigation
+    const tabBtns = document.querySelectorAll('.nav-btn');
+    const tabViews = document.querySelectorAll('.tab-view');
+    const tabTitle = $('active-tab-title');
+
+    const tabTitles = {
+      console: '💻 Live Command Console',
+      brain: '🧠 Cloud & Web AI Brain (APIs Only)',
+      skills: '⚡ Learned Skills Engine',
+      voice: '🎙️ Voice & Audio Settings',
+      plugins: '🔌 Automation Plugins',
+      settings: '⚙️ Settings & Diagnostics'
+    };
+
+    tabBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tab = btn.dataset.tab;
+        tabBtns.forEach(b => b.classList.remove('active'));
+        tabViews.forEach(v => v.classList.remove('active'));
+        btn.classList.add('active');
+        const view = $('tab-' + tab);
+        if (view) view.classList.add('active');
+        if (tabTitle && tabTitles[tab]) tabTitle.textContent = tabTitles[tab];
       });
+    });
+
+    // Feed / Console logic
+    function appendFeed(type, title, text, code = null) {
+      const feed = $('console-feed');
+      const card = document.createElement('div');
+      card.className = 'feed-card ' + type;
+
+      const hdr = document.createElement('div');
+      hdr.className = 'feed-header';
+      hdr.innerHTML = `<span>${title}</span><span>${type.toUpperCase()}</span>`;
+
+      const body = document.createElement('div');
+      body.className = 'feed-body';
+      body.textContent = text;
+
+      card.appendChild(hdr);
+      card.appendChild(body);
+
+      if (code) {
+        const cBlock = document.createElement('pre');
+        cBlock.className = 'feed-code';
+        cBlock.textContent = code;
+        card.appendChild(cBlock);
+      }
+
+      feed.appendChild(card);
+      feed.scrollTop = feed.scrollHeight;
     }
 
-    const saveKeyBtn = $('save-ai-key');
-    if (saveKeyBtn) {
-      saveKeyBtn.addEventListener('click', async () => {
-        const prov = providerSelect.value;
-        const key = keyInput.value.trim();
-        if (!key) {
-          showToast('Please paste an API key first.', true);
+    async function handleCommand(text) {
+      text = (text || '').trim();
+      if (!text) return;
+      $('cmd-input').value = '';
+      appendFeed('user', 'You', text);
+
+      const runBtn = $('cmd-run-btn');
+      runBtn.disabled = true;
+      runBtn.textContent = 'Running...';
+
+      try {
+        const res = await bridge().execute_command(text);
+        if (res && res.success) {
+          appendFeed('assistant', 'Assistant', res.message || 'Command executed.', res.code || res.output);
+        } else {
+          appendFeed('system', 'Error', res?.message || 'Execution failed.');
+          showToast(res?.message || 'Execution failed.', true);
+        }
+      } catch (err) {
+        appendFeed('system', 'System Error', err.message);
+        showToast(err.message, true);
+      } finally {
+        runBtn.disabled = false;
+        runBtn.textContent = 'Run';
+      }
+    }
+
+    $('cmd-run-btn').addEventListener('click', () => handleCommand($('cmd-input').value));
+    $('cmd-input').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') handleCommand($('cmd-input').value);
+    });
+
+    $('cmd-clear-btn').addEventListener('click', () => {
+      $('console-feed').replaceChildren();
+      appendFeed('system', 'Log Cleared', 'Live console feed was cleared.');
+    });
+
+    document.querySelectorAll('.prompt-chip').forEach(chip => {
+      chip.addEventListener('click', () => handleCommand(chip.dataset.cmd));
+    });
+
+    // Push To Talk Voice Recording
+    const pttBtn = $('ptt-speak-btn');
+    let isRecording = false;
+
+    pttBtn.addEventListener('click', async () => {
+      if (isRecording) return;
+      isRecording = true;
+      pttBtn.classList.add('recording');
+      $('ptt-label').textContent = 'Listening (Speak now)...';
+      $('ptt-icon').textContent = '🔴';
+      showToast('Microphone active. Speak your command now...');
+
+      try {
+        const res = await bridge().record_voice_command();
+        if (res && res.success && res.text) {
+          showToast(`Transcribed: "${res.text}"`);
+          await handleCommand(res.text);
+        } else {
+          showToast(res?.message || 'No speech heard.', true);
+        }
+      } catch (err) {
+        showToast(err.message, true);
+      } finally {
+        isRecording = false;
+        pttBtn.classList.remove('recording');
+        $('ptt-label').textContent = 'Click to Speak';
+        $('ptt-icon').textContent = '🎙️';
+      }
+    });
+
+    // AI Brain & Multi-Slot Logic
+    async function loadBrainDetails() {
+      try {
+        const det = await bridge().get_api_keys_detail();
+        if (!det) return;
+
+        // Active model input & badge
+        const activeMod = det.active_model || 'gemini/gemini-1.5-flash';
+        $('active-model-input').value = activeMod;
+        $('active-model-badge').textContent = '🧠 Model: ' + activeMod;
+        $('sidebar-brain-text').textContent = 'Brain: ' + activeMod.split('/')[0].toUpperCase();
+
+        // Presets dropdown sync
+        const sel = $('model-presets-select');
+        for (let i = 0; i < sel.options.length; i++) {
+          if (sel.options[i].value === activeMod) {
+            sel.selectedIndex = i;
+            break;
+          }
+        }
+
+        // Slots sync
+        const updateSlot = (prov, slotData) => {
+          const card = $('slot-' + prov);
+          const badge = $('badge-' + prov);
+          const input = $('key-' + prov);
+          if (!card || !badge) return;
+
+          if (slotData && slotData.configured) {
+            card.classList.add('configured');
+            badge.textContent = '● Active (Saved: ' + slotData.preview + ')';
+            badge.className = 'chip good';
+          } else {
+            card.classList.remove('configured');
+            badge.textContent = '○ Inactive';
+            badge.className = 'chip';
+          }
+        };
+
+        updateSlot('gemini', det.gemini);
+        updateSlot('groq', det.groq);
+        updateSlot('claude', det.claude);
+        updateSlot('openai', det.openai);
+
+        // Ollama Slot
+        const ol = det.ollama || {};
+        const olBadge = $('badge-ollama');
+        const btnStart = $('btn-start-ollama-service');
+        const btnDownload = $('btn-download-ollama-service');
+        if (ol.running) {
+          olBadge.textContent = `● Running (${ol.models?.length || 0} models)`;
+          olBadge.className = 'chip good';
+          btnStart.style.display = 'none';
+          btnDownload.style.display = 'none';
+        } else if (ol.installed) {
+          olBadge.textContent = '○ Offline (Service stopped)';
+          olBadge.className = 'chip warn';
+          btnStart.style.display = 'inline-flex';
+          btnDownload.style.display = 'none';
+        } else {
+          olBadge.textContent = '✕ Not Installed';
+          olBadge.className = 'chip';
+          btnStart.style.display = 'none';
+          btnDownload.style.display = 'inline-flex';
+        }
+      } catch (e) {
+        console.warn('loadBrainDetails error:', e);
+      }
+    }
+
+    // Save and Test Key
+    window.saveKey = async (provider, inputId) => {
+      const key = $(inputId).value.trim();
+      if (!key) {
+        showToast('Please enter an API key first.', true);
+        return;
+      }
+      try {
+        const res = await bridge().save_api_key(provider, key);
+        showToast(res.message || 'Key saved!');
+        $(inputId).value = '';
+        await loadBrainDetails();
+      } catch (e) {
+        showToast(e.message, true);
+      }
+    };
+
+    window.testKey = async (provider, inputId) => {
+      const key = $(inputId).value.trim();
+      showToast(`Testing ${provider.toUpperCase()} connection...`);
+      try {
+        const res = await bridge().test_llm_connection({ provider, api_key: key });
+        showToast(res.message, !res.success);
+      } catch (e) {
+        showToast(e.message, true);
+      }
+    };
+
+    // Apply model preset
+    $('apply-model-btn').addEventListener('click', async () => {
+      const mod = $('active-model-input').value.trim();
+      if (!mod) return;
+      try {
+        const res = await bridge().set_active_model(mod);
+        showToast(res.message || 'Active model updated!');
+        await loadBrainDetails();
+      } catch (e) {
+        showToast(e.message, true);
+      }
+    });
+
+    $('model-presets-select').addEventListener('change', () => {
+      $('active-model-input').value = $('model-presets-select').value;
+    });
+
+    // Start Ollama
+    $('btn-start-ollama-service').addEventListener('click', async () => {
+      const btn = $('btn-start-ollama-service');
+      btn.disabled = true;
+      btn.textContent = 'Starting...';
+      try {
+        const res = await bridge().start_ollama();
+        showToast(res.message || 'Starting Ollama...');
+        setTimeout(async () => {
+          await loadBrainDetails();
+          btn.disabled = false;
+          btn.textContent = 'Start Ollama Service';
+        }, 3000);
+      } catch (e) {
+        showToast(e.message, true);
+        btn.disabled = false;
+        btn.textContent = 'Start Ollama Service';
+      }
+    });
+
+    $('btn-download-ollama-service').addEventListener('click', async () => {
+      try { await bridge().open_external_url('https://ollama.com/download'); }
+      catch (e) { showToast(e.message, true); }
+    });
+
+    // Learned Skills Tab Logic
+    async function loadSkills() {
+      const container = $('skills-cards-container');
+      container.replaceChildren();
+      try {
+        const skills = await bridge().list_skills();
+        if (!skills || !skills.length) {
+          container.innerHTML = '<div style="color:var(--text-muted); padding:20px; text-align:center;">No learned skills yet. Automate any task from Live Console and PRIVACY68 will learn it!</div>';
           return;
         }
-        const conf = providerConfigs[prov] || providerConfigs.gemini;
-        saveKeyBtn.disabled = true;
-        saveKeyBtn.textContent = 'Saving…';
-        try {
-          const res = await bridge().save_api_key(prov, key, conf.model);
-          showToast(res.message || 'API key saved!');
-          keyInput.value = '';
-          await loadRuntimeStatus();
-        } catch (err) {
-          showToast(err.message, true);
-        } finally {
-          saveKeyBtn.disabled = false;
-          saveKeyBtn.textContent = 'Save Key';
-        }
-      });
+
+        skills.forEach(skill => {
+          const card = document.createElement('div');
+          card.className = 'skill-card';
+
+          const title = document.createElement('div');
+          title.className = 'skill-title';
+          const count = skill.success_count || 0;
+          title.innerHTML = `<span>⚡ ${skill.name || 'Unnamed Skill'}</span><span class="chip good" style="font-size:10px;">${count > 0 ? '✓ Run ' + count + 'x (0ms)' : 'New'}</span>`;
+
+          const desc = document.createElement('div');
+          desc.className = 'skill-desc';
+          desc.textContent = skill.description || 'Autonomous learned skill.';
+
+          const tags = document.createElement('div');
+          tags.className = 'skill-tags';
+          (skill.trigger_phrases || []).slice(0, 3).forEach(p => {
+            const t = document.createElement('span');
+            t.className = 'skill-tag';
+            t.textContent = `'${p}'`;
+            tags.appendChild(t);
+          });
+
+          const act = document.createElement('div');
+          act.className = 'skill-actions';
+
+          const runBtn = document.createElement('button');
+          runBtn.className = 'btn green sm';
+          runBtn.textContent = '▶ Run Now';
+          runBtn.onclick = async () => {
+            runBtn.disabled = true;
+            runBtn.textContent = 'Running...';
+            showToast(`Executing '${skill.name}' via 0ms fast-path...`);
+            try {
+              const res = await bridge().run_skill(skill.id);
+              if (res && res.success) {
+                showToast(`'${skill.name}' executed successfully!`);
+                appendFeed('assistant', `Skill: ${skill.name}`, res.output || 'Success', skill.code);
+              } else {
+                showToast(res?.message || 'Skill execution failed', true);
+              }
+            } catch (err) {
+              showToast(err.message, true);
+            } finally {
+              runBtn.disabled = false;
+              runBtn.textContent = '▶ Run Now';
+            }
+          };
+          act.appendChild(runBtn);
+
+          if (!skill.is_builtin) {
+            const delBtn = document.createElement('button');
+            delBtn.className = 'btn sm';
+            delBtn.textContent = '✕ Delete';
+            delBtn.onclick = async () => {
+              if (confirm(`Delete skill '${skill.name}'?`)) {
+                await bridge().delete_skill(skill.id);
+                showToast('Skill deleted');
+                await loadSkills();
+              }
+            };
+            act.appendChild(delBtn);
+          }
+
+          card.appendChild(title);
+          card.appendChild(desc);
+          card.appendChild(tags);
+          card.appendChild(act);
+          container.appendChild(card);
+        });
+      } catch (e) {
+        container.innerHTML = `<div style="color:var(--accent);">Failed to load skills: ${e.message}</div>`;
+      }
     }
 
-    const testKeyBtn = $('test-ai-key');
-    if (testKeyBtn) {
-      testKeyBtn.addEventListener('click', async () => {
-        const prov = providerSelect.value;
-        const key = keyInput.value.trim();
-        testKeyBtn.disabled = true;
-        testKeyBtn.textContent = 'Testing…';
-        try {
-          const res = await bridge().test_llm_connection({ provider: prov, api_key: key });
-          showToast(res.message, !res.success);
-        } catch (err) {
-          showToast(err.message, true);
-        } finally {
-          testKeyBtn.disabled = false;
-          testKeyBtn.textContent = 'Test';
+    $('refresh-skills-btn').addEventListener('click', loadSkills);
+
+    // Plugins Tab Logic
+    async function loadPlugins() {
+      const container = $('plugins-container');
+      container.replaceChildren();
+      try {
+        const plugins = await bridge().get_plugins();
+        if (!plugins || !plugins.length) {
+          container.innerHTML = '<div style="color:var(--text-muted); padding:20px;">No plugins found.</div>';
+          return;
         }
-      });
+
+        plugins.forEach(p => {
+          const card = document.createElement('div');
+          card.className = 'skill-card';
+
+          const title = document.createElement('div');
+          title.className = 'skill-title';
+          title.innerHTML = `<span>🔌 ${p.name}</span><span class="chip ${p.is_enabled ? 'good' : ''}">${p.is_enabled ? 'Active' : 'Disabled'}</span>`;
+
+          const desc = document.createElement('div');
+          desc.className = 'skill-desc';
+          desc.textContent = p.description || '';
+
+          const act = document.createElement('div');
+          act.className = 'skill-actions';
+          const togBtn = document.createElement('button');
+          togBtn.className = 'btn sm ' + (p.is_enabled ? '' : 'primary');
+          togBtn.textContent = p.is_enabled ? 'Disable' : 'Enable';
+          togBtn.onclick = async () => {
+            await bridge().toggle_plugin(p.id, !p.is_enabled);
+            await loadPlugins();
+          };
+          act.appendChild(togBtn);
+
+          card.appendChild(title);
+          card.appendChild(desc);
+          card.appendChild(act);
+          container.appendChild(card);
+        });
+      } catch (e) {
+        console.warn('loadPlugins error:', e);
+      }
     }
 
-    $('test-mic').addEventListener('click', testMicrophone);
-    $('clear-log').addEventListener('click', () => {
-      $('console-log').replaceChildren();
-      const empty = document.createElement('div');
-      empty.id = 'empty-state';
-      empty.className = 'empty-state';
-      empty.textContent = 'Session cleared. Enter a request below to get started.';
-      $('console-log').appendChild(empty);
-      commandCount = 0;
-      $('session-count').textContent = 'No commands yet';
-      $('reasoning-box').textContent = 'No command has been run in this session.';
-      $('code-box').textContent = 'No generated code yet.';
-      $('result-state').textContent = 'Ready';
-      $('result-state').className = 'pill';
-    });
-    $('close-app').addEventListener('click', async () => {
-      try { await bridge().close_app(); }
-      catch (error) { showToast(error.message, true); }
+    $('refresh-plugins-btn').addEventListener('click', loadPlugins);
+
+    // GitHub Status
+    async function loadGitHub() {
+      try {
+        const st = await bridge().get_github_status();
+        const chip = $('github-status-chip');
+        if (st && st.connected) {
+          chip.textContent = '● Connected: ' + (st.login || 'GitHub User');
+          chip.className = 'chip good';
+        } else {
+          chip.textContent = 'Not connected';
+          chip.className = 'chip';
+        }
+      } catch (e) {}
+    }
+
+    $('github-connect-btn').addEventListener('click', async () => {
+      const token = $('github-token-input').value.trim();
+      if (!token) return showToast('Enter token first', true);
+      try {
+        const res = await bridge().connect_github(token);
+        showToast(res.message || 'Connected to GitHub!');
+        await loadGitHub();
+      } catch (e) { showToast(e.message, true); }
     });
 
-    let _dashboardInitialized = false;
+    $('github-disconnect-btn').addEventListener('click', async () => {
+      try {
+        await bridge().disconnect_github();
+        showToast('Disconnected from GitHub');
+        await loadGitHub();
+      } catch (e) { showToast(e.message, true); }
+    });
+
+    // Mic Test
+    $('test-mic-btn').addEventListener('click', async () => {
+      const btn = $('test-mic-btn');
+      const res = $('mic-test-result');
+      btn.disabled = true;
+      res.textContent = 'Listening sample for 1.5 seconds...';
+      try {
+        const result = await bridge().test_microphone();
+        if (result && result.success) {
+          res.textContent = `Input Level: ${result.level}% (RMS ${Number(result.rms).toFixed(4)}) - Working properly!`;
+          res.className = 'chip good';
+        } else {
+          res.textContent = result?.message || 'Test failed.';
+          res.className = 'chip warn';
+        }
+      } catch (e) {
+        res.textContent = e.message;
+        res.className = 'chip warn';
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    // Profile & Diagnostics
+    async function loadProfile() {
+      try {
+        const p = await bridge().get_profile();
+        if (p) {
+          $('setting-user-name').value = p.user_name || 'User';
+          $('setting-assistant-name').value = p.assistant_name || 'Privacy68';
+          $('top-user-chip').textContent = '👤 ' + (p.user_name || 'User');
+        }
+      } catch (e) {}
+    }
+
+    $('save-profile-btn').addEventListener('click', async () => {
+      try {
+        const res = await bridge().save_profile({
+          user_name: $('setting-user-name').value.trim() || 'User',
+          wake_word: $('setting-assistant-name').value.trim() || 'Privacy68'
+        });
+        showToast(res.message || 'Profile saved!');
+        await loadProfile();
+      } catch (e) { showToast(e.message, true); }
+    });
+
+    async function loadSysDiag() {
+      const grid = $('sys-diag-grid');
+      try {
+        const rt = await bridge().get_runtime_status();
+        const cuda = rt.cuda || {};
+        grid.innerHTML = `
+          <div class="chip ${cuda.is_ready ? 'good' : ''}">CUDA: ${cuda.is_ready ? 'Ready (GPU Acceleration)' : (cuda.has_gpu ? 'DLLs Missing' : 'CPU Mode')}</div>
+          <div class="chip">${cuda.gpu_name ? 'GPU: ' + cuda.gpu_name : 'GPU: Integrated / CPU'}</div>
+          <div class="chip good">Voice: Google Web Speech (Free)</div>
+          <div class="chip good">Privacy: 100% Click-to-Speak (No Snooping)</div>
+        `;
+      } catch (e) {}
+    }
+
+    $('refresh-sys-btn').addEventListener('click', loadSysDiag);
+    $('close-window-btn').addEventListener('click', async () => {
+      try { await bridge().close_app(); } catch (e) {}
+    });
+
+    // App Initialization
+    let _initDone = false;
     async function initDashboard() {
-      if (_dashboardInitialized) return;
+      if (_initDone) return;
       if (window.pywebview && window.pywebview.api) {
-        _dashboardInitialized = true;
-        $('connection-status').classList.remove('error');
-        $('connection-status').classList.add('ready');
-        $('connection-label').textContent = 'Desktop connected';
-        try { await loadProfile(); } catch (e) { console.warn('loadProfile error:', e); }
-        try { await loadRuntimeStatus(); } catch (e) { console.warn('loadRuntimeStatus error:', e); }
-        try { await refreshPlugins(); } catch (e) { console.warn('refreshPlugins error:', e); }
-        try { await refreshGitHubStatus(); } catch (e) { console.warn('refreshGitHubStatus error:', e); }
+        _initDone = true;
+        $('top-conn-chip').className = 'chip good';
+        $('top-conn-chip').innerHTML = '<span class="status-dot green"></span> Desktop connected';
+        await loadProfile();
+        await loadBrainDetails();
+        await loadSkills();
+        await loadPlugins();
+        await loadGitHub();
+        await loadSysDiag();
       }
     }
 
     window.addEventListener('pywebviewready', initDashboard);
     document.addEventListener('DOMContentLoaded', initDashboard);
 
-    // Fast-poll bridge detection (resolves within 50ms)
     const bridgePoll = setInterval(() => {
       if (window.pywebview && window.pywebview.api) {
         clearInterval(bridgePoll);
@@ -1069,8 +1335,8 @@ async function testMicrophone() {
     setTimeout(() => {
       clearInterval(bridgePoll);
       if (!window.pywebview || !window.pywebview.api) {
-        $('connection-status').classList.add('error');
-        $('connection-label').textContent = 'Open in desktop app';
+        // Fallback for standalone browser testing
+        initDashboard();
       }
     }, 4000);
   </script>

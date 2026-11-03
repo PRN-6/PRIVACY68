@@ -281,6 +281,115 @@ class DashboardAPI:
             "active_model": getattr(config, "AGENT_BRAIN_MODEL", "gemini/gemini-1.5-flash"),
         }
 
+    def set_active_model(self, model: str) -> Dict[str, Any]:
+        """Sets the active Agent Brain model in runtime and persists to .env."""
+        try:
+            import config
+            model = model.strip()
+            if not model:
+                return {"success": False, "message": "Model identifier cannot be empty."}
+            config.AGENT_BRAIN_MODEL = model
+            from actions.agent_brain import agent_brain
+            agent_brain.model = model
+            config.update_dotenv_var("AGENT_BRAIN_MODEL", model)
+            return {"success": True, "message": f"Active model set to '{model}'", "model": model}
+        except Exception as e:
+            return {"success": False, "message": str(e)}
+
+    def get_api_keys_detail(self) -> Dict[str, Any]:
+        """Returns detailed configuration status for all cloud AI providers."""
+        import config
+
+        def mask(k):
+            if not k:
+                return ""
+            if len(k) <= 8:
+                return k[:2] + "****"
+            return k[:6] + "..." + k[-4:]
+
+        gemini_k = getattr(config, "GEMINI_API_KEY", "") or os.environ.get("GEMINI_API_KEY", "") or os.environ.get("GOOGLE_API_KEY", "")
+        groq_k = getattr(config, "GROQ_API_KEY", "") or os.environ.get("GROQ_API_KEY", "")
+        claude_k = getattr(config, "ANTHROPIC_API_KEY", "") or os.environ.get("ANTHROPIC_API_KEY", "")
+        openai_k = getattr(config, "OPENAI_API_KEY", "") or os.environ.get("OPENAI_API_KEY", "")
+        ollama_status = self.check_ollama_status()
+
+        return {
+            "active_model": getattr(config, "AGENT_BRAIN_MODEL", "gemini/gemini-1.5-flash"),
+            "gemini": {
+                "configured": bool(gemini_k),
+                "preview": mask(gemini_k),
+                "model": "gemini/gemini-1.5-flash"
+            },
+            "groq": {
+                "configured": bool(groq_k),
+                "preview": mask(groq_k),
+                "model": "groq/llama-3.3-70b-versatile"
+            },
+            "claude": {
+                "configured": bool(claude_k),
+                "preview": mask(claude_k),
+                "model": "claude-3-5-sonnet-20241022"
+            },
+            "openai": {
+                "configured": bool(openai_k),
+                "preview": mask(openai_k),
+                "model": "openai/gpt-4o-mini"
+            },
+            "ollama": {
+                "installed": ollama_status.get("installed", False),
+                "running": ollama_status.get("running", False),
+                "models": ollama_status.get("models", []),
+            }
+        }
+
+    def list_skills(self) -> List[Dict[str, Any]]:
+        """Returns all crystallized skills learned by PRIVACY68."""
+        try:
+            from actions.skill_manager import skill_manager
+            return skill_manager.list_skills()
+        except Exception as e:
+            logger.warning(f"Error listing skills: {e}")
+            return []
+
+    def run_skill(self, skill_id: str) -> Dict[str, Any]:
+        """Executes a crystallized skill by ID."""
+        try:
+            from actions.skill_manager import skill_manager
+            for s in skill_manager.list_skills():
+                if s.get("id") == skill_id:
+                    res = skill_manager.execute_skill(s)
+                    if res.get("success"):
+                        skill_manager.record_execution(skill_id, success=True)
+                    return res
+            return {"success": False, "message": f"Skill '{skill_id}' not found."}
+        except Exception as e:
+            return {"success": False, "message": str(e)}
+
+    def delete_skill(self, skill_id: str) -> Dict[str, Any]:
+        """Deletes a learned skill."""
+        try:
+            from actions.skill_manager import skill_manager
+            ok = skill_manager.delete_skill(skill_id)
+            return {"success": ok, "message": "Skill removed." if ok else "Skill not found or protected."}
+        except Exception as e:
+            return {"success": False, "message": str(e)}
+
+    def record_voice_command(self) -> Dict[str, Any]:
+        """Records on-demand voice from the microphone and returns transcribed text."""
+        try:
+            from speech.streamer import PushToTalkRecorder, autocorrect_speech_command
+            import time
+            recorder = PushToTalkRecorder()
+            recorder.start()
+            time.sleep(3.2)
+            raw_text = recorder.stop_and_transcribe()
+            text = autocorrect_speech_command(raw_text) if raw_text else ""
+            if text:
+                return {"success": True, "text": text}
+            return {"success": False, "message": "No speech detected in audio sample."}
+        except Exception as e:
+            return {"success": False, "message": str(e)}
+
     def get_available_llm_models(self) -> List[Dict[str, Any]]:
         """Returns a list of all models installed in local Ollama instance."""
         try:
