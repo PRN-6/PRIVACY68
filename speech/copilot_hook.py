@@ -186,3 +186,4 @@ def stop_copilot_hook() -> None:
     if _copilot_hook is not None:
         _copilot_hook.stop()
         _copilot_hook = None
+

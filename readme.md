@@ -6,7 +6,7 @@
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-3776AB.svg?logo=python&logoColor=white)](https://www.python.org/)
 [![Platform: Windows 10/11](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-0078D6.svg?logo=windows&logoColor=white)](#)
 
-PRIVACY68 is an offline-first Windows desktop voice assistant with local speech-processing components, a desktop control center, and agentic OS automation. It pairs local Faster-Whisper inference with an Agent Brain powered by Ollama to execute complex desktop tasks safely through generated Python scripts.
+PRIVACY68 is a 100% private Windows desktop AI assistant featuring on-demand Click-to-Speak, laptop Microsoft Copilot key hotkey support, a modern native CustomTkinter dashboard, and agentic OS automation. It pairs zero-key speech recognition (Google Web Speech & Groq Whisper Cloud) with an Agent Brain powered by multi-provider AI APIs (Groq Free, Anthropic Claude, OpenAI, or remote Ollama) to execute complex desktop tasks safely through generated Python scripts.
 
 **Latest Windows release:** [Download the installer from GitHub Releases](https://github.com/PRN-6/PRIVACY68/releases/latest).
 
@@ -69,7 +69,7 @@ PRIVACY68 uses **Ollama** via LiteLLM as its reasoning engine for desktop automa
 
 ### 3. CUDA & GPU Acceleration (Optional, for High-Speed Audio Inference)
 
-PRIVACY68 uses **Faster-Whisper** and Silero neural Voice Activity Detection (VAD) for real-time speech transcription and wake-word gating.
+PRIVACY68 uses **Google Web Speech** (100% free, zero keys) and **Groq Cloud Whisper** for high-accuracy speech transcription with zero background listening.
 
 | Compute Mode | Audio Inference Latency | Memory Footprint | Setup Required |
 |---|---|---|---|
@@ -90,7 +90,7 @@ Upon restart, PRIVACY68 automatically registers these DLLs and switches the audi
 
 ## Features
 
-- **Local Speech Recognition**: Faster-Whisper with Silero neural VAD for zero-latency wake word ("Alexa") and command recognition.
+- **100% Private Speech Recognition**: Zero continuous background microphone listening. Voice input activates exclusively when you click '🎙️ Click to Speak' or press your laptop's Copilot key, powered by 100% free Google Web Speech and Groq Whisper Cloud.
 - **Agentic Code Execution**: Translates user intent into verified Python automation with an integrated 30-second watchdog timer.
 - **Control Center Dashboard**: Modern pywebview control center for managing runtime status, testing microphones, reviewing LLM output, and toggling plugins.
 - **Hardware Telemetry**: Real-time monitoring of NVIDIA GPU availability, CUDA runtime readiness, microphone input RMS, and Ollama connectivity.

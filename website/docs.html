@@ -145,7 +145,7 @@ Microphone/audio path (when voice mode is used)
                             <h3 class="doc-block-title">03 // Microphone Setup &amp; Audio Diagnostics</h3>
                         </div>
                         <p class="doc-text">
-                            Proper microphone levels ensure 100% accurate wake word recognition. Follow these diagnostic steps:
+                            Proper microphone levels ensure 100% accurate speech recognition. Follow these diagnostic steps:
                         </p>
                         <h4 style="color: var(--accent-cyan); margin: 15px 0 8px 0; font-family: var(--font-retro);">1. Windows Privacy Permissions</h4>
                         <p class="doc-text">
@@ -279,7 +279,7 @@ Microphone/audio path (when voice mode is used)
                         </div>
                         <h4 style="color: var(--accent-cyan); margin: 15px 0 8px 0; font-family: var(--font-retro);">Zero-Config CUDA Runtime Manager</h4>
                         <p class="doc-text">
-                            Faster-Whisper requires <strong>CUDA 12</strong> (<code>cublas64_12.dll</code>) and <strong>NVIDIA cuDNN 9</strong> (<code>cudnn64_9.dll</code>). Note that official NVIDIA CUDA Toolkit installers (such as CUDA 13.x) have mismatched DLL versions and omit cuDNN entirely.
+                            PRIVACY68 operates with zero-setup cloud APIs (Google Cloud Speech and Groq Whisper), removing all requirements for 800MB local CUDA DLLs. Note that official NVIDIA CUDA Toolkit installers (such as CUDA 13.x) have mismatched DLL versions and omit cuDNN entirely.
                         </p>
                         <p class="doc-text">
                             PRIVACY68 eliminates this manual setup: the built-in <strong>CUDA Manager</strong> allows one-click runtime installation. Simply click <em>"Download CUDA (~450MB)"</em> in the Control Center Hardware card to automatically download and register the pre-compiled cuBLAS 12 and cuDNN 9 DLLs into <code>%APPDATA%\PRIVACY68\cuda\bin\</code>.
@@ -406,15 +406,15 @@ DTYPE       = "float32"
 
 # Silence / Voice Activity Detection (Silero VAD)
 VAD_THRESHOLD           = 0.50      # Speech probability threshold (0.0 to 1.0)
-VAD_IDLE_THRESHOLD      = 0.30      # Lower threshold for wake-word scan gating
+VAD_IDLE_THRESHOLD      = 0.30      # Lower threshold for voice gating
 SILENCE_DURATION_CHUNKS = 8         # 8 chunks * 80ms = 0.64s pause for speech cutoff
 SILENCE_THRESHOLD       = 0.008     # Fallback RMS noise floor gate
 
-# Whisper Model Configuration
-WHISPER_MODEL_SIZE   = "medium.en"  # "small.en", "medium.en"
-WHISPER_DEVICE       = "cuda" if _HAS_CUDA else "cpu"
-WHISPER_COMPUTE_TYPE = "float16" if _HAS_CUDA else "int8"
-WHISPER_BEAM_SIZE    = 8            # Wider beam = maximum command accuracy
+# Speech Engine Configuration
+SPEECH_ENGINE        = "auto"       # "google" (100% Free, zero keys) or "groq"
+WHISPER_MODEL_SIZE   = "google-speech-free"
+WHISPER_DEVICE       = "cloud"
+WHISPER_COMPUTE_TYPE = "cloud-api"
 
 # Initial Prompt for Whisper Priming
 INITIAL_PROMPT = (

@@ -81,9 +81,9 @@ flowchart TB
     subgraph Speech["Speech pipeline"]
         Stream[SpeechStreamer]
         VAD[Silero VAD / energy gates]
-        STT[Faster-Whisper\nwake phrase and transcription]
+        STT[Google Web Speech / Groq Whisper API]
         Cleanup[Transcript normalization]
-        Auth[VoiceAuthenticator\nCAM++ ONNX embeddings]
+        CopilotHook[CopilotKeyHook\nHardware laptop hotkey]
     end
 
     subgraph Orchestration["Command orchestration"]
@@ -182,9 +182,9 @@ PRIVACY68 performs runtime inference and user-specific speaker enrollment only. 
 | Subsystem | Main implementation | Responsibility |
 |---|---|---|
 | Application bootstrap | `app.py`, `config.py` | Initializes logging, UI, remote server, speech streamer, and callbacks. Selects audio/model configuration and starts worker threads. |
-| Audio capture and wake detection | `speech/streamer.py` | Captures mono audio at configured sample rate, streams chunks, applies energy/VAD gates, uses Whisper-based wake phrase detection, and dispatches recognized text. |
+| Audio capture and wake detection | `speech/streamer.py` | Captures audio on-demand when Click-to-Speak or the Copilot key is triggered, applies VAD gates, and dispatches transcribed text. |
 | Speech activity detection | `speech/vad.py` | Provides Silero VAD functionality used by the speech pipeline. |
-| Speech recognition | `faster-whisper` accessed from `speech/streamer.py` | Transcribes wake phrases and commands. `config.py` selects `medium.en`, CUDA/float16 when detected, otherwise CPU/int8. |
+| Speech recognition | `faster-whisper` accessed from `speech/streamer.py` | Transcribes commands via Google Web Speech (Free, 0 setup) or Groq Cloud Whisper API (~150ms). |
 | Voice Lock | `speech/voice_auth.py` | Preprocesses audio, computes 80-bin log-mel features, invokes a CAM++ ONNX model, creates 512-dimensional embeddings, enrolls a profile, and compares speakers. |
 | Command execution | `actions/executor.py` | Cleans text, handles pending confirmation and greeting shortcuts, routes explicit GitHub commands to the GitHub plugin, dispatches remaining commands to the Agent Brain, and emits callbacks. |
 | Security confirmation | `computer_use/security_guard.py` | Classifies named actions into risk levels, queues sensitive/critical actions, expires pending actions after 15 seconds, and records an in-memory audit list. |
@@ -200,8 +200,8 @@ PRIVACY68 performs runtime inference and user-specific speaker enrollment only. 
 #### 1.1.4 Data Flow and Component Communication
 
 1. `SpeechStreamer` receives microphone blocks (16 kHz, mono, float32 according to `config.py`).
-2. While idle, it applies energy/no-speech checks and transcribes rolling audio windows to detect a configured wake word.
-3. After wake detection, it collects command audio, applies VAD/silence handling, and—if Voice Lock is enabled—verifies the speaker before transcribing the command with Faster-Whisper.
+2. While idle, the microphone remains 100% disconnected with zero hardware usage.
+3. When activated via Click-to-Speak or the laptop Copilot key, it captures audio and transcribes the command via Google Web Speech or Groq Cloud Whisper.
 4. The callback in `app.py` updates the HUD and invokes `execute_system_command`.
 5. `actions/executor.py` normalizes the transcript and checks for a pending confirmation. Confirmation words execute a queued action and cancellation words discard it. Other requests are not allowed to replace an action while its confirmation is pending.
 6. A greeting returns locally. Explicit GitHub requests are parsed and routed to `GitHubPlugin`; other requests go to `AgentBrain.generate_and_execute`.
