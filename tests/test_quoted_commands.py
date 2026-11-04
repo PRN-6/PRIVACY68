@@ -38,11 +38,12 @@ class TestQuotedCommandsAndBrainConfig(unittest.TestCase):
 
     def test_agent_brain_claude_without_api_key(self):
         brain = AgentBrain(model="claude-3-5-sonnet-20241022")
-        with patch.dict("os.environ", {"ANTHROPIC_API_KEY": ""}):
-            with patch("config.ANTHROPIC_API_KEY", ""):
-                res = brain.generate_and_execute("Write a script")
-                self.assertFalse(res["success"])
-                self.assertIn("Anthropic Claude API key is not configured", res["message"])
+        with patch("actions.skill_manager.skill_manager.find_matching_skill", return_value=None):
+            with patch.dict("os.environ", {"ANTHROPIC_API_KEY": "", "GEMINI_API_KEY": "", "GOOGLE_API_KEY": "", "GROQ_API_KEY": "", "OPENAI_API_KEY": ""}):
+                with patch("config.ANTHROPIC_API_KEY", ""), patch("config.GEMINI_API_KEY", ""), patch("config.GROQ_API_KEY", ""), patch("config.OPENAI_API_KEY", ""):
+                    res = brain.generate_and_execute("Unique unlearned prompt 12345")
+                    self.assertFalse(res["success"])
+                    self.assertIn("Anthropic Claude API key is not configured", res["message"])
 
     def test_agent_brain_ollama_not_found_handling(self):
         brain = AgentBrain(model="ollama/nonexistent-model:latest")

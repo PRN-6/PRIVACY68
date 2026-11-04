@@ -278,7 +278,7 @@ class DashboardAPI:
             "groq": bool(getattr(config, "GROQ_API_KEY", "") or os.environ.get("GROQ_API_KEY", "")),
             "claude": bool(getattr(config, "ANTHROPIC_API_KEY", "") or os.environ.get("ANTHROPIC_API_KEY", "")),
             "openai": bool(getattr(config, "OPENAI_API_KEY", "") or os.environ.get("OPENAI_API_KEY", "")),
-            "active_model": getattr(config, "AGENT_BRAIN_MODEL", "gemini/gemini-1.5-flash"),
+            "active_model": getattr(config, "AGENT_BRAIN_MODEL", "gemini/gemini-3.5-flash"),
         }
 
     def set_active_model(self, model: str) -> Dict[str, Any]:
@@ -314,16 +314,16 @@ class DashboardAPI:
         ollama_status = self.check_ollama_status()
 
         return {
-            "active_model": getattr(config, "AGENT_BRAIN_MODEL", "gemini/gemini-1.5-flash"),
+            "active_model": getattr(config, "AGENT_BRAIN_MODEL", "gemini/gemini-3.5-flash"),
             "gemini": {
                 "configured": bool(gemini_k),
                 "preview": mask(gemini_k),
-                "model": "gemini/gemini-1.5-flash"
+                "model": "gemini/gemini-3.5-flash"
             },
             "groq": {
                 "configured": bool(groq_k),
                 "preview": mask(groq_k),
-                "model": "groq/llama-3.3-70b-versatile"
+                "model": "groq/openai/gpt-oss-120b"
             },
             "claude": {
                 "configured": bool(claude_k),

@@ -59,11 +59,11 @@ class AgentBrain:
 
         # 1. Google Gemini (Fast & Generous Free Tier)
         if gemini_key and "gemini" not in cur_low:
-            fallbacks.append("gemini/gemini-1.5-flash")
+            fallbacks.append("gemini/gemini-3.5-flash")
 
-        # 2. Groq Cloud (Ultra-Fast 70B Free Tier)
+        # 2. Groq Cloud (Ultra-Fast Free Tier)
         if groq_key and "groq" not in cur_low:
-            fallbacks.append("groq/llama-3.3-70b-versatile")
+            fallbacks.append("groq/openai/gpt-oss-120b")
 
         # 3. Anthropic Claude (Frontier Intelligence)
         if claude_key and "claude" not in cur_low and "anthropic" not in cur_low:
@@ -305,9 +305,13 @@ class AgentBrain:
                     }
                 if "not found" in err_str.lower() or "notfounderror" in err_name.lower():
                     logger.error(f"[AGENT BRAIN] Model '{self.model}' not found in API: {e}")
+                    if "ollama" in self.model.lower():
+                        msg = f"Model '{self.model}' is not installed in Ollama. Verify model name or switch to Gemini / Groq in the dashboard."
+                    else:
+                        msg = f"Model '{self.model}' was not found or is deprecated by the provider API. Please select an active model (such as 'gemini/gemini-3.5-flash') in the AI Brain tab."
                     return {
                         "success": False,
-                        "message": f"Model '{self.model}' is not installed in Ollama. Verify model name or switch to Claude / Groq in the dashboard.",
+                        "message": msg,
                         "output": err_str,
                         "method": "agentic_engine",
                     }
