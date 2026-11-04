@@ -30,6 +30,40 @@ def is_ollama_online(host: Optional[str] = None) -> bool:
         return False
 
 
+PROVIDER_FALLBACKS = {
+    "gemini": [
+        "gemini/gemini-3.5-flash",
+        "gemini/gemini-flash-latest",
+        "gemini/gemini-2.5-flash",
+        "gemini/gemini-2.0-flash",
+    ],
+    "groq": [
+        "groq/openai/gpt-oss-120b",
+        "groq/openai/gpt-oss-20b",
+        "groq/qwen/qwen3.8-27b",
+        "groq/llama-3.3-70b-versatile",
+    ],
+    "openrouter": [
+        "openrouter/google/gemini-2.0-flash-exp:free",
+        "openrouter/meta-llama/llama-3.3-70b-instruct:free",
+        "openrouter/mistralai/mistral-small-24b-instruct-2501:free",
+    ],
+    "claude": [
+        "claude-3-5-sonnet-20241022",
+        "claude-3-5-haiku-20241022",
+    ],
+    "openai": [
+        "openai/gpt-4o-mini",
+        "openai/gpt-4o",
+    ],
+    "ollama": [
+        "ollama/qwen2.5-coder:7b",
+        "ollama/llama3.2:latest",
+        "ollama/qwen2.5:latest",
+    ],
+}
+
+
 class AgentBrain:
     """
     The 'Brain' of the Agentic System.
@@ -38,7 +72,7 @@ class AgentBrain:
     """
 
     def __init__(self, model: Optional[str] = None):
-        self.model = model or getattr(config, "AGENT_BRAIN_MODEL", "groq/llama-3.3-70b-versatile")
+        self.model = model or getattr(config, "AGENT_BRAIN_MODEL", "gemini/gemini-3.5-flash")
         self.max_retries = getattr(config, "AGENT_BRAIN_MAX_RETRIES", 2)
         self.last_code = ""
         self.last_reasoning = ""
@@ -47,35 +81,53 @@ class AgentBrain:
     def get_fallback_models(self, current_model: str) -> List[str]:
         """
         Returns an ordered list of alternative models that are configured and ready to use,
-        excluding the currently selected model.
+        prioritizing other working models for the current provider first, then cascading
+        to other configured providers.
         """
         fallbacks: List[str] = []
         cur_low = (current_model or "").lower()
 
         gemini_key = getattr(config, "GEMINI_API_KEY", "") or os.environ.get("GEMINI_API_KEY", "") or os.environ.get("GOOGLE_API_KEY", "")
         groq_key = getattr(config, "GROQ_API_KEY", "") or os.environ.get("GROQ_API_KEY", "")
+        openrouter_key = getattr(config, "OPENROUTER_API_KEY", "") or os.environ.get("OPENROUTER_API_KEY", "")
         claude_key = getattr(config, "ANTHROPIC_API_KEY", "") or os.environ.get("ANTHROPIC_API_KEY", "")
         openai_key = getattr(config, "OPENAI_API_KEY", "") or os.environ.get("OPENAI_API_KEY", "")
 
-        # 1. Google Gemini (Fast & Generous Free Tier)
+        def _add_candidates(models: List[str]):
+            for m in models:
+                if m.lower() != cur_low and m not in fallbacks:
+                    fallbacks.append(m)
+
+        # 1. Same-provider alternative models first
+        if "groq" in cur_low and groq_key:
+            _add_candidates(PROVIDER_FALLBACKS.get("groq", []))
+        elif "gemini" in cur_low and gemini_key:
+            _add_candidates(PROVIDER_FALLBACKS.get("gemini", []))
+        elif "openrouter" in cur_low and openrouter_key:
+            _add_candidates(PROVIDER_FALLBACKS.get("openrouter", []))
+        elif ("claude" in cur_low or "anthropic" in cur_low) and claude_key:
+            _add_candidates(PROVIDER_FALLBACKS.get("claude", []))
+        elif ("gpt" in cur_low or "openai" in cur_low) and openai_key:
+            _add_candidates(PROVIDER_FALLBACKS.get("openai", []))
+
+        # 2. Cross-provider fallback cascade
         if gemini_key and "gemini" not in cur_low:
-            fallbacks.append("gemini/gemini-3.5-flash")
+            _add_candidates(PROVIDER_FALLBACKS.get("gemini", []))
 
-        # 2. Groq Cloud (Ultra-Fast Free Tier)
         if groq_key and "groq" not in cur_low:
-            fallbacks.append("groq/openai/gpt-oss-120b")
+            _add_candidates(PROVIDER_FALLBACKS.get("groq", []))
 
-        # 3. Anthropic Claude (Frontier Intelligence)
+        if openrouter_key and "openrouter" not in cur_low:
+            _add_candidates(PROVIDER_FALLBACKS.get("openrouter", []))
+
         if claude_key and "claude" not in cur_low and "anthropic" not in cur_low:
-            fallbacks.append("claude-3-5-sonnet-20241022")
+            _add_candidates(PROVIDER_FALLBACKS.get("claude", []))
 
-        # 4. OpenAI (GPT-4o mini)
         if openai_key and "openai" not in cur_low and "gpt" not in cur_low:
-            fallbacks.append("openai/gpt-4o-mini")
+            _add_candidates(PROVIDER_FALLBACKS.get("openai", []))
 
-        # 5. Local Ollama (if running)
         if "ollama" not in cur_low and is_ollama_online():
-            fallbacks.append("ollama/llama3.2:latest")
+            _add_candidates(PROVIDER_FALLBACKS.get("ollama", []))
 
         return fallbacks
 
@@ -176,6 +228,14 @@ class AgentBrain:
             if not is_mocked and not api_key:
                 raise ValueError("Groq API key is not configured. Go to the 'AI Brain' tab in the dashboard and paste your free Groq API key.")
 
+        elif "openrouter" in model_lower:
+            api_key = getattr(config, "OPENROUTER_API_KEY", "") or os.environ.get("OPENROUTER_API_KEY", "")
+            if api_key:
+                os.environ["OPENROUTER_API_KEY"] = api_key.strip()
+            is_mocked = hasattr(litellm.completion, "mock_calls") or hasattr(litellm.completion, "return_value")
+            if not is_mocked and not api_key:
+                raise ValueError("OpenRouter API key is not configured. Go to the 'AI Brain' tab in the dashboard and paste your OpenRouter API key.")
+
         elif "gpt" in model_lower or "openai" in model_lower:
             api_key = getattr(config, "OPENAI_API_KEY", "") or os.environ.get("OPENAI_API_KEY", "")
             if api_key:
@@ -242,6 +302,12 @@ class AgentBrain:
                     self.active_provider_used = model_name
                     if idx > 0:
                         logger.info(f"[AGENT BRAIN] Auto-Failover succeeded via '{model_name}'!")
+                        try:
+                            self.model = model_name
+                            config.AGENT_BRAIN_MODEL = model_name
+                            config.update_dotenv_var("AGENT_BRAIN_MODEL", model_name)
+                        except Exception:
+                            pass
                     return code
             except Exception as exc:
                 if idx == 0:

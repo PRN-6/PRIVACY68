@@ -195,6 +195,7 @@ class DashboardAPI:
             "Authorization": f"Bearer {api_key}",
             "User-Agent": "PRIVACY68/1.0",
         }
+        data_body = None
         if provider in ("claude", "anthropic"):
             endpoint = "https://api.anthropic.com/v1/models"
             headers = {
@@ -203,7 +204,10 @@ class DashboardAPI:
                 "User-Agent": "PRIVACY68/1.0",
             }
         elif provider == "groq":
-            endpoint = "https://api.groq.com/openai/v1/models"
+            # Test with lightweight 1-token chat ping on active free model
+            endpoint = "https://api.groq.com/openai/v1/chat/completions"
+            headers["Content-Type"] = "application/json"
+            data_body = json.dumps({"model": "openai/gpt-oss-120b", "messages": [{"role": "user", "content": "hi"}], "max_tokens": 1}).encode("utf-8")
         elif provider in ("gemini", "google"):
             endpoint = "https://generativelanguage.googleapis.com/v1beta/openai/models"
         elif provider == "openrouter":
@@ -217,7 +221,8 @@ class DashboardAPI:
         req = urllib.request.Request(
             endpoint,
             headers=headers,
-            method="GET",
+            data=data_body,
+            method="POST" if data_body else "GET",
         )
 
         try:
@@ -232,41 +237,64 @@ class DashboardAPI:
             return {"success": False, "message": f"Authentication failed: {e}"}
 
     def save_api_key(self, provider: str, api_key: str, model: str = "") -> Dict[str, Any]:
-        """Saves API key and active model to .env and updates runtime config."""
+        """Saves API key and active model to .env and updates runtime config with smart provider auto-detection."""
         import config
         provider = provider.lower().strip()
         api_key = api_key.strip()
+
+        # Smart provider auto-detection if key matches standard prefixes
+        if api_key.startswith("gsk_"):
+            provider = "groq"
+        elif api_key.startswith("AIzaSy") or api_key.startswith("AQ.Ab"):
+            provider = "gemini"
+        elif api_key.startswith("sk-or-"):
+            provider = "openrouter"
+        elif api_key.startswith("sk-ant-"):
+            provider = "claude"
+
         key_var = None
+        default_model = None
         if "gemini" in provider or "google" in provider:
             key_var = "GEMINI_API_KEY"
             config.GEMINI_API_KEY = api_key
             os.environ["GEMINI_API_KEY"] = api_key
             os.environ["GOOGLE_API_KEY"] = api_key
+            default_model = "gemini/gemini-3.5-flash"
         elif "groq" in provider:
             key_var = "GROQ_API_KEY"
             config.GROQ_API_KEY = api_key
             os.environ["GROQ_API_KEY"] = api_key
+            default_model = "groq/openai/gpt-oss-120b"
+        elif "openrouter" in provider:
+            key_var = "OPENROUTER_API_KEY"
+            config.OPENROUTER_API_KEY = api_key
+            os.environ["OPENROUTER_API_KEY"] = api_key
+            default_model = "openrouter/google/gemini-2.0-flash-exp:free"
         elif "claude" in provider or "anthropic" in provider:
             key_var = "ANTHROPIC_API_KEY"
             config.ANTHROPIC_API_KEY = api_key
             os.environ["ANTHROPIC_API_KEY"] = api_key
+            default_model = "claude-3-5-sonnet-20241022"
         elif "openai" in provider:
             key_var = "OPENAI_API_KEY"
             config.OPENAI_API_KEY = api_key
             os.environ["OPENAI_API_KEY"] = api_key
+            default_model = "openai/gpt-4o-mini"
         elif "ollama" in provider:
             key_var = "OLLAMA_API_KEY"
             config.OLLAMA_API_KEY = api_key
             os.environ["OLLAMA_API_KEY"] = api_key
+            default_model = "ollama/qwen2.5-coder:7b"
 
         if key_var:
             config.update_dotenv_var(key_var, api_key)
 
-        if model:
-            config.AGENT_BRAIN_MODEL = model
+        chosen_model = model.strip() if model else default_model
+        if chosen_model:
+            config.AGENT_BRAIN_MODEL = chosen_model
             from actions.agent_brain import agent_brain
-            agent_brain.model = model
-            config.update_dotenv_var("AGENT_BRAIN_MODEL", model)
+            agent_brain.model = chosen_model
+            config.update_dotenv_var("AGENT_BRAIN_MODEL", chosen_model)
 
         return {"success": True, "message": f"{provider.capitalize()} API key saved successfully!"}
 
@@ -276,6 +304,7 @@ class DashboardAPI:
         return {
             "gemini": bool(getattr(config, "GEMINI_API_KEY", "") or os.environ.get("GEMINI_API_KEY", "")),
             "groq": bool(getattr(config, "GROQ_API_KEY", "") or os.environ.get("GROQ_API_KEY", "")),
+            "openrouter": bool(getattr(config, "OPENROUTER_API_KEY", "") or os.environ.get("OPENROUTER_API_KEY", "")),
             "claude": bool(getattr(config, "ANTHROPIC_API_KEY", "") or os.environ.get("ANTHROPIC_API_KEY", "")),
             "openai": bool(getattr(config, "OPENAI_API_KEY", "") or os.environ.get("OPENAI_API_KEY", "")),
             "active_model": getattr(config, "AGENT_BRAIN_MODEL", "gemini/gemini-3.5-flash"),
@@ -309,6 +338,7 @@ class DashboardAPI:
 
         gemini_k = getattr(config, "GEMINI_API_KEY", "") or os.environ.get("GEMINI_API_KEY", "") or os.environ.get("GOOGLE_API_KEY", "")
         groq_k = getattr(config, "GROQ_API_KEY", "") or os.environ.get("GROQ_API_KEY", "")
+        openrouter_k = getattr(config, "OPENROUTER_API_KEY", "") or os.environ.get("OPENROUTER_API_KEY", "")
         claude_k = getattr(config, "ANTHROPIC_API_KEY", "") or os.environ.get("ANTHROPIC_API_KEY", "")
         openai_k = getattr(config, "OPENAI_API_KEY", "") or os.environ.get("OPENAI_API_KEY", "")
         ollama_status = self.check_ollama_status()
@@ -324,6 +354,11 @@ class DashboardAPI:
                 "configured": bool(groq_k),
                 "preview": mask(groq_k),
                 "model": "groq/openai/gpt-oss-120b"
+            },
+            "openrouter": {
+                "configured": bool(openrouter_k),
+                "preview": mask(openrouter_k),
+                "model": "openrouter/google/gemini-2.0-flash-exp:free"
             },
             "claude": {
                 "configured": bool(claude_k),

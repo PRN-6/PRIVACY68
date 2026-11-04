@@ -103,20 +103,28 @@ GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
 
+# OpenRouter API Configuration (100+ Free Models: Gemini, Llama 3.3, Mistral)
+# Free API key in seconds at https://openrouter.ai/keys (No credit card needed)
+OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
+
 # Agent Brain (LLM) Configuration - Pure API Mode with Auto-Failover (No local LLM required)
-# Priority: Custom env -> Gemini (if key set) -> Claude (if key set) -> Groq (if key set) -> Remote Ollama -> Gemini 1.5 Flash (Free default)
+# Priority: Custom env -> Gemini (if key set) -> Groq (if key set) -> OpenRouter (if key set) -> Claude -> OpenAI -> Gemini 3.5 Flash (Free default)
 if os.environ.get("AGENT_BRAIN_MODEL"):
     _default_model = os.environ.get("AGENT_BRAIN_MODEL")
 elif GEMINI_API_KEY:
     _default_model = "gemini/gemini-3.5-flash"
-elif ANTHROPIC_API_KEY:
-    _default_model = "claude-3-5-sonnet-20241022"
 elif GROQ_API_KEY:
     _default_model = "groq/openai/gpt-oss-120b"
+elif OPENROUTER_API_KEY:
+    _default_model = "openrouter/google/gemini-2.0-flash-exp:free"
+elif ANTHROPIC_API_KEY:
+    _default_model = "claude-3-5-sonnet-20241022"
+elif OPENAI_API_KEY:
+    _default_model = "openai/gpt-4o-mini"
 elif OLLAMA_BASE_URL and OLLAMA_BASE_URL != "http://localhost:11434":
     _default_model = "ollama/llama3.2:latest"
 else:
-    _default_model = "gemini/gemini-3.5-flash" if GEMINI_API_KEY else "groq/openai/gpt-oss-120b"
+    _default_model = "gemini/gemini-3.5-flash"
 
 AGENT_BRAIN_MODEL = _default_model
 AGENT_BRAIN_MAX_RETRIES = 2  # Open-Interpreter style self-healing code retry loop

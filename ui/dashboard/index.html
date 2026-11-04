@@ -550,6 +550,10 @@
               <select id="model-presets-select">
                 <option value="gemini/gemini-3.5-flash">Google Gemini 3.5 Flash (Free Tier - Recommended)</option>
                 <option value="groq/openai/gpt-oss-120b">Groq Cloud (OpenAI GPT-OSS 120B Free)</option>
+                <option value="groq/openai/gpt-oss-20b">Groq Cloud (OpenAI GPT-OSS 20B Free)</option>
+                <option value="groq/qwen/qwen3.8-27b">Groq Cloud (Qwen 3.8 27B Free)</option>
+                <option value="openrouter/google/gemini-2.0-flash-exp:free">OpenRouter (Gemini 2.0 Flash Free)</option>
+                <option value="openrouter/meta-llama/llama-3.3-70b-instruct:free">OpenRouter (Llama 3.3 70B Free)</option>
                 <option value="claude-3-5-sonnet-20241022">Anthropic Claude 3.5 Sonnet</option>
                 <option value="openai/gpt-4o-mini">OpenAI GPT-4o-mini</option>
                 <option value="ollama/qwen2.5-coder:7b">Local Ollama (Qwen 2.5 Coder)</option>
@@ -598,6 +602,23 @@
               <input type="password" id="key-groq" placeholder="Paste Groq API Key (gsk_...)">
               <button class="btn primary" onclick="saveKey('groq', 'key-groq')">Save Key</button>
               <button class="btn" onclick="testKey('groq', 'key-groq')">Test</button>
+            </div>
+          </div>
+
+          <!-- SLOT 3: OpenRouter (100+ Free Models) -->
+          <div class="api-slot-card" id="slot-openrouter">
+            <div class="api-slot-header">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span class="api-slot-title">OpenRouter API</span>
+                <span class="chip" id="badge-openrouter">Checking...</span>
+              </div>
+              <span class="chip good">100+ Free Models</span>
+            </div>
+            <p class="card-desc">Access free models (Llama 3.3 70B, Gemini 2.0 Flash Exp). Free key from openrouter.ai/keys (No credit card needed).</p>
+            <div class="api-key-input-row">
+              <input type="password" id="key-openrouter" placeholder="Paste OpenRouter API Key (sk-or-...)">
+              <button class="btn primary" onclick="saveKey('openrouter', 'key-openrouter')">Save Key</button>
+              <button class="btn" onclick="testKey('openrouter', 'key-openrouter')">Test</button>
             </div>
           </div>
 
@@ -1087,6 +1108,7 @@
 
         updateSlot('gemini', det.gemini);
         updateSlot('groq', det.groq);
+        updateSlot('openrouter', det.openrouter);
         updateSlot('claude', det.claude);
         updateSlot('openai', det.openai);
 

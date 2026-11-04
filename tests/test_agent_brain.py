@@ -84,6 +84,20 @@ class TestAgentBrain(unittest.TestCase):
 
         self.assertEqual(code, "print('fallback succeeded')")
         self.assertEqual(self.brain.active_provider_used, "gemini/gemini-1.5-flash")
+        self.assertEqual(self.brain.model, "gemini/gemini-1.5-flash")
+
+    def test_get_fallback_models_includes_same_provider_alternatives(self):
+        with patch("config.GROQ_API_KEY", "mock_gsk_key"):
+            fallbacks = self.brain.get_fallback_models("groq/llama-3.3-70b-versatile")
+            self.assertIn("groq/openai/gpt-oss-120b", fallbacks)
+            self.assertNotIn("groq/llama-3.3-70b-versatile", fallbacks)
+
+    def test_openrouter_model_call_without_api_key(self):
+        with patch("config.OPENROUTER_API_KEY", ""):
+            with patch.dict("os.environ", {"OPENROUTER_API_KEY": ""}):
+                with self.assertRaises(ValueError) as ctx:
+                    self.brain._call_single_model("openrouter/meta-llama/llama-3.3-70b-instruct:free", [])
+                self.assertIn("OpenRouter API key is not configured", str(ctx.exception))
 
 if __name__ == "__main__":
     unittest.main()
