@@ -151,13 +151,13 @@ Building a standalone distributable installer uses PyInstaller and Inno Setup 6:
 .\build.bat
 ```
 
-This compiles `PRIVACY68.exe` under `dist\PRIVACY68\` and packages an Inno Setup installer under `installer\PRIVACY68-Setup-v1.6.1.exe`.
+This compiles `PRIVACY68.exe` under `dist\PRIVACY68\` and packages an Inno Setup installer under `installer\PRIVACY68-Setup-v1.6.2.exe`.
 
 ---
 
 ## Unit Testing
 
-Run the full automated test suite (85 unit tests covering agent brain failover, execution self-healing, command executor, security guard, GitHub integration, and dashboard bridge):
+Run the full automated test suite (87 unit tests covering agent brain failover, execution self-healing, command executor, security guard, GitHub integration, and dashboard bridge):
 
 ```powershell
 python -m unittest discover tests -v

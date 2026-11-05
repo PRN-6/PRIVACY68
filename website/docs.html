@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Documentation // PRIVACY68 Architecture & Manual</title>
     <meta name="description"
-        content="Documentation for PRIVACY68 voice assistant architecture, voice biometrics, microphone diagnostics, hardware acceleration, and plugin management.">
+        content="Documentation for PRIVACY68 voice assistant architecture, Click-to-Speak hardware isolation, acoustic normalization, 3-tier security guard, and universal LLMs.">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -65,7 +65,7 @@
             <div class="section-title-wrap">
                 <span class="section-index">[ 02 // SYSTEM SPECIFICATIONS & MANUAL ]</span>
                 <h2 class="section-heading">PRIVACY68 Comprehensive Guide</h2>
-                <p class="section-desc">Technical notes on command processing, biometric voice lock, microphone diagnostics, hardware acceleration, and plugin management.</p>
+                <p class="section-desc">Technical notes on command processing, Click-to-Speak audio normalization, 3-tier security guard, hardware acceleration, and universal LLMs.</p>
             </div>
 
             <div class="docs-wrapper">
@@ -74,9 +74,9 @@
                     <div class="docs-menu-title">// NAVIGATION INDEX</div>
                     <ul class="docs-nav-list">
                         <li><a href="#arch-overview" class="docs-nav-link active">01. Command Processing</a></li>
-                        <li><a href="#speech-pipeline" class="docs-nav-link">02. Speech & VAD Engine</a></li>
+                        <li><a href="#speech-pipeline" class="docs-nav-link">02. Speech & Normalization</a></li>
                         <li><a href="#mic-diagnostics" class="docs-nav-link">03. Microphone Setup & Testing</a></li>
-                        <li><a href="#voice-lock" class="docs-nav-link">04. Biometric Voice Auth</a></li>
+                        <li><a href="#security-guard" class="docs-nav-link">04. 3-Tier Security Guard</a></li>
                         <li><a href="#performance-boost" class="docs-nav-link">05. Hardware & Performance</a></li>
                         <li><a href="#plugin-system" class="docs-nav-link">06. Plugins & Mobile Remote</a></li>
                         <li><a href="#command-reference" class="docs-nav-link">07. Voice Command Reference</a></li>
@@ -123,21 +123,23 @@ Microphone/audio path (when voice mode is used)
                         </p>
                     </div>
 
-                    <!-- Section 02: Speech & VAD Pipeline -->
+                    <!-- Section 02: Speech Pipeline & Normalization -->
                     <div class="doc-block" id="speech-pipeline">
                         <div class="doc-block-header">
                             <i data-lucide="mic" class="doc-block-icon"></i>
-                            <h3 class="doc-block-title">02 // Speech &amp; VAD Pipeline Upgrades</h3>
+                            <h3 class="doc-block-title">02 // Speech Pipeline &amp; Acoustic Normalization</h3>
                         </div>
                         <p class="doc-text">
-                            Continuous audio capture operates via a high-performance 16kHz circular buffer managed by <code>sounddevice</code> and filtered in real time by <strong>Silero Neural VAD</strong>:
+                            PRIVACY68 enforces a strict <strong>100% Click-to-Speak hardware isolation</strong> architecture. The microphone is never open in the background, preventing eavesdropping and idle resource drain. When triggered, the 16kHz audio stream is captured, normalized, and transcribed:
                         </p>
                         <ul style="margin-left: 20px; color: var(--text-secondary); margin-bottom: 20px; line-height: 1.8;">
-                            <li><strong>Phonetic Wake Word Expansion:</strong> The engine automatically matches phonetic variations including <code>"Privacy 68"</code>, <code>"Privacy sixty eight"</code>, <code>"Privacy sixty-eight"</code>, <code>"Privacy six eight"</code>, and digit-separated aliases.</li>
-                            <li><strong>2-Gram Multi-Word Fuzzy Matching:</strong> Applies sliding Levenshtein distance across 2-word sequences, accommodating fast speech, regional pronunciation, and low-fidelity headsets.</li>
-                            <li><strong>Dynamic Peak Normalization:</strong> Every audio frame is normalized against its peak amplitude before transcription, ensuring quiet voices trigger as reliably as studio microphones.</li>
-                            <li><strong>Silero VAD Gating:</strong> 80ms audio frames are analyzed by the Silero neural network. Non-speech background noise is rejected, dropping CPU idle usage to under 1.5%.</li>
-                            <li><strong>Whisper Decoder Priming:</strong> Decoder token probabilities are primed with domain hotwords via <code>config.INITIAL_PROMPT</code> to prevent dropping numerical identifiers.</li>
+                            <li><strong>Hardware Isolation:</strong> The microphone stream is opened strictly when the user activates Click-to-Speak (in the HUD or via hotkey), and closed immediately upon release.</li>
+                            <li><strong>Dynamic Peak Normalization:</strong> Every audio buffer is dynamically scaled using peak amplitude scaling:
+                                <br><code style="color: var(--color-ruby); display: inline-block; margin-top: 4px; font-weight: bold;">norm = (audio / peak) × 0.9</code>
+                                <br>This maximizes dynamic range, ensuring crystal-clear transcription for quiet speech without clipping or distortion.</li>
+                            <li><strong>Speech Autocorrection:</strong> Transcribed commands pass through <code>autocorrect_speech_command()</code> to strip vocal tics (<em>"um"</em>, <em>"uh"</em>), repeated stutters (<em>"open open"</em>), trailing conjunctions, and common app typos.</li>
+                            <li><strong>Google Web Speech ASR:</strong> Instant cloud speech recognition with zero API keys or complex setups, achieving sub-100ms transcription latency.</li>
+                            <li><strong>Offline Faster-Whisper Fallback:</strong> For air-gapped environments, the system seamlessly falls back to local Faster-Whisper running on CUDA 12 or CPU (int8).</li>
                         </ul>
                     </div>
 
@@ -176,13 +178,13 @@ Microphone/audio path (when voice mode is used)
                                         <td><strong>Room Silence</strong></td>
                                         <td><code>&lt; 0.005</code></td>
                                         <td><code>&lt; 0.015</code></td>
-                                        <td>Optimal noise floor. VAD will remain in low-power idle scan.</td>
+                                        <td>Optimal noise floor. Audio stream remains completely silent until Click-to-Speak is engaged.</td>
                                     </tr>
                                     <tr>
                                         <td><strong>Normal Speech</strong></td>
                                         <td><code>&gt; 0.020</code></td>
                                         <td><code>&gt; 0.080</code></td>
-                                        <td>Ideal speech level. Whisper transcribes with 99%+ accuracy.</td>
+                                        <td>Ideal speech level. Transcribed with 99%+ accuracy after (audio / peak) × 0.9 normalization.</td>
                                     </tr>
                                     <tr>
                                         <td><strong>Low Sensitivity</strong></td>
@@ -195,53 +197,51 @@ Microphone/audio path (when voice mode is used)
                         </div>
                     </div>
 
-                    <!-- Section 04: Voice Authentication -->
-                    <div class="doc-block" id="voice-lock">
+                    <!-- Section 04: 3-Tier Security Guard -->
+                    <div class="doc-block" id="security-guard">
                         <div class="doc-block-header">
                             <i data-lucide="shield-check" class="doc-block-icon"></i>
-                            <h3 class="doc-block-title">04 // Biometric Voice Authentication (Voice Lock)</h3>
+                            <h3 class="doc-block-title">04 // 3-Tier Security Guard &amp; Confirmation Policy</h3>
                         </div>
                         <p class="doc-text">
-                            PRIVACY68 features biometric speaker authorization powered by <strong>ECAPA-TDNN / CAM++ neural embeddings</strong> (512-dimensional vector space). When activated, commands are only executed if vocal tract biometrics match the enrolled master profile.
+                            PRIVACY68 protects system integrity using a real-time <strong>3-Tier Security Execution Model</strong>. Any operation generated by the Agent Brain or requested via voice or text is evaluated before execution, ensuring destructive or critical system actions are gated behind explicit user confirmation.
                         </p>
-                        <h4 style="color: var(--accent-cyan); margin: 15px 0 8px 0; font-family: var(--font-retro);">Enrollment Procedure</h4>
-                        <ol style="margin-left: 20px; color: var(--text-secondary); margin-bottom: 15px; line-height: 1.8;">
-                            <li>Open the PRIVACY68 Control Center (Right-click system tray icon &rarr; <strong>Open Dashboard</strong>).</li>
-                            <li>Navigate to the <strong>Voice Profile / Biometrics</strong> tab.</li>
-                            <li>Click <strong>"Enroll Master Voice"</strong> and recite the 3 calibration phrases clearly.</li>
-                            <li>The model extracts normalized 512-d acoustic embeddings, averages the vector cluster, and stores it in <code>%APPDATA%/PRIVACY68/voice_lock/</code>.</li>
-                        </ol>
-                        <h4 style="color: var(--accent-cyan); margin: 15px 0 8px 0; font-family: var(--font-retro);">Threshold Tuning</h4>
+                        <h4 style="color: var(--accent-cyan); margin: 15px 0 8px 0; font-family: var(--font-retro);">Security Execution Tiers</h4>
                         <div class="cmd-table-wrap">
                             <table class="cmd-table">
                                 <thead>
                                     <tr>
-                                        <th>THRESHOLD</th>
-                                        <th>SECURITY PROFILE</th>
-                                        <th>BEHAVIOR &amp; ENVIRONMENT</th>
+                                        <th>LEVEL</th>
+                                        <th>RISK CLASSIFICATION</th>
+                                        <th>EXAMPLE ACTIONS</th>
+                                        <th>EXECUTION POLICY</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <tr>
-                                        <td><code>0.40 – 0.45</code></td>
-                                        <td><strong>Relaxed</strong></td>
-                                        <td>Accommodates head colds, background music, or varying distances from mic.</td>
+                                        <td><code>Tier 1</code></td>
+                                        <td><strong>SAFE (Instant)</strong></td>
+                                        <td>Launch apps, media controls, web searches, window minimize/focus, screenshots, read-only queries</td>
+                                        <td>Executed immediately without interruption.</td>
                                     </tr>
                                     <tr>
-                                        <td><code>0.50 (Default)</code></td>
-                                        <td><strong>Balanced</strong></td>
-                                        <td>Rejects unfamiliar speakers while reliably recognizing the owner.</td>
+                                        <td><code>Tier 2</code></td>
+                                        <td><strong>SENSITIVE (Audited)</strong></td>
+                                        <td>File creation/modification, closing applications, clipboard updates, network state checks</td>
+                                        <td>Executed with visual feedback and logged in audit history.</td>
                                     </tr>
                                     <tr>
-                                        <td><code>0.65 – 0.75</code></td>
-                                        <td><strong>Strict Biometric</strong></td>
-                                        <td>High security mode. Rejects slight vocal variations and voice recordings.</td>
+                                        <td><code>Tier 3</code></td>
+                                        <td><strong>CRITICAL (Confirmation Gated)</strong></td>
+                                        <td>File/folder deletion, Git push, terminating processes, disk formatting, registry/system edits</td>
+                                        <td><strong>Halted.</strong> Prompts user with 15-second timeout window. Requires explicit <code>"yes"</code> or <code>"proceed"</code> to run.</td>
                                     </tr>
                                 </tbody>
                             </table>
                         </div>
-                        <p class="doc-text" style="margin-top: 10px;">
-                            <em>Note: Adjusting the threshold in the dashboard takes effect dynamically in memory with zero app restarts.</em>
+                        <h4 style="color: var(--accent-cyan); margin: 15px 0 8px 0; font-family: var(--font-retro);">Interactive Safety Loop</h4>
+                        <p class="doc-text">
+                            When a Tier 3 action is flagged, the HUD displays a confirmation prompt. If the user replies <code>"cancel"</code>, <code>"no"</code>, or if the 15-second confirmation window expires, the pending action is discarded safely with zero impact on the host operating system.
                         </p>
                     </div>
 
@@ -396,34 +396,33 @@ Microphone/audio path (when voice mode is used)
                             <h3 class="doc-block-title">08 // Configuration Reference (`config.py`)</h3>
                         </div>
                         <p class="doc-text">
-                            Core thresholds, model selections, and device parameters can be fine-tuned in <code>config.py</code>:
+                            Core audio parameters, model selections, and security thresholds can be fine-tuned in <code>config.py</code> and <code>.env</code>:
                         </p>
                         <div class="doc-code-preview">
-# config.py settings reference
+# config.py &amp; .env settings reference
 
-# Audio Stream Settings (16kHz, 1280 samples = 80ms chunks)
-SAMPLE_RATE = 16000
-BLOCK_SIZE  = 1280
-CHANNELS    = 1
-DTYPE       = "float32"
+# Audio Stream &amp; Privacy Isolation (16kHz PCM)
+SAMPLE_RATE          = 16000
+BLOCK_SIZE           = 1280
+CHANNELS             = 1
+DTYPE                = "float32"
+# Dynamic Peak Normalization: norm = (audio / peak) * 0.9
 
-# Silence / Voice Activity Detection (Silero VAD)
-VAD_THRESHOLD           = 0.50      # Speech probability threshold (0.0 to 1.0)
-VAD_IDLE_THRESHOLD      = 0.30      # Lower threshold for voice gating
-SILENCE_DURATION_CHUNKS = 8         # 8 chunks * 80ms = 0.64s pause for speech cutoff
-SILENCE_THRESHOLD       = 0.008     # Fallback RMS noise floor gate
+# Speech Recognition Engine
+SPEECH_ENGINE        = "google"       # Google Web Speech (Free, zero keys)
+WHISPER_FALLBACK     = "base.en"      # Faster-Whisper local fallback
 
-# Speech Engine Configuration
-SPEECH_ENGINE        = "google"     # 100% Free, zero keys required
-WHISPER_MODEL_SIZE   = "google-speech-free"
-WHISPER_DEVICE       = "cloud"
-WHISPER_COMPUTE_TYPE = "cloud-api"
+# Universal Agent Brain &amp; LLM Provider Routing
+AGENT_BRAIN_MODEL    = "gemini/gemini-2.5-flash"
+GEMINI_API_KEY       = "AIzaSy..."    # Google AI Studio
+GROQ_API_KEY         = "gsk_..."      # Groq LPU (GPT-OSS 120B / Llama 3.3)
+OPENROUTER_API_KEY   = "sk-or-..."    # OpenRouter Multi-Model Gateway
+OLLAMA_BASE_URL      = "http://127.0.0.1:11434"   # Optional local Ollama
+OPENAI_API_BASE      = "http://localhost:1234/v1" # Optional LM Studio / LocalAI
 
-# Initial Prompt for Whisper Priming
-INITIAL_PROMPT = (
-    "Privacy 68, Privacy68, open chrome, launch vs code, mute volume, "
-    "take screenshot, lock screen, open youtube, next track, play music."
-)
+# 3-Tier Security Confirmation Engine
+CONFIRMATION_TIMEOUT = 15.0           # Seconds before unconfirmed action cancels
+SUBPROCESS_TIMEOUT   = 30.0           # Max script execution timeout
                         </div>
                     </div>
 
@@ -445,7 +444,7 @@ INITIAL_PROMPT = (
                 <span class="telemetry-item"><span class="dot-indicator"></span><span class="t-label">SYS:</span>
                     ONLINE</span>
                 <span class="telemetry-sep">·</span>
-                <span class="telemetry-item"><span class="t-label">DOCS:</span> v1.6.1</span>
+                <span class="telemetry-item"><span class="t-label">DOCS:</span> v1.6.2</span>
             </div>
         </footer>
 

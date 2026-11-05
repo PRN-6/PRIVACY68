@@ -213,3 +213,4 @@ The Live Console in the dashboard explicitly prints the provider used for each c
 
 ### Q: Can I run PRIVACY68 completely offline without internet?
 **Yes.** Once you install Ollama and pull a local model (such as `qwen2.5-coder:7b`), set your active model to `ollama/qwen2.5-coder:7b`. Additionally, all learned skills in `skills.json` run completely offline without internet.
+

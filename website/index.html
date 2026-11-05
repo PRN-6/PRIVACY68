@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PRIVACY68 // Autonomous Local Voice Intelligence</title>
     <meta name="description"
-        content="PRIVACY68 is a minimalist, ultra-fast, 100% private desktop AI assistant for Windows with Click-to-Speak, and multi-provider AI APIs.">
+        content="PRIVACY68 is a minimalist, ultra-fast, 100% private desktop AI assistant for Windows with Click-to-Speak hardware isolation, acoustic peak normalization, and universal AI APIs.">
 
     <!-- Retro & Monospace Typography (Silkscreen + JetBrains Mono + Space Mono) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -193,21 +193,20 @@
                         <span class="spec-num">[ 03 ]</span>
                         <span class="spec-icon"><i data-lucide="git-branch"></i></span>
                     </div>
-                    <h3 class="spec-title">Agentic Brain Engine</h3>
-                    <p class="spec-body">The Agent Brain requests Python code through LiteLLM using <code>Google Gemini 1.5/2.0 Flash &amp; Groq Cloud (Multi-Provider)</code>, then executes returned code in a local Python subprocess.</p>
-                    <div class="spec-tag">AGENT BRAIN</div>
+                    <h3 class="spec-title">Universal Agent Brain</h3>
+                    <p class="spec-body">Multi-provider agentic orchestration supporting Google Gemini 2.5 Flash, Groq LPU, OpenRouter, and local Ollama/LM Studio models with self-healing code synthesis and automated error recovery.</p>
+                    <div class="spec-tag">UNIVERSAL LLM</div>
                 </div>
 
                 <!-- Spec Card 4 -->
                 <div class="spec-card">
                     <div class="spec-header">
                         <span class="spec-num">[ 04 ]</span>
-                        <span class="spec-icon"><i data-lucide="activity"></i></span>
+                        <span class="spec-icon"><i data-lucide="mic-off"></i></span>
                     </div>
-                    <h3 class="spec-title">Silero Neural VAD</h3>
-                    <p class="spec-body">32ms frame-level Voice Activity Detection ignores keyboard clicks, breathing,
-                        and background TV chatter seamlessly.</p>
-                    <div class="spec-tag">NOISE RESISTANT</div>
+                    <h3 class="spec-title">Click-to-Speak Isolation</h3>
+                    <p class="spec-body">100% on-demand audio capture with zero background listening. Audio frames are dynamically scaled via <code>norm = (audio / peak) × 0.9</code> for studio-grade transcription clarity.</p>
+                    <div class="spec-tag">HARDWARE ISOLATED</div>
                 </div>
 
                 <!-- Spec Card 5 -->
@@ -239,27 +238,27 @@
         <section class="content-section" id="prerequisites">
             <div class="section-title-wrap">
                 <span class="section-index">[ 03 // RUNTIME &amp; PREREQUISITES ]</span>
-                <h2 class="section-heading">System Prerequisites: Ollama &amp; CUDA</h2>
-                <p class="section-desc">Key requirements for agentic automation and optional hardware acceleration.</p>
+                <h2 class="section-heading">Universal AI Core: Cloud APIs &amp; Local Models</h2>
+                <p class="section-desc">Zero mandatory local servers. Run instantly with free Cloud APIs or connect your favorite offline LLM.</p>
             </div>
 
             <div class="specs-grid">
-                <!-- Ollama Prerequisite Card -->
+                <!-- Universal AI Core Card -->
                 <div class="spec-card">
                     <div class="spec-header">
                         <span class="spec-num">[ REQ-01 ]</span>
                         <span class="spec-icon"><i data-lucide="bot"></i></span>
                     </div>
-                    <h3 class="spec-title">Ollama (Required for Agent Brain)</h3>
+                    <h3 class="spec-title">Universal AI Brain (Cloud &amp; Local)</h3>
                     <p class="spec-body">
-                        Agent Brain automation requires the <strong>Ollama service</strong> running on your machine (<code>http://127.0.0.1:11434</code>).
+                        Ollama is <strong>completely optional</strong>. PRIVACY68 works immediately using free, ultra-fast cloud API keys or any local OpenAI-compatible inference server.
                     </p>
                     <ul style="color: var(--text-secondary); font-size: 0.85rem; margin: 10px 0 12px 18px; line-height: 1.6;">
-                        <li><strong>Install:</strong> Download from <a href="https://ollama.com/download" target="_blank" rel="noreferrer" style="color: var(--color-ruby); text-decoration: underline;">ollama.com</a>.</li>
-                        <li><strong>Dashboard Probe:</strong> The Control Center auto-detects if Ollama is Online 🟢, Offline 🟡, or Missing 🔴, with 1-click launch.</li>
-                        <li><strong>Offline Models:</strong> Uses cloud proxy by default, or run <code>ollama pull qwen2.5:0.5b</code> for 100% offline air-gapped tasks.</li>
+                        <li><strong>Free Cloud APIs:</strong> Add a free Google Gemini, Groq (GPT-OSS 120B / Llama 3.3), or OpenRouter key in the Control Center with automatic failover.</li>
+                        <li><strong>Local Offline LLMs:</strong> Connects seamlessly to Ollama (<code>http://127.0.0.1:11434</code>), LM Studio (<code>http://localhost:1234/v1</code>), or LocalAI for 100% air-gapped tasks.</li>
+                        <li><strong>Self-Healing Engine:</strong> Generates automated desktop actions, validates safety, executes in isolated subprocesses, and auto-corrects runtime errors.</li>
                     </ul>
-                    <div class="spec-tag">AUTOMATION CORE</div>
+                    <div class="spec-tag">MULTI-PROVIDER AGENT</div>
                 </div>
 
                 <!-- CUDA Prerequisite Card -->
@@ -364,11 +363,11 @@
                 </span>
                 <span class="telemetry-sep">·</span>
                 <span class="telemetry-item">
-                    <span class="t-label">ENGINE:</span> CUDA 12
+                    <span class="t-label">ENGINE:</span> UNIVERSAL LLM
                 </span>
                 <span class="telemetry-sep">·</span>
                 <span class="telemetry-item">
-                    <span class="t-label">LATENCY:</span> &lt;50ms
+                    <span class="t-label">BUILD:</span> v1.6.2
                 </span>
             </div>
         </footer>

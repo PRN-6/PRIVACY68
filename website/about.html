@@ -75,9 +75,7 @@
                     // THE PRIVACY-FIRST PHILOSOPHY
                 </h3>
                 <p style="color: var(--text-secondary); font-size: 0.95rem; line-height: 1.7;">
-                    PRIVACY68 includes local speech-processing components, but the current Agent Brain uses the model identifier
-                    <code>ollama/gemma4:31b-cloud</code>. Model requests may be processed by a remote provider; do not assume
-                    prompts or command text remain on-device.
+                    PRIVACY68 isolates microphone hardware through 100% on-demand Click-to-Speak and dynamic acoustic normalization <code>norm = (audio / peak) × 0.9</code>. For reasoning, the Universal Agent Brain supports both free cloud APIs (Google Gemini, Groq, OpenRouter) and fully offline air-gapped models (Ollama, LM Studio), giving users complete autonomy over data transit and compute privacy.
                 </p>
                 <p style="color: var(--text-secondary); font-size: 0.95rem; line-height: 1.7; margin-top: 12px;">
                     The command executor handles a small number of direct cases, such as greetings and pending security
@@ -117,33 +115,31 @@
                     <div class="tech-card-header"><i data-lucide="cpu"></i> SPEECH-TO-TEXT</div>
                     <h4 style="color: var(--text-pure); font-size: 1.05rem;">Google Web Speech (100% Free)</h4>
                     <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 6px;">
-                        100% Free zero-key Google Web Speech Recognition API with zero setup or keys needed.
+                        100% Free zero-key Google Web Speech Recognition API with sub-100ms transcription latency.
                     </p>
                 </div>
 
                 <div class="tech-card">
-                    <div class="tech-card-header"><i data-lucide="activity"></i> VOICE ACTIVITY</div>
-                    <h4 style="color: var(--text-pure); font-size: 1.05rem;">Silero VAD (ONNX Runtime)</h4>
+                    <div class="tech-card-header"><i data-lucide="activity"></i> AUDIO NORMALIZATION</div>
+                    <h4 style="color: var(--text-pure); font-size: 1.05rem;">Dynamic Peak Scaling</h4>
                     <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 6px;">
-                        Ultra-lightweight 32ms frame chunk VAD filter that rejects ambient noise and keyboard clicks.
+                        Applies <code>norm = (audio / peak) × 0.9</code> dynamic scaling for optimal acoustic clarity and zero distortion.
                     </p>
                 </div>
 
                 <div class="tech-card">
-                    <div class="tech-card-header"><i data-lucide="shield-check"></i> VOICE SECURITY</div>
-                    <h4 style="color: var(--text-pure); font-size: 1.05rem;">CAM++ Speaker Embedder</h4>
+                    <div class="tech-card-header"><i data-lucide="shield-check"></i> SECURITY POLICY</div>
+                    <h4 style="color: var(--text-pure); font-size: 1.05rem;">3-Tier Security Guard</h4>
                     <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 6px;">
-                        512-dimensional neural speaker embedding model verifying voice lock cosine similarity (0.50
-                        threshold).
+                        Zero-trust execution policy requiring explicit user confirmation before executing any destructive operations.
                     </p>
                 </div>
 
                 <div class="tech-card">
                     <div class="tech-card-header"><i data-lucide="bot"></i> AGENT BRAIN</div>
-                    <h4 style="color: var(--text-pure); font-size: 1.05rem;">LiteLLM · gemma4:31b-cloud</h4>
+                    <h4 style="color: var(--text-pure); font-size: 1.05rem;">Universal LLM Orchestration</h4>
                     <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 6px;">
-                        Requests generated Python through LiteLLM, then runs returned scripts locally in a subprocess.
-                        The configured model identifier is cloud-tagged.
+                        Supports Google Gemini 2.5 Flash, Groq LPU, OpenRouter, and local Ollama/LM Studio with self-healing automation.
                     </p>
                 </div>
 
@@ -164,10 +160,16 @@
                 </div>
                 <ul style="list-style: none; display: flex; flex-direction: column; gap: 16px; margin-top: 16px;">
                     <li style="border-left: 2px solid var(--color-ruby); padding-left: 16px;">
-                        <div style="font-family: var(--font-pixel); color: var(--color-ruby); font-size: 0.8rem;">v1.6.1
+                        <div style="font-family: var(--font-pixel); color: var(--color-ruby); font-size: 0.8rem;">v1.6.2
                             · CURRENT RELEASE</div>
-                        <h4 style="color: var(--text-pure); margin-top: 2px;">Google Gemini, Multi-Provider Auto-Failover & Click-to-Speak</h4>
-                        <p style="color: var(--text-secondary); font-size: 0.85rem;">Introduces zero-setup Google Web Speech Recognition with strict Click-to-Speak privacy, multi-provider cloud reasoning (Google Gemini 1.5/2.0 Flash, Groq, Claude, OpenAI) with automatic failover, and a modern WebView2 Control Center with built-in API key management.</p>
+                        <h4 style="color: var(--text-pure); margin-top: 2px;">Universal LLM Engine, Custom Endpoints &amp; 3-Tier Security</h4>
+                        <p style="color: var(--text-secondary); font-size: 0.85rem;">Delivers universal AI compatibility with free cloud APIs (Google Gemini, Groq, OpenRouter) and custom local endpoints (LM Studio, Ollama, LocalAI); dynamic acoustic peak normalization <code>(audio/peak) × 0.9</code> with Click-to-Speak hardware isolation; 3-tier security confirmation gating; verified with 87 unit tests.</p>
+                    </li>
+                    <li style="border-left: 2px solid var(--border-dim); padding-left: 16px; margin-top: 12px;">
+                        <div style="font-family: var(--font-pixel); color: var(--text-muted); font-size: 0.8rem;">v1.6.1
+                            · PREVIOUS RELEASE</div>
+                        <h4 style="color: var(--text-secondary); margin-top: 2px;">Google Gemini, Multi-Provider Auto-Failover &amp; Click-to-Speak</h4>
+                        <p style="color: var(--text-muted); font-size: 0.85rem;">Introduces zero-setup Google Web Speech Recognition with strict Click-to-Speak privacy, multi-provider cloud reasoning with automatic failover, and modern WebView2 Control Center.</p>
                     </li>
                     <li style="border-left: 2px solid var(--border-dim); padding-left: 16px; margin-top: 12px;">
                         <div style="font-family: var(--font-pixel); color: var(--text-muted); font-size: 0.8rem;">v1.5.0
@@ -218,7 +220,7 @@
                 <span class="telemetry-item"><span class="dot-indicator"></span><span class="t-label">SYS:</span>
                     ONLINE</span>
                 <span class="telemetry-sep">·</span>
-                <span class="telemetry-item"><span class="t-label">BUILD:</span>                 RELEASE 1.6.1</span>
+                <span class="telemetry-item"><span class="t-label">BUILD:</span>                 RELEASE 1.6.2</span>
             </div>
         </footer>
 

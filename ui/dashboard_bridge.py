@@ -876,7 +876,7 @@ class DashboardAPI:
             ai_checks.append({
                 "name": "Ollama Server",
                 "status": "fail",
-                "detail": "Ollama not found. Required for local AI reasoning and skills.",
+                "detail": "Ollama not installed (optional). Use Cloud APIs (Gemini/Groq/OpenRouter) or install Ollama for offline models.",
                 "link": "https://ollama.com/download"
             })
 
