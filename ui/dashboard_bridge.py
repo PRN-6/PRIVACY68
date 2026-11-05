@@ -71,9 +71,17 @@ class DashboardAPI:
 
         import urllib.request
         import json
+        import config
+
+        ollama_base = getattr(config, "OLLAMA_BASE_URL", "") or os.environ.get("OLLAMA_BASE_URL", "http://127.0.0.1:11434")
+        ollama_base = ollama_base.rstrip("/")
+        headers = {"User-Agent": "PRIVACY68/1.0"}
+        ollama_key = getattr(config, "OLLAMA_API_KEY", "") or os.environ.get("OLLAMA_API_KEY", "")
+        if ollama_key:
+            headers["Authorization"] = f"Bearer {ollama_key.strip()}"
 
         try:
-            req = urllib.request.Request("http://127.0.0.1:11434/api/tags", headers={"User-Agent": "PRIVACY68/1.0"})
+            req = urllib.request.Request(f"{ollama_base}/api/tags", headers=headers)
             with urllib.request.urlopen(req, timeout=1.5) as resp:
                 if resp.status == 200:
                     running = True
@@ -88,7 +96,7 @@ class DashboardAPI:
         if running:
             installed = True
             try:
-                req_ver = urllib.request.Request("http://127.0.0.1:11434/api/version", headers={"User-Agent": "PRIVACY68/1.0"})
+                req_ver = urllib.request.Request(f"{ollama_base}/api/version", headers=headers)
                 with urllib.request.urlopen(req_ver, timeout=1.0) as resp:
                     if resp.status == 200:
                         ver_data = json.loads(resp.read().decode("utf-8"))
@@ -166,35 +174,48 @@ class DashboardAPI:
             return {"success": False, "message": str(e)}
 
     def test_llm_connection(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        """Tests connection to Local Ollama or Cloud API Key (OpenAI / Groq / Custom)."""
+        """Tests connection to Local Ollama, Cloud API Key, or Custom Endpoint."""
         provider = data.get("provider", "ollama").lower()
         api_key = data.get("api_key", "").strip()
         model = data.get("model", "").strip()
+        base_url = data.get("base_url", "").strip()
 
         if provider == "ollama":
+            import config
+            ollama_base = base_url or getattr(config, "OLLAMA_BASE_URL", "") or os.environ.get("OLLAMA_BASE_URL", "http://127.0.0.1:11434")
+            ollama_base = ollama_base.rstrip("/")
+            headers = {"User-Agent": "PRIVACY68/1.0"}
+            if api_key:
+                headers["Authorization"] = f"Bearer {api_key}"
             try:
-                import ollama
-                res = ollama.list()
-                models = [m.get("model", "") or m.get("name", "") for m in getattr(res, "models", [])]
-                return {
-                    "success": True,
-                    "message": f"Connected to local Ollama! Found {len(models)} model(s)."
-                }
+                import urllib.request
+                import json
+                req = urllib.request.Request(f"{ollama_base}/api/tags", headers=headers, method="GET")
+                with urllib.request.urlopen(req, timeout=3.0) as res:
+                    if res.status == 200:
+                        tags_data = json.loads(res.read().decode("utf-8"))
+                        models = [m.get("model", "") or m.get("name", "") for m in tags_data.get("models", [])]
+                        return {
+                            "success": True,
+                            "message": f"Connected to Ollama at {ollama_base}! Found {len(models)} model(s)."
+                        }
             except Exception as e:
                 return {
                     "success": False,
-                    "message": f"Failed to connect to local Ollama: {e}"
+                    "message": f"Failed to connect to Ollama at {ollama_base}: {e}"
                 }
 
-        # Cloud validation
-        if not api_key:
-            return {"success": False, "message": "Please enter an API Key to test."}
+        # Cloud or Custom validation
+        if not api_key and not base_url:
+            return {"success": False, "message": "Please enter an API Key or Custom Base URL to test."}
 
         import urllib.request
         headers = {
-            "Authorization": f"Bearer {api_key}",
             "User-Agent": "PRIVACY68/1.0",
         }
+        if api_key:
+            headers["Authorization"] = f"Bearer {api_key}"
+
         data_body = None
         if provider in ("claude", "anthropic"):
             endpoint = "https://api.anthropic.com/v1/models"
@@ -213,9 +234,10 @@ class DashboardAPI:
         elif provider == "openrouter":
             endpoint = "https://openrouter.ai/api/v1/models"
         elif provider == "openai":
-            endpoint = "https://api.openai.com/v1/models"
+            base = base_url or getattr(config, "OPENAI_API_BASE", "") or "https://api.openai.com/v1"
+            endpoint = f"{base.rstrip('/')}/models"
         else:
-            base = data.get("base_url", "").strip() or "https://api.openai.com/v1"
+            base = base_url or data.get("base_url", "").strip() or "https://api.openai.com/v1"
             endpoint = f"{base.rstrip('/')}/models"
 
         req = urllib.request.Request(
@@ -230,17 +252,18 @@ class DashboardAPI:
                 if res.status == 200:
                     return {
                         "success": True,
-                        "message": f"Successfully authenticated with {provider.upper()} Cloud API!"
+                        "message": f"Successfully authenticated with {provider.upper()} API!"
                     }
                 return {"success": False, "message": f"HTTP status: {res.status}"}
         except Exception as e:
             return {"success": False, "message": f"Authentication failed: {e}"}
 
-    def save_api_key(self, provider: str, api_key: str, model: str = "") -> Dict[str, Any]:
-        """Saves API key and active model to .env and updates runtime config with smart provider auto-detection."""
+    def save_api_key(self, provider: str, api_key: str, model: str = "", base_url: str = "") -> Dict[str, Any]:
+        """Saves API key, base URL, and active model to .env and updates runtime config with smart provider auto-detection."""
         import config
         provider = provider.lower().strip()
         api_key = api_key.strip()
+        base_url = base_url.strip()
 
         # Smart provider auto-detection if key matches standard prefixes
         if api_key.startswith("gsk_"):
@@ -285,9 +308,27 @@ class DashboardAPI:
             config.OLLAMA_API_KEY = api_key
             os.environ["OLLAMA_API_KEY"] = api_key
             default_model = "ollama/qwen2.5-coder:7b"
+        elif "custom" in provider:
+            key_var = "CUSTOM_API_KEY"
+            config.CUSTOM_API_KEY = api_key
+            os.environ["CUSTOM_API_KEY"] = api_key
+            default_model = "openai/custom-model"
 
         if key_var:
             config.update_dotenv_var(key_var, api_key)
+
+        if base_url:
+            if "ollama" in provider:
+                config.OLLAMA_BASE_URL = base_url
+                os.environ["OLLAMA_BASE_URL"] = base_url
+                config.update_dotenv_var("OLLAMA_BASE_URL", base_url)
+            else:
+                config.OPENAI_API_BASE = base_url
+                config.CUSTOM_API_BASE = base_url
+                os.environ["OPENAI_API_BASE"] = base_url
+                os.environ["CUSTOM_API_BASE"] = base_url
+                config.update_dotenv_var("OPENAI_API_BASE", base_url)
+                config.update_dotenv_var("CUSTOM_API_BASE", base_url)
 
         chosen_model = model.strip() if model else default_model
         if chosen_model:
@@ -296,7 +337,7 @@ class DashboardAPI:
             agent_brain.model = chosen_model
             config.update_dotenv_var("AGENT_BRAIN_MODEL", chosen_model)
 
-        return {"success": True, "message": f"{provider.capitalize()} API key saved successfully!"}
+        return {"success": True, "message": f"{provider.capitalize()} settings saved successfully!"}
 
     def get_api_keys(self) -> Dict[str, Any]:
         """Returns configured status of Cloud API keys and active model."""
@@ -306,7 +347,7 @@ class DashboardAPI:
             "groq": bool(getattr(config, "GROQ_API_KEY", "") or os.environ.get("GROQ_API_KEY", "")),
             "openrouter": bool(getattr(config, "OPENROUTER_API_KEY", "") or os.environ.get("OPENROUTER_API_KEY", "")),
             "claude": bool(getattr(config, "ANTHROPIC_API_KEY", "") or os.environ.get("ANTHROPIC_API_KEY", "")),
-            "openai": bool(getattr(config, "OPENAI_API_KEY", "") or os.environ.get("OPENAI_API_KEY", "")),
+            "openai": bool(getattr(config, "OPENAI_API_KEY", "") or os.environ.get("OPENAI_API_KEY", "") or getattr(config, "CUSTOM_API_KEY", "")),
             "active_model": getattr(config, "AGENT_BRAIN_MODEL", "gemini/gemini-3.5-flash"),
         }
 
@@ -326,7 +367,7 @@ class DashboardAPI:
             return {"success": False, "message": str(e)}
 
     def get_api_keys_detail(self) -> Dict[str, Any]:
-        """Returns detailed configuration status for all cloud AI providers."""
+        """Returns detailed configuration status for all cloud AI providers and local LLMs."""
         import config
 
         def mask(k):
@@ -341,6 +382,9 @@ class DashboardAPI:
         openrouter_k = getattr(config, "OPENROUTER_API_KEY", "") or os.environ.get("OPENROUTER_API_KEY", "")
         claude_k = getattr(config, "ANTHROPIC_API_KEY", "") or os.environ.get("ANTHROPIC_API_KEY", "")
         openai_k = getattr(config, "OPENAI_API_KEY", "") or os.environ.get("OPENAI_API_KEY", "")
+        custom_k = getattr(config, "CUSTOM_API_KEY", "") or os.environ.get("CUSTOM_API_KEY", "")
+        openai_base = getattr(config, "OPENAI_API_BASE", "") or getattr(config, "CUSTOM_API_BASE", "")
+        ollama_url = getattr(config, "OLLAMA_BASE_URL", "") or os.environ.get("OLLAMA_BASE_URL", "http://127.0.0.1:11434")
         ollama_status = self.check_ollama_status()
 
         return {
@@ -366,14 +410,16 @@ class DashboardAPI:
                 "model": "claude-3-5-sonnet-20241022"
             },
             "openai": {
-                "configured": bool(openai_k),
-                "preview": mask(openai_k),
+                "configured": bool(openai_k or custom_k or openai_base),
+                "preview": mask(openai_k or custom_k),
+                "base_url": openai_base,
                 "model": "openai/gpt-4o-mini"
             },
             "ollama": {
                 "installed": ollama_status.get("installed", False),
                 "running": ollama_status.get("running", False),
                 "models": ollama_status.get("models", []),
+                "base_url": ollama_url,
             }
         }
 

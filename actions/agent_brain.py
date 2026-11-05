@@ -237,12 +237,25 @@ class AgentBrain:
                 raise ValueError("OpenRouter API key is not configured. Go to the 'AI Brain' tab in the dashboard and paste your OpenRouter API key.")
 
         elif "gpt" in model_lower or "openai" in model_lower:
-            api_key = getattr(config, "OPENAI_API_KEY", "") or os.environ.get("OPENAI_API_KEY", "")
+            api_key = (
+                getattr(config, "OPENAI_API_KEY", "")
+                or os.environ.get("OPENAI_API_KEY", "")
+                or getattr(config, "CUSTOM_API_KEY", "")
+                or os.environ.get("CUSTOM_API_KEY", "")
+            )
+            api_base = (
+                getattr(config, "OPENAI_API_BASE", "")
+                or os.environ.get("OPENAI_API_BASE", "")
+                or getattr(config, "CUSTOM_API_BASE", "")
+                or os.environ.get("CUSTOM_API_BASE", "")
+            )
             if api_key:
                 os.environ["OPENAI_API_KEY"] = api_key.strip()
+            if api_base:
+                os.environ["OPENAI_API_BASE"] = api_base.strip()
             is_mocked = hasattr(litellm.completion, "mock_calls") or hasattr(litellm.completion, "return_value")
-            if not is_mocked and not api_key:
-                raise ValueError("OpenAI API key is not configured. Go to the 'AI Brain' tab in the dashboard and paste your OpenAI API key.")
+            if not is_mocked and not api_key and not api_base:
+                raise ValueError("OpenAI / Custom API key or Base URL is not configured. Go to the 'AI Brain' tab in the dashboard and paste your OpenAI or Custom API key.")
 
         elif "ollama" in model_lower:
             ollama_url = getattr(config, "OLLAMA_BASE_URL", "") or os.environ.get("OLLAMA_BASE_URL", "") or os.environ.get("OLLAMA_HOST", "http://localhost:11434")
@@ -251,7 +264,28 @@ class AgentBrain:
             os.environ["OLLAMA_API_BASE"] = api_base
             is_mocked = hasattr(litellm.completion, "mock_calls") or hasattr(litellm.completion, "return_value")
             if not is_mocked and not is_ollama_online():
-                raise ConnectionError(f"Cannot reach Ollama API at {api_base}. Use a Cloud API (Gemini, Claude, or Groq [Free]) in the AI Brain tab, or check your Ollama API endpoint.")
+                raise ConnectionError(f"Cannot reach Ollama API at {api_base}. Verify that Ollama is running, check your custom URL, or switch to a Cloud API (Gemini/Groq/OpenRouter).")
+
+        else:
+            # Custom or generic provider (Mistral, DeepSeek, Together, LM Studio, etc.)
+            api_key = (
+                getattr(config, "CUSTOM_API_KEY", "")
+                or os.environ.get("CUSTOM_API_KEY", "")
+                or getattr(config, "OPENAI_API_KEY", "")
+                or os.environ.get("OPENAI_API_KEY", "")
+                or getattr(config, "OPENROUTER_API_KEY", "")
+                or os.environ.get("OPENROUTER_API_KEY", "")
+                or getattr(config, "GROQ_API_KEY", "")
+                or os.environ.get("GROQ_API_KEY", "")
+                or getattr(config, "GEMINI_API_KEY", "")
+                or os.environ.get("GEMINI_API_KEY", "")
+            )
+            api_base = (
+                getattr(config, "CUSTOM_API_BASE", "")
+                or os.environ.get("CUSTOM_API_BASE", "")
+                or getattr(config, "OPENAI_API_BASE", "")
+                or os.environ.get("OPENAI_API_BASE", "")
+            )
 
         call_kwargs = {
             "model": model,

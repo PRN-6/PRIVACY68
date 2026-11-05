@@ -103,6 +103,11 @@ GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
 
+# Custom / OpenAI-Compatible API Base (LM Studio, LocalAI, vLLM, DeepSeek, Mistral, etc.)
+OPENAI_API_BASE = os.environ.get("OPENAI_API_BASE", "")
+CUSTOM_API_KEY = os.environ.get("CUSTOM_API_KEY", "")
+CUSTOM_API_BASE = os.environ.get("CUSTOM_API_BASE", "")
+
 # OpenRouter API Configuration (100+ Free Models: Gemini, Llama 3.3, Mistral)
 # Free API key in seconds at https://openrouter.ai/keys (No credit card needed)
 OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")

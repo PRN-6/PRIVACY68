@@ -5,24 +5,24 @@
 [![Contributing](https://img.shields.io/badge/contributing-Guide-orange.svg)](CONTRIBUTING.md)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-3776AB.svg?logo=python&logoColor=white)](https://www.python.org/)
 [![Platform: Windows 10/11](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-0078D6.svg?logo=windows&logoColor=white)](#)
-[![Tests: 85 Passed](https://img.shields.io/badge/tests-85%20passed-brightgreen.svg)](#unit-testing)
-[![Version: 1.6.1](https://img.shields.io/badge/version-1.6.1-blue.svg)](https://github.com/PRN-6/PRIVACY68/releases/tag/v1.6.1)
+[![Tests: 87 Passed](https://img.shields.io/badge/tests-87%20passed-brightgreen.svg)](#unit-testing)
+[![Version: 1.6.2](https://img.shields.io/badge/version-1.6.2-blue.svg)](https://github.com/PRN-6/PRIVACY68/releases/tag/v1.6.2)
 
-PRIVACY68 is a 100% private Windows desktop AI assistant featuring on-demand Click-to-Speak, a modern minimalist Control Center, multi-provider AI brain orchestration, and agentic OS automation. It pairs zero-key speech recognition (Google Web Speech & Groq Whisper Cloud) with an Agent Brain powered by multi-provider AI APIs (Google Gemini, Groq Llama 3.3, Anthropic Claude, OpenAI, or local Ollama) to execute complex desktop tasks safely through generated, self-correcting Python scripts.
+PRIVACY68 is a 100% private Windows desktop AI assistant featuring on-demand Click-to-Speak, a modern minimalist Control Center, universal multi-provider AI brain orchestration, and agentic OS automation. It pairs zero-key speech recognition (Google Web Speech) with an Agent Brain powered by universal AI APIs (Google Gemini, Groq LPU, OpenRouter, Anthropic Claude, OpenAI, or local Ollama / LM Studio) to execute complex desktop tasks safely through generated, self-correcting Python scripts.
 
-**Latest Windows Release:** [Download PRIVACY68 Installer from GitHub Releases](https://github.com/PRN-6/PRIVACY68/releases/tag/v1.6.1)
+**Latest Windows Release:** [Download PRIVACY68 Installer v1.6.2 from GitHub Releases](https://github.com/PRN-6/PRIVACY68/releases/tag/v1.6.2)  
+**Universal LLM Guide:** [Read Complete Guide to Connecting Any Cloud or Local LLM](docs/UNIVERSAL_LLM_GUIDE.md)
 
 ---
 
-## What's New in v1.6.1
+## What's New in v1.6.2
 
-- **Minimalist Control Center**: Redesigned UI with an icon-free, clean enterprise design system, dark glassmorphism styling, and responsive layout.
-- **Multi-Provider Cloud AI Slots**: Seamless simultaneous slots for Google Gemini (Free 1.5/2.0 Flash), Groq Cloud (Free Llama 3.3 70B), Anthropic Claude, OpenAI, and local Ollama with automatic failover.
-- **Autonomous Skill Crystallization**: Instant 0ms fast-path replay for learned and verified desktop automation scripts.
-- **Mobile Web Remote Server**: Control your desktop from any phone, tablet, or browser on your local Wi-Fi (Port 8765) with live telemetry and quick actions.
-- **3-Tier Security Guard**: Strict permission gating with in-memory audit logs (Safe Level 1 auto-execute, Sensitive Level 2 with prompt confirmation, Critical Level 3 blocked).
-- **100% Free Push-to-Talk Privacy**: Zero continuous microphone recording; Google Web Speech cloud ASR activates only on demand.
-- **85 Unit Tests Passing**: Fully validated test suite covering agent self-healing, command routing, security guard, plugin lifecycle, and dashboard bridges.
+- **Universal API & Custom Endpoint Support**: Connect any cloud AI key (Gemini, Groq, OpenRouter, Claude, OpenAI) or any custom OpenAI-compatible endpoint (LM Studio, LocalAI, vLLM, DeepSeek, Mistral).
+- **Intra-Provider Model Cascading**: Automatically cascades to sibling models within the same provider on 404/429 errors (e.g. Groq decommissioned model fallback to `openai/gpt-oss-120b`).
+- **Autonomous Configuration Healing**: Automatically updates runtime `.env` settings upon failover success to eliminate retry latency on future commands.
+- **OpenRouter Free Tier (100+ Free Models)**: Direct first-class support for free open-weights models (`openrouter/google/gemini-2.0-flash-exp:free`, `openrouter/meta-llama/llama-3.3-70b-instruct:free`).
+- **Local Ollama Model Chips**: Control Center auto-detects installed local models and displays interactive one-click activation chips.
+- **87 Unit Tests Passing**: Fully validated test suite (100% pass rate in 13.9s) covering auto-failover, self-healing, security guard, and skill crystallization.
 
 ---
 
@@ -69,19 +69,19 @@ Voice/Text Command
 PRIVACY68 offers complete freedom in selecting your reasoning provider:
 
 1. **Free Cloud AI (Zero Setup & Fast)**:
-   - **Google Gemini**: Supports Gemini 1.5 Flash and 2.0 Flash with free tier keys from Google AI Studio.
-   - **Groq Cloud**: Ultra-fast inference running Llama 3.3 70B Versatile for instant code generation.
+   - **Google Gemini**: Supports `gemini/gemini-3.5-flash` with generous free tier keys from Google AI Studio.
+   - **Groq Cloud**: Ultra-fast inference running `groq/openai/gpt-oss-120b` or `qwen3.8-27b` at ~200ms latency.
+   - **OpenRouter**: Access 100+ free open-weights models (`openrouter/meta-llama/...:free`, `gemini-2.0-flash-exp:free`).
 2. **Premium Cloud AI**:
    - **Anthropic Claude**: Claude 3.5 Sonnet / Haiku for complex multi-step reasoning.
    - **OpenAI**: GPT-4o / GPT-4o-mini for robust desktop automation.
-3. **100% Offline Local Model (Ollama)**:
-   - Download the official Windows installer from [ollama.com/download](https://ollama.com/download).
-   - Ollama runs locally on `http://127.0.0.1:11434`.
-   - The Control Center displays live status (Online, Not Running, or Not Installed) with one-click startup.
-   - Run lightweight models locally without internet:
-     ```powershell
-     ollama pull qwen2.5:0.5b
-     ```
+   - **Custom Endpoints**: DeepSeek, Mistral, Together AI via standard OpenAI-compatible base URLs.
+3. **100% Offline Local Models (Ollama, LM Studio, LocalAI)**:
+   - Run completely offline with zero internet and zero cloud token usage:
+   - **Ollama**: Connects to `http://localhost:11434` or remote Ollama server.
+   - **LM Studio / LocalAI / vLLM**: Connects to `http://localhost:1234/v1` or custom base URL.
+   - Quick one-click model selection right from the Control Center.
+   - *For full setup instructions, see the [Universal LLM & API Integration Guide](docs/UNIVERSAL_LLM_GUIDE.md).*
 
 ---
 

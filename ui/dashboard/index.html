@@ -639,36 +639,50 @@
             </div>
           </div>
 
-          <!-- SLOT 4: OpenAI -->
+          <!-- SLOT 4: OpenAI & Custom Endpoints -->
           <div class="api-slot-card" id="slot-openai">
             <div class="api-slot-header">
               <div style="display:flex; align-items:center; gap:8px;">
-                <span class="api-slot-title">OpenAI API</span>
+                <span class="api-slot-title">OpenAI & Custom Endpoints</span>
                 <span class="chip" id="badge-openai">Checking...</span>
               </div>
-              <span class="chip">GPT-4o-mini</span>
+              <span class="chip">OpenAI / LM Studio / DeepSeek</span>
             </div>
-            <p class="card-desc">OpenAI API intelligence for desktop tasks. Paste your OpenAI key below (sk-...).</p>
-            <div class="api-key-input-row">
-              <input type="password" id="key-openai" placeholder="Paste OpenAI API Key (sk-...)">
-              <button class="btn primary" onclick="saveKey('openai', 'key-openai')">Save Key</button>
-              <button class="btn" onclick="testKey('openai', 'key-openai')">Test</button>
+            <p class="card-desc">Connect standard OpenAI API keys, or custom local/cloud endpoints like LM Studio, LocalAI, vLLM, or DeepSeek.</p>
+            <div style="display:flex; flex-direction:column; gap:8px;">
+              <div class="api-key-input-row">
+                <input type="password" id="key-openai" placeholder="Paste API Key (sk-... or custom key)">
+                <button class="btn primary" onclick="saveKey('openai', 'key-openai')">Save Key</button>
+                <button class="btn" onclick="testKey('openai', 'key-openai')">Test</button>
+              </div>
+              <div class="api-key-input-row">
+                <input type="text" id="base-openai" placeholder="Custom Base URL (Optional, e.g. http://localhost:1234/v1 or https://api.deepseek.com/v1)">
+                <button class="btn sm" onclick="saveCustomEndpoint()">Save Base URL</button>
+              </div>
             </div>
           </div>
 
-          <!-- SLOT 5: Ollama -->
+          <!-- SLOT 5: Ollama & Local LLMs -->
           <div class="api-slot-card" id="slot-ollama">
             <div class="api-slot-header">
               <div style="display:flex; align-items:center; gap:8px;">
-                <span class="api-slot-title">Ollama Service</span>
+                <span class="api-slot-title">Ollama & Local LLMs</span>
                 <span class="chip" id="badge-ollama">Checking...</span>
               </div>
-              <span class="chip">Local / Remote</span>
+              <span class="chip good">Offline & Private</span>
             </div>
-            <p class="card-desc">Connects to Ollama (http://127.0.0.1:11434). Pull models like qwen2.5-coder:7b for offline execution.</p>
-            <div style="display:flex; gap:8px;">
-              <button class="btn primary sm" id="btn-start-ollama-service" style="display:none;">Start Service</button>
-              <button class="btn sm" id="btn-download-ollama-service" style="display:none;">Download Ollama</button>
+            <p class="card-desc">Connects to local or remote Ollama / LocalAI. Zero cloud token usage or internet needed.</p>
+            <div style="display:flex; flex-direction:column; gap:8px;">
+              <div class="api-key-input-row">
+                <input type="text" id="url-ollama" placeholder="Endpoint URL (e.g. http://127.0.0.1:11434)">
+                <button class="btn primary sm" onclick="saveOllamaConfig()">Save Endpoint</button>
+                <button class="btn sm" onclick="testOllamaConfig()">Test</button>
+              </div>
+              <div id="ollama-models-chips" style="display:flex; flex-wrap:wrap; gap:6px;"></div>
+              <div style="display:flex; gap:8px; margin-top:2px;">
+                <button class="btn primary sm" id="btn-start-ollama-service" style="display:none;">Start Service</button>
+                <button class="btn sm" id="btn-download-ollama-service" style="display:none;">Download Ollama</button>
+              </div>
             </div>
           </div>
         </div>
@@ -1116,6 +1130,29 @@
         const olBadge = $('badge-ollama');
         const btnStart = $('btn-start-ollama-service');
         const btnDownload = $('btn-download-ollama-service');
+        $('url-ollama').value = ol.base_url || 'http://127.0.0.1:11434';
+        if (det.openai && det.openai.base_url) {
+          $('base-openai').value = det.openai.base_url;
+        }
+
+        const chipsBox = $('ollama-models-chips');
+        chipsBox.replaceChildren();
+        if (ol.models && ol.models.length) {
+          ol.models.forEach(m => {
+            const chip = document.createElement('span');
+            chip.className = 'action-chip';
+            chip.textContent = m;
+            chip.title = 'Click to use this local model';
+            chip.onclick = async () => {
+              $('active-model-input').value = 'ollama/' + m;
+              await bridge().set_active_model('ollama/' + m);
+              showToast('Active model set to ollama/' + m);
+              await loadBrainDetails();
+            };
+            chipsBox.appendChild(chip);
+          });
+        }
+
         if (ol.running) {
           olBadge.textContent = `Running (${ol.models?.length || 0} models)`;
           olBadge.className = 'chip good';
@@ -1136,6 +1173,34 @@
         console.warn('loadBrainDetails error:', e);
       }
     }
+
+        window.saveOllamaConfig = async () => {
+      const url = $('url-ollama').value.trim() || 'http://127.0.0.1:11434';
+      try {
+        const res = await bridge().save_api_key('ollama', '', '', url);
+        showToast(res.message || 'Ollama endpoint saved!');
+        await loadBrainDetails();
+      } catch (e) { showToast(e.message, true); }
+    };
+
+    window.testOllamaConfig = async () => {
+      const url = $('url-ollama').value.trim() || 'http://127.0.0.1:11434';
+      showToast('Testing Ollama connection...');
+      try {
+        const res = await bridge().test_llm_connection({ provider: 'ollama', base_url: url });
+        showToast(res.message, !res.success);
+      } catch (e) { showToast(e.message, true); }
+    };
+
+    window.saveCustomEndpoint = async () => {
+      const base = $('base-openai').value.trim();
+      const key = $('key-openai').value.trim();
+      try {
+        const res = await bridge().save_api_key('openai', key, '', base);
+        showToast(res.message || 'Custom endpoint saved!');
+        await loadBrainDetails();
+      } catch (e) { showToast(e.message, true); }
+    };
 
     window.saveKey = async (provider, inputId) => {
       const key = $(inputId).value.trim();
