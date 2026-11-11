@@ -344,8 +344,27 @@
     }
 
     /* Command Input Bar */
-    .cmd-bar { display: flex; gap: 8px; align-items: center; }
-    .cmd-input { flex: 1; height: 36px; font-size: 12px; }
+    .cmd-bar { display: flex; gap: 8px; align-items: center; position: relative; }
+    .cmd-input { flex: 1; height: 36px; font-size: 12px; padding-right: 65px; }
+    .cmd-shortcut-badge {
+      position: absolute;
+      right: 156px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid var(--line-subtle);
+      border-radius: 4px;
+      padding: 2px 6px;
+      pointer-events: none;
+      transition: opacity 0.15s ease;
+      letter-spacing: 0.5px;
+    }
+    .cmd-input:focus ~ .cmd-shortcut-badge {
+      opacity: 0.25;
+    }
 
     /* Multiple API Slots Grid */
     .api-slots-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
@@ -600,7 +619,8 @@
 
         <!-- Command Input Row -->
         <div class="cmd-bar">
-          <input type="text" class="cmd-input" id="cmd-input" placeholder="Type a natural language command or click 'Click to Speak'..." autocomplete="off">
+          <input type="text" class="cmd-input" id="cmd-input" placeholder="Type a natural language command or press Ctrl+K / Ctrl+Shift+Space..." autocomplete="off">
+          <span class="cmd-shortcut-badge" title="Press Ctrl+K in app or Ctrl+Shift+Space anywhere in Windows">Ctrl+K</span>
           <button class="btn primary" id="cmd-run-btn">Run</button>
           <button class="btn" id="cmd-clear-btn">Clear Log</button>
         </div>
@@ -960,6 +980,34 @@
           <button class="btn primary" id="save-profile-btn" style="align-self:flex-start; margin-top:8px;">Save Profile</button>
         </div>
 
+        <!-- Keyboard Shortcuts & Global Hotkeys Card -->
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title">Keyboard Shortcuts & Command Console Hotkeys</h2>
+          </div>
+          <p class="card-desc">Configure quick-access hotkeys to bring up and focus the command console instantly from anywhere in Windows.</p>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:8px;">
+            <div style="display:flex; flex-direction:column; gap:4px;">
+              <label style="font-size:11px; font-weight:700; color:var(--text-muted);">Global System-Wide Hotkey (Any App / Desktop)</label>
+              <select id="setting-global-hotkey" style="background:#0f121a; border:1px solid var(--line); color:var(--text); padding:6px 10px; border-radius:4px; font-size:12px;">
+                <option value="Ctrl+Shift+Space">Ctrl + Shift + Space (Recommended)</option>
+                <option value="Ctrl+Alt+Space">Ctrl + Alt + Space</option>
+                <option value="Alt+Space">Alt + Space</option>
+                <option value="Ctrl+Alt+K">Ctrl + Alt + K</option>
+                <option value="Ctrl+Shift+P">Ctrl + Shift + P</option>
+              </select>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:4px;">
+              <label style="font-size:11px; font-weight:700; color:var(--text-muted);">In-App Quick Focus</label>
+              <input type="text" value="Ctrl + K or /" disabled style="background:#0f121a; border:1px solid var(--line); color:var(--text-muted); padding:6px 10px; border-radius:4px; font-size:12px; cursor:not-allowed;">
+            </div>
+          </div>
+          <div style="display:flex; gap:8px; align-items:center; margin-top:10px;">
+            <button class="btn primary sm" id="save-hotkey-btn">Save Hotkey</button>
+            <span style="font-size:11px; color:var(--text-muted);">Pressing the global hotkey restores and focuses the command console from any app.</span>
+          </div>
+        </div>
+
         <!-- Hardware & CUDA Diagnostics -->
         <div class="card">
           <div class="card-header">
@@ -1111,6 +1159,36 @@
     $('cmd-run-btn').addEventListener('click', () => handleCommand($('cmd-input').value));
     $('cmd-input').addEventListener('keydown', (e) => {
       if (e.key === 'Enter') handleCommand($('cmd-input').value);
+    });
+
+    window.focusConsole = function() {
+      switchTab('console');
+      const input = $('cmd-input');
+      if (input) {
+        input.focus();
+        input.select();
+      }
+    };
+
+    // Global in-app keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+      const activeEl = document.activeElement;
+      const isInput = activeEl && ['INPUT', 'TEXTAREA'].includes(activeEl.tagName);
+
+      // Ctrl + K or '/' (when not typing in an input) -> Focus Command Console
+      if ((e.ctrlKey && e.key.toLowerCase() === 'k') || (!isInput && e.key === '/')) {
+        e.preventDefault();
+        window.focusConsole();
+      } else if (e.key === 'Escape' && isInput) {
+        activeEl.blur();
+      } else if ((e.ctrlKey && e.code === 'Space') || (e.altKey && e.key.toLowerCase() === 's')) {
+        e.preventDefault();
+        switchTab('console');
+        const micBtn = $('mic-btn');
+        if (micBtn && !micBtn.disabled) {
+          micBtn.click();
+        }
+      }
     });
 
     $('cmd-clear-btn').addEventListener('click', () => {
@@ -1818,6 +1896,9 @@
           $('setting-user-name').value = p.user_name || 'User';
           $('setting-assistant-name').value = p.assistant_name || 'Privacy68';
           $('top-user-chip').textContent = p.user_name || 'User';
+          if (p.global_hotkey && $('setting-global-hotkey')) {
+            $('setting-global-hotkey').value = p.global_hotkey;
+          }
         }
       } catch (e) {}
     }
@@ -1829,6 +1910,15 @@
           wake_word: $('setting-assistant-name').value.trim() || 'Privacy68'
         });
         showToast(res.message || 'Profile saved!');
+        await loadProfile();
+      } catch (e) { showToast(e.message, true); }
+    });
+
+    $('save-hotkey-btn').addEventListener('click', async () => {
+      try {
+        const hk = $('setting-global-hotkey').value;
+        const res = await bridge().set_hotkey_config(hk, true);
+        showToast(res.message || 'Global hotkey saved!');
         await loadProfile();
       } catch (e) { showToast(e.message, true); }
     });

@@ -44,6 +44,8 @@ class DashboardAPI:
                 "theme": profile_manager.get("theme", "obsidian_red"),
                 "voice_lock_enabled": bool(profile_manager.get("voice_lock_enabled", False)),
                 "voice_lock_threshold": float(profile_manager.get("voice_lock_threshold", 0.50)),
+                "global_hotkey": profile_manager.get("global_hotkey", "Ctrl+Shift+Space"),
+                "global_hotkey_enabled": bool(profile_manager.get("global_hotkey_enabled", True)),
             }
         except Exception as e:
             logger.error(f"Error getting profile: {e}")
@@ -682,6 +684,35 @@ class DashboardAPI:
             return {"success": True, "email": clean_email, "message": f"Gmail account saved as '{clean_email}'"}
         except Exception as e:
             logger.error(f"Error setting Gmail config: {e}")
+            return {"success": False, "message": str(e)}
+
+    # ---------------- Global Hotkey Configuration ---------------- #
+
+    def get_hotkey_config(self) -> Dict[str, Any]:
+        """Returns active global hotkey settings."""
+        try:
+            return {
+                "success": True,
+                "hotkey": profile_manager.get("global_hotkey", "Ctrl+Shift+Space"),
+                "enabled": bool(profile_manager.get("global_hotkey_enabled", True)),
+            }
+        except Exception as e:
+            return {"success": False, "hotkey": "Ctrl+Shift+Space", "enabled": True, "message": str(e)}
+
+    def set_hotkey_config(self, hotkey: str, enabled: bool = True) -> Dict[str, Any]:
+        """Updates the global hotkey and refreshes the listener."""
+        try:
+            clean_hotkey = hotkey.strip() or "Ctrl+Shift+Space"
+            profile_manager.set("global_hotkey", clean_hotkey)
+            profile_manager.set("global_hotkey_enabled", bool(enabled))
+            try:
+                from utils.hotkey_manager import hotkey_manager
+                hotkey_manager.update_hotkey(clean_hotkey, enabled=bool(enabled))
+            except Exception as e:
+                logger.warning(f"Could not update active hotkey manager listener: {e}")
+            return {"success": True, "hotkey": clean_hotkey, "enabled": bool(enabled), "message": f"Global hotkey set to {clean_hotkey}"}
+        except Exception as e:
+            logger.error(f"Error setting hotkey config: {e}")
             return {"success": False, "message": str(e)}
 
 

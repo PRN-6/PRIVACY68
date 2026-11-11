@@ -130,6 +130,17 @@ def main() -> None:
         # Start System Tray in background
         ui_manager.start_tray()
 
+        # Start Global Hotkey Listener (e.g. Ctrl+Shift+Space to open / focus Command Console)
+        try:
+            from plugins.profile_manager import profile_manager
+            from utils.hotkey_manager import hotkey_manager
+            hotkey_str = profile_manager.get("global_hotkey", "Ctrl+Shift+Space")
+            hotkey_enabled = profile_manager.get("global_hotkey_enabled", True)
+            if hotkey_enabled:
+                hotkey_manager.start(hotkey_str=hotkey_str, on_trigger=ui_manager.open_dashboard)
+        except Exception as e:
+            logger.debug(f"Could not initialize global hotkey listener in app: {e}")
+
         # Start Mobile Web Remote Server in background
         if getattr(config, "ENABLE_REMOTE_SERVER", True):
             remote_url = start_remote_server(
@@ -167,6 +178,11 @@ def main() -> None:
         logger.critical(f"Unhandled fatal error in main thread: {e}", exc_info=True)
         sys.exit(1)
     finally:
+        try:
+            from utils.hotkey_manager import hotkey_manager
+            hotkey_manager.stop()
+        except Exception:
+            pass
         stop_remote_server()
         logger.info("Cleanup completed. PRIVACY68 is offline.")
 

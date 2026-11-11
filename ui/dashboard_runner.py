@@ -54,6 +54,18 @@ def run_dashboard():
             text_select=True
         )
         api.set_window(window)
+
+        # Start native Windows Global Hotkey Listener (e.g. Ctrl+Shift+Space to focus command console)
+        try:
+            from plugins.profile_manager import profile_manager
+            from utils.hotkey_manager import hotkey_manager
+            hotkey_str = profile_manager.get("global_hotkey", "Ctrl+Shift+Space")
+            hotkey_enabled = profile_manager.get("global_hotkey_enabled", True)
+            if hotkey_enabled:
+                hotkey_manager.start(hotkey_str=hotkey_str, window=window)
+        except Exception as e:
+            logger.debug(f"Could not initialize global hotkey listener: {e}")
+
         webview.start(debug=False)
     except Exception as webview_err:
         logger.warning(f"WebView2 launch failed ({webview_err}), falling back to native CustomTkinter GUI...")
