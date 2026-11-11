@@ -31,6 +31,7 @@ class ProfileManager:
             "cloud_model": "gemini-1.5-flash",
             "hud_enabled": True,
             "theme": "obsidian_red",
+            "gmail_user_email": "",
         }
 
         if not os.path.exists(self.profile_path):

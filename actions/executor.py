@@ -28,6 +28,7 @@ BUILTIN_APP_COMMANDS = (
     (re.compile(r"(?:create|open)\s+(?:a\s+)?new\s+tab\s+in\s+brave"), "brave", "open_new_tab"),
     (re.compile(r"(?:open|launch|start)\s+(?:the\s+)?brave(?:\s+browser)?"), "brave", "open"),
     (re.compile(r"(?:open|launch|start)\s+(?:the\s+)?whatsapp(?:\s+desktop)?"), "whatsapp", "open"),
+    (re.compile(r"(?:open|launch|start|check)\s+(?:the\s+)?(?:google\s+)?gmail(?:\s+inbox)?"), "gmail", "open"),
 )
 
 COMMON_WEB_SERVICES = {
@@ -134,6 +135,8 @@ def _execute_builtin_app_command(command: str, plugin_manager, on_action_callbac
                 message = "Could not open Chrome. Check that Google Chrome is installed."
             elif plugin_id == "brave":
                 message = "Could not open Brave. Check that Brave is installed."
+            elif plugin_id == "gmail":
+                message = "Could not open Gmail. Check your internet connection or browser."
             else:
                 message = "Could not open WhatsApp. Check that WhatsApp is installed and its app link is registered."
 
@@ -334,7 +337,43 @@ def execute_system_command_detailed(text: str, on_action_callback=None, on_statu
     if web_result is not None:
         return web_result
 
-    # 4. Route explicit GitHub tasks to the integrated plugin instead of generating shell code.
+    # 4. Route explicit Gmail tasks to the integrated plugin.
+    gmail_plugin = plugin_manager.get_plugin("gmail")
+    if gmail_plugin and not gmail_plugin.is_enabled and gmail_plugin.parse_command(cleaned):
+        return {
+            "success": False,
+            "tool": "gmail",
+            "method": "gmail_plugin",
+            "message": "The Gmail plugin is disabled. Enable it in the Plugins dashboard to use Gmail commands.",
+        }
+    if gmail_plugin and gmail_plugin.is_enabled:
+        gmail_req = gmail_plugin.parse_command(cleaned)
+        if gmail_req and gmail_req.get("action") in ("open", "compose"):
+            action = gmail_req["action"]
+            kwargs = gmail_req.get("kwargs", {})
+            if action == "open":
+                success = bool(gmail_plugin.open_inbox(**kwargs))
+                msg = "Opened Gmail inbox." if success else "Could not open Gmail inbox."
+            elif action == "compose":
+                to = kwargs.get("to", "")
+                subject = kwargs.get("subject", "")
+                body = kwargs.get("body", "")
+                success = bool(gmail_plugin.compose_email(to=to, subject=subject, body=body))
+                if success:
+                    msg = f"Drafted email to {to} in Gmail." if to else "Opened Gmail compose window."
+                else:
+                    msg = "Could not prepare Gmail draft."
+
+            _notify(on_status_callback, on_action_callback, "gmail", success, msg)
+            return {
+                "success": success,
+                "tool": "gmail",
+                "method": "gmail_plugin",
+                "message": msg,
+                "output": kwargs,
+            }
+
+    # 5. Route explicit GitHub tasks to the integrated plugin instead of generating shell code.
     github_plugin = plugin_manager.get_plugin("github")
     if github_plugin and not github_plugin.is_enabled and github_plugin.parse_command(cleaned):
         return {

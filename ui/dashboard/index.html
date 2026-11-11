@@ -1495,6 +1495,28 @@
 
           card.appendChild(title);
           card.appendChild(desc);
+
+          if (p.id === 'gmail') {
+            const configRow = document.createElement('div');
+            configRow.style.cssText = 'display:flex; gap:8px; align-items:center; margin:10px 0;';
+            const emailInp = document.createElement('input');
+            emailInp.type = 'email';
+            emailInp.className = 'input sm';
+            emailInp.placeholder = 'your.email@gmail.com';
+            emailInp.value = p.user_email || '';
+            emailInp.style.cssText = 'flex:1; background:rgba(0,0,0,0.25); border:1px solid var(--border); color:var(--text); padding:4px 8px; border-radius:4px; font-size:12px;';
+            const saveBtn = document.createElement('button');
+            saveBtn.className = 'btn sm';
+            saveBtn.textContent = 'Save Email';
+            saveBtn.onclick = async () => {
+              const res = await bridge().set_gmail_config(emailInp.value.trim());
+              showToast(res.message || 'Gmail account saved!');
+            };
+            configRow.appendChild(emailInp);
+            configRow.appendChild(saveBtn);
+            card.appendChild(configRow);
+          }
+
           card.appendChild(act);
           container.appendChild(card);
         });

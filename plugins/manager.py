@@ -32,12 +32,14 @@ class PluginManager:
             from plugins.github_plugin import GitHubPlugin
             from plugins.system_plugin import SystemPlugin
             from plugins.whatsapp_plugin import WhatsAppPlugin
+            from plugins.gmail_plugin import GmailPlugin
 
             self.register_plugin(ChromePlugin(), is_builtin=True)
             self.register_plugin(BravePlugin(), is_builtin=True)
             self.register_plugin(GitHubPlugin(), is_builtin=True)
             self.register_plugin(SystemPlugin(), is_builtin=True)
             self.register_plugin(WhatsAppPlugin(), is_builtin=True)
+            self.register_plugin(GmailPlugin(), is_builtin=True)
             logger.info("Built-in core plugins loaded successfully.")
         except Exception as e:
             logger.error(f"Failed to load built-in plugins: {e}")

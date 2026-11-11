@@ -655,6 +655,35 @@ class DashboardAPI:
             logger.error("Error disconnecting GitHub account: %s", e)
             return {"success": False, "message": str(e)}
 
+    # ---------------- Gmail Integration ---------------- #
+
+    def get_gmail_config(self) -> Dict[str, Any]:
+        """Returns the configured Gmail sender/account email."""
+        try:
+            from plugins.manager import plugin_manager
+            plugin = plugin_manager.get_plugin("gmail")
+            email = plugin.get_user_email() if plugin and hasattr(plugin, "get_user_email") else profile_manager.get("gmail_user_email", "")
+            return {"success": True, "email": email}
+        except Exception as e:
+            logger.error(f"Error getting Gmail config: {e}")
+            return {"success": False, "email": "", "message": str(e)}
+
+    def set_gmail_config(self, email: str) -> Dict[str, Any]:
+        """Saves the user's Gmail address to preferences."""
+        try:
+            clean_email = email.strip()
+            from plugins.manager import plugin_manager
+            plugin = plugin_manager.get_plugin("gmail")
+            if plugin and hasattr(plugin, "set_user_email"):
+                plugin.set_user_email(clean_email)
+            else:
+                profile_manager.set("gmail_user_email", clean_email)
+            logger.info(f"Updated Gmail account email to '{clean_email}'")
+            return {"success": True, "email": clean_email, "message": f"Gmail account saved as '{clean_email}'"}
+        except Exception as e:
+            logger.error(f"Error setting Gmail config: {e}")
+            return {"success": False, "message": str(e)}
+
 
     # ---------------- Plugin Management ---------------- #
 
@@ -692,9 +721,9 @@ class DashboardAPI:
                     elif pid in ("chrome", "brave", "edge", "firefox", "browser"):
                         category = "Browser"
                         plugin_type = "Browser Control"
-                    elif pid in ("whatsapp", "telegram", "discord", "slack"):
+                    elif pid in ("whatsapp", "telegram", "discord", "slack", "gmail"):
                         category = "Communication"
-                        plugin_type = "Messaging & Chat"
+                        plugin_type = "Messaging & Email"
                     elif pid in ("vscode", "terminal", "git", "python", "ide"):
                         category = "Developer"
                         plugin_type = "IDE & Code"
@@ -718,6 +747,7 @@ class DashboardAPI:
                     "is_builtin": getattr(p, "is_builtin", False),
                     "category": category,
                     "plugin_type": plugin_type,
+                    "user_email": getattr(p, "get_user_email", lambda: "")() if hasattr(p, "get_user_email") else "",
                     "triggers": all_triggers[:4],
                     "commands": commands_info,
                     "total_commands": len(commands_info)
