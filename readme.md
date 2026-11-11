@@ -5,13 +5,23 @@
 [![Contributing](https://img.shields.io/badge/contributing-Guide-orange.svg)](CONTRIBUTING.md)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-3776AB.svg?logo=python&logoColor=white)](https://www.python.org/)
 [![Platform: Windows 10/11](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-0078D6.svg?logo=windows&logoColor=white)](#)
-[![Tests: 87 Passed](https://img.shields.io/badge/tests-87%20passed-brightgreen.svg)](#unit-testing)
-[![Version: 1.6.2](https://img.shields.io/badge/version-1.6.2-blue.svg)](https://github.com/PRN-6/PRIVACY68/releases/tag/v1.6.2)
+[![Tests: 107 Passed](https://img.shields.io/badge/tests-107%20passed-brightgreen.svg)](#unit-testing)
+[![Version: 1.6.3](https://img.shields.io/badge/version-1.6.3-blue.svg)](https://github.com/PRN-6/PRIVACY68/releases/tag/v1.6.3)
 
 PRIVACY68 is a 100% private Windows desktop AI assistant featuring on-demand Click-to-Speak, a modern minimalist Control Center, universal multi-provider AI brain orchestration, and agentic OS automation. It pairs zero-key speech recognition (Google Web Speech) with an Agent Brain powered by universal AI APIs (Google Gemini, Groq LPU, OpenRouter, Anthropic Claude, OpenAI, or local Ollama / LM Studio) to execute complex desktop tasks safely through generated, self-correcting Python scripts.
 
-**Latest Windows Release:** [Download PRIVACY68 Installer v1.6.2 from GitHub Releases](https://github.com/PRN-6/PRIVACY68/releases/tag/v1.6.2)  
+**Latest Windows Release:** [Download PRIVACY68 Installer v1.6.3 from GitHub Releases](https://github.com/PRN-6/PRIVACY68/releases/tag/v1.6.3)  
 **Universal LLM Guide:** [Read Complete Guide to Connecting Any Cloud or Local LLM](docs/UNIVERSAL_LLM_GUIDE.md)
+
+---
+
+## What's New in v1.6.3
+
+- **Gmail Automation Controller**: Native plugin supporting direct browser compose and inbox navigation (`"compose email to ... with subject ... and body ..."`). Supports Google's multi-account `authuser` gateway to route emails directly from your configured Google account.
+- **Interactive Click-to-Configure Plugin Drawers**: Clicking any plugin card in the Control Center reveals a configuration drawer with live input boxes (e.g. Gmail sender email, WhatsApp default contact, browser homepage) and one-click test execution buttons.
+- **Zero-Latency Natural Language Parsing**: Real-time extraction of email recipients, subjects, and body text without cloud LLM latency.
+- **Unified IPC Plugin Settings**: Dashboard bridge supports `set_plugin_setting`, `get_plugin_setting`, and `execute_plugin_action` with profile persistence.
+- **107 Unit Tests Passing**: Fully validated test suite (100% pass rate) verifying Gmail parsing, URL generation, multi-account routing, dashboard drawer bridge, and execution safety.
 
 ---
 
@@ -151,13 +161,13 @@ Building a standalone distributable installer uses PyInstaller and Inno Setup 6:
 .\build.bat
 ```
 
-This compiles `PRIVACY68.exe` under `dist\PRIVACY68\` and packages an Inno Setup installer under `installer\PRIVACY68-Setup-v1.6.2.exe`.
+This compiles `PRIVACY68.exe` under `dist\PRIVACY68\` and packages an Inno Setup installer under `installer\PRIVACY68-Setup-v1.6.3.exe`.
 
 ---
 
 ## Unit Testing
 
-Run the full automated test suite (87 unit tests covering agent brain failover, execution self-healing, command executor, security guard, GitHub integration, and dashboard bridge):
+Run the full automated test suite (107 unit tests covering agent brain failover, execution self-healing, command executor, Gmail automation, security guard, GitHub integration, and dashboard bridge):
 
 ```powershell
 python -m unittest discover tests -v

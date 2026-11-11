@@ -73,13 +73,14 @@ jobs:
           name: "PRIVACY68 ${{ github.ref_type == 'tag' && github.ref_name || format('v{0}', steps.version.outputs.VERSION) }}"
           body: |
             ## What's Changed in ${{ steps.version.outputs.VERSION }}
+            - **Gmail Automation Controller**: Direct web compose, inbox navigation, and speech-to-email drafting with multi-account `authuser` routing support.
+            - **Interactive Click-to-Configure Plugin Drawers**: Click any plugin card in the Control Center to expand an inline configuration drawer with live input boxes (e.g. Gmail address, WhatsApp contact, browser homepage) and 1-click test actions.
+            - **Zero-Latency Natural Language Email Parsing**: Instant parameter extraction (`to`, `subject`, `body`) directly without LLM latency.
+            - **Unified IPC Plugin Settings**: Dashboard bridge supports `set_plugin_setting`, `get_plugin_setting`, and `execute_plugin_action` with profile persistence.
             - **Universal AI Core (Cloud APIs & Local LLMs)**: Full support for Google Gemini (2.5 Flash), Groq LPU (GPT-OSS 120B / Llama 3.3 70B), OpenRouter, Claude, OpenAI, and local Ollama / LM Studio with custom Base URLs.
-            - **100% Click-to-Speak Hardware Isolation**: Zero background mic recording or circular buffer idle capture; hardware is opened strictly on-demand.
-            - **Acoustic Peak Normalization**: Speech waveforms are scaled dynamically via `norm = (audio / peak) * 0.9` for studio-grade transcription across both quiet and loud environments.
+            - **100% Click-to-Speak Hardware Isolation**: Zero background mic recording; microphone hardware is opened strictly on-demand.
             - **3-Tier Security Guard**: Real-time permission gating (Level 1 Safe instant execution, Level 2 Sensitive notification, Level 3 Critical confirmation prompt with 15s timeout).
-            - **Control Center v1.6.2**: Dark glassmorphic dashboard with 1-click model selection chips, custom Base URLs, and real-time connectivity testing.
-            - **Autonomous Skill Crystallization**: Instant fast-path execution of learned desktop automation tasks with self-healing code generation.
-            - **Verified Stability**: Full test suite passing 87/87 automated tests.
+            - **Verified Stability**: Full test suite passing 107/107 automated tests (100% pass rate).
 
             ## Requirements & Acceleration
             - **Universal AI**: Works immediately out-of-the-box with free Cloud API keys (Gemini, Groq, OpenRouter) or local offline inference (Ollama / LM Studio).
