@@ -702,15 +702,18 @@ class DashboardAPI:
     def set_hotkey_config(self, hotkey: str, enabled: bool = True) -> Dict[str, Any]:
         """Updates the global hotkey and refreshes the listener."""
         try:
-            clean_hotkey = hotkey.strip() or "Ctrl+Shift+Space"
+            from utils.hotkey_manager import normalize_hotkey_string, hotkey_manager
+            clean_hotkey = normalize_hotkey_string(hotkey.strip() or "Ctrl+Shift+Space")
             profile_manager.set("global_hotkey", clean_hotkey)
             profile_manager.set("global_hotkey_enabled", bool(enabled))
+            msg = f"Global hotkey set to {clean_hotkey}"
             try:
-                from utils.hotkey_manager import hotkey_manager
-                hotkey_manager.update_hotkey(clean_hotkey, enabled=bool(enabled))
+                ok, update_msg = hotkey_manager.update_hotkey(clean_hotkey, enabled=bool(enabled))
+                if update_msg:
+                    msg = update_msg
             except Exception as e:
                 logger.warning(f"Could not update active hotkey manager listener: {e}")
-            return {"success": True, "hotkey": clean_hotkey, "enabled": bool(enabled), "message": f"Global hotkey set to {clean_hotkey}"}
+            return {"success": True, "hotkey": clean_hotkey, "enabled": bool(enabled), "message": msg}
         except Exception as e:
             logger.error(f"Error setting hotkey config: {e}")
             return {"success": False, "message": str(e)}

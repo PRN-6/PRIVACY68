@@ -75,6 +75,12 @@ def run_dashboard():
         except Exception as e:
             logger.error(f"Both WebView2 and Native GUI fallback failed: {e}")
             raise
+    finally:
+        try:
+            from utils.hotkey_manager import hotkey_manager
+            hotkey_manager.stop()
+        except Exception:
+            pass
 
 
 if __name__ == "__main__":

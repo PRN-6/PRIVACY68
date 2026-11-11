@@ -2,10 +2,17 @@ import unittest
 from unittest.mock import Mock, patch
 
 from ui.dashboard_bridge import DashboardAPI
-from utils.hotkey_manager import GlobalHotkeyManager, parse_hotkey
+from utils.hotkey_manager import GlobalHotkeyManager, normalize_hotkey_string, parse_hotkey
 
 
 class TestHotkeyManager(unittest.TestCase):
+    def test_normalize_hotkey_string(self):
+        self.assertEqual(normalize_hotkey_string("ctrl+alt+k"), "Ctrl+Alt+K")
+        self.assertEqual(normalize_hotkey_string("alt+shift+f9"), "Alt+Shift+F9")
+        self.assertEqual(normalize_hotkey_string("ctrl+shift+space"), "Ctrl+Shift+Space")
+        self.assertEqual(normalize_hotkey_string(""), "Ctrl+Shift+Space")
+        self.assertEqual(normalize_hotkey_string("alt+~"), "Alt+~")
+
     def test_parse_hotkey_ctrl_shift_space(self):
         mod, vk = parse_hotkey("Ctrl+Shift+Space")
         # MOD_CONTROL (0x0002) | MOD_SHIFT (0x0004) | MOD_NOREPEAT (0x4000) = 0x4006
@@ -17,6 +24,12 @@ class TestHotkeyManager(unittest.TestCase):
         # MOD_CONTROL (0x0002) | MOD_ALT (0x0001) | MOD_NOREPEAT (0x4000) = 0x4003
         self.assertEqual(mod, 0x4003)
         self.assertEqual(vk, ord("K"))
+
+    def test_parse_hotkey_alt_f9(self):
+        mod, vk = parse_hotkey("Alt+F9")
+        # MOD_ALT (0x0001) | MOD_NOREPEAT (0x4000) = 0x4001
+        self.assertEqual(mod, 0x4001)
+        self.assertEqual(vk, 0x78)  # VK_F9
 
     def test_parse_hotkey_alt_space(self):
         mod, vk = parse_hotkey("Alt+Space")
@@ -43,15 +56,30 @@ class TestHotkeyManager(unittest.TestCase):
     def test_update_hotkey(self):
         manager = GlobalHotkeyManager()
         with patch.object(manager, "start") as mock_start:
-            manager.update_hotkey("Ctrl+Alt+Space", enabled=True)
+            ok, msg = manager.update_hotkey("Ctrl+Alt+Space", enabled=True)
+            self.assertTrue(ok)
+            self.assertIn("Ctrl+Alt+Space", msg)
             self.assertEqual(manager.active_hotkey, "Ctrl+Alt+Space")
             self.assertTrue(manager.is_enabled)
             mock_start.assert_called_once_with(hotkey_str="Ctrl+Alt+Space")
 
         with patch.object(manager, "stop") as mock_stop:
-            manager.update_hotkey("Ctrl+Alt+Space", enabled=False)
+            ok, msg = manager.update_hotkey("Ctrl+Alt+Space", enabled=False)
+            self.assertTrue(ok)
+            self.assertIn("disabled", msg)
             self.assertFalse(manager.is_enabled)
             mock_stop.assert_called_once()
+
+    def test_hotkey_worker_handles_1409_as_info(self):
+        manager = GlobalHotkeyManager()
+        manager.active_hotkey = "Ctrl+Shift+Space"
+        with patch("ctypes.windll.user32.RegisterHotKey", return_value=0):
+            with patch("ctypes.windll.kernel32.GetLastError", return_value=1409):
+                with patch("logging.Logger.info") as mock_info:
+                    with patch("logging.Logger.warning") as mock_warn:
+                        manager._hotkey_worker()
+                        mock_info.assert_called()
+                        mock_warn.assert_not_called()
 
     def test_dashboard_api_get_and_set_hotkey_config(self):
         api = DashboardAPI()
@@ -65,7 +93,7 @@ class TestHotkeyManager(unittest.TestCase):
             self.assertTrue(res["enabled"])
 
         with patch("plugins.profile_manager.profile_manager.set") as mock_set:
-            with patch("utils.hotkey_manager.hotkey_manager.update_hotkey") as mock_update:
+            with patch("utils.hotkey_manager.hotkey_manager.update_hotkey", return_value=(True, "Global hotkey set to Ctrl+Alt+Space")) as mock_update:
                 set_res = api.set_hotkey_config("Ctrl+Alt+Space", enabled=True)
                 self.assertTrue(set_res["success"])
                 self.assertEqual(set_res["hotkey"], "Ctrl+Alt+Space")
@@ -76,4 +104,3 @@ class TestHotkeyManager(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-
