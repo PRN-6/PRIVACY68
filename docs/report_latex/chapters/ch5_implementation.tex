@@ -1,0 +1,302 @@
+\chapter{Implementation and Methodology}
+\label{ch:implementation}
+
+\section{Introduction}
+This chapter provides a comprehensive technical exposition of the implementation methodology underpinning PRIVACY68. It presents the mathematical and algorithmic foundations of the speech processing pipeline, details the multi-provider LLM orchestration engine, explains the 3-Tier Security Guard, and provides core code listings demonstrating the practical implementation of these subsystems.
+
+\section{Algorithmic Formulations and Methodology}
+
+\subsection{Dynamic Acoustic Peak Amplitude Normalization}
+Heterogeneous audio hardware introduces severe amplitude variance. Quiet microphones or soft speakers generate low-amplitude waveforms that result in high Word Error Rates (WER) or false silence cutoffs. Conversely, close proximity to microphones causes non-linear digital clipping. 
+
+To overcome this without introducing high-latency adaptive gain algorithms, PRIVACY68 applies vector-level dynamic peak amplitude scaling upon speech capture termination. Let the discrete digitized acoustic frame vector be represented as:
+\begin{equation}
+    \mathbf{x} = [x_1, x_2, \dots, x_N]^T \in \mathbb{R}^N, \quad x_i \in [-1.0, 1.0]
+\end{equation}
+The absolute peak amplitude of the captured utterance buffer is calculated as:
+\begin{equation}
+    P = \max_{1 \le i \le N} |x_i|
+\end{equation}
+To avoid amplifying pure ambient room silence or thermal sensor noise, a minimum noise floor threshold $\epsilon_{\text{floor}} = 0.005$ is enforced. If $P > \epsilon_{\text{floor}}$, the normalized audio buffer $\mathbf{x}_{\text{norm}}$ is computed using the headroom scaling constant $\gamma = 0.90$:
+\begin{equation}
+    \mathbf{x}_{\text{norm}} = 
+    \begin{cases} 
+      \left(\frac{\mathbf{x}}{P}\right) \cdot \gamma, & \text{if } P > 0.005 \\
+      \mathbf{x}, & \text{otherwise}
+    \end{cases}
+\end{equation}
+The scalar $\gamma = 0.90$ retains a 10\% dynamic headroom ($ -0.915\text{ dBFS}$), preventing downstream decimation clipping during Fast Fourier Transform (FFT) filterbank feature extraction.
+
+\subsection{Lexical Speech Autocorrection and Normalization}
+Transcribed text from automated speech engines frequently contains vocal hesitations, stutter artifacts, backticks, or phonetic misrecognitions of common application names. PRIVACY68 passes all raw transcriptions through an aggressive, multi-stage regular expression pipeline $\mathcal{F}_{\text{clean}}(\text{text})$:
+\begin{enumerate}
+    \item \textbf{Enclosing Delimiter Stripping:} Removes leading and trailing quotation marks, backticks, and formatting artifacts introduced by LLM-based ASR:
+    \begin{center}
+    \texttt{cleaned = re.sub(r"\^{}['\textbackslash"`'""\textbackslash s]+|['\textbackslash"`'""\textbackslash s]+\$", "", raw)}
+    \end{center}
+    \item \textbf{Filler Word Removal:} Eliminates hesitation phonemes ($\backslash b(h+m+|u+m+|u+h+|a+h+|e+r+)\backslash b$).
+    \item \textbf{Stutter Deduplication:} Normalizes repeated words:
+    $$\text{"open open Chrome"} \longrightarrow \text{"open Chrome"}$$
+    \item \textbf{Domain Hotword Typo Correction:} Maps phonetically corrupted aliases to canonical identifiers (e.g., \textit{whatsup} $\to$ \textit{whatsapp}, \textit{brower} $\to$ \textit{browser}, \textit{notpad} $\to$ \textit{notepad}).
+    \item \textbf{Conversational Prefix Removal:} Removes leading courtesy filler (e.g., \textit{please}, \textit{kindly}, \textit{hey privacy68}).
+\end{enumerate}
+
+\subsection{Multi-Provider LLM Cascading and Auto-Failover}
+To guarantee unbroken autonomy, the Agent Brain orchestrates models via an ordered fallback topology. Let the primary model be $M_0$ and the list of fallback alternatives be $\mathcal{M}_{\text{fallback}} = [M_1, M_2, \dots, M_K]$. The selection algorithm operates as follows:
+\begin{enumerate}
+    \item If the user configures a cloud API (e.g., Gemini 2.5 Flash), the system attempts inference with timeout $\tau = 15\text{s}$.
+    \item If an HTTP 429 (Rate Limit Exceeded), HTTP 503 (Provider Unavailable), or authentication error occurs, the exception is caught, logged, and the engine automatically shifts to the next eligible provider in the cascade (e.g., Groq Cloud LPU $\to$ OpenRouter $\to$ local Ollama).
+    \item \textbf{Intra-Provider Self-Healing:} If an API deprecates a specific model tag (e.g., \texttt{gemini-1.5-flash} $\to$ \texttt{gemini-2.5-flash}), the engine automatically shifts to sibling identifiers from the same provider, dynamically healing the local \texttt{.env} configuration.
+\end{enumerate}
+
+\subsection{3-Tier Security Confirmation Model}
+To safely manage operating system automation without crippling user convenience, actions are partitioned into three distinct risk tiers:
+\begin{itemize}
+    \item \textbf{Tier 1 (SAFE):} Read-only queries, application launches, media play/pause, volume adjustment, window minimize/focus, and web searches. These execute immediately without user interruption.
+    \item \textbf{Tier 2 (SENSITIVE):} File creation, non-destructive file edits, closing running applications, and clipboard modifications. These execute with prominent visual HUD feedback and are permanently logged in the local audit trail.
+    \item \textbf{Tier 3 (CRITICAL / HIGH RISK):} File/directory deletion, Git push / force push operations, terminating external system processes, registry modifications, and disk partitioning commands. 
+\end{itemize}
+When a Tier 3 action is flagged by \texttt{SecurityGuard}, execution is suspended. A pending token is registered with a strict 15.0-second time-to-live ($T_{\text{TTL}} = 15.0\text{s}$). The HUD displays an interactive prompt. The user must issue an explicit confirmation (\textit{"yes"}, \textit{"proceed"}, or click the HUD button). If the user replies \textit{"cancel"} or if $t > T_{\text{TTL}}$, the pending action is securely discarded.
+
+\section{Core Implementation Modules and Code Listings}
+
+\subsection{Acoustic Streamer and Dynamic Normalization (\texttt{speech/streamer.py})}
+Listing \ref{lst:streamer} demonstrates the Push-to-Talk audio recording loop, dynamic peak normalization, and speech recognition integration.
+
+\begin{lstlisting}[language=Python, caption={Push-to-Talk Recording and Dynamic Normalization in streamer.py}, label={lst:streamer}]
+class PushToTalkRecorder:
+    """Manages on-demand audio recording and transcription.
+    Microphone hardware is opened ONLY when start() is invoked,
+    and is IMMEDIATELY closed when stop_and_transcribe() completes.
+    """
+    def __init__(self, sample_rate: int = config.SAMPLE_RATE):
+        self.sample_rate = sample_rate
+        self.is_recording = False
+        self.frames = []
+        self._stream = None
+
+    def start(self):
+        """Starts recording microphone audio strictly on demand."""
+        import sounddevice as sd
+        self.frames = []
+        self.is_recording = True
+
+        def callback(indata, frames, time_info, status):
+            if self.is_recording:
+                self.frames.append(indata.copy())
+
+        try:
+            self._stream = sd.InputStream(
+                samplerate=self.sample_rate,
+                channels=1,
+                dtype="float32",
+                callback=callback,
+                blocksize=config.BLOCK_SIZE
+            )
+            self._stream.start()
+        except Exception as e:
+            logger.warning(f"Could not open PushToTalk stream: {e}")
+            self._stream = None
+
+    def stop_and_transcribe(self, streamer=None) -> str:
+        """Stops capture, completely releases mic hardware, and normalizes."""
+        self.is_recording = False
+        if self._stream is not None:
+            try:
+                self._stream.stop()
+                self._stream.close()
+            except Exception:
+                pass
+            self._stream = None
+
+        if not self.frames:
+            return ""
+
+        audio_data = np.concatenate(self.frames).flatten()
+        if len(audio_data) < self.sample_rate * 0.25:  # < 250ms
+            return ""
+
+        # Dynamic Peak Amplitude Normalization: norm = (audio / peak) * 0.9
+        peak = float(np.max(np.abs(audio_data)))
+        norm_audio = (audio_data / peak) * 0.9 if peak > 0.005 else audio_data
+
+        text = ""
+        if streamer is not None:
+            text = streamer._transcribe(norm_audio, is_idle=False)
+
+        if not text:
+            # Fallback to Google Web Speech (Free, zero keys required)
+            import speech_recognition as sr
+            r = sr.Recognizer()
+            audio_int16 = (norm_audio * 32767).astype(np.int16)
+            audio_bytes = audio_int16.tobytes()
+            audio_source = sr.AudioData(audio_bytes, self.sample_rate, 2)
+            try:
+                text = r.recognize_google(audio_source)
+            except Exception:
+                text = ""
+
+        return autocorrect_speech_command(text)
+\end{lstlisting}
+
+\subsection{Agentic Brain and Self-Healing Code Synthesis (\texttt{actions/agent\_brain.py})}
+Listing \ref{lst:agent_brain} presents the agentic reasoning engine, multi-provider failover loop, and self-healing execution retry mechanism.
+
+\begin{lstlisting}[language=Python, caption={Agent Brain Self-Healing Execution in agent\_brain.py}, label={lst:agent_brain}]
+class AgentBrain:
+    def __init__(self, model_name: str = None):
+        self.model = model_name or config.AGENT_BRAIN_MODEL
+        self.max_retries = 3
+
+    def generate_and_execute(self, instruction: str) -> dict:
+        """Generates Python code for an instruction and runs it with self-healing."""
+        history_context = ""
+        last_error = ""
+
+        for attempt in range(1, self.max_retries + 1):
+            prompt = self._build_prompt(instruction, last_error, history_context)
+            try:
+                code = self._query_llm(prompt)
+            except Exception as e:
+                # Trigger Auto-Failover to sibling or alternative provider
+                fallback_model = self._get_next_fallback(self.model)
+                if fallback_model:
+                    self.model = fallback_model
+                    continue
+                return {"success": False, "error": f"LLM failure: {e}"}
+
+            if not code.strip():
+                return {"success": False, "error": "No executable code generated."}
+
+            # Execute in isolated subprocess sandbox
+            success, stdout, stderr = self._execute_code_sandbox(code)
+            if success:
+                # Cache validated routine into persistent skill database
+                skill_manager.learn_skill(instruction, code)
+                return {
+                    "success": True, 
+                    "code": code, 
+                    "stdout": stdout, 
+                    "attempts": attempt
+                }
+
+            # Self-healing feedback loop: pipe traceback back into next iteration
+            last_error = f"Exit code 1. Stderr: {stderr}\nStdout: {stdout}"
+            logger.warning(f"Execution error (attempt {attempt}). Self-healing...")
+
+        return {"success": False, "error": f"Failed after {self.max_retries} attempts: {last_error}"}
+
+    def _execute_code_sandbox(self, code: str) -> tuple[bool, str, str]:
+        """Runs generated script in a Python subprocess with a strict 30s timeout."""
+        with tempfile.NamedTemporaryFile("w", suffix=".py", delete=False) as f:
+            f.write(code)
+            script_path = f.name
+
+        try:
+            res = subprocess.run(
+                [sys.executable, script_path],
+                capture_output=True,
+                text=True,
+                timeout=30.0
+            )
+            return (res.returncode == 0, res.stdout, res.stderr)
+        except subprocess.TimeoutExpired:
+            return (False, "", "Execution timed out (30 seconds limit exceeded).")
+        finally:
+            if os.path.exists(script_path):
+                os.remove(script_path)
+\end{lstlisting}
+
+\subsection{3-Tier Security and Confirmation Guard (\texttt{computer\_use/security\_guard.py})}
+Listing \ref{lst:security_guard} illustrates the implementation of the security state machine and confirmation timeout logic.
+
+\begin{lstlisting}[language=Python, caption={Security Guard Enforcement in security\_guard.py}, label={lst:security_guard}]
+class ActionRiskLevel(Enum):
+    SAFE = 1        # Execute immediately
+    SENSITIVE = 2   # Log and execute with visual notice
+    CRITICAL = 3    # Block until explicit interactive confirmation
+
+class PendingAction:
+    def __init__(self, action_func, args, kwargs, description, risk_level):
+        self.action_func = action_func
+        self.args = args
+        self.kwargs = kwargs
+        self.description = description
+        self.risk_level = risk_level
+        self.timestamp = time.time()
+        self.timeout_seconds = 15.0  # 15s confirmation window
+
+    def is_expired(self) -> bool:
+        return (time.time() - self.timestamp) > self.timeout_seconds
+
+class SecurityGuard:
+    def __init__(self):
+        self._pending_action: Optional[PendingAction] = None
+        self._action_risk_rules = {
+            "open_app": ActionRiskLevel.SAFE,
+            "volume_control": ActionRiskLevel.SAFE,
+            "create_file": ActionRiskLevel.SAFE,
+            "edit_file": ActionRiskLevel.SENSITIVE,
+            "close_app": ActionRiskLevel.SENSITIVE,
+            "delete_file": ActionRiskLevel.CRITICAL,
+            "git_push": ActionRiskLevel.CRITICAL,
+            "kill_process": ActionRiskLevel.CRITICAL
+        }
+
+    def evaluate_and_intercept(self, action_name: str, func, *args, **kwargs):
+        risk = self._action_risk_rules.get(action_name, ActionRiskLevel.SENSITIVE)
+        
+        if risk == ActionRiskLevel.SAFE:
+            return func(*args, **kwargs)
+
+        if risk == ActionRiskLevel.CRITICAL:
+            # Suspend action and await human confirmation
+            self._pending_action = PendingAction(func, args, kwargs, action_name, risk)
+            return {
+                "requires_confirmation": True,
+                "risk_level": "CRITICAL",
+                "message": f"Action '{action_name}' is high risk. Say 'yes' to proceed."
+            }
+
+    def confirm_pending(self) -> tuple[bool, str, any]:
+        if not self._pending_action:
+            return (False, "No pending action to confirm.", None)
+        if self._pending_action.is_expired():
+            self._pending_action = None
+            return (False, "Confirmation window expired (15s timeout).", None)
+
+        action = self._pending_action
+        self._pending_action = None
+        result = action.action_func(*action.args, **action.kwargs)
+        return (True, f"Executed confirmed action: {action.description}", result)
+\end{lstlisting}
+
+\subsection{Mobile Web Remote Server (\texttt{server/remote\_server.py})}
+Listing \ref{lst:remote_server} demonstrates the local LAN threaded server serving the authenticated mobile client and handling REST command submissions.
+
+\begin{lstlisting}[language=Python, caption={Threaded Mobile Remote Server in remote\_server.py}, label={lst:remote_server}]
+class Privacy68RemoteHandler(SimpleHTTPRequestHandler):
+    """Serves Mobile Web Client and processes incoming LAN command POSTs."""
+    def do_POST(self):
+        if self.path == "/api/command":
+            content_length = int(self.headers.get("Content-Length", 0))
+            post_body = self.rfile.read(content_length).decode("utf-8")
+            payload = json.loads(post_body)
+            command_text = payload.get("command", "").strip()
+
+            logger.info(f"Mobile Remote Command Received: '{command_text}'")
+            if _global_on_command_callback:
+                result = _global_on_command_callback(command_text)
+                self._send_json({
+                    "success": result.get("success", True),
+                    "message": result.get("message", "Executed"),
+                    "command": command_text
+                })
+            else:
+                self._send_json({"error": "Executor offline"}, 500)
+            return
+\end{lstlisting}
+
+\section{Summary of Module Interactions}
+The integration of these modules forms a robust, resilient execution pipeline. Raw audio enters via \texttt{PushToTalkRecorder}, is scaled by NumPy peak normalization, cleansed via lexical regex, evaluated by \texttt{SecurityGuard}, reasoned by \texttt{AgentBrain}, and visually reported through Microsoft Edge WebView2 and the mobile remote server.
+

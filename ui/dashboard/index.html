@@ -281,68 +281,6 @@
     }
     input:focus, select:focus { border-color: var(--accent); }
 
-    /* Hotkey & Shortcut Elements */
-    .kbd-badge {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-width: 22px;
-      padding: 3px 8px;
-      border-radius: 4px;
-      background: #1e2638;
-      border: 1px solid #3b4559;
-      border-bottom: 2px solid #232b3c;
-      color: #f9fafb;
-      font-size: 11px;
-      font-weight: 700;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.4);
-      user-select: none;
-    }
-    .hotkey-recorder-box {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 8px 12px;
-      background: #0b0d14;
-      border: 1px solid var(--line);
-      border-radius: var(--radius-sm);
-      min-height: 42px;
-      cursor: pointer;
-      user-select: none;
-      transition: all 0.15s ease;
-    }
-    .hotkey-recorder-box:hover {
-      border-color: #4b5563;
-      background: #0f131d;
-    }
-    .hotkey-recorder-box.recording {
-      border-color: #f59e0b;
-      background: rgba(245, 158, 11, 0.08);
-      box-shadow: 0 0 10px rgba(245, 158, 11, 0.25);
-      animation: pulseRecord 1.4s infinite ease-in-out;
-    }
-    @keyframes pulseRecord {
-      0%, 100% { border-color: #f59e0b; box-shadow: 0 0 8px rgba(245, 158, 11, 0.25); }
-      50% { border-color: #ef4444; box-shadow: 0 0 14px rgba(239, 68, 68, 0.45); }
-    }
-    .hotkey-chip {
-      cursor: pointer;
-      user-select: none;
-      transition: all 0.12s ease;
-    }
-    .hotkey-chip:hover {
-      border-color: var(--accent);
-      color: var(--text);
-      background: var(--panel-hover);
-      transform: translateY(-1px);
-    }
-    .hotkey-chip.active {
-      border-color: var(--blue);
-      color: var(--blue);
-      background: rgba(56, 189, 248, 0.1);
-    }
-
     /* Console Feed */
     .console-feed {
       flex: 1;
@@ -406,27 +344,8 @@
     }
 
     /* Command Input Bar */
-    .cmd-bar { display: flex; gap: 8px; align-items: center; position: relative; }
-    .cmd-input { flex: 1; height: 36px; font-size: 12px; padding-right: 65px; }
-    .cmd-shortcut-badge {
-      position: absolute;
-      right: 156px;
-      top: 50%;
-      transform: translateY(-50%);
-      font-size: 10px;
-      font-weight: 600;
-      color: var(--text-muted);
-      background: rgba(255, 255, 255, 0.07);
-      border: 1px solid var(--line-subtle);
-      border-radius: 4px;
-      padding: 2px 6px;
-      pointer-events: none;
-      transition: opacity 0.15s ease;
-      letter-spacing: 0.5px;
-    }
-    .cmd-input:focus ~ .cmd-shortcut-badge {
-      opacity: 0.25;
-    }
+    .cmd-bar { display: flex; gap: 8px; align-items: center; }
+    .cmd-input { flex: 1; height: 36px; font-size: 12px; }
 
     /* Multiple API Slots Grid */
     .api-slots-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
@@ -681,8 +600,7 @@
 
         <!-- Command Input Row -->
         <div class="cmd-bar">
-          <input type="text" class="cmd-input" id="cmd-input" placeholder="Type a natural language command or press Ctrl+K / Ctrl+Shift+Space..." autocomplete="off">
-          <span class="cmd-shortcut-badge" title="Press Ctrl+K in app or Ctrl+Shift+Space anywhere in Windows">Ctrl+K</span>
+          <input type="text" class="cmd-input" id="cmd-input" placeholder="Type a natural language command or click 'Click to Speak'..." autocomplete="off">
           <button class="btn primary" id="cmd-run-btn">Run</button>
           <button class="btn" id="cmd-clear-btn">Clear Log</button>
         </div>
@@ -1042,82 +960,6 @@
           <button class="btn primary" id="save-profile-btn" style="align-self:flex-start; margin-top:8px;">Save Profile</button>
         </div>
 
-        <!-- Keyboard Shortcuts & Global Hotkeys Card -->
-        <div class="card">
-          <div class="card-header">
-            <h2 class="card-title">Keyboard Shortcuts & Command Console Hotkeys</h2>
-            <span class="chip good" id="hotkey-status-badge">Active</span>
-          </div>
-          <p class="card-desc">Assign your preferred quick-access shortcut key directly here. Pressing it anywhere in Windows restores and brings the Command Console instantly to the foreground.</p>
-          
-          <div style="display:grid; grid-template-columns:1.2fr 1fr; gap:14px; margin-top:8px;">
-            <div style="display:flex; flex-direction:column; gap:6px;">
-              <label style="font-size:11px; font-weight:700; color:var(--text-muted);">
-                Global System-Wide Shortcut (Click to Record Keys)
-              </label>
-              
-              <!-- Hidden or synced input holding raw shortcut string -->
-              <input type="text" id="setting-global-hotkey" value="Ctrl+Shift+Space" style="display:none;">
-
-              <!-- Interactive Key Recording Box -->
-              <div id="hotkey-display-box" class="hotkey-recorder-box" tabindex="0" title="Click to record your custom shortcut">
-                <div id="hotkey-badges-container" style="display:flex; align-items:center; gap:5px; flex-wrap:wrap;">
-                  <span class="kbd-badge">Ctrl</span>
-                  <span style="color:var(--text-muted); font-size:11px;">+</span>
-                  <span class="kbd-badge">Shift</span>
-                  <span style="color:var(--text-muted); font-size:11px;">+</span>
-                  <span class="kbd-badge">Space</span>
-                </div>
-                <span id="hotkey-record-hint" style="margin-left:auto; font-size:10px; color:var(--text-muted); display:flex; align-items:center; gap:4px; white-space:nowrap;">
-                  <span style="font-size:12px;">⌨️</span> Click to reassign
-                </span>
-              </div>
-
-              <!-- Quick Preset Chips -->
-              <div style="display:flex; flex-direction:column; gap:5px; margin-top:6px;">
-                <span style="font-size:10px; font-weight:600; color:var(--text-subtle);">Popular Presets (Conflict-Free):</span>
-                <div style="display:flex; gap:6px; flex-wrap:wrap;" id="hotkey-preset-container">
-                  <span class="chip hotkey-chip" data-hotkey="Ctrl+Shift+Space">Ctrl+Shift+Space</span>
-                  <span class="chip hotkey-chip" data-hotkey="Ctrl+Alt+K">Ctrl+Alt+K</span>
-                  <span class="chip hotkey-chip" data-hotkey="Alt+F9">Alt+F9</span>
-                  <span class="chip hotkey-chip" data-hotkey="Ctrl+Alt+Space">Ctrl+Alt+Space</span>
-                  <span class="chip hotkey-chip" data-hotkey="Ctrl+Shift+P">Ctrl+Shift+P</span>
-                  <span class="chip hotkey-chip" data-hotkey="Alt+~">Alt+~</span>
-                </div>
-              </div>
-            </div>
-
-            <div style="display:flex; flex-direction:column; gap:6px;">
-              <label style="font-size:11px; font-weight:700; color:var(--text-muted);">In-App Quick Focus</label>
-              <div style="display:flex; align-items:center; gap:6px; padding:8px 12px; background:#0b0d14; border:1px solid var(--line); border-radius:var(--radius-sm); min-height:42px;">
-                <span class="kbd-badge">Ctrl</span>
-                <span style="color:var(--text-muted); font-size:11px;">+</span>
-                <span class="kbd-badge">K</span>
-                <span style="color:var(--text-muted); font-size:11px; margin:0 4px;">or</span>
-                <span class="kbd-badge">/</span>
-                <span style="margin-left:auto; font-size:10px; color:var(--text-muted);">When window active</span>
-              </div>
-
-              <div style="margin-top:10px; padding:10px 12px; border-radius:6px; background:rgba(30, 41, 59, 0.4); border:1px solid rgba(75, 85, 99, 0.3);">
-                <label style="display:flex; align-items:center; gap:8px; font-size:11px; font-weight:600; color:var(--text); cursor:pointer;">
-                  <input type="checkbox" id="setting-hotkey-enabled" checked style="accent-color:var(--accent); cursor:pointer;">
-                  Enable System-Wide Global Hotkey
-                </label>
-                <p style="font-size:10px; color:var(--text-muted); margin:4px 0 0 22px; line-height:1.4;">
-                  Pressing this key combination brings PRIVACY68 to the front instantly from any Windows app or desktop.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div style="display:flex; gap:10px; align-items:center; margin-top:10px; padding-top:10px; border-top:1px solid var(--line); flex-wrap:wrap;">
-            <button class="btn primary sm" id="save-hotkey-btn">Save & Apply Hotkey</button>
-            <button class="btn sm" id="record-hotkey-btn" type="button">Record New Key</button>
-            <button class="btn sm" id="reset-hotkey-btn" type="button" style="color:var(--text-muted);">Reset (Ctrl+Shift+Space)</button>
-            <span id="hotkey-feedback-msg" style="font-size:11px; color:var(--text-muted); margin-left:auto;"></span>
-          </div>
-        </div>
-
         <!-- Hardware & CUDA Diagnostics -->
         <div class="card">
           <div class="card-header">
@@ -1269,36 +1111,6 @@
     $('cmd-run-btn').addEventListener('click', () => handleCommand($('cmd-input').value));
     $('cmd-input').addEventListener('keydown', (e) => {
       if (e.key === 'Enter') handleCommand($('cmd-input').value);
-    });
-
-    window.focusConsole = function() {
-      switchTab('console');
-      const input = $('cmd-input');
-      if (input) {
-        input.focus();
-        input.select();
-      }
-    };
-
-    // Global in-app keyboard shortcuts
-    document.addEventListener('keydown', (e) => {
-      const activeEl = document.activeElement;
-      const isInput = activeEl && ['INPUT', 'TEXTAREA'].includes(activeEl.tagName);
-
-      // Ctrl + K or '/' (when not typing in an input) -> Focus Command Console
-      if ((e.ctrlKey && e.key.toLowerCase() === 'k') || (!isInput && e.key === '/')) {
-        e.preventDefault();
-        window.focusConsole();
-      } else if (e.key === 'Escape' && isInput) {
-        activeEl.blur();
-      } else if ((e.ctrlKey && e.code === 'Space') || (e.altKey && e.key.toLowerCase() === 's')) {
-        e.preventDefault();
-        switchTab('console');
-        const micBtn = $('mic-btn');
-        if (micBtn && !micBtn.disabled) {
-          micBtn.click();
-        }
-      }
     });
 
     $('cmd-clear-btn').addEventListener('click', () => {
@@ -2006,18 +1818,6 @@
           $('setting-user-name').value = p.user_name || 'User';
           $('setting-assistant-name').value = p.assistant_name || 'Privacy68';
           $('top-user-chip').textContent = p.user_name || 'User';
-          if (p.global_hotkey && $('setting-global-hotkey')) {
-            $('setting-global-hotkey').value = p.global_hotkey;
-            renderHotkeyBadges(p.global_hotkey);
-          }
-          if (p.global_hotkey_enabled !== undefined && $('setting-hotkey-enabled')) {
-            $('setting-hotkey-enabled').checked = Boolean(p.global_hotkey_enabled);
-            const badge = $('hotkey-status-badge');
-            if (badge) {
-              badge.textContent = p.global_hotkey_enabled ? 'Active' : 'Disabled';
-              badge.className = `chip ${p.global_hotkey_enabled ? 'good' : 'warn'}`;
-            }
-          }
         }
       } catch (e) {}
     }
@@ -2031,177 +1831,6 @@
         showToast(res.message || 'Profile saved!');
         await loadProfile();
       } catch (e) { showToast(e.message, true); }
-    });
-
-    // Hotkey interactive configuration and recording
-    let isRecordingHotkey = false;
-
-    function renderHotkeyBadges(hkStr) {
-      const container = $('hotkey-badges-container');
-      if (!container) return;
-      const clean = (hkStr || 'Ctrl+Shift+Space').trim();
-      const parts = clean.split('+').map(p => p.trim()).filter(Boolean);
-      container.innerHTML = parts.map((part, idx) => {
-        const badge = `<span class="kbd-badge">${escapeHtml(part)}</span>`;
-        return idx < parts.length - 1 ? `${badge}<span style="color:var(--text-muted); font-size:11px;">+</span>` : badge;
-      }).join('');
-
-      // Highlight matching preset chip if any
-      document.querySelectorAll('.hotkey-chip').forEach(chip => {
-        if (chip.dataset.hotkey && chip.dataset.hotkey.toLowerCase() === clean.toLowerCase()) {
-          chip.classList.add('active');
-        } else {
-          chip.classList.remove('active');
-        }
-      });
-    }
-
-    function startHotkeyRecording() {
-      isRecordingHotkey = true;
-      const box = $('hotkey-display-box');
-      if (box) box.classList.add('recording');
-      const hint = $('hotkey-record-hint');
-      if (hint) hint.innerHTML = '<span style="color:var(--amber); font-weight:700;">🔴 Recording... Press key combo</span>';
-      const msg = $('hotkey-feedback-msg');
-      if (msg) {
-        msg.textContent = 'Press desired keys (e.g. Ctrl + Alt + K, Alt + F9, Esc to cancel)...';
-        msg.style.color = 'var(--amber)';
-      }
-    }
-
-    function stopHotkeyRecording(cancelled = false) {
-      isRecordingHotkey = false;
-      const box = $('hotkey-display-box');
-      if (box) box.classList.remove('recording');
-      const hint = $('hotkey-record-hint');
-      if (hint) hint.innerHTML = '<span style="font-size:12px;">⌨️</span> Click to reassign';
-      if (cancelled) {
-        const msg = $('hotkey-feedback-msg');
-        if (msg) {
-          msg.textContent = 'Recording cancelled.';
-          msg.style.color = 'var(--text-muted)';
-        }
-      }
-    }
-
-    const hotkeyBox = $('hotkey-display-box');
-    if (hotkeyBox) {
-      hotkeyBox.addEventListener('click', () => {
-        if (!isRecordingHotkey) startHotkeyRecording();
-        else stopHotkeyRecording(true);
-      });
-      hotkeyBox.addEventListener('focus', () => {
-        if (!isRecordingHotkey) startHotkeyRecording();
-      });
-    }
-
-    const recordBtn = $('record-hotkey-btn');
-    if (recordBtn) {
-      recordBtn.addEventListener('click', () => {
-        startHotkeyRecording();
-      });
-    }
-
-    const resetBtn = $('reset-hotkey-btn');
-    if (resetBtn) {
-      resetBtn.addEventListener('click', () => {
-        $('setting-global-hotkey').value = 'Ctrl+Shift+Space';
-        renderHotkeyBadges('Ctrl+Shift+Space');
-        const msg = $('hotkey-feedback-msg');
-        if (msg) {
-          msg.textContent = 'Reset to Ctrl+Shift+Space. Click "Save & Apply Hotkey" to save.';
-          msg.style.color = 'var(--text-muted)';
-        }
-      });
-    }
-
-    // Preset chips
-    document.querySelectorAll('.hotkey-chip').forEach(chip => {
-      chip.addEventListener('click', () => {
-        const targetHk = chip.dataset.hotkey;
-        if (targetHk) {
-          $('setting-global-hotkey').value = targetHk;
-          renderHotkeyBadges(targetHk);
-          stopHotkeyRecording(false);
-          const msg = $('hotkey-feedback-msg');
-          if (msg) {
-            msg.textContent = `Selected preset ${targetHk}. Click "Save & Apply Hotkey" to save.`;
-            msg.style.color = 'var(--blue)';
-          }
-        }
-      });
-    });
-
-    // Keydown capture for recording
-    window.addEventListener('keydown', (e) => {
-      if (!isRecordingHotkey) return;
-
-      // Escape cancels recording
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        stopHotkeyRecording(true);
-        return;
-      }
-
-      // Ignore lone modifiers
-      if (['Control', 'Alt', 'Shift', 'Meta'].includes(e.key)) {
-        return;
-      }
-
-      e.preventDefault();
-      e.stopPropagation();
-
-      const parts = [];
-      if (e.ctrlKey) parts.push('Ctrl');
-      if (e.altKey) parts.push('Alt');
-      if (e.shiftKey) parts.push('Shift');
-      if (e.metaKey) parts.push('Win');
-
-      // Key name normalization
-      let key = e.key;
-      if (e.code === 'Space' || key === ' ') key = 'Space';
-      else if (key.length === 1) key = key.toUpperCase();
-      else if (key.startsWith('Arrow')) key = key.replace('Arrow', '');
-
-      parts.push(key);
-
-      const newHk = parts.join('+');
-      $('setting-global-hotkey').value = newHk;
-      renderHotkeyBadges(newHk);
-      stopHotkeyRecording(false);
-
-      const msg = $('hotkey-feedback-msg');
-      if (msg) {
-        msg.textContent = `Recorded: ${newHk}. Click "Save & Apply Hotkey" to activate.`;
-        msg.style.color = 'var(--green)';
-      }
-    }, true);
-
-    $('save-hotkey-btn').addEventListener('click', async () => {
-      try {
-        const hk = $('setting-global-hotkey').value.trim() || 'Ctrl+Shift+Space';
-        const enabled = $('setting-hotkey-enabled') ? $('setting-hotkey-enabled').checked : true;
-        const res = await bridge().set_hotkey_config(hk, enabled);
-        const msg = $('hotkey-feedback-msg');
-        if (msg) {
-          msg.textContent = res.message || `Saved ${hk}`;
-          msg.style.color = res.success ? 'var(--green)' : 'var(--amber)';
-        }
-        const badge = $('hotkey-status-badge');
-        if (badge) {
-          badge.textContent = enabled ? 'Active' : 'Disabled';
-          badge.className = `chip ${enabled ? 'good' : 'warn'}`;
-        }
-        showToast(res.message || 'Global hotkey saved!');
-        await loadProfile();
-      } catch (e) {
-        showToast(e.message, true);
-        const msg = $('hotkey-feedback-msg');
-        if (msg) {
-          msg.textContent = e.message;
-          msg.style.color = 'var(--accent)';
-        }
-      }
     });
 
     async function loadSysDiag() {

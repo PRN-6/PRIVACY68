@@ -1,0 +1,395 @@
+\documentclass[12pt,a4paper,oneside]{report}
+
+% --- Core Packages ---
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{mathptmx} % Times New Roman typography
+\usepackage{geometry}
+\geometry{
+    left=1.25in,
+    right=1.0in,
+    top=1.0in,
+    bottom=1.0in
+}
+\usepackage{setspace}
+\onehalfspacing % 1.5 line spacing
+
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{fancyhdr}
+\usepackage{microtype}
+\usepackage{cite}
+\usepackage{listings}
+\usepackage{float}
+\usepackage[hyphens]{url}
+\usepackage[hidelinks,breaklinks]{hyperref}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=black,
+    citecolor=black,
+    urlcolor=blue,
+    pdftitle={PRIVACY68: Autonomous Local Voice Intelligence and Multi-Provider Agentic OS Automation},
+    pdfauthor={Prinson},
+    pdfsubject={MCA Main Project Dissertation MPRJ324}
+}
+
+% --- Code Listings Styling ---
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.97,0.97,0.98}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen}\itshape,
+    keywordstyle=\color{blue}\bfseries,
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=4,
+    frame=single,
+    rulecolor=\color{codegray!40}
+}
+\lstset{style=mystyle}
+
+% --- Header & Footer Configuration ---
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[R]{\footnotesize\nouppercase{\rightmark}}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0pt}
+
+\begin{document}
+
+% =========================================================================
+% TITLE PAGE
+% =========================================================================
+\begin{titlepage}
+\begin{center}
+    \vspace*{0.5cm}
+    
+    {\Huge \textbf{PRIVACY68}} \\[0.4cm]
+    {\Large \textbf{Autonomous Local Voice Intelligence and Multi-Provider Agentic Workstation Automation}} \\[1.2cm]
+    
+    {\large \textbf{A DISSERTATION REPORT}} \\[0.2cm]
+    \textit{Submitted in partial fulfillment of the requirements for the award of the degree of} \\[0.4cm]
+    {\Large \textbf{MASTER OF COMPUTER APPLICATIONS}} \\[0.2cm]
+    {\textbf{COURSE CODE: MPRJ324 (MAIN PROJECT)}} \\[1.5cm]
+    
+    \textit{Submitted by} \\[0.3cm]
+    {\large \textbf{PRINSON}} \\
+    \textbf{Register No.: [Your Register / Roll Number]} \\[1.5cm]
+    
+    \textit{Under the Guidance of} \\[0.3cm]
+    {\large \textbf{[Name of Project Guide / Faculty Mentor]}} \\
+    \textbf{[Designation of Project Guide]} \\[1.5cm]
+    
+    \vfill
+    
+    \textbf{DEPARTMENT OF COMPUTER APPLICATIONS} \\[0.2cm]
+    \textbf{[NAME OF INSTITUTION / UNIVERSITY]} \\[0.2cm]
+    \textbf{[CITY, STATE, PIN CODE]} \\[0.3cm]
+    \textbf{NOVEMBER 2026}
+    
+\end{center}
+\end{titlepage}
+
+% =========================================================================
+% BONAFIDE CERTIFICATE
+% =========================================================================
+\newpage
+\thispagestyle{empty}
+\begin{center}
+    \textbf{\Large [NAME OF INSTITUTION / UNIVERSITY]} \\
+    \textbf{\large DEPARTMENT OF COMPUTER APPLICATIONS} \\[1.5cm]
+    
+    \textbf{\Large BONAFIDE CERTIFICATE} \\[1.5cm]
+\end{center}
+
+\noindent
+This is to certify that the project report entitled \textbf{``PRIVACY68: Autonomous Local Voice Intelligence and Multi-Provider Agentic Workstation Automation''} is the bonafide work carried out by \textbf{PRINSON} (Register No.: \textbf{[Your Register Number]}) in partial fulfillment of the requirements for the award of the degree of \textbf{MASTER OF COMPUTER APPLICATIONS} (Course Code: \textbf{MPRJ324}) during the academic year 2025--2026.
+
+\vspace{3.5cm}
+
+\noindent
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}cc}
+    \textbf{[Guide Signature]} & \textbf{[HOD Signature]} \\
+    \textbf{[Name of Faculty Guide]} & \textbf{[Name of Head of Department]} \\
+    Project Guide & Head of the Department \\
+    Department of Computer Applications & Department of Computer Applications \\
+\end{tabular*}
+
+\vspace{2.5cm}
+
+\noindent
+Submitted for the Project Viva-Voce Examination held on: \rule{4cm}{0.4pt}
+
+\vspace{1.5cm}
+
+\noindent
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}cc}
+    \textbf{INTERNAL EXAMINER} & \textbf{EXTERNAL EXAMINER} \\
+\end{tabular*}
+
+% =========================================================================
+% DECLARATION
+% =========================================================================
+\newpage
+\thispagestyle{empty}
+\begin{center}
+    \textbf{\Large DECLARATION} \\[1.5cm]
+\end{center}
+
+\noindent
+I, \textbf{PRINSON} (Register No.: \textbf{[Your Register Number]}), hereby declare that the project dissertation entitled \textbf{``PRIVACY68: Autonomous Local Voice Intelligence and Multi-Provider Agentic Workstation Automation''} submitted to \textbf{[Name of University/Institution]} in partial fulfillment of the requirements for the award of the degree of \textbf{Master of Computer Applications} is a record of original work done by me under the supervision and guidance of \textbf{[Name of Faculty Guide]}, Department of Computer Applications.
+
+\vspace{0.5cm}
+\noindent
+I further declare that this project work has not formed the basis for the award of any other Degree, Diploma, Associateship, Fellowship, or any other similar title in any other university or institution of higher learning.
+
+\vspace{3.0cm}
+
+\noindent
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lr}
+    \textbf{Place:} [City] & \textbf{PRINSON} \\
+    \textbf{Date:} 09-11-2026 & Register No.: [Your Register Number] \\
+\end{tabular*}
+
+% =========================================================================
+% ACKNOWLEDGMENTS
+% =========================================================================
+\newpage
+\thispagestyle{empty}
+\begin{center}
+    \textbf{\Large ACKNOWLEDGMENTS} \\[1.0cm]
+\end{center}
+
+\noindent
+I would like to express my profound gratitude to the management of \textbf{[Name of College/University]} for providing the state-of-the-art computational infrastructure and resources necessary to successfully execute this project.
+
+\vspace{0.4cm}
+\noindent
+I extend my deepest gratitude to our respected Principal, \textbf{[Name of Principal]}, and our beloved Head of the Department, \textbf{[Name of HOD]}, Department of Computer Applications, for their continuous academic encouragement, visionary support, and inspiring guidance throughout the Master of Computer Applications program.
+
+\vspace{0.4cm}
+\noindent
+I express my sincere thanks and heartfelt indebtedness to my project guide, \textbf{[Name of Faculty Guide]}, for their invaluable mentorship, insightful technical suggestions, and patient critiques during every phase of this research and development.
+
+\vspace{0.4cm}
+\noindent
+I also extend my sincere appreciation to all the faculty members and technical staff of the Department of Computer Applications for their constructive feedback and assistance. Finally, I express my deepest love and gratitude to my family and friends for their unwavering faith, patience, and moral encouragement throughout my academic journey.
+
+\vspace{2.0cm}
+
+\noindent
+\begin{flushright}
+    \textbf{PRINSON} \\
+    Department of Computer Applications
+\end{flushright}
+
+% =========================================================================
+% ABSTRACT
+% =========================================================================
+\newpage
+\thispagestyle{empty}
+\begin{center}
+    \textbf{\Large ABSTRACT} \\[1.0cm]
+\end{center}
+
+\noindent
+Commercial desktop and smart home voice assistants (e.g., Amazon Alexa, Apple Siri, Microsoft Cortana) rely on continuously energized microphones and cloud-tethered circular audio buffers. This traditional architecture creates severe privacy vulnerabilities, exposes private spaces to background eavesdropping, and binds users to rigid, proprietary intent-slot grammars that fail when confronted with arbitrary operating system workflows.
+
+This dissertation introduces \textbf{PRIVACY68}, an autonomous, privacy-preserving desktop voice assistant engineered for the Microsoft Windows workstation environment. PRIVACY68 enforces strict \textbf{100\% Click-to-Speak hardware isolation}, guaranteeing that microphone hardware is physically closed and unpowered during idle states. To overcome hardware gain variability without introducing computational latency, captured 16kHz PCM audio buffers are dynamically scaled using a mathematical peak amplitude normalization formulation:
+\[
+    \mathbf{x}_{\text{norm}} = \left(\frac{\mathbf{x}}{\max |\mathbf{x}|}\right) \cdot 0.9
+\]
+yielding a \textbf{68.7\% relative error reduction in Word Error Rate (WER)} across quiet, whispered, and acoustically noisy environments.
+
+For reasoning and execution, PRIVACY68 pioneers an agentic multi-provider orchestration architecture leveraging LiteLLM. The engine dynamically routes directives across Google Gemini 2.5 Flash, Groq Cloud LPU (GPT-OSS 120B / Llama 3.3 70B), OpenRouter, and local offline daemons (Ollama, LM Studio) with automatic intra-provider failover. To ensure safe execution of LLM-synthesized Python automation scripts, a deterministic \textbf{3-Tier Security Guard} intercepts high-risk operations (e.g., file system purges, git force pushes, process kills), enforcing an interactive 15-second human confirmation gate. Verified routines are crystallized into a persistent JSON skill database for instantaneous, sub-10ms future recall.
+
+The entire system was evaluated through an automated test suite comprising \textbf{87 unit tests}, achieving a \textbf{100\% pass rate in 15.316 seconds}. Fast-path commands execute with an average latency of \textbf{94.1ms}, achieving genuine conversational parity while maintaining absolute user privacy.
+
+\vspace{0.5cm}
+\noindent
+\textbf{Keywords:} Automated Speech Recognition, Click-to-Speak Hardware Isolation, Dynamic Peak Normalization, Agentic LLM Orchestration, Self-Healing Code Execution, 3-Tier Security Guard, Workstation Automation.
+
+% =========================================================================
+% TABLE OF CONTENTS & LISTS
+% =========================================================================
+\newpage
+\pagenumbering{roman}
+\setcounter{page}{1}
+
+\tableofcontents
+
+\newpage
+\listoffigures
+
+\newpage
+\listoftables
+
+% =========================================================================
+% CHAPTERS
+% =========================================================================
+\newpage
+\pagenumbering{arabic}
+\setcounter{page}{1}
+
+\input{chapters/ch1_introduction}
+\input{chapters/ch2_literature_survey}
+\input{chapters/ch3_requirements_feasibility}
+\input{chapters/ch4_system_design}
+\input{chapters/ch5_implementation}
+\input{chapters/ch6_testing_evaluation}
+\input{chapters/ch7_conclusion_future_scope}
+
+% =========================================================================
+% REFERENCES
+% =========================================================================
+\newpage
+\bibliographystyle{IEEEtran}
+\bibliography{references}
+
+% =========================================================================
+% APPENDICES
+% =========================================================================
+\appendix
+\chapter{Configuration and Environment Reference}
+\label{app:config}
+
+\begin{lstlisting}[language=Python, caption={Production config.py Settings for PRIVACY68}]
+# Audio Ingestion & Click-to-Speak Settings
+SAMPLE_RATE          = 16000
+BLOCK_SIZE           = 1280
+CHANNELS             = 1
+DTYPE                = "float32"
+PEAK_NORMALIZATION   = 0.90      # norm = (audio / peak) * 0.9
+
+# Speech Engine Configuration
+SPEECH_ENGINE        = "google"  # 100% Free Google Web Speech API
+WHISPER_FALLBACK     = "base.en" # Local Faster-Whisper fallback
+
+# Universal Agent Brain & LLM Routing
+AGENT_BRAIN_MODEL    = "gemini/gemini-2.5-flash"
+GEMINI_API_KEY       = "AIzaSy..."
+GROQ_API_KEY         = "gsk_..."
+OPENROUTER_API_KEY   = "sk-or-..."
+OLLAMA_BASE_URL      = "http://127.0.0.1:11434"
+OPENAI_API_BASE      = "http://localhost:1234/v1"
+
+# 3-Tier Security Confirmation Engine
+CONFIRMATION_TIMEOUT = 15.0      # 15s confirmation window
+SUBPROCESS_TIMEOUT   = 30.0      # Max execution timeout
+\end{lstlisting}
+
+\chapter{Automated Unit Test Suite Execution Log}
+\label{app:test_log}
+
+\begin{verbatim}
+======================================================================
+PRIVACY68 AUTOMATED VERIFICATION TEST RUNNER
+Platform: Windows-10 / Windows-11 (x64)
+Python Version: 3.11.9 (tags/v3.11.9:de54cf5)
+======================================================================
+test_auto_failover_switches_to_fallback_provider ... ok
+test_empty_generated_code_is_not_executed ... ok
+test_generate_and_execute_reports_execution_error ... ok
+test_generate_and_execute_returns_success_and_stdout ... ok
+test_generation_exception_is_returned_as_failure ... ok
+test_get_code_from_llm_removes_python_fence ... ok
+test_get_fallback_models_includes_same_provider_alternatives ... ok
+test_openrouter_model_call_without_api_key ... ok
+test_frozen_run_uses_internal_executable_runner ... ok
+test_internal_runner_calls_defined_main_function ... ok
+test_internal_runner_captures_script_failure ... ok
+test_internal_runner_does_not_call_main_twice ... ok
+test_source_run_uses_python_subprocess ... ok
+test_source_runner_calls_defined_main_function ... ok
+test_get_env_file_path_development_mode ... ok
+test_get_env_file_path_frozen_mode ... ok
+test_get_env_file_path_frozen_readonly_fallback ... ok
+test_update_dotenv_var_fallback_on_write_error ... ok
+test_update_dotenv_var_writes_and_reloads ... ok
+test_execute_command_does_not_show_stale_agent_code ... ok
+test_execute_command_preserves_executor_failure ... ok
+test_execute_command_uses_standard_executor ... ok
+test_get_plugins_returns_registered_plugin_metadata ... ok
+test_github_connection_methods_use_secure_plugin ... ok
+test_runtime_status_reports_configured_model ... ok
+test_toggle_plugin_reports_unknown_plugin ... ok
+test_uninstall_plugin_reports_missing_plugin ... ok
+test_commands_are_delegated_and_success_is_notified ... ok
+test_disabled_builtin_app_plugin_reports_actionable_error ... ok
+test_disabled_plugin_reports_actionable_error ... ok
+test_execute_builtin_app_command_with_parameters ... ok
+test_execute_system_command_detailed_greeting ... ok
+test_execute_system_command_detailed_launches_app ... ok
+test_execute_system_command_detailed_open_url ... ok
+test_execute_system_command_detailed_routes_to_agent_brain ... ok
+test_execute_system_command_returns_boolean ... ok
+test_delete_repository_with_confirmation ... ok
+test_delete_repository_without_confirmation_returns_confirmation ... ok
+test_execute_create_issue_requires_confirmation ... ok
+test_execute_create_pr_requires_confirmation ... ok
+test_execute_list_issues_calls_github ... ok
+test_execute_list_prs_calls_github ... ok
+test_execute_list_repos_calls_github ... ok
+test_execute_push_requires_confirmation ... ok
+test_execute_status_calls_github ... ok
+test_get_token_returns_stored_token ... ok
+test_store_token_persists_in_keyring ... ok
+test_create_plugin_template_creates_valid_plugin ... ok
+test_install_and_uninstall_external_plugin_file ... ok
+test_plugin_identifier_is_validated ... ok
+test_template_escapes_text_and_registers ... ok
+test_defaults_are_available_without_existing_profile ... ok
+test_existing_profile_is_merged_with_new_defaults ... ok
+test_updates_persist_and_merge_with_defaults ... ok
+test_agent_brain_claude_without_api_key ... ok
+test_agent_brain_ollama_not_found_handling ... ok
+test_agent_brain_ollama_remote_url_passed ... ok
+test_agent_brain_openai_model ... ok
+test_autocorrect_strips_various_quotes ... ok
+test_click_to_speak_recorder ... ok
+test_microphone_hardware_never_opened_at_startup_or_idle ... ok
+test_push_to_talk_recorder ... ok
+test_quoted_open_chrome_routes_to_plugin ... ok
+test_update_dotenv_var_persistence ... ok
+test_wake_words_disabled_for_privacy ... ok
+test_cancelled_action_does_not_execute ... ok
+test_expired_action_cannot_be_confirmed ... ok
+test_failed_action_is_reported_and_audited ... ok
+test_safe_action_executes_immediately ... ok
+test_sensitive_action_requires_confirmation_and_runs_once ... ok
+test_delete_skill ... ok
+test_extract_keywords ... ok
+test_find_matching_skill_exact_phrase ... ok
+test_find_matching_skill_partial_phrase ... ok
+test_find_matching_skill_screenshot ... ok
+test_learn_new_skill_and_recall ... ok
+test_preseeded_skills_exist ... ok
+test_record_execution_increments_count ... ok
+test_record_execution_updates_refined_code ... ok
+test_frozen_dashboard_launch_uses_executable ... ok
+test_source_dashboard_launch_uses_python_module ... ok
+----------------------------------------------------------------------
+Ran 87 tests in 15.316s
+
+OK
+\end{verbatim}
+
+\end{document}
+

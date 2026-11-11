@@ -1,0 +1,65 @@
+\chapter{Literature Survey}
+\label{ch:literature_survey}
+
+\section{Introduction}
+The development of PRIVACY68 intersects four foundational computer science disciplines: acoustic signal processing, automated speech recognition (ASR), autonomous large language model (LLM) agents, and operating system security sandboxing. This chapter provides a rigorous review of empirical literature governing these domains, identifying architectural gaps in current state-of-the-art voice assistants and establishing the theoretical basis for PRIVACY68's design.
+
+\section{Review of Relevant Literature}
+
+\subsection{Speech Recognition and Acoustic Signal Conditioning}
+Acoustic signal ingestion forms the initial boundary of any conversational voice assistant. In conventional systems, real-time audio streams are subjected to Voice Activity Detection (VAD) algorithms, such as energy-based thresholds or deep neural networks (e.g., Silero VAD). However, as investigated by Schuster et al. \cite{schuster2018speech}, continuous acoustic monitoring in smart home and desktop environments exposes users to acoustic leakage, inadvertent recordings, and significant battery/CPU idle overhead.
+
+Radford et al. \cite{radford2023robust} demonstrated that deep transformer models trained on massive, weakly supervised multilingual datasets (such as OpenAI's Whisper) achieve near-human Word Error Rates (WER). However, running full-precision Whisper models locally introduces substantial latency (often exceeding 800ms to 2000ms on consumer CPUs), while quantized models (int8 via CTranslate2) remain sensitive to varying microphone gains, low signal-to-noise ratios (SNR), and non-linear audio clipping. 
+
+To mitigate input variability, Desai, Raman, and Narayanan \cite{desai2021speaker} analyzed dynamic range compression and peak amplitude normalization algorithms. Their research established that pre-scaling arbitrary acoustic frames to an optimal headroom target:
+\begin{equation}
+    x_{\text{normalized}}[t] = \left( \frac{x[t]}{\max_{k} |x[k]|} \right) \cdot \alpha
+\end{equation}
+where $\alpha \in [0.85, 0.95]$ preserves the acoustic crest factor, prevents numerical quantization distortion, and boosts downstream ASR confidence across varied microphone transducers. PRIVACY68 adopts this formulation ($\alpha = 0.90$) to eliminate gain calibration issues without requiring active background listening loops.
+
+\subsection{Large Language Models as Autonomous Agents}
+The paradigm of LLMs as autonomous agents capable of tool interaction and code execution originated with the ReAct framework proposed by Yao et al. \cite{yao2023react}. By interleaving linguistic reasoning (``Thought'') with actionable tool invocations (``Action'') and environmental feedback (``Observation''), ReAct demonstrated that foundation models could autonomously plan multi-step workflows.
+
+Wang et al. \cite{wang2023survey} surveyed the progression of autonomous LLM agents, classifying them into profile, memory, planning, and action modules. While framework implementations such as LangChain and AutoGPT popularized agentic loops, they predominantly targeted web search and API querying. In desktop workstation environments, synthesizing dynamic executable code presents a more flexible and expressive abstraction than rigid API tool calling. However, as observed by Touvron et al. \cite{touvron2023llama}, generative models are prone to hallucinations, producing invalid syntax, non-existent library imports, or outdated API signatures.
+
+To resolve these failures, self-healing execution loops have emerged. When an agent executes generated code within an isolated runtime and encounters a non-zero exit code or traceback, the error text is piped back into the model context for iterative refinement. PRIVACY68 operationalizes this pattern via LiteLLM \cite{litellm2024}, orchestrating fast reasoning models (Google Gemini 2.5 Flash, Groq Cloud LPU) with deterministic local execution fallbacks.
+
+\subsection{Workstation Automation and Security Sandboxing}
+Integrating autonomous LLM agents with operating system execution environments introduces profound security vulnerabilities. Shieh, Lin, and Chen \cite{shieh2020security} investigated voice-driven automation agents and demonstrated that unrestricted script execution can inadvertently result in unrecoverable system states, including accidental directory deletion, unintended network data exfiltration, or registry corruption.
+
+Malkin, Egelman, and Wagner \cite{malkin2022privacy} conducted extensive user perception studies on smart assistants, revealing that 82\% of technical users expressed profound discomfort with systems possessing ambient background listening capabilities and unrestricted file system access. Their findings emphasized the necessity of explicit visual feedback and interactive confirmation dialogues for high-consequence operations.
+
+Traditional access control models (Discretionary Access Control vs. Mandatory Access Control) do not natively accommodate non-deterministic LLM-generated scripts. Hence, an active, policy-driven security proxy must intercept execution requests, classify action severity levels, enforce temporal timeouts, and demand human-in-the-loop verification before irreversible system alterations occur.
+
+\section{Comparative Analysis of Existing Systems}
+To highlight the distinctive contributions of PRIVACY68, Table \ref{tab:literature_comparison} provides an analytical comparison against prominent commercial voice assistants, open-source rule-based tools, and general-purpose LLM agent frameworks.
+
+\begin{table}[htbp]
+\centering
+\footnotesize
+\caption{Comprehensive Architectural Comparison of Voice and Automation Systems}
+\label{tab:literature_comparison}
+\begin{tabularx}{\textwidth}{|p{2.6cm}|X|X|X|p{3.2cm}|}
+\hline
+\textbf{Feature / Attribute} & \textbf{Commercial (Alexa/Siri)} & \textbf{Open Voice (Mycroft)} & \textbf{Agentic (LangChain)} & \textbf{Proposed System (PRIVACY68)} \\ \hline
+\textbf{Microphone State} & Always-On (Circular Buffer) & Always-On (Local VAD) & N/A (Text-based / Manual) & \textbf{100\% Click-to-Speak (Hardware Isolated)} \\ \hline
+\textbf{Acoustic Normalization} & Proprietary Cloud AGC & Energy Threshold & None & \textbf{Dynamic Peak Scaling ($\times 0.9$)} \\ \hline
+\textbf{Reasoning Backend} & Monolithic Cloud Intent Parser & Regex / Intent Slot Grammar & Single API Key / Cloud LLM & \textbf{Multi-Provider Universal Core (Cloud + Local)} \\ \hline
+\textbf{OS Automation} & Restricted (Smart Home / Media) & Limited Script Triggers & CLI / Subprocess (Unchecked) & \textbf{Self-Healing Python Code Execution} \\ \hline
+\textbf{Security Model} & Closed Sandbox / Vendor Walled & User OS Permission (Unrestricted) & Prompt Warning Only & \textbf{3-Tier Confirmation Guard + Audit Log} \\ \hline
+\textbf{Offline Autonomy} & None (Fails when offline) & High (Local Speech/Rules) & Low (Tethered to API) & \textbf{Full Offline Fallback (Ollama / Whisper)} \\ \hline
+\textbf{Cross-Device Control} & Proprietary App & REST Webhook & Custom Web UI & \textbf{Authenticated Wi-Fi Mobile Remote} \\ \hline
+\end{tabularx}
+\end{table}
+
+\section{Summary of Gaps Identified}
+From the analytical survey of existing literature and existing software implementations, four critical research and engineering gaps are identified:
+\begin{enumerate}
+    \item \textbf{Acoustic Privacy vs. Utility Trade-Off:} Existing voice assistants force a compromise between constant passive surveillance (always-listening wake words) and complete absence of voice interaction.
+    \item \textbf{Fragility of Rule-Based Command Parsers:} Local offline assistants fail when presented with novel syntactic formulations, while cloud assistants cannot synthesize multi-step desktop workflows.
+    \item \textbf{Vendor Lock-In in AI Orchestration:} Emerging AI tools typically depend on a single proprietary provider (e.g., OpenAI API), creating catastrophic vulnerability to service outages, rate limits, and model deprecations.
+    \item \textbf{Lack of Tiered Safety in Agentic Subprocesses:} LLM automation tools execute generated scripts with ambient user privileges, lacking structured safety mechanisms to halt destructive actions.
+\end{enumerate}
+
+PRIVACY68 directly resolves these four deficiencies through a cohesive, modular architecture detailed in subsequent chapters.
+

@@ -1,0 +1,260 @@
+\chapter{System Design and Architecture}
+\label{ch:architecture}
+
+\section{Introduction}
+System design translates user and functional requirements into an architectural blueprint. This chapter elucidates the high-level architecture of PRIVACY68, followed by formal Data Flow Diagrams (DFD Levels 0, 1, and 2), Unified Modeling Language (UML) structural and behavioral models, and data persistence schemas.
+
+\section{System Architecture}
+PRIVACY68 is architected as a modular, event-driven desktop intelligence framework organized into four decoupled subsystems:
+\begin{enumerate}
+    \item \textbf{Acoustic Ingestion \& Normalization Layer:} Interfaces directly with PortAudio and sound hardware. Captures 16kHz PCM audio strictly on user click-to-speak triggers, applies vector dynamic peak scaling ($\text{norm} = (\text{audio}/\text{peak}) \times 0.9$), executes lexical autocorrection, and invokes the ASR engine.
+    \item \textbf{Intent Routing \& Security Execution Layer:} Evaluates transcribed text. Immediate direct commands (media controls, application launches) are dispatched directly. Sensitive or unknown commands pass through the 3-Tier Security Guard, enforcing confirmation dialogues for destructive operations.
+    \item \textbf{Universal Multi-Provider Agentic Brain:} Connects via LiteLLM to remote cloud APIs (Google Gemini, Groq, OpenRouter) or local inference daemons (Ollama, LM Studio). Synthesizes executable Python scripts, captures execution stdout/stderr in a sandboxed subprocess, and executes autonomous self-healing retries upon exception tracebacks.
+    \item \textbf{Presentation \& Remote Interaction Layer:} Comprises the Microsoft Edge WebView2 Control Center, transparent Win32 HUD overlay, Windows system tray daemon, and a threaded LAN HTTP server providing mobile web remote control.
+\end{enumerate}
+
+\begin{figure}[htbp]
+\centering
+{\scriptsize
+\begin{verbatim}
++-------------------------------------------------------------------------+
+|                         USER WORKSTATION INTERFACE                      |
+|   +-----------------------+                 +-----------------------+   |
+|   |   Push-to-Talk HUD    |                 | WebView2 Dashboard    |   |
+|   |  (Click-to-Speak UI)  |                 |  (API & Model Config) |   |
+|   +-----------+-----------+                 +-----------+-----------+   |
++---------------|-----------------------------------------|---------------+
+                | [Trigger Voice]                         | [Config & Keys]
+                v                                         v
++-------------------------------+             +-----------------------+
+|  Acoustic Capture & Peak Norm |             | Windows Credential    |
+|   norm = (audio/peak) * 0.9   |             | Manager & .env Engine |
++---------------+---------------+             +-----------+-----------+
+                | [Normalized 16kHz PCM]                  |
+                v                                         |
++-------------------------------+                         |
+|   ASR Engine (Google Speech)  |                         |
+|   [Sub-100ms Transcription]   |                         |
++---------------+---------------+                         |
+                | [Transcribed Command]                   |
+                v                                         |
++-------------------------------+                         |
+|     Intent & Policy Router    |                         |
+|  - Fast Path (App/Media)      |                         |
+|  - 3-Tier Security Guard      |<------------------------+
++---------------+---------------+
+                | [Agentic Request]
+                v
++-------------------------------------------------------------------------+
+|                  UNIVERSAL AGENTIC BRAIN (LiteLLM)                      |
+|   [Primary: Gemini 2.5] --> [Fallback: Groq LPU] --> [Offline: Ollama]  |
++-------------------------------+-----------------------------------------+
+                | [Generated Python Code]
+                v
++-------------------------------+             +-----------------------+
+| Subprocess Execution Sandbox  |             | Persistent Skill DB   |
+|  - 30s Timeout                |------------>|     (skills.json)     |
+|  - Self-Healing Error Retries |             +-----------------------+
++-------------------------------+
+\end{verbatim}
+}
+\caption{High-Level Architectural Blueprint of PRIVACY68}
+\label{fig:high_level_architecture}
+\end{figure}
+
+\section{Data Flow Diagrams (DFD)}
+
+\subsection{DFD Level 0: Context Diagram}
+The Level 0 Context Diagram depicts the interaction boundary between external entities (the Desktop User, the Mobile Remote User, the Windows Operating System, and External LLM Providers) and the PRIVACY68 system entity.
+
+\begin{figure}[htbp]
+\centering
+{\scriptsize
+\begin{verbatim}
+                  [Desktop User]             [Mobile Remote User]
+                        |                             |
+     Voice / Click Event|                             | HTTP /api/command
+     & Confirmation     |                             | & Status Query
+                        v                             v
+                 +-------------------------------------------+
+                 |                                           |
+                 |                 PRIVACY68                 |
+                 |          Autonomous Desktop System        |
+                 |                                           |
+                 +-----+-------------------------------+-----+
+                       |                               |
+       Process Exec,   |                               | Prompt / Completion
+       Window Control, |                               | Payload (TLS 1.3)
+       File System I/O v                               v
+                 [Windows OS]                 [External LLM Providers]
+             (Win32 / PowerShell)           (Gemini, Groq, OpenRouter)
+\end{verbatim}
+}
+\caption{DFD Level 0: Context Diagram}
+\label{fig:dfd_level_0}
+\end{figure}
+
+\subsection{DFD Level 1: System Decomposition Diagram}
+The Level 1 DFD decomposes the system into its five constituent operational processes:
+\begin{enumerate}
+    \item \textbf{Process 1.0 (Acoustic Ingestion):} Captures audio on push-to-talk click, performs peak scaling, and interfaces with ASR.
+    \item \textbf{Process 2.0 (Intent Categorization \& Lexical Parsing):} Applies autocorrection, filters vocal tics, and checks for direct app hooks.
+    \item \textbf{Process 3.0 (Security Guard Interception):} Validates action risk level against allowlists and coordinates 15-second confirmation timeouts.
+    \item \textbf{Process 4.0 (Agentic LLM Synthesis \& Self-Healing):} Generates Python automation code with multi-provider failover.
+    \item \textbf{Process 5.0 (OS Subprocess Sandbox Execution):} Spawns isolated execution worker, monitors standard streams, and persists validated skills.
+\end{enumerate}
+
+\begin{figure}[htbp]
+\centering
+{\scriptsize
+\begin{verbatim}
+[Audio Stream] 
+      |
+      v
+  +-------+  Norm Audio   +-------+   Clean Text   +-------+
+  |  1.0  |-------------->|  2.0  |--------------->|  3.0  |
+  | Ingest|               | Parse |                | Guard |
+  +-------+               +-------+                +---+---+
+                                                       | [Approved / Agentic]
+                                                       v
+[LLM APIs] <======================================+-------+
+                                                  |  4.0  |
+                                                  | Brain |
+                                                  +---+---+
+                                                      | [Python Script]
+                                                      v
+                                                  +-------+
+                                                  |  5.0  |====> [Windows OS]
+                                                  | Exec  |
+                                                  +---+---+
+                                                      |
+                                                      v
+                                              [skills.json DB]
+\end{verbatim}
+}
+\caption{DFD Level 1: Functional Decomposition}
+\label{fig:dfd_level_1}
+\end{figure}
+
+\subsection{DFD Level 2: Agentic Self-Healing Execution Cycle}
+Level 2 DFD zooms into Process 4.0 and 5.0, detailing the autonomous error-recovery feedback loop. If the initial code execution produces an exception or non-zero exit status, the error traceback is dynamically packaged into a correction prompt, returned to the active LLM, and re-executed until verified or until max retries (3) are exhausted.
+
+\begin{figure}[htbp]
+\centering
+{\scriptsize
+\begin{verbatim}
++-------------------+
+|  Target Directive |
++---------+---------+
+          |
+          v
++-------------------+
+| LLM Code Synth    |<--------------------------------------+
++---------+---------+                                       |
+          | [Python Code]                                   |
+          v                                                 | [Retry Context:
++-------------------+                                       |  Code + Traceback]
+| Spawn Subprocess  |                                       |
++---------+---------+                                       |
+          |                                                 |
+          v                                                 |
+   Execution Check? =====> [Exit Code != 0 / Traceback] ====+
+          |
+          | [Exit Code == 0]
+          v
++-------------------+
+| Success & Notify  |
++---------+---------+
+          |
+          v
++-------------------+
+| Cache to Skill DB |
++-------------------+
+\end{verbatim}
+}
+\caption{DFD Level 2: Self-Healing Code Execution Cycle}
+\label{fig:dfd_level_2}
+\end{figure}
+
+\section{Unified Modeling Language (UML) Models}
+
+\subsection{Use Case Diagram}
+The primary actors interacting with PRIVACY68 are the \textbf{Desktop Operator}, the \textbf{Mobile Remote Client}, the \textbf{External AI Provider}, and the \textbf{Operating System Shell}. Core use cases include:
+\begin{itemize}
+    \item \texttt{UC-01: Click-to-Speak Audio Command}
+    \item \texttt{UC-02: Direct System Application Launch}
+    \item \texttt{UC-03: Security Confirmation Approval/Rejection}
+    \item \texttt{UC-04: Agentic Multi-Step Automation Synthesis}
+    \item \texttt{UC-05: Skill Crystallization and Memory Recall}
+    \item \texttt{UC-06: Mobile Remote Control via Local Wi-Fi}
+    \item \texttt{UC-07: Provider Key and Model Endpoint Management}
+\end{itemize}
+
+\subsection{Sequence Diagram: Agentic Self-Healing Execution}
+Figure \ref{fig:uml_sequence} details the temporal message exchange between actors during an agentic voice command execution.
+
+\begin{figure}[htbp]
+\centering
+{\scriptsize
+\begin{verbatim}
+User           Streamer         Executor        SecurityGuard    AgentBrain       Subprocess
+ |                |                |                  |              |                |
+ |--Click Speak-->|                |                  |              |                |
+ |  "Clean temp"  |                |                  |              |                |
+ |---Release----->|                |                  |              |                |
+ |                |--Transcribe--->|                  |              |                |
+ |                |                |--Check Risk----->|              |                |
+ |                |                |<-Tier 3: Confirm-|              |                |
+ |<-Prompt Confirm|                |                  |              |                |
+ |--"Yes"-------->|                |                  |              |                |
+ |                |                |--Confirm Action->|              |                |
+ |                |                |--Generate Code----------------->|                |
+ |                |                |                  |              |--Run Script--->|
+ |                |                |                  |              |<-ExitCode 1----|
+ |                |                |                  |              |  [Traceback]   |
+ |                |                |                  |              |--Self Heal---->|
+ |                |                |                  |              |--Run Patch---->|
+ |                |                |                  |              |<-ExitCode 0----|
+ |<-Success HUD---|                |<-Action Done--------------------|                |
+\end{verbatim}
+}
+\caption{UML Sequence Diagram: Self-Healing Execution with Security Interception}
+\label{fig:uml_sequence}
+\end{figure}
+
+\section{Data Persistence and Configuration Schemas}
+PRIVACY68 employs a zero-server, distributed local persistence model designed for maximum privacy, portability, and rapid lookups:
+
+\subsection{Windows Credential Manager Storage}
+Sensitive API credentials, specifically fine-grained GitHub Personal Access Tokens (PATs), are stored securely within the Windows Credential Manager via the \texttt{keyring} API under the service namespace \texttt{PRIVACY68/GitHub}. Plaintext tokens are never written to disk.
+
+\subsection{Environment and Model Configuration (\texttt{.env})}
+Runtime provider keys and dynamic endpoints are persisted in an application-level \texttt{.env} file loaded via \texttt{python-dotenv}. The schema accommodates:
+\begin{itemize}
+    \item \texttt{AGENT\_BRAIN\_MODEL}: Configured LLM identifier (e.g., \texttt{gemini/gemini-2.5-flash}, \texttt{groq/llama-3.3-70b-versatile}, \texttt{ollama/qwen2.5:0.5b}).
+    \item \texttt{GEMINI\_API\_KEY}: Google AI Studio developer credential.
+    \item \texttt{GROQ\_API\_KEY}: Groq Cloud API developer credential.
+    \item \texttt{OPENROUTER\_API\_KEY}: OpenRouter multi-provider API credential.
+    \item \texttt{OLLAMA\_BASE\_URL}: Custom local/remote endpoint for Ollama daemons.
+    \item \texttt{OPENAI\_API\_BASE}: Custom base URL for LM Studio / LocalAI servers.
+\end{itemize}
+
+\subsection{Autonomous Skill Database Schema (\texttt{skills.json})}
+When an agentic code routine executes successfully, it is stored in \texttt{skills.json} to bypass future LLM inference latency. Each entry adheres to the JSON schema:
+\begin{verbatim}
+{
+  "skill_id": "clean_temp_files",
+  "trigger_phrases": [
+    "clean temporary files",
+    "purge temp directory",
+    "clear my temp cache"
+  ],
+  "keywords": ["clean", "temp", "temporary", "files", "cache"],
+  "code": "import os, shutil, tempfile\n...",
+  "risk_level": "SENSITIVE",
+  "execution_count": 14,
+  "last_executed": "2026-11-05T22:15:30Z"
+}
+\end{verbatim}
+This architecture guarantees instantaneous sub-10ms execution for repeated tasks.
+

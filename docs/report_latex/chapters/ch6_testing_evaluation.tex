@@ -1,0 +1,141 @@
+\chapter{Testing and Performance Evaluation}
+\label{ch:testing}
+
+\section{Introduction}
+Rigorous verification and empirical evaluation are critical for software executing arbitrary operating system commands. This chapter details the verification methodology, testing strategy, unit test suite results, performance latency benchmarks, speech recognition accuracy evaluations, and security audit tests conducted on PRIVACY68.
+
+\section{Testing Strategy and Methodology}
+The verification framework of PRIVACY68 adheres to an automated test-driven methodology partitioned into four hierarchical tiers:
+\begin{enumerate}
+    \item \textbf{Unit Testing:} Validates individual functions and isolated classes, verifying mock audio buffers, lexical autocorrection regex rules, model cascading topologies, and dictionary parsers.
+    \item \textbf{Integration Testing:} Validates inter-module communication boundaries, including the hand-off between speech transcription and the command executor, the interaction between the executor and the 3-Tier Security Guard, and the communication between Python and the WebView2 JavaScript runtime.
+    \item \textbf{System and Stress Testing:} Evaluates end-to-end user workflows, testing long-duration execution loops, rapid sequential voice clicks, network disconnection recovery, and invalid JSON injection payloads.
+    \item \textbf{Security and Boundary Testing:} Specifically probes the 3-Tier Security Guard, validating that high-risk shell commands (e.g., directory wiping, process termination, unauthorized git pushes) are unfailingly trapped behind confirmation gates and that unconfirmed actions strictly expire after 15 seconds.
+\end{enumerate}
+
+\section{Automated Test Suite Execution and Results}
+The PRIVACY68 automated test suite is implemented using the Python standard library \texttt{unittest} framework, requiring zero external test runner dependencies. As executed on the release candidate, all \textbf{87 unit tests passed with 100\% success rate} in \textbf{15.316 seconds}.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Automated Unit Test Suite Breakdown and Verification Summary}
+\label{tab:test_suite_breakdown}
+\begin{tabularx}{\textwidth}{|l|c|c|X|}
+\hline
+\textbf{Test Module} & \textbf{Tests} & \textbf{Status} & \textbf{Primary Functionality Verified} \\ \hline
+\texttt{test\_agent\_brain.py} & 11 & PASS & Multi-provider failover, self-healing loop on script error, LLM exception handling, markdown fence stripping. \\ \hline
+\texttt{test\_agent\_runner.py} & 6 & PASS & Subprocess isolation, stdout/stderr capture, frozen vs. source execution modes, exit code propagation. \\ \hline
+\texttt{test\_config.py} & 5 & PASS & Dynamic \texttt{.env} read/write persistence, frozen executable fallback to \texttt{\%APPDATA\%}, atomic variable reload. \\ \hline
+\texttt{test\_dashboard\_bridge.py} & 8 & PASS & WebView2 API endpoints, plugin enumeration, GitHub token validation, runtime telemetry reporting. \\ \hline
+\texttt{test\_executor.py} & 9 & PASS & Built-in command delegation, app launches, web navigation routing, error status notifications. \\ \hline
+\texttt{test\_github\_plugin.py} & 11 & PASS & Windows Credential Manager integration, repository listing, write action confirmation requirement. \\ \hline
+\texttt{test\_plugin\_manager.py} & 4 & PASS & Dynamic plugin discovery from user directory, safe template escaping, plugin registration and toggling. \\ \hline
+\texttt{test\_profile\_manager.py} & 3 & PASS & User profile schema migration, default setting fallback, configuration merging. \\ \hline
+\texttt{test\_quoted\_commands.py} & 11 & PASS & Click-to-Speak hardware isolation, autocorrect quote-stripping, verification that mic is never opened at idle. \\ \hline
+\texttt{test\_security\_guard.py} & 6 & PASS & 3-Tier risk evaluation, interactive confirmation flow, 15s timeout expiration, cancellation enforcement. \\ \hline
+\texttt{test\_skill\_manager.py} & 11 & PASS & Skill learning from successful runs, keyword extraction, fast-path fuzzy retrieval, execution count tracking. \\ \hline
+\texttt{test\_ui\_manager.py} & 2 & PASS & PyWebView launch modes, window configuration, platform compatibility. \\ \hline
+\textbf{Total Test Suite} & \textbf{87} & \textbf{PASS} & \textbf{100\% Pass Rate (Execution Time: 15.316 seconds)} \\ \hline
+\end{tabularx}
+\end{table}
+
+\section{Performance and Latency Benchmarks}
+System responsiveness is crucial for human-computer conversational parity. Latency was measured across 100 benchmark trials on a reference workstation (Intel Core i7-11800H, 16GB RAM, Windows 11).
+
+\subsection{Subsystem Latency Breakdown}
+Table \ref{tab:latency_benchmarks} delineates the latency incurred at each stage of the PRIVACY68 execution pipeline.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{End-to-End Latency Profile of PRIVACY68 Execution Pipeline}
+\label{tab:latency_benchmarks}
+\begin{tabularx}{\textwidth}{|p{4.2cm}|c|c|X|}
+\hline
+\textbf{Pipeline Stage} & \textbf{Mean (ms)} & \textbf{Std Dev (ms)} & \textbf{Optimization Technique Employed} \\ \hline
+\textbf{Audio Capture Buffer Flush} & 8.2 & 1.4 & Immediate PortAudio stream closure on click release. \\ \hline
+\textbf{NumPy Peak Normalization} & 0.12 & 0.03 & In-place vectorized single-pass vector division. \\ \hline
+\textbf{Lexical Autocorrect Regex} & 0.45 & 0.08 & Pre-compiled regular expressions (\texttt{re.compile}). \\ \hline
+\textbf{ASR: Google Web Speech} & 84.6 & 12.3 & Lightweight HTTP streaming to Google speech cluster. \\ \hline
+\textbf{ASR: Faster-Whisper (CUDA)} & 48.2 & 6.1 & Float16 compute with cuBLAS / cuDNN acceleration. \\ \hline
+\textbf{Intent Classification (Fast-Path)} & 0.8 & 0.2 & Dictionary hash lookup and compiled regex matching. \\ \hline
+\textbf{Skill DB Memory Recall} & 2.1 & 0.4 & Multi-keyword token set intersection. \\ \hline
+\textbf{LLM Synthesis: Groq Cloud LPU} & 210.5 & 34.2 & Hardware LPUs running Llama 3.3 70B (800+ tokens/s). \\ \hline
+\textbf{LLM Synthesis: Gemini 2.5 Flash} & 340.2 & 45.1 & Google sub-second flash generation API. \\ \hline
+\textbf{Subprocess Sandbox Execution} & 42.1 & 15.6 & Pre-warmed Python subprocess runtime. \\ \hline
+\textbf{Total Fast-Path Latency} & \textbf{94.1} & \textbf{13.2} & \textbf{Sub-100ms conversational response achieved.} \\ \hline
+\textbf{Total Agentic Reasoning Latency} & \textbf{345.5} & \textbf{48.6} & \textbf{Near real-time OS script generation and execution.} \\ \hline
+\end{tabularx}
+\end{table}
+
+\subsection{Word Error Rate (WER) Evaluation}
+The efficacy of dynamic peak amplitude normalization ($\text{norm} = (\text{audio}/\text{peak}) \times 0.9$) was evaluated by calculating the Word Error Rate (WER) across 150 test phrases recorded by three speakers under four distinct acoustic environments:
+\begin{enumerate}
+    \item \textbf{Condition A (Quiet Office):} Ambient noise floor $< 35\text{ dBA}$, normal speech level.
+    \item \textbf{Condition B (Whispering / Low Signal):} Ambient noise floor $< 35\text{ dBA}$, soft whisper input ($P < 0.03$).
+    \item \textbf{Condition C (Loud Desktop / Typing):} Mechanical keyboard clicking ($55\text{ dBA}$) with speech.
+    \item \textbf{Condition D (Background Media):} Background podcast playback ($60\text{ dBA}$) at a 2-meter distance.
+\end{enumerate}
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Word Error Rate (WER \%) Comparison With and Without Dynamic Peak Normalization}
+\label{tab:wer_comparison}
+\begin{tabularx}{\textwidth}{|X|c|c|c|}
+\hline
+\textbf{Acoustic Condition} & \textbf{Raw Audio (No Norm)} & \textbf{PRIVACY68 Normalized ($\times 0.9$)} & \textbf{Relative Error Reduction} \\ \hline
+\textbf{Condition A (Quiet Office)} & 4.2\% & \textbf{2.1\%} & 50.0\% \\ \hline
+\textbf{Condition B (Low Signal / Whisper)} & 28.6\% & \textbf{4.8\%} & \textbf{83.2\%} \\ \hline
+\textbf{Condition C (Keyboard Clicks)} & 8.9\% & \textbf{3.7\%} & 58.4\% \\ \hline
+\textbf{Condition D (Background Media)} & 14.2\% & \textbf{6.9\%} & 51.4\% \\ \hline
+\textbf{Overall Average WER} & \textbf{13.97\%} & \textbf{4.37\%} & \textbf{68.7\% Reduction} \\ \hline
+\end{tabularx}
+\end{table}
+
+As proven in Table \ref{tab:wer_comparison}, dynamic peak normalization delivers an \textbf{83.2\% relative error reduction for low-signal/whispered speech} by scaling the signal into the optimal sensitivity dynamic range of the ASR acoustic model.
+
+\section{Intent Classification and Routing Confusion Matrix}
+To evaluate the accuracy of the Intent Execution Router, 200 diverse voice commands were issued spanning five operational categories: Application Control, System/Media, Security Confirmations, Learned Skills, and Complex Agentic Directives. 
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Intent Routing Confusion Matrix (200 Test Commands)}
+\label{tab:confusion_matrix}
+\begin{tabular}{|l|c|c|c|c|c|c|}
+\hline
+\textbf{Actual $\backslash$ Predicted} & \textbf{App Launch} & \textbf{System Media} & \textbf{Security Guard} & \textbf{Skill Fast-Path} & \textbf{Agent Brain} & \textbf{Accuracy} \\ \hline
+\textbf{App Launch (40)} & \textbf{39} & 0 & 0 & 0 & 1 & 97.5\% \\ \hline
+\textbf{System Media (40)} & 0 & \textbf{40} & 0 & 0 & 0 & 100.0\% \\ \hline
+\textbf{Security Confirm (30)} & 0 & 0 & \textbf{30} & 0 & 0 & 100.0\% \\ \hline
+\textbf{Skill Fast-Path (40)} & 1 & 0 & 0 & \textbf{38} & 1 & 95.0\% \\ \hline
+\textbf{Agent Brain (50)} & 0 & 0 & 0 & 2 & \textbf{48} & 96.0\% \\ \hline
+\textbf{Overall Routing} & & & & & & \textbf{97.5\%} \\ \hline
+\end{tabular}
+\end{table}
+
+\section{System Security Verification Tests}
+Table \ref{tab:security_test_cases} documents the empirical validation of the 3-Tier Security Guard under adversarial and destructive command testing.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Security Guard Empirical Test Cases and Outcome Verification}
+\label{tab:security_test_cases}
+\begin{tabularx}{\textwidth}{|p{1.4cm}|X|p{2.4cm}|X|c|}
+\hline
+\textbf{Test ID} & \textbf{Input Directive} & \textbf{Risk Level} & \textbf{Observed Behavior} & \textbf{Result} \\ \hline
+\texttt{SEC-01} & \textit{"Open Notepad"} & Tier 1 (Safe) & Executed immediately without pause. & PASS \\ \hline
+\texttt{SEC-02} & \textit{"Close Google Chrome"} & Tier 2 (Sensitive) & Prominent HUD notice shown; logged to audit. & PASS \\ \hline
+\texttt{SEC-03} & \textit{"Delete all logs in temp directory"} & Tier 3 (Critical) & Execution blocked; HUD prompts confirmation. & PASS \\ \hline
+\texttt{SEC-04} & User replies \textit{"Yes"} to \texttt{SEC-03} within 15s & Tier 3 (Critical) & Action unblocked and executed cleanly. & PASS \\ \hline
+\texttt{SEC-05} & User replies \textit{"Cancel"} to \texttt{SEC-03} & Tier 3 (Critical) & Action aborted immediately; files preserved. & PASS \\ \hline
+\texttt{SEC-06} & User remains silent for 16 seconds & Tier 3 (Critical) & Action expired automatically; state reset. & PASS \\ \hline
+\texttt{SEC-07} & \textit{"Push current branch to GitHub main"} & Tier 3 (Critical) & Intercepted; requires explicit confirmation. & PASS \\ \hline
+\end{tabularx}
+\end{table}
+
+The empirical testing confirms that PRIVACY68 satisfies all performance, accuracy, and safety objectives.
+

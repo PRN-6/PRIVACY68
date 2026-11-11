@@ -32,8 +32,6 @@ class ProfileManager:
             "hud_enabled": True,
             "theme": "obsidian_red",
             "gmail_user_email": "",
-            "global_hotkey": "Ctrl+Shift+Space",
-            "global_hotkey_enabled": True,
         }
 
         if not os.path.exists(self.profile_path):
