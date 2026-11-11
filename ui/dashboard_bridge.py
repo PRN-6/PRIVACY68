@@ -3,7 +3,7 @@ import logging
 import platform
 import shutil
 import subprocess
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 import sounddevice as sd
 import numpy as np
 
@@ -748,6 +748,11 @@ class DashboardAPI:
                     "category": category,
                     "plugin_type": plugin_type,
                     "user_email": getattr(p, "get_user_email", lambda: "")() if hasattr(p, "get_user_email") else "",
+                    "settings": {
+                        "user_email": getattr(p, "get_user_email", lambda: "")() if hasattr(p, "get_user_email") else profile_manager.get("gmail_user_email", ""),
+                        "default_contact": profile_manager.get("whatsapp_default_contact", ""),
+                        "default_url": profile_manager.get(f"{getattr(p, 'id', '')}_default_url", ""),
+                    },
                     "triggers": all_triggers[:4],
                     "commands": commands_info,
                     "total_commands": len(commands_info)
@@ -766,6 +771,43 @@ class DashboardAPI:
         except Exception as e:
             logger.error(f"Error toggling plugin {plugin_id}: {e}")
             return {"success": False, "message": str(e)}
+
+    def execute_plugin_action(self, plugin_id: str, action: str, kwargs: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """Executes a direct plugin action from the dashboard."""
+        try:
+            from plugins.manager import plugin_manager
+            plugin = plugin_manager.get_plugin(plugin_id)
+            if not plugin:
+                return {"success": False, "message": f"Plugin '{plugin_id}' was not found."}
+            if not plugin.is_enabled:
+                return {"success": False, "message": f"Plugin '{plugin_id}' is disabled. Enable it first."}
+            res = plugin.execute(action, **(kwargs or {}))
+            return {"success": bool(res), "message": f"Action '{action}' executed successfully on {plugin.name}." if res else f"Action '{action}' failed."}
+        except Exception as e:
+            logger.error(f"Error executing plugin action: {e}")
+            return {"success": False, "message": str(e)}
+
+    def set_plugin_setting(self, plugin_id: str, setting_key: str, value: Any) -> Dict[str, Any]:
+        """Saves a custom setting for a given plugin."""
+        try:
+            clean_val = str(value).strip() if isinstance(value, str) else value
+            full_key = f"{plugin_id}_{setting_key}"
+            profile_manager.set(full_key, clean_val)
+            if plugin_id == "gmail" and setting_key == "email":
+                return self.set_gmail_config(str(clean_val))
+            return {"success": True, "message": f"Saved {setting_key} for {plugin_id}.", "value": clean_val}
+        except Exception as e:
+            logger.error(f"Error saving plugin setting: {e}")
+            return {"success": False, "message": str(e)}
+
+    def get_plugin_setting(self, plugin_id: str, setting_key: str) -> Dict[str, Any]:
+        """Retrieves a custom setting for a given plugin."""
+        try:
+            full_key = f"{plugin_id}_{setting_key}"
+            val = profile_manager.get(full_key, "")
+            return {"success": True, "value": val}
+        except Exception as e:
+            return {"success": False, "value": "", "message": str(e)}
 
     def uninstall_plugin(self, plugin_id: str) -> Dict[str, Any]:
         """Uninstalls and deletes a custom user plugin."""

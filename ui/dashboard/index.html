@@ -379,6 +379,83 @@
       flex-direction: column;
       gap: 8px;
     }
+    .plugin-card {
+      cursor: pointer;
+      position: relative;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      user-select: none;
+    }
+    .plugin-card:hover {
+      border-color: rgba(239, 68, 68, 0.45);
+      background: var(--panel-raised);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+    }
+    .plugin-card.expanded {
+      border-color: var(--accent);
+      background: var(--panel-raised);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+    }
+    .plugin-config-badge {
+      font-size: 10px;
+      padding: 2px 7px;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text-muted);
+      border: 1px solid var(--line-subtle);
+      transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      cursor: pointer;
+    }
+    .plugin-card:hover .plugin-config-badge {
+      color: var(--text);
+      border-color: var(--line);
+    }
+    .plugin-card.expanded .plugin-config-badge {
+      background: rgba(239, 68, 68, 0.15);
+      color: var(--accent);
+      border-color: rgba(239, 68, 68, 0.4);
+    }
+    .plugin-config-drawer {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding-top: 10px;
+      margin-top: 4px;
+      border-top: 1px solid var(--line);
+      animation: pluginDrawerSlide 0.2s ease-out;
+      user-select: text;
+    }
+    @keyframes pluginDrawerSlide {
+      from { opacity: 0; transform: translateY(-5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .plugin-input-group {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+    .plugin-input-group input {
+      flex: 1;
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 6px 10px;
+      border-radius: var(--radius-sm);
+      font-size: 11px;
+    }
+    .plugin-input-group input:focus {
+      outline: none;
+      border-color: var(--accent);
+      background: rgba(0, 0, 0, 0.5);
+    }
+    .plugin-quick-actions {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 2px;
+    }
     .skill-title { font-weight: 700; font-size: 13px; color: var(--text); display: flex; align-items: center; justify-content: space-between; }
     .skill-desc { font-size: 11px; color: var(--text-muted); line-height: 1.4; }
     .skill-tags { display: flex; flex-wrap: wrap; gap: 4px; }
@@ -1472,22 +1549,195 @@
 
         plugins.forEach(p => {
           const card = document.createElement('div');
-          card.className = 'skill-card';
+          card.className = 'skill-card plugin-card';
+          card.dataset.pluginId = p.id;
 
           const title = document.createElement('div');
           title.className = 'skill-title';
-          title.innerHTML = `<span>${p.name}</span><span class="chip ${p.is_enabled ? 'good' : ''}">${p.is_enabled ? 'Active' : 'Disabled'}</span>`;
+          title.innerHTML = `
+            <span style="display:flex; align-items:center; gap:6px;">
+              <span style="font-size:14px;">${p.icon || '🔌'}</span>
+              <strong>${p.name}</strong>
+            </span>
+            <span style="display:flex; align-items:center; gap:6px;">
+              <span class="chip ${p.is_enabled ? 'good' : ''}">${p.is_enabled ? 'Active' : 'Disabled'}</span>
+              <span class="plugin-config-badge">⚙️ Config</span>
+            </span>
+          `;
 
           const desc = document.createElement('div');
           desc.className = 'skill-desc';
           desc.textContent = p.description || '';
+
+          // Expandable configuration drawer
+          const drawer = document.createElement('div');
+          drawer.className = 'plugin-config-drawer';
+          drawer.style.display = 'none';
+          drawer.onclick = (e) => e.stopPropagation();
+
+          if (p.id === 'gmail') {
+            drawer.innerHTML = `
+              <div style="font-size:11px; font-weight:700; color:var(--text); margin-bottom:2px;">Gmail Account / Email Configuration</div>
+              <div style="font-size:10px; color:var(--text-muted); margin-bottom:6px;">Enter your Google email address. PRIVACY68 will route email draft commands to this specific Google account.</div>
+              <div class="plugin-input-group">
+                <input type="email" id="gmail-email-input-${p.id}" placeholder="your.email@gmail.com" value="${p.user_email || (p.settings && p.settings.user_email) || ''}">
+                <button class="btn sm primary" id="gmail-save-btn-${p.id}">Save Email</button>
+              </div>
+              <div class="plugin-quick-actions">
+                <button class="btn sm" id="gmail-open-btn-${p.id}">Open Inbox</button>
+                <button class="btn sm" id="gmail-test-btn-${p.id}">Draft Test Email</button>
+              </div>
+            `;
+          } else if (p.id === 'whatsapp') {
+            const defaultContact = (p.settings && p.settings.default_contact) || '';
+            drawer.innerHTML = `
+              <div style="font-size:11px; font-weight:700; color:var(--text); margin-bottom:2px;">WhatsApp Default Contact</div>
+              <div style="font-size:10px; color:var(--text-muted); margin-bottom:6px;">Default phone number or recipient for automated message drafting.</div>
+              <div class="plugin-input-group">
+                <input type="text" id="wa-contact-input-${p.id}" placeholder="+1234567890 or contact name" value="${defaultContact}">
+                <button class="btn sm primary" id="wa-save-btn-${p.id}">Save Contact</button>
+              </div>
+              <div class="plugin-quick-actions">
+                <button class="btn sm" id="wa-open-btn-${p.id}">Open WhatsApp</button>
+              </div>
+            `;
+          } else if (p.id === 'chrome' || p.id === 'brave') {
+            const defaultUrl = (p.settings && p.settings.default_url) || '';
+            drawer.innerHTML = `
+              <div style="font-size:11px; font-weight:700; color:var(--text); margin-bottom:2px;">${p.name} Start Page / Target URL</div>
+              <div style="font-size:10px; color:var(--text-muted); margin-bottom:6px;">Default URL opened when launching ${p.name}.</div>
+              <div class="plugin-input-group">
+                <input type="url" id="browser-url-input-${p.id}" placeholder="https://www.google.com" value="${defaultUrl}">
+                <button class="btn sm primary" id="browser-save-btn-${p.id}">Save URL</button>
+              </div>
+              <div class="plugin-quick-actions">
+                <button class="btn sm" id="browser-launch-btn-${p.id}">Launch ${p.name}</button>
+              </div>
+            `;
+          } else if (p.id === 'github') {
+            drawer.innerHTML = `
+              <div style="font-size:11px; font-weight:700; color:var(--text); margin-bottom:2px;">GitHub Authentication & PAT</div>
+              <div style="font-size:10px; color:var(--text-muted); margin-bottom:6px;">Connect a personal access token with repository permissions below.</div>
+              <div class="plugin-quick-actions">
+                <button class="btn sm primary" id="gh-focus-btn-${p.id}">Configure GitHub Token</button>
+              </div>
+            `;
+          } else {
+            drawer.innerHTML = `
+              <div style="font-size:11px; font-weight:700; color:var(--text); margin-bottom:2px;">Plugin Information</div>
+              <div style="font-size:10px; color:var(--text-muted); margin-bottom:6px;">Category: ${p.category || 'General'} | Version: ${p.version || '1.0.0'}</div>
+              <div class="plugin-quick-actions">
+                <button class="btn sm" id="generic-test-btn-${p.id}">Test Action</button>
+              </div>
+            `;
+          }
+
+          // Wire up drawer buttons after insertion
+          setTimeout(() => {
+            if (p.id === 'gmail') {
+              const saveBtn = $(`gmail-save-btn-${p.id}`);
+              const emailInp = $(`gmail-email-input-${p.id}`);
+              const openBtn = $(`gmail-open-btn-${p.id}`);
+              const testBtn = $(`gmail-test-btn-${p.id}`);
+              if (saveBtn && emailInp) {
+                saveBtn.onclick = async () => {
+                  const val = emailInp.value.trim();
+                  const res = await bridge().set_gmail_config(val);
+                  showToast(res.message || 'Gmail address saved!');
+                };
+              }
+              if (openBtn) {
+                openBtn.onclick = async () => {
+                  const res = await bridge().execute_plugin_action('gmail', 'open');
+                  showToast(res.message || 'Opened Gmail inbox.');
+                };
+              }
+              if (testBtn && emailInp) {
+                testBtn.onclick = async () => {
+                  const target = emailInp.value.trim() || 'test@example.com';
+                  const res = await bridge().execute_plugin_action('gmail', 'compose', {
+                    to: target,
+                    subject: 'Hello from PRIVACY68',
+                    body: 'Test draft generated from PRIVACY68 Control Center.'
+                  });
+                  showToast(res.message || 'Opened Gmail compose draft.');
+                };
+              }
+            } else if (p.id === 'whatsapp') {
+              const saveBtn = $(`wa-save-btn-${p.id}`);
+              const contactInp = $(`wa-contact-input-${p.id}`);
+              const openBtn = $(`wa-open-btn-${p.id}`);
+              if (saveBtn && contactInp) {
+                saveBtn.onclick = async () => {
+                  const val = contactInp.value.trim();
+                  const res = await bridge().set_plugin_setting('whatsapp', 'default_contact', val);
+                  showToast(res.message || 'Default contact saved!');
+                };
+              }
+              if (openBtn) {
+                openBtn.onclick = async () => {
+                  const res = await bridge().execute_plugin_action('whatsapp', 'open');
+                  showToast(res.message || 'Launched WhatsApp.');
+                };
+              }
+            } else if (p.id === 'chrome' || p.id === 'brave') {
+              const saveBtn = $(`browser-save-btn-${p.id}`);
+              const urlInp = $(`browser-url-input-${p.id}`);
+              const launchBtn = $(`browser-launch-btn-${p.id}`);
+              if (saveBtn && urlInp) {
+                saveBtn.onclick = async () => {
+                  const val = urlInp.value.trim();
+                  const res = await bridge().set_plugin_setting(p.id, 'default_url', val);
+                  showToast(res.message || 'URL saved!');
+                };
+              }
+              if (launchBtn && urlInp) {
+                launchBtn.onclick = async () => {
+                  const url = urlInp.value.trim() || undefined;
+                  const res = await bridge().execute_plugin_action(p.id, 'open_url', url ? { url } : {});
+                  showToast(res.message || `Launched ${p.name}.`);
+                };
+              }
+            } else if (p.id === 'github') {
+              const ghBtn = $(`gh-focus-btn-${p.id}`);
+              if (ghBtn) {
+                ghBtn.onclick = () => {
+                  const inp = $('github-token-input');
+                  if (inp) {
+                    inp.scrollIntoView({ behavior: 'smooth' });
+                    inp.focus();
+                  }
+                };
+              }
+            } else {
+              const testBtn = $(`generic-test-btn-${p.id}`);
+              if (testBtn) {
+                testBtn.onclick = async () => {
+                  const res = await bridge().execute_plugin_action(p.id, 'main');
+                  showToast(res.message || 'Action sent.');
+                };
+              }
+            }
+          }, 0);
+
+          const configBadge = title.querySelector('.plugin-config-badge');
+          function toggleDrawer() {
+            const isHidden = drawer.style.display === 'none';
+            drawer.style.display = isHidden ? 'flex' : 'none';
+            card.classList.toggle('expanded', isHidden);
+            if (configBadge) {
+              configBadge.textContent = isHidden ? '▲ Close' : '⚙️ Config';
+            }
+          }
+          card.onclick = toggleDrawer;
 
           const act = document.createElement('div');
           act.className = 'skill-actions';
           const togBtn = document.createElement('button');
           togBtn.className = 'btn sm ' + (p.is_enabled ? '' : 'primary');
           togBtn.textContent = p.is_enabled ? 'Disable' : 'Enable';
-          togBtn.onclick = async () => {
+          togBtn.onclick = async (e) => {
+            e.stopPropagation();
             await bridge().toggle_plugin(p.id, !p.is_enabled);
             await loadPlugins();
           };
@@ -1495,28 +1745,7 @@
 
           card.appendChild(title);
           card.appendChild(desc);
-
-          if (p.id === 'gmail') {
-            const configRow = document.createElement('div');
-            configRow.style.cssText = 'display:flex; gap:8px; align-items:center; margin:10px 0;';
-            const emailInp = document.createElement('input');
-            emailInp.type = 'email';
-            emailInp.className = 'input sm';
-            emailInp.placeholder = 'your.email@gmail.com';
-            emailInp.value = p.user_email || '';
-            emailInp.style.cssText = 'flex:1; background:rgba(0,0,0,0.25); border:1px solid var(--border); color:var(--text); padding:4px 8px; border-radius:4px; font-size:12px;';
-            const saveBtn = document.createElement('button');
-            saveBtn.className = 'btn sm';
-            saveBtn.textContent = 'Save Email';
-            saveBtn.onclick = async () => {
-              const res = await bridge().set_gmail_config(emailInp.value.trim());
-              showToast(res.message || 'Gmail account saved!');
-            };
-            configRow.appendChild(emailInp);
-            configRow.appendChild(saveBtn);
-            card.appendChild(configRow);
-          }
-
+          card.appendChild(drawer);
           card.appendChild(act);
           container.appendChild(card);
         });

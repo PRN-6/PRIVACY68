@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 from types import SimpleNamespace
 
 from ui.dashboard_bridge import DashboardAPI
@@ -109,6 +109,34 @@ class TestDashboardAPI(unittest.TestCase):
 
         self.assertFalse(result["success"])
         self.assertIn("not found", result["message"])
+
+    def test_execute_plugin_action_success_and_disabled(self):
+        plugin = Mock()
+        plugin.name = "Test Plugin"
+        plugin.is_enabled = True
+        plugin.execute.return_value = True
+
+        with patch("plugins.manager.plugin_manager.get_plugin", return_value=plugin):
+            res = self.api.execute_plugin_action("test", "test_action", {"key": "val"})
+            self.assertTrue(res["success"])
+            plugin.execute.assert_called_once_with("test_action", key="val")
+
+        plugin.is_enabled = False
+        with patch("plugins.manager.plugin_manager.get_plugin", return_value=plugin):
+            res_disabled = self.api.execute_plugin_action("test", "test_action")
+            self.assertFalse(res_disabled["success"])
+            self.assertIn("disabled", res_disabled["message"])
+
+    def test_set_and_get_plugin_setting(self):
+        with patch("plugins.profile_manager.profile_manager.set") as mock_set:
+            res = self.api.set_plugin_setting("whatsapp", "default_contact", "+1987654321")
+            self.assertTrue(res["success"])
+            mock_set.assert_called_once_with("whatsapp_default_contact", "+1987654321")
+
+        with patch("plugins.profile_manager.profile_manager.get", return_value="+1987654321"):
+            get_res = self.api.get_plugin_setting("whatsapp", "default_contact")
+            self.assertTrue(get_res["success"])
+            self.assertEqual(get_res["value"], "+1987654321")
 
 
 if __name__ == "__main__":
