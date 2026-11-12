@@ -1,7 +1,8 @@
 # PRIVACY68 runtime dependencies (Windows, Python 3.11+)
 
-# Speech input and transcription (100% Free Google Web Speech API)
+# Speech input and transcription (Local Offline Faster-Whisper + Free Google Web Speech API)
 SpeechRecognition>=3.10.0
+faster-whisper>=1.0.0
 numpy>=1.26,<3
 sounddevice>=0.4.6,<1
 
@@ -11,8 +12,6 @@ ollama>=0.4,<1
 requests>=2.31.0
 
 # Windows UI, System Tray, and Automation
-customtkinter>=5.2.0
-darkdetect>=0.8.0
 Pillow>=10,<13
 pystray>=0.19,<1
 pyttsx3>=2.90,<3

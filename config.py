@@ -75,12 +75,14 @@ DTYPE = "float32"
 SILENCE_DURATION_CHUNKS = 8      # 8 chunks * 80ms = ~0.64s pause after speech for rapid cut-off
 SILENCE_THRESHOLD = 0.008        # RMS noise floor
 
-# Speech Engine: 100% Free Google Web Speech Recognition (zero keys, zero cost)
-# Always uses Google's reliable cloud voice API with zero setup or API credentials needed.
-SPEECH_ENGINE = "google"
-WHISPER_MODEL_SIZE = "google-speech-free"
-WHISPER_DEVICE = "cloud"
-WHISPER_COMPUTE_TYPE = "cloud-api"
+# Speech Engine Configuration
+# "auto": Prefers local offline Faster-Whisper for 100% zero-cloud privacy; falls back to Google Speech if needed.
+# "whisper": Strictly offline on-device transcription (Faster-Whisper / CTranslate2). Zero cloud data leakage.
+# "google": Google Web Speech cloud API (100% free, zero setup, but requires active internet).
+SPEECH_ENGINE = os.environ.get("SPEECH_ENGINE", "auto")
+WHISPER_MODEL_SIZE = os.environ.get("WHISPER_MODEL_SIZE", "tiny")
+WHISPER_DEVICE = os.environ.get("WHISPER_DEVICE", "cpu")
+WHISPER_COMPUTE_TYPE = os.environ.get("WHISPER_COMPUTE_TYPE", "int8")
 
 # Audio feedback sounds (True = beep on activation, False = silent)
 ENABLE_BEEP = False

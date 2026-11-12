@@ -20,8 +20,7 @@ for package in (
     "speech_recognition",
     "pyttsx3",
     "ollama",
-    "customtkinter",
-    "darkdetect",
+    "faster_whisper",
     "requests",
 ):
     try:

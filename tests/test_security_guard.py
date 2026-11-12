@@ -75,6 +75,34 @@ class TestSecurityGuard(unittest.TestCase):
         self.assertIsNone(result)
         self.assertEqual(self.guard._audit_log[-1]["status"], "ERROR: operation failed")
 
+    def test_inspect_code_risk_safe(self):
+        code = "import os\nprint('Hello World')\nx = 1 + 1"
+        risk, action_id, desc = self.guard.inspect_code_risk(code)
+        self.assertEqual(risk, ActionRiskLevel.SAFE)
+        self.assertEqual(action_id, "agent_code")
+
+    def test_inspect_code_risk_sensitive(self):
+        code = "import shutil\nshutil.rmtree('C:/test_folder')"
+        risk, action_id, desc = self.guard.inspect_code_risk(code)
+        self.assertEqual(risk, ActionRiskLevel.SENSITIVE)
+        self.assertEqual(action_id, "delete_file")
+
+        code2 = "import subprocess\nsubprocess.run(['shutdown', '/s', '/t', '0'])"
+        risk2, action_id2, desc2 = self.guard.inspect_code_risk(code2)
+        self.assertEqual(risk2, ActionRiskLevel.SENSITIVE)
+        self.assertEqual(action_id2, "shutdown_pc")
+
+    def test_inspect_code_risk_critical(self):
+        code = "import winreg\nkey = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, 'Software')"
+        risk, action_id, desc = self.guard.inspect_code_risk(code)
+        self.assertEqual(risk, ActionRiskLevel.CRITICAL)
+        self.assertEqual(action_id, "modify_registry")
+
+        code2 = "import os\nos.system('format D: /fs:NTFS /q')"
+        risk2, action_id2, desc2 = self.guard.inspect_code_risk(code2)
+        self.assertEqual(risk2, ActionRiskLevel.CRITICAL)
+        self.assertEqual(action_id2, "format_drive")
+
 
 if __name__ == "__main__":
     unittest.main()

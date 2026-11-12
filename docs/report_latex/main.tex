@@ -220,7 +220,7 @@ yielding a \textbf{68.7\% relative error reduction in Word Error Rate (WER)} acr
 
 For reasoning and execution, PRIVACY68 pioneers an agentic multi-provider orchestration architecture leveraging LiteLLM. The engine dynamically routes directives across Google Gemini 2.5 Flash, Groq Cloud LPU (GPT-OSS 120B / Llama 3.3 70B), OpenRouter, and local offline daemons (Ollama, LM Studio) with automatic intra-provider failover. To ensure safe execution of LLM-synthesized Python automation scripts, a deterministic \textbf{3-Tier Security Guard} intercepts high-risk operations (e.g., file system purges, git force pushes, process kills), enforcing an interactive 15-second human confirmation gate. Verified routines are crystallized into a persistent JSON skill database for instantaneous, sub-10ms future recall.
 
-The entire system was evaluated through an automated test suite comprising \textbf{87 unit tests}, achieving a \textbf{100\% pass rate in 15.316 seconds}. Fast-path commands execute with an average latency of \textbf{94.1ms}, achieving genuine conversational parity while maintaining absolute user privacy.
+The entire system was evaluated through an automated test suite comprising \textbf{120 unit tests}, achieving a \textbf{100\% pass rate in 16.723 seconds}. Fast-path commands execute with an average latency of \textbf{94.1ms}, achieving genuine conversational parity while maintaining absolute user privacy.
 
 \vspace{0.5cm}
 \noindent
@@ -386,7 +386,7 @@ test_record_execution_updates_refined_code ... ok
 test_frozen_dashboard_launch_uses_executable ... ok
 test_source_dashboard_launch_uses_python_module ... ok
 ----------------------------------------------------------------------
-Ran 87 tests in 15.316s
+Ran 120 tests in 16.723s
 
 OK
 \end{verbatim}

@@ -55,6 +55,35 @@ def autocorrect_speech_command(text: str) -> str:
     return re.sub(r"^['\"`‘“\s]+|['\"`’”\s]+$", "", cleaned).strip(".!?, \t\n")
 
 
+_local_whisper_model = None
+_whisper_lock = threading.Lock()
+
+
+def reset_whisper_model() -> None:
+    """Clears the cached local Whisper model so it reloads with updated settings."""
+    global _local_whisper_model
+    with _whisper_lock:
+        _local_whisper_model = None
+
+
+def get_whisper_model():
+    """Lazily initializes and caches the local offline Faster-Whisper model."""
+    global _local_whisper_model
+    if _local_whisper_model is None:
+        with _whisper_lock:
+            if _local_whisper_model is None:
+                try:
+                    from faster_whisper import WhisperModel
+                    model_size = getattr(config, "WHISPER_MODEL_SIZE", "tiny")
+                    device = getattr(config, "WHISPER_DEVICE", "cpu")
+                    compute_type = getattr(config, "WHISPER_COMPUTE_TYPE", "int8")
+                    logger.info(f"Loading local offline Faster-Whisper model ({model_size}, {device}, {compute_type})...")
+                    _local_whisper_model = WhisperModel(model_size, device=device, compute_type=compute_type)
+                except Exception as e:
+                    logger.warning(f"Could not initialize local Faster-Whisper: {e}")
+    return _local_whisper_model
+
+
 class PushToTalkRecorder:
     """Manages on-demand audio recording and transcription.
 
@@ -115,17 +144,9 @@ class PushToTalkRecorder:
         text = ""
         if streamer is not None:
             text = streamer._transcribe(norm_audio, is_idle=False)
-
-        if not text:
-            # Google Web Speech (Free, zero keys)
-            try:
-                import speech_recognition as sr
-                rec = sr.Recognizer()
-                int16_arr = (norm_audio * 32767).astype(np.int16)
-                aud = sr.AudioData(int16_arr.tobytes(), self.sample_rate, 2)
-                text = rec.recognize_google(aud, language="en-US").strip()
-            except Exception as ge:
-                logger.debug(f"Google speech recognition error: {ge}")
+        else:
+            temp_streamer = SpeechStreamer(sample_rate=self.sample_rate, auto_init_hardware=False)
+            text = temp_streamer._transcribe(norm_audio, is_idle=False)
 
         if text:
             text = autocorrect_speech_command(text)
@@ -199,8 +220,23 @@ class SpeechStreamer:
         if not self.is_muted:
             self.audio_queue.put(indata.copy())
 
+    def _transcribe_whisper(self, audio_data: np.ndarray) -> str:
+        """Transcribes active command using 100% local, offline Faster-Whisper (zero network/cloud)."""
+        try:
+            model = get_whisper_model()
+            if model is not None and len(audio_data) > 0:
+                audio_float = audio_data.flatten().astype(np.float32)
+                segments, _ = model.transcribe(audio_float, language="en", beam_size=1)
+                text = " ".join([seg.text for seg in segments]).strip()
+                if text:
+                    logger.info(f"[LOCAL WHISPER OFFLINE] Transcribed: '{text}'")
+                    return text
+        except Exception as e:
+            logger.warning(f"Local Whisper transcription note: {e}")
+        return ""
+
     def _transcribe_google(self, audio_data: np.ndarray) -> str:
-        """Transcribes active command using Google Web Speech Recognition (100% Free, Zero API Key)."""
+        """Transcribes active command using Google Web Speech Recognition (Free, Zero API Key)."""
         try:
             import speech_recognition as sr
             recognizer = sr.Recognizer()
@@ -217,10 +253,33 @@ class SpeechStreamer:
         return ""
 
     def _transcribe(self, audio_data: np.ndarray, is_idle: bool = False) -> str:
-        """Unified transcription method using Google Web Speech Recognition (100% Free, zero keys)."""
+        """Unified transcription method supporting local offline Faster-Whisper and Google Speech fallback."""
         if len(audio_data) == 0:
             return ""
-        return self._transcribe_google(audio_data)
+
+        engine = getattr(config, "SPEECH_ENGINE", "auto").lower()
+
+        # Strict offline local mode
+        if engine in ("whisper", "faster-whisper", "offline", "local"):
+            text = self._transcribe_whisper(audio_data)
+            if not text:
+                logger.debug("Local whisper returned empty, attempting fallback to Google Speech...")
+                text = self._transcribe_google(audio_data)
+            return text
+
+        # Google cloud mode
+        if engine == "google":
+            text = self._transcribe_google(audio_data)
+            if not text:
+                # If Google speech fails (e.g. offline / disconnected), fall back to local Whisper!
+                text = self._transcribe_whisper(audio_data)
+            return text
+
+        # Auto mode: try local offline Faster-Whisper first for 100% privacy; fallback to Google Speech
+        text = self._transcribe_whisper(audio_data)
+        if not text:
+            text = self._transcribe_google(audio_data)
+        return text
 
     def start_recording(self) -> None:
         """Starts recording audio on-demand when the user clicks speak."""

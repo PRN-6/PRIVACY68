@@ -430,11 +430,36 @@ class AgentBrain:
             if not code:
                 return {"success": False, "message": "LLM failed to generate code.", "method": "agentic_brain"}
 
-            # Self-healing execution loop
+            # Self-healing execution loop with 3-Tier Security Guard inspection
             attempt = 0
             current_code = code
 
             while attempt <= self.max_retries:
+                # 3-Tier Security Guard inspection
+                try:
+                    from computer_use.security_guard import security_guard, ActionRiskLevel
+                    risk_level, action_id, risk_desc = security_guard.inspect_code_risk(current_code)
+                    if risk_level != ActionRiskLevel.SAFE:
+                        logger.warning(f"[AGENT BRAIN SECURITY] Detected {risk_level.name} action '{action_id}': {risk_desc}")
+                        def _execute_confirmed_code():
+                            return run_agent_code(current_code, timeout=30)
+
+                        success, message, details = security_guard.request_execution(
+                            action_name=action_id,
+                            action_func=_execute_confirmed_code,
+                            description=f"{risk_desc} (from request: '{text}')",
+                        )
+                        if details and details.get("requires_confirmation"):
+                            return {
+                                "success": False,
+                                "tool": "security_guard",
+                                "method": "agentic_engine",
+                                "message": message,
+                                "details": details,
+                            }
+                except Exception as sec_err:
+                    logger.debug(f"[SECURITY INSPECT] Note: {sec_err}")
+
                 logger.info(f"[AGENT BRAIN] Executing generated code (attempt {attempt + 1}):\n{current_code}")
                 result = run_agent_code(current_code, timeout=30)
 

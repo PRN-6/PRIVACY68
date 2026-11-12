@@ -23,12 +23,12 @@ GREETINGS = frozenset({
 })
 
 BUILTIN_APP_COMMANDS = (
-    (re.compile(r"(?:open|launch|start)\s+(?:(?:google)\s+)?chrome(?:\s+browser)?"), "chrome", "open_url"),
-    (re.compile(r"(?:open|launch|start)\s+(?:the\s+)?brave(?:\s+browser)?\s+and\s+(?:create|open)\s+(?:a\s+)?new\s+tab(?:\s+in\s+brave)?"), "brave", "open_new_tab"),
+    (re.compile(r"(?:open|launch|start|go to)\s+(?:(?:google)\s+)?chrome(?:\s+browser)?"), "chrome", "open_url"),
+    (re.compile(r"(?:open|launch|start|go to)\s+(?:the\s+)?brave(?:\s+browser)?\s+and\s+(?:create|open)\s+(?:a\s+)?new\s+tab(?:\s+in\s+brave)?"), "brave", "open_new_tab"),
     (re.compile(r"(?:create|open)\s+(?:a\s+)?new\s+tab\s+in\s+brave"), "brave", "open_new_tab"),
-    (re.compile(r"(?:open|launch|start)\s+(?:the\s+)?brave(?:\s+browser)?"), "brave", "open"),
-    (re.compile(r"(?:open|launch|start)\s+(?:the\s+)?whatsapp(?:\s+desktop)?"), "whatsapp", "open"),
-    (re.compile(r"(?:open|launch|start|check)\s+(?:the\s+)?(?:google\s+)?gmail(?:\s+inbox)?"), "gmail", "open"),
+    (re.compile(r"(?:open|launch|start|go to)\s+(?:the\s+)?brave(?:\s+browser)?"), "brave", "open"),
+    (re.compile(r"(?:open|launch|start|check|go to)\s+(?:the\s+)?whatsapp(?:\s+desktop)?"), "whatsapp", "open"),
+    (re.compile(r"(?:open|launch|start|check|go to)\s+(?:the\s+)?(?:google\s+)?gmail(?:\s+inbox)?"), "gmail", "open"),
 )
 
 COMMON_WEB_SERVICES = {
@@ -233,6 +233,42 @@ def _execute_web_or_app_command(command: str, plugin_manager, on_action_callback
     m_site = re.match(r"(?:open|launch|go to)\s+([a-zA-Z0-9_\-\.]+)", clean_cmd, re.IGNORECASE)
     if m_site:
         site_key = m_site.group(1).lower().strip()
+
+        # Prioritize integrated plugins (e.g. gmail, github, whatsapp) over generic web fallback
+        plugin = plugin_manager.get_plugin(site_key)
+        if plugin:
+            if not plugin.is_enabled:
+                msg = f"The {site_key.title()} plugin is disabled. Enable it in the Plugins dashboard to use {site_key.title()} commands."
+                _notify(on_status_callback, on_action_callback, site_key, False, msg)
+                return {
+                    "success": False,
+                    "tool": site_key,
+                    "method": f"{site_key}_plugin",
+                    "message": msg,
+                }
+            if hasattr(plugin, "execute"):
+                success = bool(plugin.execute("open"))
+            elif hasattr(plugin, "open_inbox"):
+                success = bool(plugin.open_inbox())
+            elif hasattr(plugin, "open"):
+                success = bool(plugin.open())
+            else:
+                success = False
+
+            if site_key == "gmail":
+                msg = "Opened Gmail inbox." if success else "Could not open Gmail inbox."
+            else:
+                msg = f"Opened {site_key.title()}." if success else f"Could not open {site_key.title()}."
+
+            _notify(on_status_callback, on_action_callback, site_key, success, msg)
+            return {
+                "success": success,
+                "tool": site_key,
+                "method": f"{site_key}_plugin",
+                "message": msg,
+                "output": "",
+            }
+
         if site_key in COMMON_WEB_SERVICES:
             url = COMMON_WEB_SERVICES[site_key]
             _open_url(url, plugin_manager)

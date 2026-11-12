@@ -125,6 +125,10 @@ class GmailPlugin(BasePlugin):
         self.log_action("open_inbox", "SUCCESS" if success else "FAILED")
         return success
 
+    def open(self) -> bool:
+        """Alias for open_inbox() adhering to standard plugin app interface."""
+        return self.open_inbox()
+
     def compose_email(
         self,
         to: str = "",

@@ -155,22 +155,72 @@ class DashboardAPI:
         """Returns status values read from the active runtime components."""
         try:
             from actions.agent_brain import agent_brain
-            from config import WHISPER_COMPUTE_TYPE, WHISPER_DEVICE, WHISPER_MODEL_SIZE
+            import config
 
             voice_status = self.get_voice_lock_status()
             cuda_status = self.get_cuda_status()
             return {
                 "success": True,
                 "model": agent_brain.model,
-                "speech_model": WHISPER_MODEL_SIZE,
-                "speech_device": WHISPER_DEVICE,
-                "speech_compute_type": WHISPER_COMPUTE_TYPE,
+                "speech_engine": getattr(config, "SPEECH_ENGINE", "auto"),
+                "speech_model": getattr(config, "WHISPER_MODEL_SIZE", "tiny"),
+                "speech_device": getattr(config, "WHISPER_DEVICE", "cpu"),
+                "speech_compute_type": getattr(config, "WHISPER_COMPUTE_TYPE", "int8"),
                 "voice_lock": voice_status,
                 "cuda": cuda_status,
                 "ollama": self.check_ollama_status(),
             }
         except Exception as e:
             logger.error(f"Error getting runtime status: {e}")
+            return {"success": False, "message": str(e)}
+
+    def get_speech_config(self) -> Dict[str, Any]:
+        """Returns active speech recognition engine configuration."""
+        try:
+            import config
+            return {
+                "success": True,
+                "engine": getattr(config, "SPEECH_ENGINE", "auto"),
+                "whisper_model": getattr(config, "WHISPER_MODEL_SIZE", "tiny"),
+                "whisper_device": getattr(config, "WHISPER_DEVICE", "cpu"),
+            }
+        except Exception as e:
+            return {"success": False, "message": str(e)}
+
+    def save_speech_config(self, engine: str, whisper_model: str = "tiny") -> Dict[str, Any]:
+        """Saves speech recognition engine choice ('auto', 'whisper', 'google') and model size."""
+        try:
+            import config
+            clean_engine = (engine or "auto").strip().lower()
+            if clean_engine not in ("auto", "whisper", "google"):
+                return {"success": False, "message": f"Invalid speech engine '{clean_engine}'."}
+
+            clean_model = (whisper_model or "tiny").strip().lower()
+            prev_model = getattr(config, "WHISPER_MODEL_SIZE", "tiny")
+
+            config.update_dotenv_var("SPEECH_ENGINE", clean_engine)
+            config.update_dotenv_var("WHISPER_MODEL_SIZE", clean_model)
+
+            if clean_model != prev_model:
+                try:
+                    from speech.streamer import reset_whisper_model
+                    reset_whisper_model()
+                except Exception:
+                    pass
+
+            labels = {
+                "whisper": "Local Offline (Faster-Whisper)",
+                "auto": "Auto (Offline Whisper + Cloud Fallback)",
+                "google": "Google Web Speech (Cloud ASR)"
+            }
+            return {
+                "success": True,
+                "engine": clean_engine,
+                "whisper_model": clean_model,
+                "message": f"Speech engine set to: {labels.get(clean_engine, clean_engine)}"
+            }
+        except Exception as e:
+            logger.error(f"Error saving speech config: {e}")
             return {"success": False, "message": str(e)}
 
     def test_llm_connection(self, data: Dict[str, Any]) -> Dict[str, Any]:
@@ -472,20 +522,23 @@ class DashboardAPI:
             return {"success": False, "message": str(e)}
 
     def get_remote_server_info(self) -> Dict[str, Any]:
-        """Returns Mobile Web Remote server access URL, IP, and status."""
+        """Returns Mobile Web Remote server access URL, IP, pairing PIN, and status."""
         try:
-            from server.remote_server import get_remote_url, get_local_ip
+            from server.remote_server import get_remote_url, get_local_ip, get_auth_token
             import config
             port = getattr(config, "REMOTE_SERVER_PORT", 8765)
             enabled = getattr(config, "ENABLE_REMOTE_SERVER", True)
             local_ip = get_local_ip()
-            url = get_remote_url(port)
+            token = get_auth_token()
+            url = get_remote_url(port, include_token=True)
             return {
                 "enabled": enabled,
                 "port": port,
                 "local_ip": local_ip,
+                "pairing_token": token,
                 "url": url,
-                "message": f"Connect any phone/tablet on your Wi-Fi to {url}"
+                "clean_url": f"http://{local_ip}:{port}",
+                "message": f"Pair any phone/tablet on your Wi-Fi: {url} (PIN: {token})"
             }
         except Exception as e:
             logger.error(f"Error getting remote server info: {e}")
@@ -952,19 +1005,37 @@ class DashboardAPI:
                 "link": "https://ollama.com/download"
             })
 
-        # Google Web Speech Recognition
+        # Local Faster-Whisper Offline Engine
         try:
-            import speech_recognition as sr
+            import faster_whisper
+            import config
             ai_checks.append({
-                "name": "Google Web Speech (ASR)",
+                "name": "Faster-Whisper (Offline ASR)",
                 "status": "ok",
-                "detail": f"SpeechRecognition v{getattr(sr, '__version__', '3.10+')} • Free Cloud Voice Engine",
+                "detail": f"v{getattr(faster_whisper, '__version__', '1.0+')} • 100% Local Offline Model ({getattr(config, 'WHISPER_MODEL_SIZE', 'tiny')})",
                 "link": None
             })
         except ImportError:
             ai_checks.append({
-                "name": "Google Web Speech (ASR)",
-                "status": "fail",
+                "name": "Faster-Whisper (Offline ASR)",
+                "status": "warn",
+                "detail": "faster-whisper library not installed (using Google cloud fallback).",
+                "link": None
+            })
+
+        # Google Web Speech Recognition
+        try:
+            import speech_recognition as sr
+            ai_checks.append({
+                "name": "Google Web Speech (Cloud Fallback)",
+                "status": "ok",
+                "detail": f"SpeechRecognition v{getattr(sr, '__version__', '3.10+')} • Free Cloud Fallback",
+                "link": None
+            })
+        except ImportError:
+            ai_checks.append({
+                "name": "Google Web Speech (Cloud Fallback)",
+                "status": "warn",
                 "detail": "SpeechRecognition library not installed.",
                 "link": None
             })

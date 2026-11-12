@@ -172,6 +172,39 @@ class TestQuotedCommandsAndBrainConfig(unittest.TestCase):
                 self.assertEqual(kwargs["model"], "openai/gpt-4o-mini")
                 self.assertEqual(kwargs["api_key"], "sk-proj-test123")
 
+    def test_streamer_offline_whisper_engine(self):
+        from speech.streamer import SpeechStreamer
+        import numpy as np
+        streamer = SpeechStreamer(auto_init_hardware=False)
+
+        mock_whisper_model = MagicMock()
+        mock_segment = MagicMock()
+        mock_segment.text = "navigate to github"
+        mock_whisper_model.transcribe.return_value = ([mock_segment], None)
+
+        with patch("speech.streamer.get_whisper_model", return_value=mock_whisper_model):
+            with patch("config.SPEECH_ENGINE", "whisper"):
+                dummy_audio = np.zeros(16000, dtype=np.float32)
+                res = streamer._transcribe(dummy_audio)
+                self.assertEqual(res, "navigate to github")
+
+    def test_streamer_google_engine_with_offline_whisper_fallback(self):
+        from speech.streamer import SpeechStreamer
+        import numpy as np
+        streamer = SpeechStreamer(auto_init_hardware=False)
+
+        mock_whisper_model = MagicMock()
+        mock_segment = MagicMock()
+        mock_segment.text = "offline whisper fallback"
+        mock_whisper_model.transcribe.return_value = ([mock_segment], None)
+
+        with patch.object(streamer, "_transcribe_google", return_value=""):
+            with patch("speech.streamer.get_whisper_model", return_value=mock_whisper_model):
+                with patch("config.SPEECH_ENGINE", "google"):
+                    dummy_audio = np.zeros(16000, dtype=np.float32)
+                    res = streamer._transcribe(dummy_audio)
+                    self.assertEqual(res, "offline whisper fallback")
+
 
 if __name__ == "__main__":
     unittest.main()

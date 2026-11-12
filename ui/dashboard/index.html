@@ -561,7 +561,7 @@
       <!-- TAB 1: Live Console -->
       <section class="tab-view active" id="tab-console">
         <div style="display:flex; flex-wrap:wrap; gap:8px;">
-          <span class="chip good">Google Speech (Free Cloud ASR)</span>
+          <span class="chip good" id="active-speech-badge">Speech: Auto (Offline Whisper + Cloud)</span>
           <span class="chip good">100% Private (No Background Listening)</span>
           <span class="chip" id="active-model-badge">Model: Loading...</span>
         </div>
@@ -889,12 +889,43 @@
       <section class="tab-view" id="tab-voice">
         <div class="card">
           <div class="card-header">
-            <h2 class="card-title">Speech & Audio Configuration</h2>
+            <h2 class="card-title">Speech Recognition Engine Mode</h2>
+            <span class="chip good" id="voice-privacy-chip">100% Local Offline</span>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:14px;">
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:12px;">
+              <div>
+                <label style="display:block; font-size:11px; color:var(--text-muted); margin-bottom:5px; font-weight:600;">Active Speech Engine</label>
+                <select id="speech-engine-select" style="width:100%; background:#0b0e14; border:1px solid var(--line); color:var(--text); border-radius:6px; padding:8px 10px; font-size:12px;">
+                  <option value="auto">Auto (Local Whisper Offline First + Cloud Fallback)</option>
+                  <option value="whisper">100% Local Offline (Faster-Whisper On-Device)</option>
+                  <option value="google">Google Web Speech (Free Cloud ASR)</option>
+                </select>
+              </div>
+              <div>
+                <label style="display:block; font-size:11px; color:var(--text-muted); margin-bottom:5px; font-weight:600;">Local Whisper Model Size</label>
+                <select id="whisper-model-select" style="width:100%; background:#0b0e14; border:1px solid var(--line); color:var(--text); border-radius:6px; padding:8px 10px; font-size:12px;">
+                  <option value="tiny">Tiny (~75 MB) - Fastest CPU</option>
+                  <option value="base">Base (~145 MB) - Balanced</option>
+                  <option value="small">Small (~480 MB) - High Accuracy</option>
+                </select>
+              </div>
+            </div>
+            <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+              <button class="btn primary sm" id="save-speech-btn">Save Speech Settings</button>
+              <span style="font-size:11px; color:var(--text-muted);">Local Offline mode requires zero internet connection and keeps 100% of voice audio on your PC.</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title">Speech & Audio Architecture</h2>
           </div>
           <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:12px;">
             <div style="background:#0f121a; border:1px solid var(--line); border-radius:6px; padding:12px;">
-              <div style="font-weight:700; margin-bottom:4px; color:var(--green);">Google Web Speech (Free Cloud ASR)</div>
-              <div style="font-size:11px; color:var(--text-muted); line-height:1.45;">Zero keys, zero setup required. Fast, highly accurate speech recognition out of the box with zero heavy model downloads.</div>
+              <div style="font-weight:700; margin-bottom:4px; color:var(--green);">Local Offline Faster-Whisper</div>
+              <div style="font-size:11px; color:var(--text-muted); line-height:1.45;">On-device neural speech recognition powered by CTranslate2 int8 quantization. Transcribes accurately even with Wi-Fi completely turned off.</div>
             </div>
             <div style="background:#0f121a; border:1px solid var(--line); border-radius:6px; padding:12px;">
               <div style="font-weight:700; margin-bottom:4px; color:var(--blue);">Strict Click-to-Speak Privacy</div>
@@ -1017,6 +1048,8 @@
       set_active_model: async () => ({ success: true }),
       test_microphone: async () => ({ success: true, level: 42, rms: 0.042 }),
       record_voice_command: async () => ({ success: false, message: 'Mock' }),
+      get_speech_config: async () => ({ success: true, engine: 'auto', whisper_model: 'tiny' }),
+      save_speech_config: async (engine, model) => ({ success: true, engine, whisper_model: model, message: 'Saved' }),
       close_app: async () => {}
     };
 
@@ -1810,6 +1843,61 @@
       }
     });
 
+    // Speech Engine Configuration
+    async function loadSpeechConfig() {
+      try {
+        const cfg = await bridge().get_speech_config();
+        if (cfg && cfg.success) {
+          const engine = cfg.engine || 'auto';
+          const model = cfg.whisper_model || 'tiny';
+          if ($('speech-engine-select')) $('speech-engine-select').value = engine;
+          if ($('whisper-model-select')) $('whisper-model-select').value = model;
+
+          const badgeMap = {
+            whisper: `Speech: Local Offline (Whisper ${model})`,
+            auto: `Speech: Auto (Offline Whisper ${model} + Fallback)`,
+            google: 'Speech: Google Web Speech (Cloud)'
+          };
+          const activeBadge = $('active-speech-badge');
+          if (activeBadge) {
+            activeBadge.textContent = badgeMap[engine] || `Speech: ${engine}`;
+            activeBadge.className = engine === 'google' ? 'chip blue' : 'chip good';
+          }
+
+          const privacyChip = $('voice-privacy-chip');
+          if (privacyChip) {
+            if (engine === 'whisper') {
+              privacyChip.textContent = '100% Air-Gapped Local';
+              privacyChip.className = 'chip good';
+            } else if (engine === 'auto') {
+              privacyChip.textContent = 'Offline First + Cloud Fallback';
+              privacyChip.className = 'chip good';
+            } else {
+              privacyChip.textContent = 'Cloud ASR (Requires Internet)';
+              privacyChip.className = 'chip blue';
+            }
+          }
+        }
+      } catch (e) {}
+    }
+
+    if ($('save-speech-btn')) {
+      $('save-speech-btn').addEventListener('click', async () => {
+        const engine = $('speech-engine-select').value;
+        const model = $('whisper-model-select').value;
+        try {
+          const res = await bridge().save_speech_config(engine, model);
+          if (res && res.success) {
+            showToast(res.message || 'Speech settings saved!');
+            await loadSpeechConfig();
+            await loadSysDiag();
+          } else {
+            showToast(res?.message || 'Failed to save speech settings.', true);
+          }
+        } catch (e) { showToast(e.message, true); }
+      });
+    }
+
     // Profile & Diagnostics
     async function loadProfile() {
       try {
@@ -1838,10 +1926,16 @@
       try {
         const rt = await bridge().get_runtime_status();
         const cuda = rt.cuda || {};
+        const speechEngine = rt.speech_engine || 'auto';
+        const speechLabel = speechEngine === 'whisper'
+          ? `Voice: Local Offline Whisper (${rt.speech_model || 'tiny'})`
+          : (speechEngine === 'google'
+            ? 'Voice: Google Web Speech (Cloud)'
+            : `Voice: Auto (Offline Whisper ${rt.speech_model || 'tiny'} + Fallback)`);
         grid.innerHTML = `
           <div class="chip ${cuda.is_ready ? 'good' : ''}">CUDA: ${cuda.is_ready ? 'Ready (GPU Acceleration)' : (cuda.has_gpu ? 'DLLs Missing' : 'CPU Mode')}</div>
           <div class="chip">${cuda.gpu_name ? 'GPU: ' + cuda.gpu_name : 'GPU: Integrated / CPU'}</div>
-          <div class="chip good">Voice: Google Web Speech (Free)</div>
+          <div class="chip good">${speechLabel}</div>
           <div class="chip good">Privacy: Push-to-Talk (Private)</div>
         `;
         const btnCuda = $('btn-download-cuda');
@@ -1863,6 +1957,7 @@
         $('top-conn-chip').className = 'chip good';
         $('top-conn-chip').innerHTML = '<span class="status-dot green"></span> Desktop connected';
         await loadProfile();
+        await loadSpeechConfig();
         await loadBrainDetails();
         await loadRemoteServerInfo();
         await loadSecurityGuard();

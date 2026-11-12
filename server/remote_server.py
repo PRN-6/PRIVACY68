@@ -6,14 +6,32 @@ import logging
 import threading
 import mimetypes
 import io
+import secrets
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 from socketserver import ThreadingMixIn
+from typing import Optional
+import config
 
 logger = logging.getLogger("PRIVACY68.RemoteServer")
 
 IS_FROZEN = getattr(sys, "frozen", False)
 BASE_DIR = sys._MEIPASS if IS_FROZEN else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 STATIC_DIR = os.path.join(BASE_DIR, "server", "static")
+
+# Ephemeral LAN pairing PIN/token (prevents unauthorized LAN execution)
+_global_auth_token = secrets.token_hex(3).upper()
+
+
+def get_auth_token() -> str:
+    """Returns current active pairing PIN / token."""
+    global _global_auth_token
+    return _global_auth_token
+
+
+def set_auth_token(token: str) -> None:
+    """Sets a custom pairing PIN / token."""
+    global _global_auth_token
+    _global_auth_token = str(token).strip()
 
 # Threaded HTTP Server
 class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
@@ -37,23 +55,27 @@ def get_local_ip() -> str:
             return "127.0.0.1"
 
 
-def get_remote_url(port: int = 8765) -> str:
-    """Returns the full accessible URL for the mobile web client."""
+def get_remote_url(port: int = 8765, include_token: bool = True) -> str:
+    """Returns the full accessible URL for the mobile web client with pairing token."""
     ip = get_local_ip()
-    return f"http://{ip}:{port}"
+    base = f"http://{ip}:{port}"
+    if include_token and _global_auth_token:
+        return f"{base}/?token={_global_auth_token}"
+    return base
 
 
-def generate_qr_png_bytes(url: str) -> bytes:
-    """Generates PNG bytes for the connection QR code."""
+def generate_qr_png_bytes(url: Optional[str] = None) -> bytes:
+    """Generates PNG bytes for the connection QR code with pairing authentication."""
     try:
         import qrcode
+        target_url = url or get_remote_url(_global_server_port, include_token=True)
         qr = qrcode.QRCode(
             version=1,
             error_correction=qrcode.constants.ERROR_CORRECT_M,
             box_size=8,
             border=3,
         )
-        qr.add_data(url)
+        qr.add_data(target_url)
         qr.make(fit=True)
         img = qr.make_image(fill_color="#06B6D4", back_color="#0D1117")
         buffer = io.BytesIO()
@@ -61,6 +83,7 @@ def generate_qr_png_bytes(url: str) -> bytes:
         return buffer.getvalue()
     except Exception as e:
         logger.warning(f"Could not generate QR code PNG: {e}")
+        return b""
         return b""
 
 
@@ -100,11 +123,12 @@ class Privacy68RemoteHandler(SimpleHTTPRequestHandler):
             self._send_json({
                 "status": "online",
                 "app": "PRIVACY68",
-                "version": "1.1.0",
+                "version": getattr(config, "APP_VERSION", "1.6.3"),
                 "pc_name": socket.gethostname(),
                 "local_ip": local_ip,
                 "port": _global_server_port,
-                "remote_url": f"http://{local_ip}:{_global_server_port}"
+                "remote_url": get_remote_url(_global_server_port, include_token=True),
+                "pairing_token": _global_auth_token
             })
             return
 
@@ -189,6 +213,26 @@ class Privacy68RemoteHandler(SimpleHTTPRequestHandler):
 
                 if not command_text:
                     self._send_json({"success": False, "message": "Empty command string"}, 400)
+                    return
+
+                # Security: Verify LAN pairing token / PIN
+                auth_header = self.headers.get("Authorization", "")
+                header_token = self.headers.get("X-Auth-Token", "")
+                bearer_token = auth_header.replace("Bearer ", "").strip() if auth_header.startswith("Bearer ") else auth_header.strip()
+                query_token = ""
+                if "?" in self.path:
+                    from urllib.parse import parse_qs, urlparse
+                    query_token = parse_qs(urlparse(self.path).query).get("token", [""])[0]
+
+                provided_token = bearer_token or header_token or query_token or payload.get("token", "")
+
+                if _global_auth_token and provided_token != _global_auth_token:
+                    logger.warning(f"⚠️ Blocked unauthenticated command from {self.client_address[0]}: Invalid or missing pairing token")
+                    self._send_json({
+                        "success": False,
+                        "message": "Unauthorized: Invalid or missing pairing PIN. Please scan the QR code on your PC or enter the PIN.",
+                        "auth_required": True
+                    }, 401)
                     return
 
                 logger.info(f"📱 Remote Mobile Command Received: '{command_text}'")

@@ -199,6 +199,32 @@ class TestActionExecutor(unittest.TestCase):
         self.assertEqual(result["tool"], "security_confirmation")
         action.assert_called_once_with()
 
+    def test_go_to_gmail_routes_to_plugin_when_enabled(self):
+        gmail_mock = Mock()
+        gmail_mock.is_enabled = True
+        gmail_mock.execute.return_value = True
+
+        with patch("plugins.manager.plugin_manager.get_plugin", return_value=gmail_mock):
+            with patch.object(executor, "autocorrect_speech_command", return_value="go to gmail"):
+                result = executor.execute_system_command_detailed("go to gmail")
+
+        self.assertTrue(result["success"])
+        self.assertEqual(result["tool"], "gmail")
+        self.assertEqual(result["method"], "gmail_plugin")
+        gmail_mock.execute.assert_called_once_with("open")
+
+    def test_go_to_gmail_blocks_when_plugin_is_disabled(self):
+        gmail_mock = Mock()
+        gmail_mock.is_enabled = False
+
+        with patch("plugins.manager.plugin_manager.get_plugin", return_value=gmail_mock):
+            with patch.object(executor, "autocorrect_speech_command", return_value="go to gmail"):
+                result = executor.execute_system_command_detailed("go to gmail")
+
+        self.assertFalse(result["success"])
+        self.assertEqual(result["tool"], "gmail")
+        self.assertIn("disabled", result["message"].lower())
+
 
 if __name__ == "__main__":
     unittest.main()

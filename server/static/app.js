@@ -26,6 +26,16 @@ document.addEventListener('DOMContentLoaded', () => {
     let isListening = false;
     let recognition = null;
 
+    // Pairing Token / PIN Management
+    const urlParams = new URLSearchParams(window.location.search);
+    const paramToken = urlParams.get('token');
+    if (paramToken) {
+        localStorage.setItem('privacy68_remote_token', paramToken.trim().toUpperCase());
+    }
+    function getAuthToken() {
+        return localStorage.getItem('privacy68_remote_token') || '';
+    }
+
     // 1. Initialize Quick Actions
     async function loadQuickActions() {
         try {
@@ -129,11 +139,28 @@ document.addEventListener('DOMContentLoaded', () => {
         btnSend.disabled = true;
 
         try {
+            const token = getAuthToken();
             const res = await fetch('/api/command', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ command: text })
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                    'X-Auth-Token': token
+                },
+                body: JSON.stringify({ command: text, token: token })
             });
+
+            if (res.status === 401) {
+                const pin = prompt('⚠️ Authentication Required\nEnter the Pairing PIN shown on your PC dashboard:');
+                if (pin) {
+                    localStorage.setItem('privacy68_remote_token', pin.trim().toUpperCase());
+                    showToast('PIN saved. Retrying command...', 'info');
+                    return sendCommand(text);
+                } else {
+                    showToast('❌ Command cancelled: Missing pairing PIN', 'error');
+                    return;
+                }
+            }
 
             const result = await res.json();
             

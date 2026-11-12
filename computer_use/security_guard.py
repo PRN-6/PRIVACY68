@@ -8,6 +8,8 @@ Implements the 3-Tier Security Execution Model:
   Level 3 (RESTRICTED/CRITICAL): High-risk operations (formatting, registry changes, uninstalling)
 """
 
+import ast
+import re
 import time
 import logging
 from enum import Enum
@@ -88,6 +90,57 @@ class SecurityGuard:
     def get_risk_level(self, action_name: str) -> ActionRiskLevel:
         """Determines the risk classification of a given action."""
         return self._action_risk_rules.get(action_name, ActionRiskLevel.SAFE)
+
+    def inspect_code_risk(self, code: str) -> Tuple[ActionRiskLevel, str, str]:
+        """
+        Performs static analysis (AST and regex patterns) on agent-generated code
+        to classify its 3-tier risk level (SAFE, SENSITIVE, CRITICAL).
+        Returns (risk_level, action_name, description).
+        """
+        if not code or not code.strip():
+            return ActionRiskLevel.SAFE, "agent_code", "execute code"
+
+        code_lower = code.lower()
+
+        # 1. Critical Level 3 Patterns
+        if re.search(r'\b(format\s+[a-zA-Z]:|diskpart|vds\b)', code_lower):
+            return ActionRiskLevel.CRITICAL, "format_drive", "format a storage drive"
+        if re.search(r'\b(winreg|_winreg|reg\s+(add|delete|import))\b', code_lower):
+            return ActionRiskLevel.CRITICAL, "modify_registry", "modify the Windows system registry"
+        if re.search(r'(system32|windows\\system32|c:\\windows)', code_lower) and re.search(r'\b(rmtree|remove|unlink|rmdir|del)\b', code_lower):
+            return ActionRiskLevel.CRITICAL, "delete_system_directory", "delete or modify a protected system directory"
+
+        # 2. Sensitive Level 2 Patterns
+        if "shutdown" in code_lower and any(flag in code_lower for flag in ("/s", "-s", "/r", "-r", "/h", "-h")):
+            return ActionRiskLevel.SENSITIVE, "shutdown_pc", "shut down or reboot the computer"
+        if "taskkill" in code_lower or re.search(r'\b(os\.kill|process\.kill|process\.terminate)\b', code_lower):
+            return ActionRiskLevel.SENSITIVE, "kill_process", "forcefully terminate a running system process"
+        if re.search(r'\b(shutil\.rmtree|os\.remove|os\.unlink|os\.rmdir|\.unlink\(|\.rmdir\(|rmdir\s+/[sq]|del\s+/[sqf])\b', code_lower):
+            return ActionRiskLevel.SENSITIVE, "delete_file", "permanently delete files or directories from your disk"
+        if "netsh" in code_lower and "interface" in code_lower:
+            return ActionRiskLevel.SENSITIVE, "network_disconnect", "modify network connection state"
+        if "ipconfig" in code_lower and any(flag in code_lower for flag in ("/release", "/renew")):
+            return ActionRiskLevel.SENSITIVE, "network_disconnect", "modify network connection state"
+
+        # 3. AST inspection for function calls
+        try:
+            tree = ast.parse(code)
+            for node in ast.walk(tree):
+                if isinstance(node, ast.Call):
+                    func = node.func
+                    if isinstance(func, ast.Attribute):
+                        mod_name = getattr(func.value, "id", "")
+                        attr_name = func.attr
+                        if mod_name == "shutil" and attr_name == "rmtree":
+                            return ActionRiskLevel.SENSITIVE, "delete_file", "delete an entire folder tree using shutil.rmtree"
+                        if mod_name == "os" and attr_name in ("remove", "unlink", "rmdir"):
+                            return ActionRiskLevel.SENSITIVE, "delete_file", f"delete a file using os.{attr_name}"
+                        if mod_name == "winreg":
+                            return ActionRiskLevel.CRITICAL, "modify_registry", "access or modify Windows registry keys"
+        except Exception:
+            pass
+
+        return ActionRiskLevel.SAFE, "agent_code", "execute generated script"
 
     def request_execution(
         self,

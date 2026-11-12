@@ -138,6 +138,23 @@ class TestDashboardAPI(unittest.TestCase):
             self.assertTrue(get_res["success"])
             self.assertEqual(get_res["value"], "+1987654321")
 
+    def test_get_and_save_speech_config(self):
+        with patch("config.update_dotenv_var") as mock_upd:
+            res = self.api.save_speech_config("whisper", "base")
+            self.assertTrue(res["success"])
+            self.assertEqual(res["engine"], "whisper")
+            self.assertEqual(res["whisper_model"], "base")
+            mock_upd.assert_any_call("SPEECH_ENGINE", "whisper")
+            mock_upd.assert_any_call("WHISPER_MODEL_SIZE", "base")
+
+            bad_res = self.api.save_speech_config("invalid_engine", "tiny")
+            self.assertFalse(bad_res["success"])
+
+        cfg = self.api.get_speech_config()
+        self.assertTrue(cfg["success"])
+        self.assertIn("engine", cfg)
+        self.assertIn("whisper_model", cfg)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -56,13 +56,19 @@ def run_dashboard():
         api.set_window(window)
         webview.start(debug=False)
     except Exception as webview_err:
-        logger.warning(f"WebView2 launch failed ({webview_err}), falling back to native CustomTkinter GUI...")
+        logger.error(f"WebView2 launch failed: {webview_err}")
         try:
-            from ui.dashboard_app import run_dashboard_app
-            run_dashboard_app()
-        except Exception as e:
-            logger.error(f"Both WebView2 and Native GUI fallback failed: {e}")
-            raise
+            import tkinter as tk
+            from tkinter import messagebox
+            root = tk.Tk()
+            root.withdraw()
+            messagebox.showerror(
+                "PRIVACY68 Initialization Error",
+                f"Microsoft Edge WebView2 runtime could not be initialized.\n\nError: {webview_err}\n\nPlease install Microsoft Edge WebView2 runtime to launch the Control Center."
+            )
+        except Exception:
+            pass
+        raise
 
 
 if __name__ == "__main__":
