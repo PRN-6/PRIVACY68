@@ -897,7 +897,7 @@
               <div>
                 <label style="display:block; font-size:11px; color:var(--text-muted); margin-bottom:5px; font-weight:600;">Active Speech Engine</label>
                 <select id="speech-engine-select" style="width:100%; background:#0b0e14; border:1px solid var(--line); color:var(--text); border-radius:6px; padding:8px 10px; font-size:12px;">
-                  <option value="auto">Auto (Local Whisper Offline First + Cloud Fallback)</option>
+                  <option value="auto">Auto (Google Web Speech First + Local Offline Fallback)</option>
                   <option value="whisper">100% Local Offline (Faster-Whisper On-Device)</option>
                   <option value="google">Google Web Speech (Free Cloud ASR)</option>
                 </select>
@@ -1919,7 +1919,7 @@
 
           const badgeMap = {
             whisper: `Speech: Local Offline (Whisper ${model})`,
-            auto: `Speech: Auto (Offline Whisper ${model} + Fallback)`,
+            auto: `Speech: Auto (Google Speech First + Offline Fallback)`,
             google: 'Speech: Google Web Speech (Cloud)'
           };
           const activeBadge = $('active-speech-badge');
@@ -1934,7 +1934,7 @@
               privacyChip.textContent = '100% Air-Gapped Local';
               privacyChip.className = 'chip good';
             } else if (engine === 'auto') {
-              privacyChip.textContent = 'Offline First + Cloud Fallback';
+              privacyChip.textContent = 'Google Speech First + Offline Fallback';
               privacyChip.className = 'chip good';
             } else {
               privacyChip.textContent = 'Cloud ASR (Requires Internet)';
@@ -1995,7 +1995,7 @@
           ? `Voice: Local Offline Whisper (${rt.speech_model || 'tiny'})`
           : (speechEngine === 'google'
             ? 'Voice: Google Web Speech (Cloud)'
-            : `Voice: Auto (Offline Whisper ${rt.speech_model || 'tiny'} + Fallback)`);
+            : `Voice: Auto (Google Speech First + Local Fallback)`);
         grid.innerHTML = `
           <div class="chip ${cuda.is_ready ? 'good' : ''}">CUDA: ${cuda.is_ready ? 'Ready (GPU Acceleration)' : (cuda.has_gpu ? 'DLLs Missing' : 'CPU Mode')}</div>
           <div class="chip">${cuda.gpu_name ? 'GPU: ' + cuda.gpu_name : 'GPU: Integrated / CPU'}</div>

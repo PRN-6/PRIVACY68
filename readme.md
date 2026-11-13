@@ -5,7 +5,7 @@
 [![Contributing](https://img.shields.io/badge/contributing-Guide-orange.svg)](CONTRIBUTING.md)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-3776AB.svg?logo=python&logoColor=white)](https://www.python.org/)
 [![Platform: Windows 10/11](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-0078D6.svg?logo=windows&logoColor=white)](#)
-[![Tests: 137 Passed](https://img.shields.io/badge/tests-137%20passed-brightgreen.svg)](#unit-testing)
+[![Tests: 139 Passed](https://img.shields.io/badge/tests-139%20passed-brightgreen.svg)](#unit-testing)
 [![Version: 1.6.4](https://img.shields.io/badge/version-1.6.4-blue.svg)](https://github.com/PRN-6/PRIVACY68/releases/tag/v1.6.4)
 
 PRIVACY68 is a 100% private Windows desktop AI assistant featuring on-demand Click-to-Speak, a modern minimalist Control Center, universal multi-provider AI brain orchestration, and agentic OS automation. It pairs zero-key speech recognition (Google Web Speech) with an Agent Brain powered by universal AI APIs (Google Gemini, Groq LPU, OpenRouter, Anthropic Claude, OpenAI, or local Ollama / LM Studio) to execute complex desktop tasks safely through generated, self-correcting Python scripts.
@@ -19,11 +19,11 @@ PRIVACY68 is a 100% private Windows desktop AI assistant featuring on-demand Cli
 
 - **Telegram Remote Gateway Plugin**: Live global teleoperation from anywhere in the world on 4G/5G mobile data. Send voice notes (transcribed locally via Faster-Whisper), text commands, request live screenshots (`/screenshot`), and inspect system diagnostics (`/status`).
 - **Interactive PIN Pairing Security**: Cryptographically generated 6-character ephemeral pairing PIN (`/pair <PIN>`) guarantees that only your verified phone can dispatch commands to your PC.
-- **Local Offline Faster-Whisper Switcher**: Control Center UI toggle to seamlessly switch between local offline Faster-Whisper (zero cloud data leakage) and cloud speech recognition.
+- **Adaptive Speech Priority with Offline Local Fallback**: Default speech pipeline prioritizes ultra-fast, zero-setup Google Web Speech, seamlessly auto-failing over to on-device Faster-Whisper whenever an internet outage or network disconnect is detected.
 - **3-Tier AST Code Safety Guard**: Deep static analysis and regex pattern inspection on all Agent Brain generated Python code before execution, preventing untrusted scripts from performing dangerous OS operations without explicit human confirmation.
 - **Compound Command Routing Fix**: Prevented multi-step instructions (`"open notepad and type hello"`, `"open youtube and search..."`) from being prematurely truncated by the app launcher, ensuring compound tasks cleanly reach the Agent Brain.
 - **All 7 Built-in Plugins Documented & Tested**: Windows System, Google Chrome, Brave Browser, WhatsApp, Gmail, GitHub, and Telegram Remote Gateway.
-- **137 Unit Tests Passing**: Fully validated test suite (100% pass rate in 9.38s) covering all plugins, failover, self-healing, security guard, and remote gateway flows.
+- **139 Unit Tests Passing**: Fully validated test suite (100% pass rate in 7.58s) covering all plugins, failover, self-healing, security guard, adaptive speech priority, and remote gateway flows.
 
 ---
 
@@ -179,7 +179,7 @@ This compiles `PRIVACY68.exe` under `dist\PRIVACY68\` and packages an Inno Setup
 
 ## Unit Testing
 
-Run the full automated test suite (137 unit tests covering agent brain failover, execution self-healing, command executor, Telegram Remote Gateway, Faster-Whisper offline transcription, Gmail automation, security guard, GitHub integration, and dashboard bridge):
+Run the full automated test suite (139 unit tests covering agent brain failover, execution self-healing, command executor, Telegram Remote Gateway, Faster-Whisper offline transcription, Gmail automation, security guard, GitHub integration, and dashboard bridge):
 
 ```powershell
 python -m unittest discover tests -v

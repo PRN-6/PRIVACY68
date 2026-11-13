@@ -79,9 +79,9 @@ SILENCE_DURATION_CHUNKS = 8      # 8 chunks * 80ms = ~0.64s pause after speech f
 SILENCE_THRESHOLD = 0.008        # RMS noise floor
 
 # Speech Engine Configuration
-# "auto": Prefers local offline Faster-Whisper for 100% zero-cloud privacy; falls back to Google Speech if needed.
+# "auto": First priority is Google Web Speech (100% free, zero setup). Automatically falls back to local Faster-Whisper if offline or no internet.
+# "google": Google Web Speech cloud API (falls back to local Faster-Whisper if disconnected).
 # "whisper": Strictly offline on-device transcription (Faster-Whisper / CTranslate2). Zero cloud data leakage.
-# "google": Google Web Speech cloud API (100% free, zero setup, but requires active internet).
 SPEECH_ENGINE = os.environ.get("SPEECH_ENGINE", "auto")
 WHISPER_MODEL_SIZE = os.environ.get("WHISPER_MODEL_SIZE", "tiny")
 WHISPER_DEVICE = os.environ.get("WHISPER_DEVICE", "cpu")

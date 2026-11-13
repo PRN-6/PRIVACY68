@@ -253,13 +253,13 @@ class SpeechStreamer:
         return ""
 
     def _transcribe(self, audio_data: np.ndarray, is_idle: bool = False) -> str:
-        """Unified transcription method supporting local offline Faster-Whisper and Google Speech fallback."""
+        """Unified transcription method: Google Web Speech as first priority, falling back to local Faster-Whisper when offline/no internet."""
         if len(audio_data) == 0:
             return ""
 
         engine = getattr(config, "SPEECH_ENGINE", "auto").lower()
 
-        # Strict offline local mode
+        # Strict offline local mode (only when user explicitly configures whisper/offline)
         if engine in ("whisper", "faster-whisper", "offline", "local"):
             text = self._transcribe_whisper(audio_data)
             if not text:
@@ -267,18 +267,13 @@ class SpeechStreamer:
                 text = self._transcribe_google(audio_data)
             return text
 
-        # Google cloud mode
-        if engine == "google":
-            text = self._transcribe_google(audio_data)
-            if not text:
-                # If Google speech fails (e.g. offline / disconnected), fall back to local Whisper!
-                text = self._transcribe_whisper(audio_data)
-            return text
-
-        # Auto mode: try local offline Faster-Whisper first for 100% privacy; fallback to Google Speech
-        text = self._transcribe_whisper(audio_data)
+        # Default / Auto / Google mode:
+        # First priority: Google Web Speech (fast, high accuracy, zero local GPU/CPU load).
+        # Fallback: Local offline Faster-Whisper if disconnected or no internet.
+        text = self._transcribe_google(audio_data)
         if not text:
-            text = self._transcribe_google(audio_data)
+            logger.info("Google Web Speech unavailable or no internet. Falling back to local offline Faster-Whisper...")
+            text = self._transcribe_whisper(audio_data)
         return text
 
     def start_recording(self) -> None:

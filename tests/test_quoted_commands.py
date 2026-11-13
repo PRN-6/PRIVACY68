@@ -207,5 +207,37 @@ class TestQuotedCommandsAndBrainConfig(unittest.TestCase):
                     self.assertEqual(res, "offline whisper fallback")
 
 
+    def test_streamer_auto_engine_prefers_google_speech(self):
+        from speech.streamer import SpeechStreamer
+        import numpy as np
+        streamer = SpeechStreamer(auto_init_hardware=False)
+
+        with patch.object(streamer, "_transcribe_google", return_value="open chrome") as mock_google:
+            with patch.object(streamer, "_transcribe_whisper", return_value="whisper ignored") as mock_whisper:
+                with patch("config.SPEECH_ENGINE", "auto"):
+                    dummy_audio = np.zeros(16000, dtype=np.float32)
+                    res = streamer._transcribe(dummy_audio)
+                    self.assertEqual(res, "open chrome")
+                    mock_google.assert_called_once()
+                    mock_whisper.assert_not_called()
+
+    def test_streamer_auto_engine_falls_back_to_whisper_when_offline(self):
+        from speech.streamer import SpeechStreamer
+        import numpy as np
+        streamer = SpeechStreamer(auto_init_hardware=False)
+
+        mock_whisper_model = MagicMock()
+        mock_segment = MagicMock()
+        mock_segment.text = "offline local whisper voice"
+        mock_whisper_model.transcribe.return_value = ([mock_segment], None)
+
+        with patch.object(streamer, "_transcribe_google", return_value=""):
+            with patch("speech.streamer.get_whisper_model", return_value=mock_whisper_model):
+                with patch("config.SPEECH_ENGINE", "auto"):
+                    dummy_audio = np.zeros(16000, dtype=np.float32)
+                    res = streamer._transcribe(dummy_audio)
+                    self.assertEqual(res, "offline local whisper voice")
+
+
 if __name__ == "__main__":
     unittest.main()
