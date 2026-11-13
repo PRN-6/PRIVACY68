@@ -406,3 +406,4 @@ class PushToTalkOverlay:
             except Exception:
                 pass
             self._pulse_job = None
+

@@ -6,12 +6,24 @@
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-3776AB.svg?logo=python&logoColor=white)](https://www.python.org/)
 [![Platform: Windows 10/11](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-0078D6.svg?logo=windows&logoColor=white)](#)
 [![Tests: 144 Passed](https://img.shields.io/badge/tests-144%20passed-brightgreen.svg)](#unit-testing)
-[![Version: 1.6.4](https://img.shields.io/badge/version-1.6.4-blue.svg)](https://github.com/PRN-6/PRIVACY68/releases/tag/v1.6.4)
+[![Version: 1.6.5](https://img.shields.io/badge/version-1.6.5-blue.svg)](https://github.com/PRN-6/PRIVACY68/releases/tag/v1.6.5)
 
 PRIVACY68 is a 100% private Windows desktop AI assistant featuring on-demand Click-to-Speak, a modern minimalist Control Center, universal multi-provider AI brain orchestration, and agentic OS automation. It pairs zero-key speech recognition (Google Web Speech) with an Agent Brain powered by universal AI APIs (Google Gemini, Groq LPU, OpenRouter, Anthropic Claude, OpenAI, or local Ollama / LM Studio) to execute complex desktop tasks safely through generated, self-correcting Python scripts.
 
-**Latest Windows Release:** [Download PRIVACY68 Installer v1.6.4 from GitHub Releases](https://github.com/PRN-6/PRIVACY68/releases/tag/v1.6.4)  
+**Latest Windows Release:** [Download PRIVACY68 Installer v1.6.5 from GitHub Releases](https://github.com/PRN-6/PRIVACY68/releases/tag/v1.6.5)  
 **Universal LLM Guide:** [Read Complete Guide to Connecting Any Cloud or Local LLM](docs/UNIVERSAL_LLM_GUIDE.md)
+
+---
+
+## What's New in v1.6.5
+
+- **Push-to-Talk Transparent Floating Overlay**: Added `"🎙️ Voice Command (Push to Talk)"` to the Windows System Tray menu. Clicking it opens a sleek, draggable, glassmorphic floating pill above the taskbar with click-to-speak recording, live audio pulsing, and instant command feedback.
+- **Adaptive Speech Priority with Offline Local Fallback**: Default speech pipeline prioritizes ultra-fast, zero-setup Google Web Speech, seamlessly auto-failing over to on-device Faster-Whisper whenever an internet outage or network disconnect is detected.
+- **Dual-Pass Dialect & Accent Recovery**: Added locale-aware recognition with automatic dual-pass retry (`en-IN` $\leftrightarrow$ `en-US`) and raw hypothesis rescue (`show_all=True`) for high accuracy on Indian English and global accents.
+- **Acoustic Waveform Enhancement**: Added DC offset bias removal, $0.95$ dynamic peak normalization, integer clipping overflow protection, and $60\text{ ms}$ boundary padding to prevent phoneme truncation.
+- **Multi-Prefix Conversational Cleaner**: Iteratively strips chained courtesy prefixes (*"can you please open"*, *"could you open"*, *"hey jarvis open"*) and autocorrects spoken hotwords (*"what's app"*, *"tele gram"*, *"calci"*, *"command prompt"*).
+- **Control Center Speech Accent Selector**: Direct toggle in settings between `Auto`, `English (India - en-IN)`, `English (United States - en-US)`, and `English (United Kingdom - en-GB)`.
+- **144 Unit Tests Passing**: Fully validated test suite (100% pass rate in 7.90s) covering all plugins, failover, self-healing, security guard, adaptive speech priority, dual-accent recovery, push-to-talk overlay, and remote gateway flows.
 
 ---
 
@@ -19,12 +31,9 @@ PRIVACY68 is a 100% private Windows desktop AI assistant featuring on-demand Cli
 
 - **Telegram Remote Gateway Plugin**: Live global teleoperation from anywhere in the world on 4G/5G mobile data. Send voice notes (transcribed locally via Faster-Whisper), text commands, request live screenshots (`/screenshot`), and inspect system diagnostics (`/status`).
 - **Interactive PIN Pairing Security**: Cryptographically generated 6-character ephemeral pairing PIN (`/pair <PIN>`) guarantees that only your verified phone can dispatch commands to your PC.
-- **Push-to-Talk Transparent Floating Overlay**: Added a dedicated `"🎙️ Voice Command (Push to Talk)"` option to the Windows System Tray menu. Clicking it summons a sleek, draggable, glassmorphic floating widget allowing users to click and speak commands with instant visual feedback and 100% zero-idle mic privacy.
-- **Adaptive Speech Priority with Offline Local Fallback**: Default speech pipeline prioritizes ultra-fast, zero-setup Google Web Speech, seamlessly auto-failing over to on-device Faster-Whisper whenever an internet outage or network disconnect is detected.
 - **3-Tier AST Code Safety Guard**: Deep static analysis and regex pattern inspection on all Agent Brain generated Python code before execution, preventing untrusted scripts from performing dangerous OS operations without explicit human confirmation.
 - **Compound Command Routing Fix**: Prevented multi-step instructions (`"open notepad and type hello"`, `"open youtube and search..."`) from being prematurely truncated by the app launcher, ensuring compound tasks cleanly reach the Agent Brain.
 - **All 7 Built-in Plugins Documented & Tested**: Windows System, Google Chrome, Brave Browser, WhatsApp, Gmail, GitHub, and Telegram Remote Gateway.
-- **144 Unit Tests Passing**: Fully validated test suite (100% pass rate in 7.90s) covering all plugins, failover, self-healing, security guard, adaptive speech priority, dual-accent recovery, push-to-talk overlay, and remote gateway flows.
 
 ---
 
@@ -174,7 +183,7 @@ Building a standalone distributable installer uses PyInstaller and Inno Setup 6:
 .\build.bat
 ```
 
-This compiles `PRIVACY68.exe` under `dist\PRIVACY68\` and packages an Inno Setup installer under `installer\PRIVACY68-Setup-v1.6.4.exe`.
+This compiles `PRIVACY68.exe` under `dist\PRIVACY68\` and packages an Inno Setup installer under `installer\PRIVACY68-Setup-v1.6.5.exe`.
 
 ---
 

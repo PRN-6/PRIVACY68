@@ -66,7 +66,7 @@ except Exception:
 
 
 # Application Version
-APP_VERSION = "1.6.4"
+APP_VERSION = "1.6.5"
 
 # Audio Stream Settings (16kHz standard for voice)
 SAMPLE_RATE = 16000
