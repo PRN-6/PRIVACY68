@@ -403,6 +403,8 @@ class FloatingHUD:
                     self._toggle_visibility_internal()
                 elif action == "open_plugins":
                     self._open_plugins_internal()
+                elif action == "show_ptt_overlay":
+                    self._show_ptt_overlay_internal(data)
                 elif action == "quit":
                     if self.root:
                         try:
@@ -506,6 +508,21 @@ class FloatingHUD:
     def open_plugin_manager(self):
         """Thread-safe open Plugin Manager Window."""
         self.queue.put(("open_plugins", None))
+
+    def show_ptt_overlay(self, ui_manager=None):
+        """Thread-safe request to show or toggle the Push-to-Talk floating overlay."""
+        self.queue.put(("show_ptt_overlay", ui_manager))
+
+    def _show_ptt_overlay_internal(self, ui_manager=None):
+        try:
+            from ui.ptt_overlay import PushToTalkOverlay
+            if not hasattr(self, "_ptt_overlay") or self._ptt_overlay is None or not self._ptt_overlay.is_alive():
+                self._ptt_overlay = PushToTalkOverlay(parent_root=self.root, ui_manager=ui_manager)
+                self._ptt_overlay.show()
+            else:
+                self._ptt_overlay.toggle()
+        except Exception as e:
+            logger.error(f"Error displaying PTT overlay: {e}")
 
     def close(self):
         """Thread-safe window shutdown."""

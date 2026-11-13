@@ -39,6 +39,7 @@ class SystemTray:
         menu = pystray.Menu(
             pystray.MenuItem(f"🤖 Status: {self.current_status}", lambda: None, enabled=False),
             pystray.Menu.SEPARATOR,
+            pystray.MenuItem("🎙️ Voice Command (Push to Talk)", self._on_voice_command),
             pystray.MenuItem("📊 Open Dashboard", self._on_open_dashboard),
             pystray.MenuItem("📱 Open Mobile Remote", self._on_open_mobile_remote),
             pystray.MenuItem("🧹 Reset Brain Session", self._on_reset_brain),
@@ -57,6 +58,13 @@ class SystemTray:
         tray_thread = threading.Thread(target=self.icon.run, daemon=True)
         tray_thread.start()
         logger.info("Agentic System Tray icon initialized.")
+
+    def _on_voice_command(self):
+        """Shows or toggles the Push-to-Talk floating transparent overlay."""
+        if self.ui_manager and hasattr(self.ui_manager, "show_push_to_talk_overlay"):
+            self.ui_manager.show_push_to_talk_overlay()
+        else:
+            logger.error("UI Manager not found; cannot open Voice Command overlay.")
 
     def _on_open_dashboard(self):
         """Opens the Control Center Dashboard via the UI Manager."""

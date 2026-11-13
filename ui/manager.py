@@ -98,6 +98,12 @@ class UIManager:
         """Opens the visual Plugin Manager window."""
         self.hud.open_plugin_manager()
 
+    def show_push_to_talk_overlay(self):
+        """Thread-safe request to show or toggle the Push-to-Talk floating overlay."""
+        logger.info("Requesting Push-to-Talk Floating Overlay...")
+        if self.hud:
+            self.hud.show_ptt_overlay(ui_manager=self)
+
     def open_dashboard(self):
         """Launches the PRIVACY68 Control Center Dashboard."""
         logger.info("Requesting Control Center Dashboard launch...")

@@ -14,7 +14,7 @@ The verification framework of PRIVACY68 adheres to an automated test-driven meth
 \end{enumerate}
 
 \section{Automated Test Suite Execution and Results}
-The PRIVACY68 automated test suite is implemented using the Python standard library \texttt{unittest} framework, requiring zero external test runner dependencies. As executed on the release candidate, all \textbf{141 unit tests passed with 100\% success rate} in \textbf{7.578 seconds}.
+The PRIVACY68 automated test suite is implemented using the Python standard library \texttt{unittest} framework, requiring zero external test runner dependencies. As executed on the release candidate, all \textbf{144 unit tests passed with 100\% success rate} in \textbf{7.902 seconds}.
 
 \begin{table}[htbp]
 \centering
@@ -37,9 +37,9 @@ The PRIVACY68 automated test suite is implemented using the Python standard libr
 \texttt{test\_config.py} & 5 & PASS & Dynamic \texttt{.env} read/write persistence, frozen executable fallback to \texttt{\%APPDATA\%}, atomic variable reload. \\ \hline
 \texttt{test\_plugin\_manager.py} & 5 & PASS & Dynamic plugin discovery from user directory, safe template escaping, plugin registration and toggling. \\ \hline
 \texttt{test\_remote\_server.py} & 5 & PASS & Mobile LAN pairing PIN authorization, 401 unauthorized rejection, QR code generation, status versioning. \\ \hline
+\texttt{test\_ui\_manager.py} & 5 & PASS & PyWebView launch modes, window configuration, Push-to-Talk overlay lifecycle, system tray voice trigger. \\ \hline
 \texttt{test\_profile\_manager.py} & 3 & PASS & User profile schema migration, default setting fallback, configuration merging. \\ \hline
-\texttt{test\_ui\_manager.py} & 2 & PASS & PyWebView launch modes, window configuration, platform compatibility. \\ \hline
-\textbf{Total Test Suite} & \textbf{141} & \textbf{PASS} & \textbf{100\% Pass Rate (Execution Time: 7.578 seconds)} \\ \hline
+\textbf{Total Test Suite} & \textbf{144} & \textbf{PASS} & \textbf{100\% Pass Rate (Execution Time: 7.902 seconds)} \\ \hline
 \end{tabularx}
 \end{table}
 
