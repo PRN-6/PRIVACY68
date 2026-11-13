@@ -83,6 +83,7 @@ SILENCE_THRESHOLD = 0.008        # RMS noise floor
 # "google": Google Web Speech cloud API (falls back to local Faster-Whisper if disconnected).
 # "whisper": Strictly offline on-device transcription (Faster-Whisper / CTranslate2). Zero cloud data leakage.
 SPEECH_ENGINE = os.environ.get("SPEECH_ENGINE", "auto")
+SPEECH_LANGUAGE = os.environ.get("SPEECH_LANGUAGE", "auto")
 WHISPER_MODEL_SIZE = os.environ.get("WHISPER_MODEL_SIZE", "tiny")
 WHISPER_DEVICE = os.environ.get("WHISPER_DEVICE", "cpu")
 WHISPER_COMPUTE_TYPE = os.environ.get("WHISPER_COMPUTE_TYPE", "int8")

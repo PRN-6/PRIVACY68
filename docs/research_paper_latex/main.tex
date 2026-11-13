@@ -39,7 +39,7 @@ Email: contact@privacy68.local}
 \maketitle
 
 \begin{abstract}
-Personal desktop assistants increasingly leverage Large Language Models (LLMs) to perform complex operating system tasks via automated script generation and desktop automation APIs. However, mainstream solutions suffer from three fundamental vulnerabilities: severe privacy leakage due to continuous cloud audio streaming, single-point-of-failure fragility under API rate limits or network outages, and dangerous execution permissions that risk irreversible system corruption. In this paper, we propose \textbf{PRIVACY68}, a lightweight, hybrid edge-cloud autonomous desktop assistant engineered for resilient operating system control with zero idle privacy intrusion. PRIVACY68 introduces three architectural innovations: (1) a \textbf{Push-to-Talk Hardware Isolation Protocol} ensuring audio capture interfaces are strictly unallocated outside active user invocation, (2) a \textbf{Cascading Multi-Provider LLM Engine} with an automated, self-healing code execution feedback loop that dynamically falls back across local Ollama instances and edge-cloud APIs (Groq, Gemini, Claude, OpenAI), and (3) a \textbf{Zero-Latency Learned Skills Engine} that crystallizes successful runtime executions into local procedural memories, dropping execution latency from $1,250\text{ ms} \to 0.15\text{ ms}$ on repetitive invocations. Furthermore, a formal \textbf{3-Tier Security Guard} enforces cryptographic and timed confirmation gates for high-risk system mutations. We empirically evaluate PRIVACY68 across an automated test suite of 139 unit tests (100\% pass rate in 7.579 seconds), synthetic code-repair benchmarks, and latency profiles across heterogeneous hardware, demonstrating an 84.9\% reduction in API token overhead and 94.7\% error recovery under network and code execution faults.
+Personal desktop assistants increasingly leverage Large Language Models (LLMs) to perform complex operating system tasks via automated script generation and desktop automation APIs. However, mainstream solutions suffer from three fundamental vulnerabilities: severe privacy leakage due to continuous cloud audio streaming, single-point-of-failure fragility under API rate limits or network outages, and dangerous execution permissions that risk irreversible system corruption. In this paper, we propose \textbf{PRIVACY68}, a lightweight, hybrid edge-cloud autonomous desktop assistant engineered for resilient operating system control with zero idle privacy intrusion. PRIVACY68 introduces three architectural innovations: (1) a \textbf{Push-to-Talk Hardware Isolation Protocol} ensuring audio capture interfaces are strictly unallocated outside active user invocation, (2) a \textbf{Cascading Multi-Provider LLM Engine} with an automated, self-healing code execution feedback loop that dynamically falls back across local Ollama instances and edge-cloud APIs (Groq, Gemini, Claude, OpenAI), and (3) a \textbf{Zero-Latency Learned Skills Engine} that crystallizes successful runtime executions into local procedural memories, dropping execution latency from $1,250\text{ ms} \to 0.15\text{ ms}$ on repetitive invocations. Furthermore, a formal \textbf{3-Tier Security Guard} enforces cryptographic and timed confirmation gates for high-risk system mutations. We empirically evaluate PRIVACY68 across an automated test suite of 141 unit tests (100\% pass rate in 7.578 seconds), synthetic code-repair benchmarks, and latency profiles across heterogeneous hardware, demonstrating an 84.9\% reduction in API token overhead and 94.7\% error recovery under network and code execution faults.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -153,7 +153,7 @@ A temporal confirmation gate guarantees that pending sensitive actions automatic
 \label{sec:evaluation}
 
 \subsection{Automated Test Suite Verification}
-The functional integrity of PRIVACY68 was validated using an automated suite of \textbf{139 unit tests} executed under Python's native \texttt{unittest} harness. As presented in Table~\ref{tab:test_suite}, all 139 tests passed with a 100\% success rate in \textbf{7.579 seconds} on Windows 11.
+The functional integrity of PRIVACY68 was validated using an automated suite of \textbf{141 unit tests} executed under Python's native \texttt{unittest} harness. As presented in Table~\ref{tab:test_suite}, all 141 tests passed with a 100\% success rate in \textbf{7.578 seconds} on Windows 11.
 
 \begin{table}[htbp]
 \centering
@@ -167,7 +167,7 @@ The functional integrity of PRIVACY68 was validated using an automated suite of 
 \texttt{test\_executor} & 16 & PASS & Command triage, plugin priority \\ \hline
 \texttt{test\_telegram\_plugin} & 14 & PASS & Telegram polling, PIN handshake \\ \hline
 \texttt{test\_github\_plugin} & 13 & PASS & Credential Mgr, repos, push \\ \hline
-\texttt{test\_quoted\_commands}& 15 & PASS & Google Speech 1st, Whisper fallback \\ \hline
+\texttt{test\_quoted\_commands}& 17 & PASS & Google Speech dual-accent, Whisper \\ \hline
 \texttt{test\_dashboard\_bridge}& 12 & PASS & WebView2 IPC, speech toggle \\ \hline
 \texttt{test\_skill\_manager} & 9 & PASS & Skill crystallization, cache hit \\ \hline
 \texttt{test\_agent\_brain} & 8 & PASS & Failover, self-healing loop \\ \hline
@@ -178,7 +178,7 @@ The functional integrity of PRIVACY68 was validated using an automated suite of 
 \texttt{test\_remote\_server} & 5 & PASS & LAN PIN auth, 401 gate, status \\ \hline
 \texttt{test\_profile\_manager}& 3 & PASS & Profile schema, multi-user \\ \hline
 \texttt{test\_ui\_manager} & 2 & PASS & Native PyWebView parameters \\ \hline
-\textbf{Total Verification} & \textbf{139} & \textbf{PASS} & \textbf{Execution Time: 7.579s} \\ \hline
+\textbf{Total Verification} & \textbf{141} & \textbf{PASS} & \textbf{Execution Time: 7.578s} \\ \hline
 \end{tabularx}
 \end{table}
 
@@ -241,7 +241,7 @@ While PRIVACY68 provides substantial improvements in autonomy and security, empi
 
 \section{Conclusion}
 \label{sec:conclusion}
-In this paper, we introduced \textbf{PRIVACY68}, an extensible, hybrid edge-cloud autonomous desktop agent engineered to overcome the acoustic privacy vulnerabilities, provider fragility, and safety hazards of current AI assistants. Through a Push-to-Talk hardware isolation protocol, multi-provider model cascading with self-healing execution, procedural skill crystallization, and a 3-tier risk guard, PRIVACY68 delivers resilient and safe desktop automation. Rigorous empirical evaluation across 139 unit tests demonstrated a 100\% pass rate, 84.9\% token reduction, and 98.8\% latency reduction for recurring tasks, establishing a principled foundation for privacy-first autonomous computing.
+In this paper, we introduced \textbf{PRIVACY68}, an extensible, hybrid edge-cloud autonomous desktop agent engineered to overcome the acoustic privacy vulnerabilities, provider fragility, and safety hazards of current AI assistants. Through a Push-to-Talk hardware isolation protocol, multi-provider model cascading with self-healing execution, procedural skill crystallization, and a 3-tier risk guard, PRIVACY68 delivers resilient and safe desktop automation. Rigorous empirical evaluation across 141 unit tests demonstrated a 100\% pass rate, 84.9\% token reduction, and 98.8\% latency reduction for recurring tasks, establishing a principled foundation for privacy-first autonomous computing.
 
 \bibliographystyle{IEEEtran}
 \bibliography{references}

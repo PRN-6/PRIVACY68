@@ -239,5 +239,33 @@ class TestQuotedCommandsAndBrainConfig(unittest.TestCase):
                     self.assertEqual(res, "offline local whisper voice")
 
 
+    def test_autocorrect_speech_command_conversational_prefixes(self):
+        from speech.streamer import autocorrect_speech_command
+        self.assertEqual(autocorrect_speech_command("can you please open chrome"), "open chrome")
+        self.assertEqual(autocorrect_speech_command("could you open notepad"), "open notepad")
+        self.assertEqual(autocorrect_speech_command("i want to open calculator"), "open calculator")
+        self.assertEqual(autocorrect_speech_command("hey jarvis open brave"), "open brave")
+        self.assertEqual(autocorrect_speech_command("open calci"), "open calculator")
+        self.assertEqual(autocorrect_speech_command("open tele gram"), "open telegram")
+        self.assertEqual(autocorrect_speech_command("open what's app"), "open whatsapp")
+
+    def test_transcribe_google_dual_accent_fallback(self):
+        from speech.streamer import SpeechStreamer
+        import speech_recognition as sr
+        import numpy as np
+
+        streamer = SpeechStreamer(auto_init_hardware=False)
+        mock_rec = MagicMock()
+        # First call (en-IN) raises UnknownValueError, second call (en-US) returns "open youtube"
+        mock_rec.recognize_google.side_effect = [sr.UnknownValueError(), "open youtube"]
+
+        with patch("speech_recognition.Recognizer", return_value=mock_rec):
+            with patch("config.SPEECH_LANGUAGE", "en-IN"):
+                dummy_audio = np.zeros(16000, dtype=np.float32)
+                res = streamer._transcribe_google(dummy_audio)
+                self.assertEqual(res, "open youtube")
+                self.assertEqual(mock_rec.recognize_google.call_count, 2)
+
+
 if __name__ == "__main__":
     unittest.main()

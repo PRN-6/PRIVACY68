@@ -14,7 +14,7 @@ The verification framework of PRIVACY68 adheres to an automated test-driven meth
 \end{enumerate}
 
 \section{Automated Test Suite Execution and Results}
-The PRIVACY68 automated test suite is implemented using the Python standard library \texttt{unittest} framework, requiring zero external test runner dependencies. As executed on the release candidate, all \textbf{139 unit tests passed with 100\% success rate} in \textbf{7.579 seconds}.
+The PRIVACY68 automated test suite is implemented using the Python standard library \texttt{unittest} framework, requiring zero external test runner dependencies. As executed on the release candidate, all \textbf{141 unit tests passed with 100\% success rate} in \textbf{7.578 seconds}.
 
 \begin{table}[htbp]
 \centering
@@ -26,8 +26,8 @@ The PRIVACY68 automated test suite is implemented using the Python standard libr
 \textbf{Test Module} & \textbf{Tests} & \textbf{Status} & \textbf{Primary Functionality Verified} \\ \hline
 \texttt{test\_gmail\_plugin.py} & 18 & PASS & Gmail compose URL generation, inbox navigation, parameter sanitization, disabled state isolation, custom email validation. \\ \hline
 \texttt{test\_executor.py} & 16 & PASS & Built-in command delegation, app launches, web service routing, plugin priority dispatch, compound command unblocking, error notifications. \\ \hline
+\texttt{test\_quoted\_commands.py} & 17 & PASS & Click-to-Speak hardware isolation, quote-stripping, Google Web Speech dual-accent recovery, offline Faster-Whisper fallback. \\ \hline
 \texttt{test\_telegram\_plugin.py} & 14 & PASS & Out-of-band Telegram polling, PIN-based pairing handshake, single-user auth gate, Faster-Whisper voice note transcription, screenshot capture \& transmission. \\ \hline
-\texttt{test\_quoted\_commands.py} & 15 & PASS & Click-to-Speak hardware isolation, quote-stripping, Google Web Speech primary priority, offline Faster-Whisper fallback. \\ \hline
 \texttt{test\_github\_plugin.py} & 13 & PASS & Windows Credential Manager integration, repository querying, branch switching, write confirmation enforcement. \\ \hline
 \texttt{test\_dashboard\_bridge.py} & 12 & PASS & WebView2 API endpoints, speech engine config toggles, plugin enumeration, Telegram bridge controls, GitHub token validation, runtime telemetry. \\ \hline
 \texttt{test\_skill\_manager.py} & 9 & PASS & Skill learning from successful runs, keyword extraction, fast-path fuzzy retrieval, execution count tracking. \\ \hline
@@ -39,7 +39,7 @@ The PRIVACY68 automated test suite is implemented using the Python standard libr
 \texttt{test\_remote\_server.py} & 5 & PASS & Mobile LAN pairing PIN authorization, 401 unauthorized rejection, QR code generation, status versioning. \\ \hline
 \texttt{test\_profile\_manager.py} & 3 & PASS & User profile schema migration, default setting fallback, configuration merging. \\ \hline
 \texttt{test\_ui\_manager.py} & 2 & PASS & PyWebView launch modes, window configuration, platform compatibility. \\ \hline
-\textbf{Total Test Suite} & \textbf{139} & \textbf{PASS} & \textbf{100\% Pass Rate (Execution Time: 7.579 seconds)} \\ \hline
+\textbf{Total Test Suite} & \textbf{141} & \textbf{PASS} & \textbf{100\% Pass Rate (Execution Time: 7.578 seconds)} \\ \hline
 \end{tabularx}
 \end{table}
 

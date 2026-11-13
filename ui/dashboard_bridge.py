@@ -184,12 +184,13 @@ class DashboardAPI:
                 "engine": getattr(config, "SPEECH_ENGINE", "auto"),
                 "whisper_model": getattr(config, "WHISPER_MODEL_SIZE", "tiny"),
                 "whisper_device": getattr(config, "WHISPER_DEVICE", "cpu"),
+                "language": getattr(config, "SPEECH_LANGUAGE", "auto"),
             }
         except Exception as e:
             return {"success": False, "message": str(e)}
 
-    def save_speech_config(self, engine: str, whisper_model: str = "tiny") -> Dict[str, Any]:
-        """Saves speech recognition engine choice ('auto', 'whisper', 'google') and model size."""
+    def save_speech_config(self, engine: str, whisper_model: str = "tiny", language: str = "auto") -> Dict[str, Any]:
+        """Saves speech recognition engine choice ('auto', 'whisper', 'google'), model size, and language dialect."""
         try:
             import config
             clean_engine = (engine or "auto").strip().lower()
@@ -197,10 +198,12 @@ class DashboardAPI:
                 return {"success": False, "message": f"Invalid speech engine '{clean_engine}'."}
 
             clean_model = (whisper_model or "tiny").strip().lower()
+            clean_lang = (language or "auto").strip()
             prev_model = getattr(config, "WHISPER_MODEL_SIZE", "tiny")
 
             config.update_dotenv_var("SPEECH_ENGINE", clean_engine)
             config.update_dotenv_var("WHISPER_MODEL_SIZE", clean_model)
+            config.update_dotenv_var("SPEECH_LANGUAGE", clean_lang)
 
             if clean_model != prev_model:
                 try:
@@ -211,14 +214,15 @@ class DashboardAPI:
 
             labels = {
                 "whisper": "Local Offline (Faster-Whisper)",
-                "auto": "Auto (Offline Whisper + Cloud Fallback)",
+                "auto": "Auto (Google Web Speech First + Offline Fallback)",
                 "google": "Google Web Speech (Cloud ASR)"
             }
             return {
                 "success": True,
                 "engine": clean_engine,
                 "whisper_model": clean_model,
-                "message": f"Speech engine set to: {labels.get(clean_engine, clean_engine)}"
+                "language": clean_lang,
+                "message": f"Speech engine set to: {labels.get(clean_engine, clean_engine)} (Accent: {clean_lang})"
             }
         except Exception as e:
             logger.error(f"Error saving speech config: {e}")

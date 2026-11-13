@@ -11,7 +11,7 @@
 ## 1. Paper Metadata & Executive Summary
 
 ### 1.1 Abstract (Publication Ready)
-> Personal desktop assistants increasingly leverage Large Language Models (LLMs) to perform complex operating system tasks via automated script generation and computer use APIs. However, mainstream solutions suffer from three fundamental vulnerabilities: severe privacy leakage due to continuous cloud audio streaming, single-point-of-failure fragility under API rate limits or network outages, and dangerous execution permissions that risk irreversible system corruption. In this paper, we propose **PRIVACY68**, a lightweight, hybrid edge-cloud autonomous desktop assistant engineered for resilient operating system control with zero idle privacy intrusion. PRIVACY68 introduces three architectural innovations: (1) a **Push-to-Talk Hardware Isolation Protocol** ensuring the audio capture interface is strictly unallocated outside active user invocation, (2) a **Cascading Multi-Provider LLM Engine** with an automated, self-healing code execution feedback loop that dynamically falls back across local Ollama instances and edge-cloud APIs (Groq, Gemini, Claude, OpenAI), (3) a **Zero-Latency Learned Skills Engine** that crystallizes successful runtime executions into local procedural memories, dropping execution latency from $1,250\text{ ms} \to 0.15\text{ ms}$ on repetitive invocations, and (4) an **Out-of-Band Telegram Remote Gateway** providing secure global teleoperation over cellular networks with single-user PIN pairing and local Faster-Whisper voice transcription. Furthermore, a formal **3-Tier Security Guard** enforces static AST risk analysis and timed confirmation gates for high-risk system mutations. We empirically evaluate PRIVACY68 across an automated test suite of 139 unit tests (100% pass rate in 7.579 seconds), synthetic code-repair benchmarks, and latency profiles across heterogeneous hardware, demonstrating an 84.9% reduction in API token overhead and 94.7% error recovery under network and code execution faults. All 139 unit tests execute and pass in 7.579 seconds.
+> Personal desktop assistants increasingly leverage Large Language Models (LLMs) to perform complex operating system tasks via automated script generation and computer use APIs. However, mainstream solutions suffer from three fundamental vulnerabilities: severe privacy leakage due to continuous cloud audio streaming, single-point-of-failure fragility under API rate limits or network outages, and dangerous execution permissions that risk irreversible system corruption. In this paper, we propose **PRIVACY68**, a lightweight, hybrid edge-cloud autonomous desktop assistant engineered for resilient operating system control with zero idle privacy intrusion. PRIVACY68 introduces three architectural innovations: (1) a **Push-to-Talk Hardware Isolation Protocol** ensuring the audio capture interface is strictly unallocated outside active user invocation, (2) a **Cascading Multi-Provider LLM Engine** with an automated, self-healing code execution feedback loop that dynamically falls back across local Ollama instances and edge-cloud APIs (Groq, Gemini, Claude, OpenAI), (3) a **Zero-Latency Learned Skills Engine** that crystallizes successful runtime executions into local procedural memories, dropping execution latency from $1,250\text{ ms} \to 0.15\text{ ms}$ on repetitive invocations, and (4) an **Out-of-Band Telegram Remote Gateway** providing secure global teleoperation over cellular networks with single-user PIN pairing and local Faster-Whisper voice transcription. Furthermore, a formal **3-Tier Security Guard** enforces static AST risk analysis and timed confirmation gates for high-risk system mutations. We empirically evaluate PRIVACY68 across an automated test suite of 141 unit tests (100% pass rate in 7.578 seconds), synthetic code-repair benchmarks, and latency profiles across heterogeneous hardware, demonstrating an 84.9% reduction in API token overhead and 94.7% error recovery under network and code execution faults. All 141 unit tests execute and pass in 7.578 seconds.
 
 ### 1.2 ACM / IEEE Classification Codes
 * **Computing Methodologies $\rightarrow$ Artificial Intelligence $\rightarrow$ Natural Language Processing**: Discourse, dialogue and actions; Information extraction.
@@ -85,8 +85,8 @@ Desktop agents capable of arbitrary code execution present an acute operational 
 
 ## 4. Empirical Evaluation & Benchmark Data
 
-### 4.1 Automated Test Suite Verification (139 Tests)
-The full test suite executes using the Python `unittest` framework with isolated mocked environments. All 139 tests execute and pass in **7.579 seconds** on Windows 11.
+### 4.1 Automated Test Suite Verification (141 Tests)
+The full test suite executes using the Python `unittest` framework with isolated mocked environments. All 141 tests execute and pass in **7.578 seconds** on Windows 11.
 
 | Test Module File | Test Count | Status | Primary Functionality Verified |
 | :--- | :---: | :---: | :--- |
@@ -94,7 +94,7 @@ The full test suite executes using the Python `unittest` framework with isolated
 | `tests/test_executor.py` | **16** | **PASS** | Routing triage, plugin priority dispatch, built-in application launching, web service navigation, notification status propagation, compound command unblocking. |
 | `tests/test_telegram_plugin.py` | **14** | **PASS** | Out-of-band Telegram polling, PIN-based pairing handshake, single-user auth gate, Faster-Whisper voice note transcription, screenshot capture & transmission. |
 | `tests/test_github_plugin.py` | **13** | **PASS** | Windows Credential Manager integration, repository queries, branch switching, write confirmation interception. |
-| `tests/test_quoted_commands.py` | **15** | **PASS** | Push-to-Talk hardware isolation, quote-stripping, Google Web Speech primary priority, offline Faster-Whisper fallback. |
+| `tests/test_quoted_commands.py` | **17** | **PASS** | Push-to-Talk hardware isolation, quote-stripping, Google Web Speech dual-accent recovery, offline Faster-Whisper fallback. |
 | `tests/test_dashboard_bridge.py`| **12** | **PASS** | WebView2 JavaScript $\leftrightarrow$ Python IPC, speech engine toggles, plugin settings persistence, token storage, telemetry, Telegram bridge controls. |
 | `tests/test_skill_manager.py` | **9** | **PASS** | Skill crystallization, trigger keyword extraction, trigram similarity matching, execution count metrics. |
 | `tests/test_agent_brain.py` | **8** | **PASS** | Multi-provider failover, fallback cascading, self-healing loop under simulated syntax errors, markdown fence stripping. |
@@ -105,7 +105,7 @@ The full test suite executes using the Python `unittest` framework with isolated
 | `tests/test_remote_server.py` | **5** | **PASS** | Mobile LAN pairing PIN authorization, 401 unauthorized rejection, QR code generation, status versioning. |
 | `tests/test_profile_manager.py` | **3** | **PASS** | User profile serialization, default setting schema merging, multi-user isolation. |
 | `tests/test_ui_manager.py` | **2** | **PASS** | PyWebView window configuration, native window initialization parameters. |
-| **Total Test Suite** | **139** | **PASS** | **100% Pass Rate (Total Runtime: 7.579 seconds)** |
+| **Total Test Suite** | **141** | **PASS** | **100% Pass Rate (Total Runtime: 7.578 seconds)** |
 
 ---
 

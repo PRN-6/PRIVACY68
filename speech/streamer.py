@@ -25,32 +25,52 @@ logger = logging.getLogger("PRIVACY68.SpeechStreamer")
 
 
 def autocorrect_speech_command(text: str) -> str:
-    """Cleans filler words, duplicate stutters, quotes, and typos from transcribed speech."""
+    """Cleans filler words, duplicate stutters, quotes, polite prefixes, and common typos from transcribed speech."""
     if not text:
         return ""
 
     # Aggressively strip wrapping single/double quotes or backticks added by Whisper models
     cleaned = re.sub(r"^['\"`‘“\s]+|['\"`’”\s]+$", "", text.strip())
 
-    # 1. Strip filler vocal tics (e.g., hmmm, ummm, uhhh)
+    # 1. Strip filler vocal tics (e.g., hmmm, ummm, uhhh, ahhh)
     cleaned = re.sub(r'\b(h+m+|u+m+|u+h+|a+h+|e+r+|b+m+|m+h+m+|m+m+)\b', ' ', cleaned, flags=re.IGNORECASE)
-    # 2. Strip consecutive repeated stutter words ('open open Chrome' -> 'open Chrome')
+
+    # 2. Strip conversational prefixes (loops to strip chained greetings like "hey jarvis please open")
+    prefix_pattern = re.compile(
+        r'^(?:can\s+you(?:\s+please)?|could\s+you(?:\s+please)?|would\s+you(?:\s+please)?|'
+        r'i\s+want\s+(?:you\s+)?to|please|kindly|hey|alexa|privacy68|jarvis|siri|ok\s+google|computer|just)[,\s]+',
+        flags=re.IGNORECASE
+    )
+    while True:
+        sub_cleaned = prefix_pattern.sub('', cleaned)
+        if sub_cleaned == cleaned:
+            break
+        cleaned = sub_cleaned
+
+    # 3. Strip consecutive repeated stutter words ('open open Chrome' -> 'open Chrome')
     cleaned = re.sub(r'\b([a-zA-Z]+)(?:\s+\1\b)+', r'\1', cleaned, flags=re.IGNORECASE)
-    # 3. Clean trailing prepositions/conjunctions
+
+    # 4. Clean trailing prepositions/conjunctions
     cleaned = re.sub(r'\s+(in|at|on|for|with|and|to|the|a|of)\s*$', '', cleaned, flags=re.IGNORECASE)
-    # 4. Normalize common app typos
+
+    # 5. Normalize common spoken phonetic variations & app typos
     substitutions = [
         (r'\byoutub\b|\byou\s*tube\b', 'youtube'),
-        (r'\bwhatsup\b|\bwhat\s*app\b', 'whatsapp'),
+        (r"\bwhat(?:['’]s|s)?\s*(?:app|up|zap)\b", 'whatsapp'),
         (r'\bgoogl\b', 'google'),
         (r'\bbrower\b', 'browser'),
-        (r'\bnotpad\b', 'notepad'),
+        (r'\bnotpad\b|\bnote\s*pad\b', 'notepad'),
         (r'\bchrom\b', 'chrome'),
+        (r'\btele\s*gram\b|\btele\s*gran\b', 'telegram'),
+        (r'\bvs\s*code\b|\bvisual\s*studio\s*code\b', 'vscode'),
+        (r'\bgit\s*hub\b', 'github'),
+        (r'\bcalc\b|\bcalci\b|\bcalculate\b(?!\s+\d)', 'calculator'),
+        (r'\bcommand\s*prompt\b', 'cmd'),
+        (r'\bfile\s*manager\b', 'file explorer'),
     ]
     for pattern, repl in substitutions:
         cleaned = re.sub(pattern, repl, cleaned, flags=re.IGNORECASE)
-    # 5. Clean leading conversational greetings
-    cleaned = re.sub(r'^(?:please|kindly|hey|alexa|privacy68|jarvis)[,\s]+', '', cleaned, flags=re.IGNORECASE)
+
     cleaned = re.sub(r'\s+', ' ', cleaned)
     return re.sub(r"^['\"`‘“\s]+|['\"`’”\s]+$", "", cleaned).strip(".!?, \t\n")
 
@@ -138,8 +158,17 @@ class PushToTalkRecorder:
         if len(audio_data) < self.sample_rate * 0.25:  # less than 250ms
             return ""
 
+        # 1. Remove DC bias (centers waveform around 0)
+        audio_data = audio_data - np.mean(audio_data)
+
+        # 2. Dynamic peak normalization to 0.95 for maximum dynamic range
         peak = float(np.max(np.abs(audio_data)))
-        norm_audio = (audio_data / peak) * 0.9 if peak > 0.005 else audio_data
+        norm_audio = (audio_data / peak) * 0.95 if peak > 0.001 else audio_data
+
+        # 3. Add 60ms silence padding to prevent neural acoustic truncation
+        pad_len = int(self.sample_rate * 0.06)
+        if pad_len > 0:
+            norm_audio = np.pad(norm_audio, (pad_len, pad_len), mode="constant")
 
         text = ""
         if streamer is not None:
@@ -236,16 +265,66 @@ class SpeechStreamer:
         return ""
 
     def _transcribe_google(self, audio_data: np.ndarray) -> str:
-        """Transcribes active command using Google Web Speech Recognition (Free, Zero API Key)."""
+        """Transcribes active command using Google Web Speech Recognition with dual-accent recovery and hypothesis fallback."""
+        if len(audio_data) == 0:
+            return ""
+
         try:
             import speech_recognition as sr
             recognizer = sr.Recognizer()
-            int16_arr = (audio_data * 32767).astype(np.int16)
+            recognizer.dynamic_energy_threshold = False
+            recognizer.energy_threshold = 120
+
+            # Safe int16 conversion with explicit clipping to prevent integer wrap-around clicks
+            clipped_audio = np.clip(audio_data, -1.0, 1.0)
+            int16_arr = (clipped_audio * 32767).astype(np.int16)
             audio = sr.AudioData(int16_arr.tobytes(), self.sample_rate, 2)
-            text = recognizer.recognize_google(audio, language="en-US")
-            if text:
-                logger.info(f"[GOOGLE SPEECH FREE] Transcribed: '{text}'")
-                return text.strip()
+
+            # Determine primary recognition language from config or system locale
+            primary_lang = getattr(config, "SPEECH_LANGUAGE", "auto")
+            if not primary_lang or primary_lang == "auto":
+                try:
+                    import locale
+                    sys_loc = (locale.getlocale()[0] or locale.getdefaultlocale()[0] or "").lower()
+                    primary_lang = "en-IN" if "in" in sys_loc else "en-US"
+                except Exception:
+                    primary_lang = "en-IN"
+
+            # Accent fallback language (en-US <-> en-IN)
+            fallback_lang = "en-US" if primary_lang != "en-US" else "en-IN"
+
+            # Pass 1: Primary dialect recognition
+            try:
+                text = recognizer.recognize_google(audio, language=primary_lang)
+                if text:
+                    logger.info(f"[GOOGLE SPEECH FREE ({primary_lang})] Transcribed: '{text}'")
+                    return text.strip()
+            except sr.UnknownValueError:
+                # Pass 2: Accent fallback
+                try:
+                    text = recognizer.recognize_google(audio, language=fallback_lang)
+                    if text:
+                        logger.info(f"[GOOGLE SPEECH FREE ({fallback_lang} fallback)] Transcribed: '{text}'")
+                        return text.strip()
+                except sr.UnknownValueError:
+                    pass
+            except sr.RequestError as e:
+                logger.warning(f"Google Speech network error: {e}")
+                return ""
+
+            # Pass 3: Extract from alternative hypotheses if strict threshold rejected
+            try:
+                raw_result = recognizer.recognize_google(audio, language=primary_lang, show_all=True)
+                if isinstance(raw_result, dict) and raw_result.get("alternative"):
+                    candidates = raw_result["alternative"]
+                    if candidates and "transcript" in candidates[0]:
+                        cand_text = candidates[0]["transcript"].strip()
+                        if cand_text:
+                            logger.info(f"[GOOGLE SPEECH HYPOTHESIS] Transcribed: '{cand_text}'")
+                            return cand_text
+            except Exception:
+                pass
+
         except Exception as e:
             err_name = type(e).__name__
             if "UnknownValueError" not in err_name:
