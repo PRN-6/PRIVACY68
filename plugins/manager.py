@@ -33,6 +33,7 @@ class PluginManager:
             from plugins.system_plugin import SystemPlugin
             from plugins.whatsapp_plugin import WhatsAppPlugin
             from plugins.gmail_plugin import GmailPlugin
+            from plugins.telegram_plugin import TelegramPlugin
 
             self.register_plugin(ChromePlugin(), is_builtin=True)
             self.register_plugin(BravePlugin(), is_builtin=True)
@@ -40,6 +41,7 @@ class PluginManager:
             self.register_plugin(SystemPlugin(), is_builtin=True)
             self.register_plugin(WhatsAppPlugin(), is_builtin=True)
             self.register_plugin(GmailPlugin(), is_builtin=True)
+            self.register_plugin(TelegramPlugin(), is_builtin=True)
             logger.info("Built-in core plugins loaded successfully.")
         except Exception as e:
             logger.error(f"Failed to load built-in plugins: {e}")
@@ -140,6 +142,17 @@ class PluginManager:
         if not plugin:
             return False
         plugin.is_enabled = bool(enabled)
+        if plugin_id == "telegram":
+            if not enabled and hasattr(plugin, "stop_bot"):
+                try:
+                    plugin.stop_bot()
+                except Exception:
+                    pass
+            elif enabled and hasattr(plugin, "start_bot") and getattr(plugin, "get_bot_token", lambda: "")():
+                try:
+                    plugin.start_bot()
+                except Exception:
+                    pass
         return True
 
     def uninstall_plugin(self, plugin_id: str) -> bool:

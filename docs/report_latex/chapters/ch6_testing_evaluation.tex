@@ -14,7 +14,7 @@ The verification framework of PRIVACY68 adheres to an automated test-driven meth
 \end{enumerate}
 
 \section{Automated Test Suite Execution and Results}
-The PRIVACY68 automated test suite is implemented using the Python standard library \texttt{unittest} framework, requiring zero external test runner dependencies. As executed on the release candidate, all \textbf{120 unit tests passed with 100\% success rate} in \textbf{16.723 seconds}.
+The PRIVACY68 automated test suite is implemented using the Python standard library \texttt{unittest} framework, requiring zero external test runner dependencies. As executed on the release candidate, all \textbf{137 unit tests passed with 100\% success rate} in \textbf{9.386 seconds}.
 
 \begin{table}[htbp]
 \centering
@@ -25,20 +25,21 @@ The PRIVACY68 automated test suite is implemented using the Python standard libr
 \hline
 \textbf{Test Module} & \textbf{Tests} & \textbf{Status} & \textbf{Primary Functionality Verified} \\ \hline
 \texttt{test\_gmail\_plugin.py} & 18 & PASS & Gmail compose URL generation, inbox navigation, parameter sanitization, disabled state isolation, custom email validation. \\ \hline
-\texttt{test\_executor.py} & 14 & PASS & Built-in command delegation, app launches, web service routing, plugin priority dispatch, error notifications. \\ \hline
+\texttt{test\_executor.py} & 16 & PASS & Built-in command delegation, app launches, web service routing, plugin priority dispatch, compound command unblocking, error notifications. \\ \hline
+\texttt{test\_telegram\_plugin.py} & 14 & PASS & Out-of-band Telegram polling, PIN-based pairing handshake, single-user auth gate, Faster-Whisper voice note transcription, screenshot capture & transmission. \\ \hline
 \texttt{test\_github\_plugin.py} & 13 & PASS & Windows Credential Manager integration, repository querying, branch switching, write confirmation enforcement. \\ \hline
 \texttt{test\_quoted\_commands.py} & 13 & PASS & Click-to-Speak hardware isolation, quote-stripping, offline Faster-Whisper engine, Google speech fallback. \\ \hline
-\texttt{test\_dashboard\_bridge.py} & 11 & PASS & WebView2 API endpoints, speech engine config toggles, plugin enumeration, GitHub token validation, runtime telemetry. \\ \hline
+\texttt{test\_dashboard\_bridge.py} & 12 & PASS & WebView2 API endpoints, speech engine config toggles, plugin enumeration, Telegram bridge controls, GitHub token validation, runtime telemetry. \\ \hline
 \texttt{test\_skill\_manager.py} & 9 & PASS & Skill learning from successful runs, keyword extraction, fast-path fuzzy retrieval, execution count tracking. \\ \hline
 \texttt{test\_agent\_brain.py} & 8 & PASS & Multi-provider failover, self-healing loop on script error, LLM exception handling, markdown fence stripping. \\ \hline
 \texttt{test\_security\_guard.py} & 8 & PASS & 3-Tier risk evaluation, AST code inspection for destructive calls, 15s timeout expiration, cancellation enforcement. \\ \hline
-\texttt{test\_agent\_runner.py} & 6 & PASS & Subprocess isolation, stdout/stderr capture, frozen vs. source execution modes, exit code propagation. \\ \hline
+\texttt{test\_agent_runner.py} & 6 & PASS & Subprocess isolation, stdout/stderr capture, frozen vs. source execution modes, exit code propagation. \\ \hline
 \texttt{test\_config.py} & 5 & PASS & Dynamic \texttt{.env} read/write persistence, frozen executable fallback to \texttt{\%APPDATA\%}, atomic variable reload. \\ \hline
 \texttt{test\_plugin\_manager.py} & 5 & PASS & Dynamic plugin discovery from user directory, safe template escaping, plugin registration and toggling. \\ \hline
 \texttt{test\_remote\_server.py} & 5 & PASS & Mobile LAN pairing PIN authorization, 401 unauthorized rejection, QR code generation, status versioning. \\ \hline
 \texttt{test\_profile\_manager.py} & 3 & PASS & User profile schema migration, default setting fallback, configuration merging. \\ \hline
 \texttt{test\_ui\_manager.py} & 2 & PASS & PyWebView launch modes, window configuration, platform compatibility. \\ \hline
-\textbf{Total Test Suite} & \textbf{120} & \textbf{PASS} & \textbf{100\% Pass Rate (Execution Time: 16.723 seconds)} \\ \hline
+\textbf{Total Test Suite} & \textbf{137} & \textbf{PASS} & \textbf{100\% Pass Rate (Execution Time: 9.386 seconds)} \\ \hline
 \end{tabularx}
 \end{table}
 

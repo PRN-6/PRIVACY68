@@ -7,6 +7,7 @@ from typing import Dict, Any, List, Optional
 import sounddevice as sd
 import numpy as np
 
+import config
 from plugins.manager import plugin_manager
 from plugins.profile_manager import profile_manager
 
@@ -737,6 +738,66 @@ class DashboardAPI:
             logger.error(f"Error setting Gmail config: {e}")
             return {"success": False, "message": str(e)}
 
+    def set_telegram_config(self, token: str, chat_id: str = "") -> Dict[str, Any]:
+        """Saves the user's Telegram Bot Token and allowed Chat ID."""
+        try:
+            from plugins.manager import plugin_manager
+            plugin = plugin_manager.get_plugin("telegram")
+            if not plugin:
+                return {"success": False, "message": "Telegram plugin not found."}
+            if hasattr(plugin, "set_bot_token"):
+                plugin.set_bot_token(token)
+            if hasattr(plugin, "set_allowed_chat_id") and chat_id is not None:
+                plugin.set_allowed_chat_id(chat_id)
+            logger.info("Updated Telegram Remote Gateway configuration.")
+            return {"success": True, "message": "Telegram configuration saved."}
+        except Exception as e:
+            logger.error(f"Error setting Telegram config: {e}")
+            return {"success": False, "message": str(e)}
+
+    def start_telegram_bot(self) -> Dict[str, Any]:
+        """Starts the background Telegram listener."""
+        try:
+            from plugins.manager import plugin_manager
+            plugin = plugin_manager.get_plugin("telegram")
+            if not plugin:
+                return {"success": False, "message": "Telegram plugin not found."}
+            plugin_manager.set_plugin_enabled("telegram", True)
+            if hasattr(plugin, "start_bot"):
+                success, msg = plugin.start_bot()
+                return {"success": success, "message": msg}
+            return {"success": False, "message": "Telegram plugin does not support start_bot."}
+        except Exception as e:
+            return {"success": False, "message": str(e)}
+
+    def stop_telegram_bot(self) -> Dict[str, Any]:
+        """Stops the background Telegram listener."""
+        try:
+            from plugins.manager import plugin_manager
+            plugin = plugin_manager.get_plugin("telegram")
+            if not plugin:
+                return {"success": False, "message": "Telegram plugin not found."}
+            if hasattr(plugin, "stop_bot"):
+                success, msg = plugin.stop_bot()
+                return {"success": success, "message": msg}
+            return {"success": False, "message": "Telegram plugin does not support stop_bot."}
+        except Exception as e:
+            return {"success": False, "message": str(e)}
+
+    def test_telegram_bot(self) -> Dict[str, Any]:
+        """Sends a diagnostic test message to the authorized Telegram chat."""
+        try:
+            from plugins.manager import plugin_manager
+            plugin = plugin_manager.get_plugin("telegram")
+            if not plugin:
+                return {"success": False, "message": "Telegram plugin not found."}
+            if hasattr(plugin, "send_test_message"):
+                success, msg = plugin.send_test_message()
+                return {"success": success, "message": msg}
+            return {"success": False, "message": "Telegram plugin does not support send_test_message."}
+        except Exception as e:
+            return {"success": False, "message": str(e)}
+
 
     # ---------------- Plugin Management ---------------- #
 
@@ -805,6 +866,10 @@ class DashboardAPI:
                         "user_email": getattr(p, "get_user_email", lambda: "")() if hasattr(p, "get_user_email") else profile_manager.get("gmail_user_email", ""),
                         "default_contact": profile_manager.get("whatsapp_default_contact", ""),
                         "default_url": profile_manager.get(f"{getattr(p, 'id', '')}_default_url", ""),
+                        "bot_token": profile_manager.get("telegram_bot_token", "") or getattr(config, "TELEGRAM_BOT_TOKEN", ""),
+                        "chat_id": profile_manager.get("telegram_allowed_chat_id", "") or getattr(config, "TELEGRAM_ALLOWED_CHAT_ID", ""),
+                        "bot_running": getattr(p, "is_bot_running", lambda: False)() if hasattr(p, "is_bot_running") else False,
+                        "bot_username": getattr(p, "bot_username", ""),
                     },
                     "triggers": all_triggers[:4],
                     "commands": commands_info,

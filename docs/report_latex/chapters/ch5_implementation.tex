@@ -297,6 +297,38 @@ class Privacy68RemoteHandler(SimpleHTTPRequestHandler):
             return
 \end{lstlisting}
 
+\subsection{Telegram Remote Gateway (\texttt{plugins/telegram\_plugin.py})}
+The Telegram Remote Gateway extends PRIVACY68's teleoperation capability beyond the local area network to cellular and global networks. Using an outbound long-polling worker thread, it communicates with the Telegram Bot API without exposing inbound open ports or requiring dynamic DNS configurations. Incoming commands undergo a one-time 6-character PIN pairing handshake, restricting desktop control strictly to the authenticated user. Spoken voice notes are downloaded as Opus/OGG audio streams and transcribed locally on the host machine using Faster-Whisper before execution.
+
+\begin{lstlisting}[language=Python, caption={Telegram Remote Gateway Polling and Handshake in telegram\_plugin.py}, label={lst:telegram_plugin}]
+class TelegramPlugin(BasePlugin):
+    """Global Remote Gateway with PIN Handshake & Local Voice Transcription."""
+    def _handle_update(self, update: Dict[str, Any]) -> None:
+        message = update.get("message")
+        chat_id = str(message.get("chat", {}).get("id", ""))
+        allowed_id = self.get_allowed_chat_id()
+
+        # One-time 6-character cryptographic PIN pairing handshake
+        if not allowed_id:
+            text = message.get("text", "").strip()
+            if text.startswith("/pair"):
+                pin = text.split()[1].upper() if len(text.split()) > 1 else ""
+                if pin and pin == get_auth_token().upper():
+                    self.set_allowed_chat_id(chat_id)
+                    self.send_message("Pairing successful! Welcome to PRIVACY68.", chat_id=chat_id)
+            return
+
+        # Voice Note: local Faster-Whisper transcription
+        if message.get("voice"):
+            file_id = message["voice"]["file_id"]
+            command_text = self._transcribe_telegram_voice(file_id)
+        else:
+            command_text = message.get("text", "").strip()
+
+        result = execute_system_command_detailed(command_text)
+        self.send_message(f"Done: {result['message']}", chat_id=chat_id)
+\end{lstlisting}
+
 \section{Summary of Module Interactions}
 The integration of these modules forms a robust, resilient execution pipeline. Raw audio enters via \texttt{PushToTalkRecorder}, is scaled by NumPy peak normalization, cleansed via lexical regex, evaluated by \texttt{SecurityGuard}, reasoned by \texttt{AgentBrain}, and visually reported through Microsoft Edge WebView2 and the mobile remote server.
 

@@ -139,6 +139,20 @@ def main() -> None:
             )
             logger.info(f"📱 Mobile Web Remote listening at: {remote_url}")
 
+        # Auto-start Telegram Remote Gateway if configured and enabled
+        try:
+            from plugins.manager import plugin_manager
+            tg_plugin = plugin_manager.get_plugin("telegram")
+            if tg_plugin and tg_plugin.is_enabled and getattr(config, "ENABLE_TELEGRAM_BOT", True):
+                if tg_plugin.get_bot_token():
+                    ok, msg = tg_plugin.start_bot()
+                    if ok:
+                        logger.info(f"✈️ {msg}")
+                    else:
+                        logger.debug(f"Telegram Bot start note: {msg}")
+        except Exception as tg_err:
+            logger.debug(f"Could not initialize Telegram Bot on startup: {tg_err}")
+
         # Initialize Audio Streamer and register module-level singleton
         streamer = SpeechStreamer()
         set_speech_streamer(streamer)

@@ -3,7 +3,7 @@
 **Document Title**: Comprehensive Academic & Empirical Data for Research Publication  
 **Target Paper Title**: *PRIVACY68: A Hybrid Edge-Cloud Autonomous Desktop Agent with Cascading Multi-LLM Reasoning, Self-Healing Execution, and Granular 3-Tier Security*  
 **Keywords**: Autonomous Desktop Agents, Large Language Models (LLMs), Model Cascading, Self-Healing Code Execution, Privacy-Preserving Computing, Edge-Cloud Systems, Human-Computer Interaction.  
-**Version**: 1.6.3 (Empirically Verified)  
+**Version**: 1.6.4 (Empirically Verified)  
 **Date**: November 2026  
 
 ---
@@ -11,7 +11,7 @@
 ## 1. Paper Metadata & Executive Summary
 
 ### 1.1 Abstract (Publication Ready)
-> Personal desktop assistants increasingly leverage Large Language Models (LLMs) to perform complex operating system tasks via automated script generation and computer use APIs. However, mainstream solutions suffer from three fundamental vulnerabilities: severe privacy leakage due to continuous cloud audio streaming, single-point-of-failure fragility under API rate limits or network outages, and dangerous execution permissions that risk irreversible system corruption. In this paper, we propose **PRIVACY68**, a lightweight, hybrid edge-cloud autonomous desktop assistant engineered for resilient operating system control with zero idle privacy intrusion. PRIVACY68 introduces three architectural innovations: (1) a **Push-to-Talk Hardware Isolation Protocol** ensuring the audio capture interface is strictly unallocated outside active user invocation, (2) a **Cascading Multi-Provider LLM Engine** with an automated, self-healing code execution feedback loop that dynamically falls back across local Ollama instances and edge-cloud APIs (Groq, Gemini, Claude, OpenAI), and (3) a **Zero-Latency Learned Skills Engine** that crystallizes successful runtime executions into local procedural memories, dropping execution latency from $1,250\text{ ms} \to 0.15\text{ ms}$ on repetitive invocations. Furthermore, a formal **3-Tier Security Guard** enforces cryptographic and timed confirmation gates for high-risk system mutations. We empirically evaluate PRIVACY68 across an automated test suite of 107 unit tests (100% pass rate in 15.27 seconds), synthetic code-repair benchmarks, and latency profiles across heterogeneous hardware, demonstrating an 84.9% reduction in API token overhead and 94.7% error recovery under network and code execution faults. All 120 unit tests execute and pass in 16.723 seconds.
+> Personal desktop assistants increasingly leverage Large Language Models (LLMs) to perform complex operating system tasks via automated script generation and computer use APIs. However, mainstream solutions suffer from three fundamental vulnerabilities: severe privacy leakage due to continuous cloud audio streaming, single-point-of-failure fragility under API rate limits or network outages, and dangerous execution permissions that risk irreversible system corruption. In this paper, we propose **PRIVACY68**, a lightweight, hybrid edge-cloud autonomous desktop assistant engineered for resilient operating system control with zero idle privacy intrusion. PRIVACY68 introduces three architectural innovations: (1) a **Push-to-Talk Hardware Isolation Protocol** ensuring the audio capture interface is strictly unallocated outside active user invocation, (2) a **Cascading Multi-Provider LLM Engine** with an automated, self-healing code execution feedback loop that dynamically falls back across local Ollama instances and edge-cloud APIs (Groq, Gemini, Claude, OpenAI), (3) a **Zero-Latency Learned Skills Engine** that crystallizes successful runtime executions into local procedural memories, dropping execution latency from $1,250\text{ ms} \to 0.15\text{ ms}$ on repetitive invocations, and (4) an **Out-of-Band Telegram Remote Gateway** providing secure global teleoperation over cellular networks with single-user PIN pairing and local Faster-Whisper voice transcription. Furthermore, a formal **3-Tier Security Guard** enforces static AST risk analysis and timed confirmation gates for high-risk system mutations. We empirically evaluate PRIVACY68 across an automated test suite of 137 unit tests (100% pass rate in 9.386 seconds), synthetic code-repair benchmarks, and latency profiles across heterogeneous hardware, demonstrating an 84.9% reduction in API token overhead and 94.7% error recovery under network and code execution faults. All 137 unit tests execute and pass in 9.386 seconds.
 
 ### 1.2 ACM / IEEE Classification Codes
 * **Computing Methodologies $\rightarrow$ Artificial Intelligence $\rightarrow$ Natural Language Processing**: Discourse, dialogue and actions; Information extraction.
@@ -85,16 +85,17 @@ Desktop agents capable of arbitrary code execution present an acute operational 
 
 ## 4. Empirical Evaluation & Benchmark Data
 
-### 4.1 Automated Test Suite Verification (120 Tests)
-The full test suite executes using the Python `unittest` framework with isolated mocked environments. All 120 tests execute and pass in **16.723 seconds** on Windows 11.
+### 4.1 Automated Test Suite Verification (137 Tests)
+The full test suite executes using the Python `unittest` framework with isolated mocked environments. All 137 tests execute and pass in **9.386 seconds** on Windows 11.
 
 | Test Module File | Test Count | Status | Primary Functionality Verified |
 | :--- | :---: | :---: | :--- |
 | `tests/test_gmail_plugin.py` | **18** | **PASS** | Gmail URL compose encoding, inbox navigation, disabled state isolation, custom email validation, parameter escaping. |
-| `tests/test_executor.py` | **14** | **PASS** | Routing triage, plugin priority dispatch, built-in application launching, web service navigation, notification status propagation. |
+| `tests/test_executor.py` | **16** | **PASS** | Routing triage, plugin priority dispatch, built-in application launching, web service navigation, notification status propagation, compound command unblocking. |
+| `tests/test_telegram_plugin.py` | **14** | **PASS** | Out-of-band Telegram polling, PIN-based pairing handshake, single-user auth gate, Faster-Whisper voice note transcription, screenshot capture & transmission. |
 | `tests/test_github_plugin.py` | **13** | **PASS** | Windows Credential Manager integration, repository queries, branch switching, write confirmation interception. |
 | `tests/test_quoted_commands.py` | **13** | **PASS** | Push-to-Talk hardware isolation, quote-stripping, local Faster-Whisper engine, Google Speech fallback. |
-| `tests/test_dashboard_bridge.py`| **11** | **PASS** | WebView2 JavaScript $\leftrightarrow$ Python IPC, speech engine toggles, plugin settings persistence, token storage, telemetry. |
+| `tests/test_dashboard_bridge.py`| **12** | **PASS** | WebView2 JavaScript $\leftrightarrow$ Python IPC, speech engine toggles, plugin settings persistence, token storage, telemetry, Telegram bridge controls. |
 | `tests/test_skill_manager.py` | **9** | **PASS** | Skill crystallization, trigger keyword extraction, trigram similarity matching, execution count metrics. |
 | `tests/test_agent_brain.py` | **8** | **PASS** | Multi-provider failover, fallback cascading, self-healing loop under simulated syntax errors, markdown fence stripping. |
 | `tests/test_security_guard.py` | **8** | **PASS** | 3-tier risk classification, AST code inspection for destructive calls, interactive confirmation gate, 15s timeout expiry. |
@@ -104,7 +105,7 @@ The full test suite executes using the Python `unittest` framework with isolated
 | `tests/test_remote_server.py` | **5** | **PASS** | Mobile LAN pairing PIN authorization, 401 unauthorized rejection, QR code generation, status versioning. |
 | `tests/test_profile_manager.py` | **3** | **PASS** | User profile serialization, default setting schema merging, multi-user isolation. |
 | `tests/test_ui_manager.py` | **2** | **PASS** | PyWebView window configuration, native window initialization parameters. |
-| **Total Test Suite** | **120** | **PASS** | **100% Pass Rate (Total Runtime: 16.723 seconds)** |
+| **Total Test Suite** | **137** | **PASS** | **100% Pass Rate (Total Runtime: 9.386 seconds)** |
 
 ---
 

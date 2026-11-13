@@ -1050,6 +1050,10 @@
       record_voice_command: async () => ({ success: false, message: 'Mock' }),
       get_speech_config: async () => ({ success: true, engine: 'auto', whisper_model: 'tiny' }),
       save_speech_config: async (engine, model) => ({ success: true, engine, whisper_model: model, message: 'Saved' }),
+      set_telegram_config: async () => ({ success: true, message: 'Saved' }),
+      start_telegram_bot: async () => ({ success: true, message: 'Started' }),
+      stop_telegram_bot: async () => ({ success: true, message: 'Stopped' }),
+      test_telegram_bot: async () => ({ success: true, message: 'Test message sent' }),
       close_app: async () => {}
     };
 
@@ -1634,6 +1638,33 @@
                 <button class="btn sm" id="wa-open-btn-${p.id}">Open WhatsApp</button>
               </div>
             `;
+          } else if (p.id === 'telegram') {
+            const botToken = (p.settings && p.settings.bot_token) || '';
+            const chatId = (p.settings && p.settings.chat_id) || '';
+            const isRunning = p.settings && p.settings.bot_running;
+            const username = (p.settings && p.settings.bot_username) || '';
+            drawer.innerHTML = `
+              <div style="font-size:11px; font-weight:700; color:var(--text); margin-bottom:2px;">Telegram Remote Gateway</div>
+              <div style="font-size:10px; color:var(--text-muted); margin-bottom:8px;">Control your PC globally via Telegram text or voice notes. Get your bot token from <b>@BotFather</b>.</div>
+              <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:10px;">
+                <div>
+                  <div style="font-size:10px; font-weight:600; color:var(--text-muted); margin-bottom:3px;">1. Bot API Token (from @BotFather):</div>
+                  <input type="password" id="tg-token-input-${p.id}" placeholder="e.g. 7123456789:AAFl-AbCdEfGhIj..." value="${botToken}" style="width:100%; font-size:11px; padding:6px 8px; border-radius:6px; border:1px solid var(--border); background:var(--bg-card); color:var(--text);">
+                </div>
+                <div>
+                  <div style="font-size:10px; font-weight:600; color:var(--text-muted); margin-bottom:3px;">2. Authorized Chat ID (Leave blank to pair via PIN):</div>
+                  <input type="text" id="tg-chat-input-${p.id}" placeholder="Leave blank, then send /start to your bot" value="${chatId}" style="width:100%; font-size:11px; padding:6px 8px; border-radius:6px; border:1px solid var(--border); background:var(--bg-card); color:var(--text);">
+                </div>
+              </div>
+              <div style="font-size:10px; margin-bottom:8px; color:${isRunning ? 'var(--accent-good, #10b981)' : 'var(--text-muted)'};">
+                Gateway Status: <b>${isRunning ? '🟢 Active & Listening ' + (username ? '(@' + username + ')' : '') : '⚪ Inactive / Offline'}</b>
+              </div>
+              <div class="plugin-quick-actions">
+                <button class="btn sm primary" id="tg-save-btn-${p.id}">Save & Start Bot</button>
+                <button class="btn sm" id="tg-stop-btn-${p.id}">Stop Bot</button>
+                <button class="btn sm" id="tg-test-btn-${p.id}">Send Test Alert</button>
+              </div>
+            `;
           } else if (p.id === 'chrome' || p.id === 'brave') {
             const defaultUrl = (p.settings && p.settings.default_url) || '';
             drawer.innerHTML = `
@@ -1711,6 +1742,39 @@
                 openBtn.onclick = async () => {
                   const res = await bridge().execute_plugin_action('whatsapp', 'open');
                   showToast(res.message || 'Launched WhatsApp.');
+                };
+              }
+            } else if (p.id === 'telegram') {
+              const saveBtn = $(`tg-save-btn-${p.id}`);
+              const stopBtn = $(`tg-stop-btn-${p.id}`);
+              const testBtn = $(`tg-test-btn-${p.id}`);
+              const tokenInp = $(`tg-token-input-${p.id}`);
+              const chatInp = $(`tg-chat-input-${p.id}`);
+              if (saveBtn && tokenInp) {
+                saveBtn.onclick = async () => {
+                  const token = tokenInp.value.trim();
+                  const chat = chatInp ? chatInp.value.trim() : '';
+                  if (!token) {
+                    showToast('Please enter your Telegram Bot Token.');
+                    return;
+                  }
+                  await bridge().set_telegram_config(token, chat);
+                  const res = await bridge().start_telegram_bot();
+                  showToast(res.message || 'Telegram Bot started!');
+                  setTimeout(() => renderPlugins(), 600);
+                };
+              }
+              if (stopBtn) {
+                stopBtn.onclick = async () => {
+                  const res = await bridge().stop_telegram_bot();
+                  showToast(res.message || 'Telegram Bot stopped.');
+                  setTimeout(() => renderPlugins(), 600);
+                };
+              }
+              if (testBtn) {
+                testBtn.onclick = async () => {
+                  const res = await bridge().test_telegram_bot();
+                  showToast(res.message || 'Test message sent.');
                 };
               }
             } else if (p.id === 'chrome' || p.id === 'brave') {

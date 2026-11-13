@@ -65,6 +65,9 @@ except Exception:
     _HAS_CUDA = _cuda_available()
 
 
+# Application Version
+APP_VERSION = "1.6.4"
+
 # Audio Stream Settings (16kHz standard for voice)
 SAMPLE_RATE = 16000
 BLOCK_SIZE = 1280
@@ -140,6 +143,11 @@ AGENT_BRAIN_MAX_RETRIES = 2  # Open-Interpreter style self-healing code retry lo
 ENABLE_REMOTE_SERVER = True
 REMOTE_SERVER_HOST = "0.0.0.0"
 REMOTE_SERVER_PORT = 8765
+
+# Telegram Remote Gateway configuration
+ENABLE_TELEGRAM_BOT = True
+TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+TELEGRAM_ALLOWED_CHAT_ID = os.environ.get("TELEGRAM_ALLOWED_CHAT_ID", "")
 
 
 def update_dotenv_var(key: str, value: str, env_path: str = None) -> None:

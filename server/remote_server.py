@@ -123,7 +123,7 @@ class Privacy68RemoteHandler(SimpleHTTPRequestHandler):
             self._send_json({
                 "status": "online",
                 "app": "PRIVACY68",
-                "version": getattr(config, "APP_VERSION", "1.6.3"),
+                "version": getattr(config, "APP_VERSION", "1.6.4"),
                 "pc_name": socket.gethostname(),
                 "local_ip": local_ip,
                 "port": _global_server_port,

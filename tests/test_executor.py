@@ -225,6 +225,29 @@ class TestActionExecutor(unittest.TestCase):
         self.assertEqual(result["tool"], "gmail")
         self.assertIn("disabled", result["message"].lower())
 
+    def test_open_telegram_routes_to_telegram_plugin(self):
+        tg_mock = Mock()
+        tg_mock.is_enabled = True
+        tg_mock.execute.return_value = True
+
+        with patch("plugins.manager.plugin_manager.get_plugin", return_value=tg_mock):
+            with patch.object(executor, "autocorrect_speech_command", return_value="open telegram"):
+                result = executor.execute_system_command_detailed("open telegram")
+
+        self.assertTrue(result["success"])
+        self.assertEqual(result["tool"], "telegram")
+        self.assertEqual(result["method"], "telegram_plugin")
+        tg_mock.execute.assert_called_once_with("open")
+
+    def test_compound_app_commands_fall_through_to_agent_brain(self):
+        expected = {"success": True, "message": "done", "method": "agentic_engine"}
+        with patch.object(executor, "autocorrect_speech_command", return_value="open notepad and write hello world"):
+            with patch("actions.agent_brain.agent_brain.generate_and_execute", return_value=expected) as mock_brain:
+                result = executor.execute_system_command_detailed("open notepad and write hello world")
+
+        self.assertEqual(result, expected)
+        mock_brain.assert_called_once_with("open notepad and write hello world")
+
 
 if __name__ == "__main__":
     unittest.main()

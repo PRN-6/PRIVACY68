@@ -155,6 +155,30 @@ class TestDashboardAPI(unittest.TestCase):
         self.assertIn("engine", cfg)
         self.assertIn("whisper_model", cfg)
 
+    def test_telegram_bridge_methods(self):
+        plugin = Mock()
+        plugin.start_bot.return_value = (True, "Bot started")
+        plugin.stop_bot.return_value = (True, "Bot stopped")
+        plugin.send_test_message.return_value = (True, "Alert sent")
+
+        with patch("plugins.manager.plugin_manager.get_plugin", return_value=plugin):
+            cfg_res = self.api.set_telegram_config("123:TOKEN", "999888")
+            self.assertTrue(cfg_res["success"])
+            plugin.set_bot_token.assert_called_once_with("123:TOKEN")
+            plugin.set_allowed_chat_id.assert_called_once_with("999888")
+
+            start_res = self.api.start_telegram_bot()
+            self.assertTrue(start_res["success"])
+            self.assertEqual(start_res["message"], "Bot started")
+
+            test_res = self.api.test_telegram_bot()
+            self.assertTrue(test_res["success"])
+            self.assertEqual(test_res["message"], "Alert sent")
+
+            stop_res = self.api.stop_telegram_bot()
+            self.assertTrue(stop_res["success"])
+            self.assertEqual(stop_res["message"], "Bot stopped")
+
 
 if __name__ == "__main__":
     unittest.main()

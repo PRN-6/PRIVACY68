@@ -29,6 +29,7 @@ BUILTIN_APP_COMMANDS = (
     (re.compile(r"(?:open|launch|start|go to)\s+(?:the\s+)?brave(?:\s+browser)?"), "brave", "open"),
     (re.compile(r"(?:open|launch|start|check|go to)\s+(?:the\s+)?whatsapp(?:\s+desktop)?"), "whatsapp", "open"),
     (re.compile(r"(?:open|launch|start|check|go to)\s+(?:the\s+)?(?:google\s+)?gmail(?:\s+inbox)?"), "gmail", "open"),
+    (re.compile(r"(?:open|launch|start|check|go to)\s+(?:the\s+)?telegram(?:\s+desktop)?"), "telegram", "open"),
 )
 
 COMMON_WEB_SERVICES = {
@@ -37,6 +38,7 @@ COMMON_WEB_SERVICES = {
     "github": "https://www.github.com",
     "gmail": "https://mail.google.com",
     "whatsapp": "https://web.whatsapp.com",
+    "telegram": "https://web.telegram.org",
     "reddit": "https://www.reddit.com",
     "twitter": "https://x.com",
     "x": "https://x.com",
@@ -230,7 +232,7 @@ def _execute_web_or_app_command(command: str, plugin_manager, on_action_callback
         }
 
     # 4. "open <website>" (e.g. "open youtube", "open github")
-    m_site = re.match(r"(?:open|launch|go to)\s+([a-zA-Z0-9_\-\.]+)", clean_cmd, re.IGNORECASE)
+    m_site = re.fullmatch(r"(?:open|launch|go to)\s+([a-zA-Z0-9_\-\.]+)", clean_cmd, re.IGNORECASE)
     if m_site:
         site_key = m_site.group(1).lower().strip()
 
@@ -295,7 +297,7 @@ def _execute_web_or_app_command(command: str, plugin_manager, on_action_callback
             }
 
     # 5. Desktop apps (notepad, calculator, cmd, powershell)
-    m_app = re.match(r"(?:open|launch|start)\s+(notepad|calculator|calc|explorer|file explorer|task manager|cmd|powershell|terminal)", clean_cmd, re.IGNORECASE)
+    m_app = re.fullmatch(r"(?:open|launch|start)\s+(notepad|calculator|calc|explorer|file explorer|task manager|cmd|powershell|terminal)", clean_cmd, re.IGNORECASE)
     if m_app:
         app_key = m_app.group(1).lower().strip()
         exe_cmd = APP_LAUNCHERS.get(app_key)
