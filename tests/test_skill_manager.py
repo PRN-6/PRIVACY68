@@ -84,6 +84,24 @@ class TestSkillManager(unittest.TestCase):
         self.assertTrue(deleted)
         self.assertNotIn("temporary_task_test", self.mgr.skills)
 
+    def test_distinct_intent_keywords_do_not_falsely_match_generic_skill(self):
+        # Precondition: Register a generic 'Can you open chrome' skill
+        self.mgr.learn_skill(
+            trigger_command="can you open chrome",
+            code="import webbrowser\nwebbrowser.open('https://google.com')\n",
+            description="Open Chrome browser"
+        )
+
+        # 1. Exact or near phrase matches should succeed
+        self.assertIsNotNone(self.mgr.find_matching_skill("can you open chrome"))
+        self.assertIsNotNone(self.mgr.find_matching_skill("open chrome"))
+
+        # 2. Specific intent queries with unfulfilled keywords (chatgpt, youtube, github) must NOT match
+        self.assertIsNone(self.mgr.find_matching_skill("Open chatgpt in chrome"))
+        self.assertIsNone(self.mgr.find_matching_skill("Open youtube in chrome"))
+        self.assertIsNone(self.mgr.find_matching_skill("Open github in chrome"))
+        self.assertIsNone(self.mgr.find_matching_skill("Open chrome and shutdown computer"))
+
 
 if __name__ == "__main__":
     unittest.main()

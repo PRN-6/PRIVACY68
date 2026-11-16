@@ -22,7 +22,8 @@ logger = logging.getLogger("PRIVACY68.SkillManager")
 _STOP_WORDS = frozenset({
     "a", "an", "the", "and", "or", "of", "to", "for", "in", "on", "at", "by", "with",
     "is", "it", "this", "that", "my", "me", "your", "please", "can", "you", "could",
-    "would", "i", "want", "need", "just", "now", "do", "make", "get", "run", "start"
+    "would", "i", "want", "need", "just", "now", "do", "make", "get", "run", "start",
+    "right", "here", "there", "also", "then", "so", "some", "any", "all", "up", "out"
 })
 
 # Pre-seeded starter skills providing immediate out-of-the-box utility
@@ -258,12 +259,16 @@ class SkillManager:
         """
         Fuzzy matches user command against learned skills library.
         Returns the highest-confidence matching skill, or None if no match.
+        Guarantees that commands with distinct unfulfilled intent tokens (e.g. 'chatgpt'
+        in 'Open chatgpt in chrome') never falsely match generic skills (e.g. 'Can you open chrome').
         """
         if not command or not self.skills:
             return None
 
-        clean_cmd = re.sub(r"[^\w\s]", "", command.lower()).strip()
-        cmd_keywords = set(self.extract_keywords(clean_cmd))
+        clean_cmd = re.sub(r"[^\w\s]", " ", command.lower()).strip()
+        cmd_tokens = [w for w in clean_cmd.split() if w]
+        clean_cmd_str = " ".join(cmd_tokens)
+        cmd_keywords = set(self.extract_keywords(clean_cmd_str))
 
         best_skill = None
         best_score = 0.0
@@ -271,22 +276,58 @@ class SkillManager:
         for skill in self.skills.values():
             score = 0.0
 
-            # 1. Exact phrase match with any trigger phrase
+            # 1. Exact phrase and semantic containment check
             for phrase in skill.get("trigger_phrases", []):
-                clean_phrase = re.sub(r"[^\w\s]", "", phrase.lower()).strip()
-                if clean_cmd == clean_phrase:
+                clean_phrase = re.sub(r"[^\w\s]", " ", phrase.lower()).strip()
+                phrase_tokens = [w for w in clean_phrase.split() if w]
+                clean_phrase_str = " ".join(phrase_tokens)
+
+                if clean_cmd_str == clean_phrase_str:
                     score = 1.0
                     break
-                elif clean_phrase and (clean_phrase in clean_cmd or clean_cmd in clean_phrase):
-                    score = max(score, 0.85)
 
-            # 2. Keyword overlap match
+                # Substring check: candidate phrase is contained inside command
+                if clean_phrase_str and clean_phrase_str in clean_cmd_str:
+                    cmd_words_set = set(cmd_tokens)
+                    phrase_words_set = set(phrase_tokens)
+                    extra_words = {w for w in (cmd_words_set - phrase_words_set) if w not in _STOP_WORDS and len(w) > 2}
+                    if not extra_words:
+                        # Only stop words or polite fillers differ (e.g. "can you please organize downloads right now")
+                        score = max(score, 0.88)
+
+                # Reverse substring check: command is contained inside candidate phrase
+                elif clean_phrase_str and clean_cmd_str in clean_phrase_str:
+                    phrase_words_set = set(phrase_tokens)
+                    cmd_words_set = set(cmd_tokens)
+                    missing_words = {w for w in (phrase_words_set - cmd_words_set) if w not in _STOP_WORDS and len(w) > 2}
+                    if not missing_words:
+                        score = max(score, 0.82)
+
+            # 2. Keyword overlap match with asymmetric intent penalty
             skill_keywords = set(skill.get("keywords", []))
             if skill_keywords and cmd_keywords:
                 intersection = skill_keywords.intersection(cmd_keywords)
-                keyword_score = len(intersection) / len(skill_keywords)
-                if keyword_score >= 0.65:
-                    score = max(score, 0.70 + (keyword_score * 0.25))
+                if intersection:
+                    unmatched_cmd = cmd_keywords - skill_keywords
+
+                    # Query coverage: what fraction of the command's keywords are handled by the skill
+                    query_coverage = len(intersection) / len(cmd_keywords)
+                    # Skill coverage: what fraction of the skill's keywords are mentioned
+                    skill_coverage = len(intersection) / len(skill_keywords)
+                    # Jaccard similarity across both
+                    jaccard = len(intersection) / len(cmd_keywords.union(skill_keywords))
+
+                    # Penalize heavily if the query specifies distinguishing entities/intents missing in the skill
+                    # e.g. "open chatgpt in chrome" vs "open chrome" -> 'chatgpt' is missing from skill
+                    penalty = len(unmatched_cmd) * 0.35
+
+                    kw_score = (query_coverage * 0.5 + skill_coverage * 0.25 + jaccard * 0.25)
+                    adjusted_score = max(0.0, 0.70 + (kw_score * 0.25) - penalty)
+
+                    if kw_score >= 0.50 and not unmatched_cmd:
+                        score = max(score, adjusted_score)
+                    elif adjusted_score >= 0.75:
+                        score = max(score, adjusted_score)
 
             if score > best_score:
                 best_score = score

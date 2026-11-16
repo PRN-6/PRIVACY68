@@ -248,6 +248,22 @@ class TestActionExecutor(unittest.TestCase):
         self.assertEqual(result, expected)
         mock_brain.assert_called_once_with("open notepad and write hello world")
 
+    def test_open_site_in_browser_routing(self):
+        with patch("actions.executor._open_url") as mock_open:
+            result = executor.execute_system_command_detailed("open chatgpt in chrome")
+            self.assertTrue(result["success"])
+            self.assertEqual(result["tool"], "browser")
+            self.assertEqual(result["method"], "website_launcher")
+            mock_open.assert_called_once_with("https://chatgpt.com", unittest.mock.ANY, preferred_browser="chrome")
+
+    def test_open_browser_and_navigate_routing(self):
+        with patch("actions.executor._open_url") as mock_open:
+            result = executor.execute_system_command_detailed("open chrome and go to chatgpt")
+            self.assertTrue(result["success"])
+            self.assertEqual(result["tool"], "browser")
+            self.assertEqual(result["method"], "browser_search")
+            mock_open.assert_called_once_with("https://chatgpt.com", unittest.mock.ANY, preferred_browser="chrome")
+
 
 if __name__ == "__main__":
     unittest.main()

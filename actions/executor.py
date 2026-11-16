@@ -161,9 +161,9 @@ def _execute_web_or_app_command(command: str, plugin_manager, on_action_callback
     """
     clean_cmd = command.strip().strip("'\"")
 
-    # 1. "open <browser> and search for <query>"
+    # 1. "open <browser> and search for / go to / open <query>"
     m_browser_search = re.match(
-        r"(?:open|launch|start)\s+(?:(?:google)\s+)?(chrome|brave|browser)\s+and\s+search(?:\s+for)?\s+(.+)",
+        r"(?:open|launch|start)\s+(?:(?:google)\s+)?(chrome|brave|browser)\s+and\s+(?:search(?:\s+for)?|open|go to)\s+(.+)",
         clean_cmd,
         re.IGNORECASE
     )
@@ -179,7 +179,72 @@ def _execute_web_or_app_command(command: str, plugin_manager, on_action_callback
             target_name = f"'{query}'"
 
         _open_url(url, plugin_manager, preferred_browser=browser_pref)
-        msg = f"Opened {browser_pref.title()} and searched for {target_name}."
+        msg = f"Opened {browser_pref.title()} and navigated to {target_name}."
+        _notify(on_status_callback, on_action_callback, "browser", True, msg)
+        return {
+            "success": True,
+            "tool": "browser",
+            "method": "browser_search",
+            "message": msg,
+            "output": url,
+        }
+
+    # 1b. "open <site/query> in (chrome|brave|browser)" (e.g. "open chatgpt in chrome", "open youtube in brave")
+    m_site_in_browser = re.fullmatch(
+        r"(?:open|launch|go to)\s+(.+?)\s+in\s+(?:(?:google)\s+)?(chrome|brave|browser)",
+        clean_cmd,
+        re.IGNORECASE
+    )
+    if m_site_in_browser:
+        target_site = m_site_in_browser.group(1).strip().strip("'\"")
+        browser_pref = m_site_in_browser.group(2).lower()
+        if browser_pref == "browser":
+            browser_pref = None
+
+        if target_site.lower() in COMMON_WEB_SERVICES:
+            url = COMMON_WEB_SERVICES[target_site.lower()]
+            target_name = target_site.title()
+        elif "." in target_site and not target_site.endswith((".exe", ".py", ".txt", ".md")):
+            url = f"https://{target_site}"
+            target_name = target_site
+        else:
+            url = f"https://www.google.com/search?q={urllib.parse.quote(target_site)}"
+            target_name = f"'{target_site}'"
+
+        _open_url(url, plugin_manager, preferred_browser=browser_pref)
+        pref_label = f" in {browser_pref.title()}" if browser_pref else ""
+        msg = f"Opened {target_name}{pref_label}."
+        _notify(on_status_callback, on_action_callback, "browser", True, msg)
+        return {
+            "success": True,
+            "tool": "browser",
+            "method": "website_launcher",
+            "message": msg,
+            "output": url,
+        }
+
+    # 1c. "search <query> in (chrome|brave|browser)"
+    m_search_in_browser = re.fullmatch(
+        r"(?:search|search for|look up)\s+(.+?)\s+in\s+(?:(?:google)\s+)?(chrome|brave|browser)",
+        clean_cmd,
+        re.IGNORECASE
+    )
+    if m_search_in_browser:
+        query = m_search_in_browser.group(1).strip().strip("'\"")
+        browser_pref = m_search_in_browser.group(2).lower()
+        if browser_pref == "browser":
+            browser_pref = None
+
+        if query.lower() in COMMON_WEB_SERVICES:
+            url = COMMON_WEB_SERVICES[query.lower()]
+            target_name = query.title()
+        else:
+            url = f"https://www.google.com/search?q={urllib.parse.quote(query)}"
+            target_name = f"'{query}'"
+
+        _open_url(url, plugin_manager, preferred_browser=browser_pref)
+        pref_label = f" in {browser_pref.title()}" if browser_pref else ""
+        msg = f"Searched for {target_name}{pref_label}."
         _notify(on_status_callback, on_action_callback, "browser", True, msg)
         return {
             "success": True,
