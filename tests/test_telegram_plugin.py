@@ -185,6 +185,28 @@ class TestTelegramPlugin(unittest.TestCase):
                 mock_exec.assert_called_once_with("set volume to 50 percent")
                 self.assertTrue(any("Volume set to 50%" in call[0][0] for call in mock_send.call_args_list))
 
+    @patch("requests.get")
+    @patch("speech.streamer.decode_audio_bytes_to_pcm")
+    @patch("speech.streamer.transcribe_audio_data")
+    def test_transcribe_telegram_voice_pipeline(self, mock_transcribe, mock_decode, mock_get):
+        import numpy as np
+        mock_file_resp = Mock()
+        mock_file_resp.status_code = 200
+        mock_file_resp.json.return_value = {"ok": True, "result": {"file_path": "voice/file_1.oga"}}
+
+        mock_audio_resp = Mock()
+        mock_audio_resp.status_code = 200
+        mock_audio_resp.content = b"OGG_OPUS_AUDIO_BYTES"
+
+        mock_get.side_effect = [mock_file_resp, mock_audio_resp]
+        mock_decode.return_value = np.ones(16000, dtype=np.float32)
+        mock_transcribe.return_value = "open whatsapp"
+
+        text = self.plugin._transcribe_telegram_voice("FILE_VOICE_456")
+        self.assertEqual(text, "open whatsapp")
+        mock_decode.assert_called_once_with(b"OGG_OPUS_AUDIO_BYTES", target_sr=16000)
+        mock_transcribe.assert_called_once()
+
     def test_status_command(self):
         with patch.object(self.plugin, "send_message") as mock_send:
             update = {

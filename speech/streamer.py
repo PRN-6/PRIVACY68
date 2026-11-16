@@ -21,6 +21,18 @@ try:
 except Exception:
     pass
 
+# Patch PyAV av.open to gracefully handle versions where metadata_errors was removed
+try:
+    import av
+    if hasattr(av, "open"):
+        _orig_av_open = av.open
+        def _safe_av_open(*args, **kwargs):
+            kwargs.pop("metadata_errors", None)
+            return _orig_av_open(*args, **kwargs)
+        av.open = _safe_av_open
+except Exception:
+    pass
+
 logger = logging.getLogger("PRIVACY68.SpeechStreamer")
 
 
@@ -104,6 +116,120 @@ def get_whisper_model():
     return _local_whisper_model
 
 
+def decode_audio_bytes_to_pcm(audio_bytes: bytes, target_sr: int = config.SAMPLE_RATE) -> np.ndarray:
+    """Decodes arbitrary audio bytes (OGG/Opus, MP3, WAV, AAC, M4A, etc.) to a mono float32 NumPy array at target_sr.
+    Supports PyAV (with safe av.open), ffmpeg subprocess, and standard wave parsing.
+    """
+    if not audio_bytes:
+        return np.array([], dtype=np.float32)
+
+    # 1. Primary: PyAV in-memory container decode
+    try:
+        import io
+        import av
+        if hasattr(av, "open"):
+            _orig = av.open
+            def _safe_open(*args, **kwargs):
+                kwargs.pop("metadata_errors", None)
+                return _orig(*args, **kwargs)
+            av.open = _safe_open
+
+        from faster_whisper.audio import decode_audio
+        audio = decode_audio(io.BytesIO(audio_bytes), sampling_rate=target_sr)
+        if audio is not None and len(audio) > 0:
+            return audio.astype(np.float32)
+    except Exception as e:
+        logger.debug(f"PyAV in-memory decode note: {e}")
+
+    # 2. Secondary: ffmpeg subprocess streaming
+    try:
+        import shutil
+        import subprocess
+        ffmpeg_bin = shutil.which("ffmpeg")
+        if ffmpeg_bin:
+            cmd = [
+                ffmpeg_bin,
+                "-nostdin",
+                "-threads", "0",
+                "-i", "pipe:0",
+                "-f", "s16le",
+                "-ac", "1",
+                "-ar", str(target_sr),
+                "pipe:1"
+            ]
+            proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            raw_out, _ = proc.communicate(input=audio_bytes, timeout=15)
+            if proc.returncode == 0 and len(raw_out) > 0:
+                int16_arr = np.frombuffer(raw_out, dtype=np.int16)
+                return int16_arr.astype(np.float32) / 32768.0
+    except Exception as e:
+        logger.debug(f"ffmpeg subprocess decode note: {e}")
+
+    # 3. Tertiary: Python wave module for standard WAV
+    try:
+        import io
+        import wave
+        with wave.open(io.BytesIO(audio_bytes), "rb") as wf:
+            frames = wf.readframes(wf.getnframes())
+            sw = wf.getsampwidth()
+            nc = wf.getnchannels()
+            fr = wf.getframerate()
+            if sw == 2:
+                int16_arr = np.frombuffer(frames, dtype=np.int16)
+                if nc > 1:
+                    int16_arr = int16_arr[::nc]
+                audio = int16_arr.astype(np.float32) / 32768.0
+                if fr != target_sr:
+                    from scipy.signal import resample
+                    target_len = int(len(audio) * float(target_sr) / fr)
+                    audio = resample(audio, target_len).astype(np.float32)
+                return audio
+    except Exception:
+        pass
+
+    return np.array([], dtype=np.float32)
+
+
+def transcribe_audio_data(
+    audio_data: np.ndarray,
+    sample_rate: int = config.SAMPLE_RATE,
+    streamer: Optional['SpeechStreamer'] = None
+) -> str:
+    """Acoustically normalizes and transcribes a 16kHz float32 audio array using:
+    1. DC bias centering (waveform centering).
+    2. Dynamic peak normalization to 0.95 (maximum dynamic range without distortion).
+    3. 60ms silence boundary padding (prevents truncation of initial/final phonemes).
+    4. Google Web Speech (priority) with dual-accent recovery (en-IN <-> en-US).
+    5. Local Faster-Whisper fallback when offline or Google Speech is unreachable.
+    6. Lexical autocorrection for hotwords and typo normalization.
+    """
+    if audio_data is None or len(audio_data) < sample_rate * 0.15:  # less than 150ms
+        return ""
+
+    # 1. Remove DC bias (centers waveform around 0)
+    audio_data = audio_data - np.mean(audio_data)
+
+    # 2. Dynamic peak normalization to 0.95 for maximum dynamic range
+    peak = float(np.max(np.abs(audio_data)))
+    norm_audio = (audio_data / peak) * 0.95 if peak > 0.001 else audio_data
+
+    # 3. Add 60ms silence padding to prevent neural acoustic truncation
+    pad_len = int(sample_rate * 0.06)
+    if pad_len > 0:
+        norm_audio = np.pad(norm_audio, (pad_len, pad_len), mode="constant")
+
+    text = ""
+    if streamer is not None:
+        text = streamer._transcribe(norm_audio, is_idle=False)
+    else:
+        temp_streamer = SpeechStreamer(sample_rate=sample_rate, auto_init_hardware=False)
+        text = temp_streamer._transcribe(norm_audio, is_idle=False)
+
+    if text:
+        text = autocorrect_speech_command(text)
+    return text
+
+
 class PushToTalkRecorder:
     """Manages on-demand audio recording and transcription.
 
@@ -155,31 +281,7 @@ class PushToTalkRecorder:
             return ""
 
         audio_data = np.concatenate(self.frames).flatten()
-        if len(audio_data) < self.sample_rate * 0.25:  # less than 250ms
-            return ""
-
-        # 1. Remove DC bias (centers waveform around 0)
-        audio_data = audio_data - np.mean(audio_data)
-
-        # 2. Dynamic peak normalization to 0.95 for maximum dynamic range
-        peak = float(np.max(np.abs(audio_data)))
-        norm_audio = (audio_data / peak) * 0.95 if peak > 0.001 else audio_data
-
-        # 3. Add 60ms silence padding to prevent neural acoustic truncation
-        pad_len = int(self.sample_rate * 0.06)
-        if pad_len > 0:
-            norm_audio = np.pad(norm_audio, (pad_len, pad_len), mode="constant")
-
-        text = ""
-        if streamer is not None:
-            text = streamer._transcribe(norm_audio, is_idle=False)
-        else:
-            temp_streamer = SpeechStreamer(sample_rate=self.sample_rate, auto_init_hardware=False)
-            text = temp_streamer._transcribe(norm_audio, is_idle=False)
-
-        if text:
-            text = autocorrect_speech_command(text)
-        return text
+        return transcribe_audio_data(audio_data, sample_rate=self.sample_rate, streamer=streamer)
 
 
 # Alias for explicit Click-to-Speak usage
@@ -257,6 +359,9 @@ class SpeechStreamer:
                 audio_float = audio_data.flatten().astype(np.float32)
                 segments, _ = model.transcribe(audio_float, language="en", beam_size=1)
                 text = " ".join([seg.text for seg in segments]).strip()
+                if not text:
+                    segments, _ = model.transcribe(audio_float, beam_size=2)
+                    text = " ".join([seg.text for seg in segments]).strip()
                 if text:
                     logger.info(f"[LOCAL WHISPER OFFLINE] Transcribed: '{text}'")
                     return text

@@ -172,7 +172,9 @@ class TelegramPlugin(BasePlugin):
     # ---------------- Voice Transcription ---------------- #
 
     def _transcribe_telegram_voice(self, file_id: str) -> str:
-        """Downloads a Telegram voice note and transcribes it locally using Faster-Whisper."""
+        """Downloads a Telegram voice note and transcribes it using Google Web Speech (primary)
+        with local Faster-Whisper fallback, applying dynamic peak normalization and acoustic conditioning.
+        """
         try:
             # 1. Fetch file path from Telegram
             resp = requests.get(self._api_url("getFile"), params={"file_id": file_id}, timeout=15)
@@ -190,25 +192,29 @@ class TelegramPlugin(BasePlugin):
                 logger.error(f"Failed to download audio file: {audio_resp.status_code}")
                 return ""
 
-            # 3. Save to a temporary file
+            # 3. Decode audio bytes (OGG/Opus, MP3, WAV, AAC, M4A) to 16kHz float32 PCM
+            from speech.streamer import decode_audio_bytes_to_pcm, transcribe_audio_data, autocorrect_speech_command
+            audio_pcm = decode_audio_bytes_to_pcm(audio_resp.content, target_sr=16000)
+            if audio_pcm is not None and len(audio_pcm) > 0:
+                text = transcribe_audio_data(audio_pcm, sample_rate=16000)
+                if text:
+                    logger.info(f"Telegram voice note transcribed: '{text}'")
+                    return text
+
+            # 4. Fallback: Save to temp file and try direct Whisper if decode_audio_bytes_to_pcm yielded empty
             suffix = os.path.splitext(file_path)[1] or ".ogg"
             with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
                 tmp.write(audio_resp.content)
                 tmp_path = tmp.name
 
             try:
-                # 4. Transcribe locally using Faster-Whisper
-                from speech.streamer import get_whisper_model, autocorrect_speech_command
+                from speech.streamer import get_whisper_model
                 model = get_whisper_model()
-                if model is None:
-                    logger.warning("Local Faster-Whisper model not initialized.")
-                    return ""
-
-                segments, _ = model.transcribe(tmp_path, language="en", beam_size=1)
-                text = " ".join([seg.text for seg in segments]).strip()
-                if text:
-                    text = autocorrect_speech_command(text)
-                return text
+                if model is not None:
+                    segments, _ = model.transcribe(tmp_path, beam_size=2)
+                    text = " ".join([seg.text for seg in segments]).strip()
+                    if text:
+                        return autocorrect_speech_command(text)
             finally:
                 if os.path.exists(tmp_path):
                     try:
@@ -219,6 +225,7 @@ class TelegramPlugin(BasePlugin):
         except Exception as e:
             logger.error(f"Error transcribing Telegram voice note: {e}")
             return ""
+        return ""
 
     # ---------------- Incoming Update Handling ---------------- #
 
@@ -296,7 +303,7 @@ class TelegramPlugin(BasePlugin):
         command_text = ""
         if voice:
             file_id = voice.get("file_id")
-            self.send_message("🎙️ Transcribing voice note locally...", chat_id=chat_id)
+            self.send_message("🎙️ Processing voice note...", chat_id=chat_id)
             command_text = self._transcribe_telegram_voice(file_id)
             if not command_text:
                 self.send_message("⚠️ Could not transcribe audio. Please speak clearly or send text.", chat_id=chat_id)
