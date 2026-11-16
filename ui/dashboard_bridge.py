@@ -1003,6 +1003,20 @@ class DashboardAPI:
             logger.error(f"Error installing plugin file: {e}")
             return {"success": False, "message": str(e)}
 
+    def open_plugins_folder(self) -> Dict[str, Any]:
+        """Opens the user plugins directory (%APPDATA%/PRIVACY68/plugins) in Windows File Explorer."""
+        try:
+            folder = plugin_manager.plugin_dir
+            os.makedirs(folder, exist_ok=True)
+            if platform.system() == "Windows":
+                os.startfile(folder)
+            else:
+                subprocess.Popen(["xdg-open", folder])
+            return {"success": True, "path": folder, "message": f"Opened plugins folder: {folder}"}
+        except Exception as e:
+            logger.error(f"Error opening plugins folder: {e}")
+            return {"success": False, "message": str(e)}
+
     # ---------------- WhatsApp Contacts ---------------- #
 
     def get_whatsapp_contacts(self) -> List[Dict]:

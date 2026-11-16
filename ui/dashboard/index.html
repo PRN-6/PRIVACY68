@@ -265,6 +265,15 @@
       color: white;
     }
     .btn.blue:hover { background: #0369a1; }
+    .btn.danger {
+      background: rgba(239, 68, 68, 0.15);
+      border-color: rgba(239, 68, 68, 0.4);
+      color: #F87171;
+    }
+    .btn.danger:hover {
+      background: #EF4444;
+      color: white;
+    }
     .btn.sm { padding: 4px 8px; font-size: 10px; }
 
     /* Inputs & Selects */
@@ -957,11 +966,50 @@
       <!-- TAB 7: Plugins -->
       <section class="tab-view" id="tab-plugins">
         <div class="card">
-          <div class="card-header">
-            <h2 class="card-title">Installed Desktop Automation Plugins</h2>
-            <button class="btn sm" id="refresh-plugins-btn">Refresh</button>
+          <div class="card-header" style="flex-wrap:wrap; gap:10px;">
+            <div>
+              <h2 class="card-title">Desktop Automation Plugins</h2>
+              <p class="card-desc" style="margin-top:2px; font-size:11px;">Built-in integrations & custom Python plugins registered in %APPDATA%\PRIVACY68\plugins</p>
+            </div>
+            <div style="display:flex; gap:6px; flex-wrap:wrap;">
+              <button class="btn sm" id="open-plugins-folder-btn" title="Open user plugins folder in Windows Explorer">📂 Open Folder</button>
+              <button class="btn sm" id="install-plugin-file-btn" title="Select a .py plugin file to install">➕ Install Plugin (.py)</button>
+              <button class="btn sm primary" id="toggle-new-plugin-btn" title="Create a new custom plugin template">🛠️ New Plugin</button>
+              <button class="btn sm" id="refresh-plugins-btn" title="Reload plugins from disk">🔄 Refresh</button>
+            </div>
           </div>
         </div>
+
+        <!-- Create New Plugin Card (Hidden by default) -->
+        <div class="card" id="new-plugin-card" style="display:none; margin-bottom:12px; border-left: 3px solid var(--accent); background:rgba(239,68,68,0.03);">
+          <div class="card-header">
+            <h2 class="card-title" style="font-size:13px;">🛠️ Create Custom Desktop Plugin</h2>
+            <button class="btn sm" id="close-new-plugin-btn">✕ Cancel</button>
+          </div>
+          <p class="card-desc">Generate a custom Python automation plugin. Once created, it is saved to your persistent AppData plugins folder and registered for both source and production builds.</p>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:8px;">
+            <div>
+              <label style="font-size:11px; font-weight:600; color:var(--text-muted);">Plugin ID (e.g. spotify, vlc, steam)</label>
+              <input type="text" id="new-plugin-id" placeholder="spotify" style="width:100%; margin-top:4px;">
+            </div>
+            <div>
+              <label style="font-size:11px; font-weight:600; color:var(--text-muted);">Display Name (e.g. Spotify Player)</label>
+              <input type="text" id="new-plugin-name" placeholder="Spotify Player" style="width:100%; margin-top:4px;">
+            </div>
+            <div>
+              <label style="font-size:11px; font-weight:600; color:var(--text-muted);">Emoji Icon (e.g. 🎵, 🎮, 🎬)</label>
+              <input type="text" id="new-plugin-icon" placeholder="🎵" value="🔌" style="width:100%; margin-top:4px;">
+            </div>
+            <div>
+              <label style="font-size:11px; font-weight:600; color:var(--text-muted);">Description</label>
+              <input type="text" id="new-plugin-desc" placeholder="Controls Spotify media playback" style="width:100%; margin-top:4px;">
+            </div>
+          </div>
+          <div style="margin-top:10px; display:flex; justify-content:flex-end; gap:8px;">
+            <button class="btn primary" id="save-new-plugin-btn">✨ Create & Register Plugin</button>
+          </div>
+        </div>
+
         <div class="skills-grid" id="plugins-container">
           <!-- Populated dynamically via JS -->
         </div>
@@ -1604,6 +1652,7 @@
             <span style="display:flex; align-items:center; gap:6px;">
               <span style="font-size:14px;">${p.icon || '🔌'}</span>
               <strong>${p.name}</strong>
+              ${!p.is_builtin ? '<span class="chip" style="background:rgba(59,130,246,0.15); color:#60A5FA; font-size:10px;">Custom</span>' : ''}
             </span>
             <span style="display:flex; align-items:center; gap:6px;">
               <span class="chip ${p.is_enabled ? 'good' : ''}">${p.is_enabled ? 'Active' : 'Disabled'}</span>
@@ -1849,6 +1898,26 @@
           };
           act.appendChild(togBtn);
 
+          if (!p.is_builtin) {
+            const delBtn = document.createElement('button');
+            delBtn.className = 'btn sm danger';
+            delBtn.style.marginLeft = '6px';
+            delBtn.textContent = 'Uninstall';
+            delBtn.onclick = async (e) => {
+              e.stopPropagation();
+              if (confirm(`Uninstall and delete plugin "${p.name}"?`)) {
+                const res = await bridge().uninstall_plugin(p.id);
+                if (res && res.success) {
+                  showToast(res.message);
+                } else {
+                  showToast((res && res.message) || 'Uninstall failed.', true);
+                }
+                await loadPlugins();
+              }
+            };
+            act.appendChild(delBtn);
+          }
+
           card.appendChild(title);
           card.appendChild(desc);
           card.appendChild(drawer);
@@ -1859,6 +1928,69 @@
     }
 
     $('refresh-plugins-btn').addEventListener('click', loadPlugins);
+
+    $('open-plugins-folder-btn').addEventListener('click', async () => {
+      try {
+        const res = await bridge().open_plugins_folder();
+        if (res && res.success) {
+          showToast(res.message || 'Opened plugins folder');
+        } else {
+          showToast((res && res.message) || 'Could not open folder', true);
+        }
+      } catch (e) { showToast(e.message, true); }
+    });
+
+    $('install-plugin-file-btn').addEventListener('click', async () => {
+      try {
+        const pick = await bridge().pick_plugin_file();
+        if (pick && pick.success && pick.file_path) {
+          showToast('Installing plugin file...');
+          const inst = await bridge().install_plugin_file(pick.file_path);
+          if (inst && inst.success) {
+            showToast(inst.message);
+            await loadPlugins();
+          } else {
+            showToast((inst && inst.message) || 'Installation failed', true);
+          }
+        }
+      } catch (e) { showToast(e.message, true); }
+    });
+
+    $('toggle-new-plugin-btn').addEventListener('click', () => {
+      const card = $('new-plugin-card');
+      card.style.display = card.style.display === 'none' ? 'block' : 'none';
+      if (card.style.display === 'block') {
+        $('new-plugin-id').focus();
+      }
+    });
+
+    $('close-new-plugin-btn').addEventListener('click', () => {
+      $('new-plugin-card').style.display = 'none';
+    });
+
+    $('save-new-plugin-btn').addEventListener('click', async () => {
+      const id = $('new-plugin-id').value.trim();
+      const name = $('new-plugin-name').value.trim();
+      const icon = $('new-plugin-icon').value.trim() || '🔌';
+      const desc = $('new-plugin-desc').value.trim();
+      if (!id || !name) {
+        showToast('Please provide both Plugin ID and Name.', true);
+        return;
+      }
+      try {
+        const res = await bridge().create_plugin({ id, name, icon, desc });
+        if (res && res.success) {
+          showToast(res.message);
+          $('new-plugin-id').value = '';
+          $('new-plugin-name').value = '';
+          $('new-plugin-desc').value = '';
+          $('new-plugin-card').style.display = 'none';
+          await loadPlugins();
+        } else {
+          showToast((res && res.message) || 'Could not create plugin', true);
+        }
+      } catch (e) { showToast(e.message, true); }
+    });
 
     // GitHub Integration
     async function loadGitHub() {

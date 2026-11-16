@@ -179,6 +179,13 @@ class TestDashboardAPI(unittest.TestCase):
             self.assertTrue(stop_res["success"])
             self.assertEqual(stop_res["message"], "Bot stopped")
 
+    @patch("os.startfile", create=True)
+    def test_open_plugins_folder(self, mock_startfile):
+        res = self.api.open_plugins_folder()
+        self.assertTrue(res["success"])
+        self.assertIn("path", res)
+        mock_startfile.assert_called_once()
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -365,6 +365,20 @@ def execute_system_command_detailed(text: str, on_action_callback=None, on_statu
     if app_result is not None:
         return app_result
 
+    # 2b. Custom / External User Plugins (Dynamic voice dispatch)
+    for p in plugin_manager.get_all_plugins():
+        if not getattr(p, "is_builtin", False) and getattr(p, "is_enabled", True):
+            p_id = getattr(p, "id", "").lower()
+            p_name = getattr(p, "name", "").lower()
+            if low in (f"open {p_id}", f"launch {p_id}", f"start {p_id}", f"open {p_name}", f"launch {p_name}", f"start {p_name}", p_id, p_name):
+                try:
+                    success = bool(p.execute("main")) or bool(p.execute("open"))
+                    msg = f"Executed {p.name}." if success else f"Could not execute {p.name}."
+                    _notify(on_status_callback, on_action_callback, p_id, success, msg)
+                    return {"success": success, "tool": p_id, "method": f"{p_id}_plugin", "message": msg, "output": ""}
+                except Exception as e:
+                    logger.error(f"Error executing custom plugin {p_id}: {e}")
+
     # 3. Direct Web Searches, Websites, and App Launches
     web_result = _execute_web_or_app_command(
         low,
