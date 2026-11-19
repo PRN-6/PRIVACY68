@@ -52,7 +52,7 @@ else:
 
 
 # Application Version
-APP_VERSION = "1.6.5"
+APP_VERSION = "1.7.0"
 
 # Audio Stream Settings (16kHz standard for voice)
 SAMPLE_RATE = 16000

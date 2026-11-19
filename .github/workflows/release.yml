@@ -73,18 +73,18 @@ jobs:
           name: "PRIVACY68 ${{ github.ref_type == 'tag' && github.ref_name || format('v{0}', steps.version.outputs.VERSION) }}"
           body: |
             ## What's Changed in ${{ steps.version.outputs.VERSION }}
-            - **Gmail Automation Controller**: Direct web compose, inbox navigation, and speech-to-email drafting with multi-account `authuser` routing support.
-            - **Interactive Click-to-Configure Plugin Drawers**: Click any plugin card in the Control Center to expand an inline configuration drawer with live input boxes (e.g. Gmail address, WhatsApp contact, browser homepage) and 1-click test actions.
-            - **Zero-Latency Natural Language Email Parsing**: Instant parameter extraction (`to`, `subject`, `body`) directly without LLM latency.
-            - **Unified IPC Plugin Settings**: Dashboard bridge supports `set_plugin_setting`, `get_plugin_setting`, and `execute_plugin_action` with profile persistence.
-            - **Universal AI Core (Cloud APIs & Local LLMs)**: Full support for Google Gemini (2.5 Flash), Groq LPU (GPT-OSS 120B / Llama 3.3 70B), OpenRouter, Claude, OpenAI, and local Ollama / LM Studio with custom Base URLs.
-            - **100% Click-to-Speak Hardware Isolation**: Zero background mic recording; microphone hardware is opened strictly on-demand.
-            - **3-Tier Security Guard**: Real-time permission gating (Level 1 Safe instant execution, Level 2 Sensitive notification, Level 3 Critical confirmation prompt with 15s timeout).
-            - **Verified Stability**: Full test suite passing 107/107 automated tests (100% pass rate).
+            - **Telegram Remote Gateway**: Global out-of-band teleoperation over cellular 4G/5G with offline Faster-Whisper int8 voice note transcription, dynamic 6-digit PIN pairing, and desktop screenshot delivery.
+            - **Strict Zero-Mic Privacy**: PC microphone hardware is permanently unallocated and disabled. Zero background audio polling or eavesdropping.
+            - **Type-and-Run Quick Command Bar**: Instant HUD overlay triggered via `Ctrl+Alt+Space` with automatic foreground focus.
+            - **Google Gemini 3.1 Flash-Lite Core**: Default AI engine upgraded to ultra-fast Gemini 3.1 with automatic failover to Groq LPU (Llama-3.3 70B), Claude 3.5 Sonnet, and OpenAI GPT-4o-mini.
+            - **Zero-CUDA Architecture**: Removed 800MB local CUDA DLLs and cuDNN zip downloaders. Zero local GPU overhead.
+            - **Learned Skill Instant Recall**: Fast-path execution with live command stdout output streaming.
+            - **Complete Technical Documentation**: Brand new `doc/` directory with comprehensive architecture, channel, and security dossiers.
+            - **100% Automated Test Pass Rate**: Full test suite passing 121/121 tests.
 
             ## Requirements & Acceleration
-            - **Universal AI**: Works immediately out-of-the-box with free Cloud API keys (Gemini, Groq, OpenRouter) or local offline inference (Ollama / LM Studio).
-            - **GPU Acceleration (Optional)**: Runs on CPU out of the box, or click 'Download CUDA' in the Control Center Hardware card for NVIDIA GPU acceleration.
+            - **Zero Setup Cloud AI**: Sub-400ms reasoning with free Google Gemini API or Groq LPU.
+            - **Zero Local GPU Overhead**: Runs on any Windows 10/11 laptop or desktop CPU with quantized Faster-Whisper.
           draft: false
           prerelease: false
           files: |

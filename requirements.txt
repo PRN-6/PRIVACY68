@@ -4,7 +4,6 @@
 SpeechRecognition>=3.10.0
 faster-whisper>=1.0.0
 numpy>=1.26,<3
-sounddevice>=0.4.6,<1
 
 # Agent Brain and Multi-Provider LLM reasoning (Gemini, Groq, Claude, OpenAI, Ollama)
 litellm>=1.50,<2

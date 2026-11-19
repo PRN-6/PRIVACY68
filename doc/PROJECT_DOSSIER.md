@@ -17,7 +17,7 @@
 | Attribute | Specification |
 | :--- | :--- |
 | **Project Name** | **PRIVACY68** |
-| **Version** | `1.6.5` (Production Cloud-Hybrid Architecture) |
+| **Version** | `1.7.0` (Production Cloud-Hybrid Architecture) |
 | **Primary Platform** | Microsoft Windows 10 / 11 (x64) |
 | **Language & Runtime** | Python 3.11+ / Chromium WebView2 (`pywebview 6.x`) |
 | **Core Mission** | Autonomous AI desktop assistant and mobile teleoperation with **100% strict mic privacy** (zero local background eavesdropping) and high-speed multi-provider Cloud AI reasoning. |
