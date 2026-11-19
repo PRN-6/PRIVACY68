@@ -290,7 +290,7 @@ class AgentBrain:
         call_kwargs = {
             "model": model,
             "messages": messages,
-            "timeout": 25,
+            "timeout": 45,
         }
         if not ("gemini" in model_lower and ("gemini-3" in model_lower or "gemini-4" in model_lower)):
             call_kwargs["temperature"] = 0
