@@ -172,6 +172,49 @@ class TestDashboardAPI(unittest.TestCase):
         self.assertIn("path", res)
         mock_startfile.assert_called_once()
 
+    def test_auto_detect_and_save_key_gemini(self):
+        with patch.object(self.api, "save_api_key", return_value={"success": True}) as mock_save:
+            with patch.object(self.api, "set_active_model") as mock_set_model:
+                res = self.api.auto_detect_and_save_key("AIzaSyTestGeminiKey123")
+                self.assertTrue(res["success"])
+                self.assertEqual(res["provider"], "gemini")
+                self.assertEqual(res["model"], "gemini/gemini-3.1-flash-lite")
+                mock_save.assert_called_once_with(provider="gemini", api_key="AIzaSyTestGeminiKey123", model="gemini/gemini-3.1-flash-lite", base_url="")
+                mock_set_model.assert_called_once_with("gemini/gemini-3.1-flash-lite")
+
+    def test_auto_detect_and_save_key_groq(self):
+        with patch.object(self.api, "save_api_key", return_value={"success": True}) as mock_save:
+            with patch.object(self.api, "set_active_model") as mock_set_model:
+                res = self.api.auto_detect_and_save_key("gsk_testGroqKey123456")
+                self.assertTrue(res["success"])
+                self.assertEqual(res["provider"], "groq")
+                mock_save.assert_called_once()
+                mock_set_model.assert_called_once()
+
+    def test_auto_detect_and_save_key_openrouter(self):
+        with patch.object(self.api, "save_api_key", return_value={"success": True}) as mock_save:
+            with patch.object(self.api, "set_active_model") as mock_set_model:
+                res = self.api.auto_detect_and_save_key("sk-or-v1-testkey123")
+                self.assertTrue(res["success"])
+                self.assertEqual(res["provider"], "openrouter")
+                mock_save.assert_called_once()
+                mock_set_model.assert_called_once()
+
+    def test_auto_detect_and_save_key_claude(self):
+        with patch.object(self.api, "save_api_key", return_value={"success": True}) as mock_save:
+            with patch.object(self.api, "set_active_model") as mock_set_model:
+                res = self.api.auto_detect_and_save_key("sk-ant-testclaude123")
+                self.assertTrue(res["success"])
+                self.assertEqual(res["provider"], "claude")
+                mock_save.assert_called_once()
+                mock_set_model.assert_called_once()
+
+    def test_auto_detect_and_save_key_github(self):
+        with patch.object(self.api, "connect_github", return_value={"success": True, "message": "Connected"}) as mock_gh:
+            res = self.api.auto_detect_and_save_key("ghp_testgithubpat123")
+            self.assertTrue(res["success"])
+            mock_gh.assert_called_once_with("ghp_testgithubpat123")
+
 
 if __name__ == "__main__":
     unittest.main()

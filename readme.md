@@ -5,7 +5,7 @@
 [![Contributing](https://img.shields.io/badge/contributing-Guide-orange.svg)](CONTRIBUTING.md)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-3776AB.svg?logo=python&logoColor=white)](https://www.python.org/)
 [![Platform: Windows 10/11](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-0078D6.svg?logo=windows&logoColor=white)](#)
-[![Tests: 119 Passed](https://img.shields.io/badge/tests-119%20passed-brightgreen.svg)](#unit-testing)
+[![Tests: 124 Passed](https://img.shields.io/badge/tests-124%20passed-brightgreen.svg)](#unit-testing)
 [![Version: 2.0.0](https://img.shields.io/badge/version-2.0.0-blue.svg)](https://github.com/PRN-6/PRIVACY68/releases/tag/v2.0.0)
 
 PRIVACY68 is a 100% private Windows desktop AI assistant featuring on-demand Click-to-Speak, a modern minimalist Control Center, universal multi-provider AI brain orchestration, and agentic OS automation. It pairs zero-key speech recognition (Google Web Speech) with an Agent Brain powered by universal AI APIs (Google Gemini, Groq LPU, OpenRouter, Anthropic Claude, OpenAI, or local Ollama / LM Studio) to execute complex desktop tasks safely through generated, self-correcting Python scripts.
@@ -28,7 +28,8 @@ PRIVACY68 is a 100% private Windows desktop AI assistant featuring on-demand Cli
   - **Tier 5:** Autonomous OpenClaw Agent Brain (dynamic markdown skill synthesis, multi-provider LLM inference, 3-tier security guard, 30s subprocess watchdog, self-healing retry loop)
 - **Windows Credential Manager Integration**: Seamless encrypted storage of GitHub personal access tokens, Telegram bot keys, and API tokens using Windows DPAPI via `utils.credentials`.
 - **Control Center Skills & Services Dashboard**: Completely revamped dashboard UI displaying active OpenClaw Skills and Native Services with live toggles, configuration drawers, and one-click skills folder access.
-- **119 Unit Tests Passing (100% Pass Rate)**: Comprehensive test suite validating the entire 5-tier dispatch chain, skill registry synthesis, native channels and services, and dashboard bridge.
+- **Universal Single AI Key Auto-Detector**: Paste ANY API key (Gemini, Groq, OpenRouter, Claude, OpenAI, DeepSeek, or GitHub) into a single input field in the dashboard; PRIVACY68 automatically identifies the provider, configures `.env`, and activates the recommended model in one click.
+- **124 Unit Tests Passing (100% Pass Rate)**: Comprehensive test suite validating the entire 5-tier dispatch chain, skill registry synthesis, universal key auto-detector, native channels and services, and dashboard bridge.
 
 ---
 
@@ -213,7 +214,7 @@ This compiles `PRIVACY68.exe` under `dist\PRIVACY68\` and packages an Inno Setup
 
 ## Unit Testing
 
-Run the full automated test suite (119 unit tests covering 5-tier dispatching, OpenClaw skill registry, agent brain failover, execution self-healing, Telegram Remote Gateway, Faster-Whisper offline transcription, Gmail automation, security guard, push-to-talk overlay, and dashboard bridge):
+Run the full automated test suite (124 unit tests covering 5-tier dispatching, universal key auto-detection, OpenClaw skill registry, agent brain failover, execution self-healing, Telegram Remote Gateway, Faster-Whisper offline transcription, Gmail automation, security guard, push-to-talk overlay, and dashboard bridge):
 
 ```powershell
 python -m unittest discover tests -v

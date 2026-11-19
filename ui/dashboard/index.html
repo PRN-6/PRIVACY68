@@ -616,6 +616,25 @@
 
       <!-- TAB 2: AI Brain (APIs) - MULTIPLE API SLOTS -->
       <section class="tab-view" id="tab-brain">
+        <!-- UNIVERSAL ONE-CLICK AUTO-DETECT KEY CARD -->
+        <div style="background: linear-gradient(135deg, rgba(235,35,76,0.12) 0%, rgba(15,18,26,0.95) 100%); border:1px solid rgba(235,35,76,0.35); border-radius:8px; padding:16px; margin-bottom:14px; box-shadow:0 4px 16px rgba(0,0,0,0.3);">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="font-size:16px;">⚡</span>
+              <span style="font-weight:800; font-size:13px; color:#fff; letter-spacing:0.5px;">UNIVERSAL AI KEY (AUTO-DETECT ANY PROVIDER)</span>
+            </div>
+            <span class="chip good" style="font-size:10px;">Smart Auto-Router</span>
+          </div>
+          <p style="font-size:11px; color:var(--text-muted); margin-bottom:12px; line-height:1.5;">
+            Paste <strong>ANY API key</strong> below (Google Gemini, Groq, OpenRouter, Claude, OpenAI, DeepSeek, or GitHub). PRIVACY68 will automatically detect the provider, configure settings, and activate the best model in 1 click!
+          </p>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <input type="password" id="universal-key-input" placeholder="Paste ANY API key here (AIzaSy..., gsk_..., sk-or-..., sk-ant-..., sk-proj-...)" style="flex:1; min-width:260px;">
+            <button class="btn primary" id="universal-key-btn" onclick="autoDetectAndSaveKey()" style="white-space:nowrap; font-weight:700;">⚡ Auto-Detect & Activate</button>
+          </div>
+          <div id="universal-key-feedback" style="display:none; margin-top:10px; font-size:11px; padding:8px 12px; border-radius:4px; font-weight:600;"></div>
+        </div>
+
         <div class="card">
           <div class="card-header">
             <div>
@@ -1042,6 +1061,13 @@
         ollama: { installed: true, running: false, models: [] }
       }),
       list_skills: async () => [],
+      auto_detect_and_save_key: async (key) => ({
+        success: true,
+        provider: 'gemini',
+        display_name: 'Google Gemini (Free Tier)',
+        model: 'gemini/gemini-3.1-flash-lite',
+        message: '✨ Auto-detected Google Gemini (Free Tier)! Saved key and activated model gemini/gemini-3.1-flash-lite.'
+      }),
       get_plugins: async () => [],
       get_markdown_skills: async () => [
         { name: 'github', description: 'GitHub CLI automation for PRs, issues, and checks.', keywords: ['github', 'gh', 'repo'], is_builtin: true },
@@ -1333,6 +1359,55 @@
         await loadBrainDetails();
       } catch (e) { showToast(e.message, true); }
     };
+
+    window.autoDetectAndSaveKey = async () => {
+      const input = $('universal-key-input');
+      const key = (input.value || '').trim();
+      if (!key) {
+        showUniversalFeedback('Please paste an API key first.', false);
+        return;
+      }
+      showUniversalFeedback('Detecting provider & activating model...', true, true);
+      try {
+        const res = await bridge().auto_detect_and_save_key(key);
+        if (res && res.success) {
+          showUniversalFeedback(res.message, true);
+          input.value = '';
+          showToast(res.message);
+          await loadBrainDetails();
+        } else {
+          showUniversalFeedback((res && res.message) || 'Failed to detect or save key.', false);
+        }
+      } catch (err) {
+        showUniversalFeedback('Error: ' + err, false);
+      }
+    };
+
+    function showUniversalFeedback(msg, isSuccess, isLoading) {
+      const fb = $('universal-key-feedback');
+      if (!fb) return;
+      fb.style.display = 'block';
+      if (isLoading) {
+        fb.style.background = 'rgba(56,189,248,0.12)';
+        fb.style.color = '#38bdf8';
+        fb.style.border = '1px solid rgba(56,189,248,0.3)';
+      } else if (isSuccess) {
+        fb.style.background = 'rgba(16,185,129,0.12)';
+        fb.style.color = '#34d399';
+        fb.style.border = '1px solid rgba(16,185,129,0.3)';
+      } else {
+        fb.style.background = 'rgba(239,68,68,0.12)';
+        fb.style.color = '#f87171';
+        fb.style.border = '1px solid rgba(239,68,68,0.3)';
+      }
+      fb.textContent = msg;
+    }
+
+    $('universal-key-input').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        autoDetectAndSaveKey();
+      }
+    });
 
     window.saveKey = async (provider, inputId) => {
       const key = $(inputId).value.trim();

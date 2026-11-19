@@ -330,15 +330,12 @@ class DashboardAPI:
         api_key = api_key.strip()
         base_url = base_url.strip()
 
-        # Smart provider auto-detection if key matches standard prefixes
-        if api_key.startswith("gsk_"):
-            provider = "groq"
-        elif api_key.startswith("AIzaSy") or api_key.startswith("AQ.Ab"):
-            provider = "gemini"
-        elif api_key.startswith("sk-or-"):
-            provider = "openrouter"
-        elif api_key.startswith("sk-ant-"):
-            provider = "claude"
+        # Smart provider auto-detection if key matches standard prefixes or if provider is auto/generic
+        detected = config.detect_key_provider(api_key)
+        if provider in ("", "auto", "unknown", "universal") and detected["provider"]:
+            provider = detected["provider"]
+        elif detected["provider"] and detected["provider"] != "custom" and provider in ("", "auto"):
+            provider = detected["provider"]
 
         key_var = None
         default_model = None
@@ -403,6 +400,44 @@ class DashboardAPI:
             config.update_dotenv_var("AGENT_BRAIN_MODEL", chosen_model)
 
         return {"success": True, "message": f"{provider.capitalize()} settings saved successfully!"}
+
+    def auto_detect_and_save_key(self, api_key: str, base_url: str = "") -> Dict[str, Any]:
+        """
+        Universal Single API Key detector:
+        Accepts ANY API key from ANY provider, automatically identifies the service,
+        configures the environment variables, sets the optimal active model, and persists to .env.
+        """
+        import config
+        api_key = (api_key or "").strip()
+        if not api_key:
+            return {"success": False, "message": "Please enter or paste an API key."}
+
+        detected = config.detect_key_provider(api_key)
+        provider = detected["provider"]
+        display_name = detected["display_name"]
+        model = detected["model"]
+
+        if not provider:
+            return {"success": False, "message": "Could not identify provider from the provided key."}
+
+        if provider == "github":
+            return self.connect_github(api_key)
+
+        if provider == "telegram":
+            return self.set_channel_setting("telegram", "token", api_key)
+
+        res = self.save_api_key(provider=provider, api_key=api_key, model=model, base_url=base_url)
+        if res.get("success"):
+            if model:
+                self.set_active_model(model)
+            return {
+                "success": True,
+                "provider": provider,
+                "display_name": display_name,
+                "model": model,
+                "message": f"✨ Auto-detected {display_name}! Saved key and activated model '{model}'.",
+            }
+        return res
 
     def get_api_keys(self) -> Dict[str, Any]:
         """Returns configured status of Cloud API keys and active model."""

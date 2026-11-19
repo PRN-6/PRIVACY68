@@ -96,6 +96,89 @@ ENABLE_BEEP = False
 OLLAMA_BASE_URL = os.environ.get("OLLAMA_BASE_URL", os.environ.get("OLLAMA_HOST", "http://localhost:11434"))
 OLLAMA_API_KEY = os.environ.get("OLLAMA_API_KEY", "")
 
+
+def detect_key_provider(api_key: str) -> dict:
+    """
+    Auto-detects the provider, environment variable name, recommended model,
+    and friendly display name from any API key format or prefix.
+    """
+    key = (api_key or "").strip()
+    if not key:
+        return {"provider": "", "env_var": "", "model": "", "display_name": ""}
+
+    # 1. Google Gemini (Free Tier): AIzaSy... or AQ....
+    if key.startswith("AIzaSy") or key.startswith("AQ.") or key.startswith("AQ"):
+        return {
+            "provider": "gemini",
+            "env_var": "GEMINI_API_KEY",
+            "model": "gemini/gemini-3.1-flash-lite",
+            "display_name": "Google Gemini (Free Tier)",
+        }
+    # 2. Groq Cloud (Free LPU): gsk_...
+    elif key.startswith("gsk_"):
+        return {
+            "provider": "groq",
+            "env_var": "GROQ_API_KEY",
+            "model": "groq/openai/gpt-oss-120b",
+            "display_name": "Groq Cloud LPU (Free Tier)",
+        }
+    # 3. OpenRouter (100+ Free Models): sk-or-v1-... or sk-or-...
+    elif key.startswith("sk-or-"):
+        return {
+            "provider": "openrouter",
+            "env_var": "OPENROUTER_API_KEY",
+            "model": "openrouter/google/gemini-2.0-flash-exp:free",
+            "display_name": "OpenRouter (100+ Free Models)",
+        }
+    # 4. Anthropic Claude: sk-ant-...
+    elif key.startswith("sk-ant-"):
+        return {
+            "provider": "claude",
+            "env_var": "ANTHROPIC_API_KEY",
+            "model": "claude-3-5-sonnet-20241022",
+            "display_name": "Anthropic Claude",
+        }
+    # 5. GitHub Personal Access Token: ghp_... or github_pat_...
+    elif key.startswith("ghp_") or key.startswith("github_pat_"):
+        return {
+            "provider": "github",
+            "env_var": "GITHUB_TOKEN",
+            "model": "",
+            "display_name": "GitHub Token",
+        }
+    # 6. Telegram Bot Token: digits:string
+    elif ":" in key and key.split(":", 1)[0].isdigit():
+        return {
+            "provider": "telegram",
+            "env_var": "TELEGRAM_BOT_TOKEN",
+            "model": "",
+            "display_name": "Telegram Bot Token",
+        }
+    # 7. OpenAI / Custom Endpoint: sk-proj-... or sk-None-... or general sk-
+    elif key.startswith("sk-proj-") or key.startswith("sk-None-") or key.startswith("sk-"):
+        return {
+            "provider": "openai",
+            "env_var": "OPENAI_API_KEY",
+            "model": "openai/gpt-4o-mini",
+            "display_name": "OpenAI / Custom Endpoint",
+        }
+    # 8. Generic / Custom API Key (DeepSeek, LocalAI, Mistral, Ollama, etc.)
+    else:
+        return {
+            "provider": "custom",
+            "env_var": "CUSTOM_API_KEY",
+            "model": "openai/custom-model",
+            "display_name": "Custom / OpenAI-Compatible Key",
+        }
+
+
+# Auto-route generic universal keys (AI_API_KEY, API_KEY, UNIVERSAL_API_KEY)
+_universal_key = os.environ.get("AI_API_KEY", os.environ.get("API_KEY", os.environ.get("UNIVERSAL_API_KEY", "")))
+if _universal_key:
+    _detected = detect_key_provider(_universal_key)
+    if _detected["env_var"] and not os.environ.get(_detected["env_var"]):
+        os.environ[_detected["env_var"]] = _universal_key.strip()
+
 # Google Gemini API Configuration (Ultra-fast reasoning with free tier)
 # Get free API key in seconds at https://aistudio.google.com/app/apikey (No credit card needed)
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", os.environ.get("GOOGLE_API_KEY", ""))
