@@ -19,21 +19,14 @@ class TestQuotedCommandsAndBrainConfig(unittest.TestCase):
         for inp, expected in cases:
             self.assertEqual(autocorrect_speech_command(inp), expected)
 
-    def test_quoted_open_chrome_routes_to_plugin(self):
-        chrome = Mock()
-        chrome.is_enabled = True
-        chrome.execute.return_value = True
-
+    def test_quoted_open_chrome_routes_to_service(self):
         for quoted_input in ("''Open Chrome''", "'Open Chrome'", '"Open Chrome"'):
-            with patch("plugins.manager.plugin_manager.get_plugin", side_effect=lambda pid: {
-                "github": None,
-                "chrome": chrome,
-            }.get(pid)):
+            with patch("actions.executor._open_url", return_value=True) as mock_open:
                 with patch("actions.agent_brain.agent_brain.generate_and_execute") as generate:
                     result = execute_system_command_detailed(quoted_input)
 
             self.assertTrue(result["success"], f"Failed for input: {quoted_input}")
-            self.assertEqual(result["method"], "chrome_plugin")
+            self.assertEqual(result["method"], "chrome_service")
             generate.assert_not_called()
 
     def test_agent_brain_claude_without_api_key(self):

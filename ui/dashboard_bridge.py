@@ -8,8 +8,18 @@ import sounddevice as sd
 import numpy as np
 
 import config
-from plugins.manager import plugin_manager
-from plugins.profile_manager import profile_manager
+from utils.profile_manager import profile_manager
+from channels.telegram import telegram_channel
+from services.gmail import gmail_service
+from services.system import system_service
+from utils.credentials import (
+    get_github_token,
+    set_github_token,
+    delete_github_token,
+    get_github_connection_status,
+    connect_github,
+    disconnect_github,
+)
 
 logger = logging.getLogger("PRIVACY68.DashboardBridge")
 
@@ -691,24 +701,21 @@ class DashboardAPI:
 
     def get_github_status(self) -> Dict[str, Any]:
         try:
-            from plugins.github_plugin import GitHubPlugin
-            return {"success": True, **GitHubPlugin().get_connection_status()}
+            return {"success": True, **get_github_connection_status()}
         except Exception as e:
             logger.error("Error checking GitHub connection: %s", e)
             return {"success": False, "message": str(e), "connected": False}
 
     def connect_github(self, token: str) -> Dict[str, Any]:
         try:
-            from plugins.github_plugin import GitHubPlugin
-            return GitHubPlugin().connect(token)
+            return connect_github(token)
         except Exception as e:
             logger.error("Error connecting GitHub account: %s", e)
             return {"success": False, "message": str(e)}
 
     def disconnect_github(self) -> Dict[str, Any]:
         try:
-            from plugins.github_plugin import GitHubPlugin
-            return GitHubPlugin().disconnect()
+            return disconnect_github()
         except Exception as e:
             logger.error("Error disconnecting GitHub account: %s", e)
             return {"success": False, "message": str(e)}
@@ -718,10 +725,7 @@ class DashboardAPI:
     def get_gmail_config(self) -> Dict[str, Any]:
         """Returns the configured Gmail sender/account email."""
         try:
-            from plugins.manager import plugin_manager
-            plugin = plugin_manager.get_plugin("gmail")
-            email = plugin.get_user_email() if plugin and hasattr(plugin, "get_user_email") else profile_manager.get("gmail_user_email", "")
-            return {"success": True, "email": email}
+            return {"success": True, "email": gmail_service.get_user_email()}
         except Exception as e:
             logger.error(f"Error getting Gmail config: {e}")
             return {"success": False, "email": "", "message": str(e)}
@@ -730,12 +734,7 @@ class DashboardAPI:
         """Saves the user's Gmail address to preferences."""
         try:
             clean_email = email.strip()
-            from plugins.manager import plugin_manager
-            plugin = plugin_manager.get_plugin("gmail")
-            if plugin and hasattr(plugin, "set_user_email"):
-                plugin.set_user_email(clean_email)
-            else:
-                profile_manager.set("gmail_user_email", clean_email)
+            gmail_service.set_user_email(clean_email)
             logger.info(f"Updated Gmail account email to '{clean_email}'")
             return {"success": True, "email": clean_email, "message": f"Gmail account saved as '{clean_email}'"}
         except Exception as e:
@@ -745,14 +744,9 @@ class DashboardAPI:
     def set_telegram_config(self, token: str, chat_id: str = "") -> Dict[str, Any]:
         """Saves the user's Telegram Bot Token and allowed Chat ID."""
         try:
-            from plugins.manager import plugin_manager
-            plugin = plugin_manager.get_plugin("telegram")
-            if not plugin:
-                return {"success": False, "message": "Telegram plugin not found."}
-            if hasattr(plugin, "set_bot_token"):
-                plugin.set_bot_token(token)
-            if hasattr(plugin, "set_allowed_chat_id") and chat_id is not None:
-                plugin.set_allowed_chat_id(chat_id)
+            telegram_channel.set_bot_token(token)
+            if chat_id is not None:
+                telegram_channel.set_allowed_chat_id(chat_id)
             logger.info("Updated Telegram Remote Gateway configuration.")
             return {"success": True, "message": "Telegram configuration saved."}
         except Exception as e:
@@ -762,155 +756,133 @@ class DashboardAPI:
     def start_telegram_bot(self) -> Dict[str, Any]:
         """Starts the background Telegram listener."""
         try:
-            from plugins.manager import plugin_manager
-            plugin = plugin_manager.get_plugin("telegram")
-            if not plugin:
-                return {"success": False, "message": "Telegram plugin not found."}
-            plugin_manager.set_plugin_enabled("telegram", True)
-            if hasattr(plugin, "start_bot"):
-                success, msg = plugin.start_bot()
-                return {"success": success, "message": msg}
-            return {"success": False, "message": "Telegram plugin does not support start_bot."}
+            success, msg = telegram_channel.start_bot()
+            return {"success": success, "message": msg}
         except Exception as e:
             return {"success": False, "message": str(e)}
 
     def stop_telegram_bot(self) -> Dict[str, Any]:
         """Stops the background Telegram listener."""
         try:
-            from plugins.manager import plugin_manager
-            plugin = plugin_manager.get_plugin("telegram")
-            if not plugin:
-                return {"success": False, "message": "Telegram plugin not found."}
-            if hasattr(plugin, "stop_bot"):
-                success, msg = plugin.stop_bot()
-                return {"success": success, "message": msg}
-            return {"success": False, "message": "Telegram plugin does not support stop_bot."}
+            success, msg = telegram_channel.stop_bot()
+            return {"success": success, "message": msg}
         except Exception as e:
             return {"success": False, "message": str(e)}
 
     def test_telegram_bot(self) -> Dict[str, Any]:
         """Sends a diagnostic test message to the authorized Telegram chat."""
         try:
-            from plugins.manager import plugin_manager
-            plugin = plugin_manager.get_plugin("telegram")
-            if not plugin:
-                return {"success": False, "message": "Telegram plugin not found."}
-            if hasattr(plugin, "send_test_message"):
-                success, msg = plugin.send_test_message()
-                return {"success": success, "message": msg}
-            return {"success": False, "message": "Telegram plugin does not support send_test_message."}
+            success, msg = telegram_channel.send_test_message()
+            return {"success": success, "message": msg}
         except Exception as e:
             return {"success": False, "message": str(e)}
 
 
-    # ---------------- Plugin Management ---------------- #
+    # ---------------- Service & Channel Management ---------------- #
 
     def get_plugins(self) -> List[Dict[str, Any]]:
-        """Returns a list of all installed plugins with complete command and category metadata."""
+        """Returns a list of all active communication channels, services, and core tools."""
         try:
-            # Hot-detect any external plugins added, modified, or dropped into folders
-            plugin_manager.check_and_reload_if_changed()
-            plugins = plugin_manager.get_all_plugins()
-            result = []
-            for p in plugins:
-                # Gather all actions, descriptions, and trigger phrases
-                commands_info = []
-                all_triggers = []
-                for action_key, phrases in (getattr(p, "fast_intents", None) or {}).items():
-                    desc = getattr(p, "descriptions", {}).get(action_key, f"Executes {action_key}")
-                    if ":" in desc:
-                        desc = desc.split(":", 1)[1].strip()
-                    commands_info.append({
-                        "action": action_key,
-                        "description": desc,
-                        "triggers": phrases
-                    })
-                    if phrases:
-                        all_triggers.extend(phrases[:2])
-
-                # Determine category & plugin_type
-                category = getattr(p, "category", "")
-                plugin_type = getattr(p, "plugin_type", "")
-                if not category or category == "General":
-                    pid = getattr(p, "id", "").lower()
-                    if pid in ("windows", "system", "windows_plugin", "system_plugin"):
-                        category = "System"
-                        plugin_type = "OS Controls"
-                    elif pid in ("chrome", "brave", "edge", "firefox", "browser"):
-                        category = "Browser"
-                        plugin_type = "Browser Control"
-                    elif pid in ("whatsapp", "telegram", "discord", "slack", "gmail"):
-                        category = "Communication"
-                        plugin_type = "Messaging & Email"
-                    elif pid in ("vscode", "terminal", "git", "python", "ide"):
-                        category = "Developer"
-                        plugin_type = "IDE & Code"
-                    elif pid in ("ppt", "powerpoint", "notepad", "word", "excel", "calculator"):
-                        category = "Productivity"
-                        plugin_type = "Office & Slides"
-                    elif getattr(p, "is_builtin", False):
-                        category = "System"
-                        plugin_type = "Core Integration"
-                    else:
-                        category = "Custom"
-                        plugin_type = "Custom Application"
-
-                result.append({
-                    "id": getattr(p, "id", p.__class__.__name__.lower()),
-                    "name": getattr(p, "name", p.__class__.__name__),
-                    "version": getattr(p, "version", "1.0.0"),
-                    "description": getattr(p, "description", "No description provided."),
-                    "icon": getattr(p, "icon", "🔌"),
-                    "is_enabled": bool(getattr(p, "is_enabled", True)),
-                    "is_builtin": getattr(p, "is_builtin", False),
-                    "category": category,
-                    "plugin_type": plugin_type,
-                    "user_email": getattr(p, "get_user_email", lambda: "")() if hasattr(p, "get_user_email") else "",
+            return [
+                {
+                    "id": "telegram",
+                    "name": "Telegram Remote Gateway",
+                    "version": "2.0.0",
+                    "description": "Live mobile teleoperation, voice notes, and PC execution via Telegram bot.",
+                    "icon": "✈️",
+                    "category": "Communication",
+                    "plugin_type": "Gateway & Remote",
+                    "is_enabled": bool(getattr(telegram_channel, "is_enabled", True)),
+                    "is_builtin": True,
                     "settings": {
-                        "user_email": getattr(p, "get_user_email", lambda: "")() if hasattr(p, "get_user_email") else profile_manager.get("gmail_user_email", ""),
-                        "default_contact": profile_manager.get("whatsapp_default_contact", ""),
-                        "default_url": profile_manager.get(f"{getattr(p, 'id', '')}_default_url", ""),
-                        "bot_token": profile_manager.get("telegram_bot_token", "") or getattr(config, "TELEGRAM_BOT_TOKEN", ""),
-                        "chat_id": profile_manager.get("telegram_allowed_chat_id", "") or getattr(config, "TELEGRAM_ALLOWED_CHAT_ID", ""),
-                        "bot_running": getattr(p, "is_bot_running", lambda: False)() if hasattr(p, "is_bot_running") else False,
-                        "bot_username": getattr(p, "bot_username", ""),
+                        "bot_token": telegram_channel.get_bot_token(),
+                        "chat_id": telegram_channel.get_allowed_chat_id(),
+                        "bot_running": telegram_channel.is_bot_running(),
+                        "bot_username": getattr(telegram_channel, "bot_username", ""),
                     },
-                    "triggers": all_triggers[:4],
-                    "commands": commands_info,
-                    "total_commands": len(commands_info)
-                })
-            return result
+                    "commands": [
+                        {"action": "start", "description": "Starts the Telegram bot polling worker.", "triggers": ["start telegram", "connect telegram"]},
+                        {"action": "stop", "description": "Stops the Telegram bot polling worker.", "triggers": ["stop telegram", "disconnect telegram"]},
+                    ],
+                    "triggers": ["start telegram", "send telegram"],
+                    "total_commands": 2,
+                },
+                {
+                    "id": "gmail",
+                    "name": "Gmail Controller",
+                    "version": "2.0.0",
+                    "description": "Fast inbox navigation and compose drafting.",
+                    "icon": "✉️",
+                    "category": "Communication",
+                    "plugin_type": "Messaging & Email",
+                    "is_enabled": bool(getattr(gmail_service, "is_enabled", True)),
+                    "is_builtin": True,
+                    "settings": {
+                        "user_email": gmail_service.get_user_email(),
+                    },
+                    "commands": [
+                        {"action": "open", "description": "Opens Gmail inbox in default browser.", "triggers": ["open gmail", "check gmail"]},
+                        {"action": "compose", "description": "Pre-fills a new Gmail compose window.", "triggers": ["compose email", "send email"]},
+                    ],
+                    "triggers": ["open gmail", "compose email"],
+                    "total_commands": 2,
+                },
+                {
+                    "id": "system",
+                    "name": "Windows System Controller",
+                    "version": "2.0.0",
+                    "description": "Native Windows volume controls, screenshots, and app launching.",
+                    "icon": "💻",
+                    "category": "System",
+                    "plugin_type": "OS Controls",
+                    "is_enabled": bool(getattr(system_service, "is_enabled", True)),
+                    "is_builtin": True,
+                    "settings": {},
+                    "commands": [
+                        {"action": "launch", "description": "Launches a Windows desktop application.", "triggers": ["launch app", "open app"]},
+                    ],
+                    "triggers": ["mute volume", "take screenshot"],
+                    "total_commands": 1,
+                },
+            ]
         except Exception as e:
-            logger.error(f"Error getting plugins: {e}")
-            raise
+            logger.error(f"Error getting services: {e}")
+            return []
 
     def toggle_plugin(self, plugin_id: str, enabled: bool) -> Dict[str, Any]:
-        """Enables or disables a specific plugin."""
+        """Enables or disables a specific service or channel."""
         try:
-            if not plugin_manager.set_plugin_enabled(plugin_id, enabled):
-                return {"success": False, "message": f"Plugin '{plugin_id}' was not found."}
+            pid = plugin_id.lower()
+            if pid == "telegram":
+                telegram_channel.is_enabled = enabled
+            elif pid == "gmail":
+                gmail_service.is_enabled = enabled
+            elif pid == "system":
+                system_service.is_enabled = enabled
+            profile_manager.set(f"{pid}_enabled", enabled)
             return {"success": True, "plugin_id": plugin_id, "enabled": enabled}
         except Exception as e:
-            logger.error(f"Error toggling plugin {plugin_id}: {e}")
+            logger.error(f"Error toggling service {plugin_id}: {e}")
             return {"success": False, "message": str(e)}
 
     def execute_plugin_action(self, plugin_id: str, action: str, kwargs: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
-        """Executes a direct plugin action from the dashboard."""
+        """Executes a direct service action from the dashboard."""
         try:
-            from plugins.manager import plugin_manager
-            plugin = plugin_manager.get_plugin(plugin_id)
-            if not plugin:
-                return {"success": False, "message": f"Plugin '{plugin_id}' was not found."}
-            if not plugin.is_enabled:
-                return {"success": False, "message": f"Plugin '{plugin_id}' is disabled. Enable it first."}
-            res = plugin.execute(action, **(kwargs or {}))
-            return {"success": bool(res), "message": f"Action '{action}' executed successfully on {plugin.name}." if res else f"Action '{action}' failed."}
+            pid = plugin_id.lower()
+            res = False
+            if pid == "telegram":
+                res = telegram_channel.execute(action, **(kwargs or {}))
+            elif pid == "gmail":
+                res = gmail_service.execute(action, **(kwargs or {}))
+            elif pid == "system":
+                res = system_service.execute(action, **(kwargs or {}))
+            return {"success": bool(res), "message": f"Action '{action}' executed successfully." if res else f"Action '{action}' failed."}
         except Exception as e:
-            logger.error(f"Error executing plugin action: {e}")
+            logger.error(f"Error executing action: {e}")
             return {"success": False, "message": str(e)}
 
     def set_plugin_setting(self, plugin_id: str, setting_key: str, value: Any) -> Dict[str, Any]:
-        """Saves a custom setting for a given plugin."""
+        """Saves a custom setting for a given service."""
         try:
             clean_val = str(value).strip() if isinstance(value, str) else value
             full_key = f"{plugin_id}_{setting_key}"
@@ -919,11 +891,11 @@ class DashboardAPI:
                 return self.set_gmail_config(str(clean_val))
             return {"success": True, "message": f"Saved {setting_key} for {plugin_id}.", "value": clean_val}
         except Exception as e:
-            logger.error(f"Error saving plugin setting: {e}")
+            logger.error(f"Error saving setting: {e}")
             return {"success": False, "message": str(e)}
 
     def get_plugin_setting(self, plugin_id: str, setting_key: str) -> Dict[str, Any]:
-        """Retrieves a custom setting for a given plugin."""
+        """Retrieves a custom setting for a given service."""
         try:
             full_key = f"{plugin_id}_{setting_key}"
             val = profile_manager.get(full_key, "")
@@ -932,90 +904,22 @@ class DashboardAPI:
             return {"success": False, "value": "", "message": str(e)}
 
     def uninstall_plugin(self, plugin_id: str) -> Dict[str, Any]:
-        """Uninstalls and deletes a custom user plugin."""
-        try:
-            plugin = plugin_manager.get_plugin(plugin_id)
-            if not plugin:
-                return {"success": False, "message": f"Plugin '{plugin_id}' was not found."}
-            if getattr(plugin, "is_builtin", False):
-                return {"success": False, "message": "Built-in plugins cannot be uninstalled."}
-            success = plugin_manager.uninstall_plugin(plugin_id)
-            if success:
-                return {"success": True, "message": f"Plugin '{plugin_id}' uninstalled."}
-            return {"success": False, "message": "The plugin file could not be removed."}
-        except Exception as e:
-            logger.error(f"Error uninstalling plugin: {e}")
-            return {"success": False, "message": str(e)}
+        """Uninstalls a custom service (built-in services cannot be removed)."""
+        return {"success": False, "message": "Built-in services cannot be uninstalled."}
 
     def create_plugin(self, data: Dict[str, str]) -> Dict[str, Any]:
-        """Generates a new plugin from template."""
-        try:
-            pid = data.get("id", "").strip().lower().replace(" ", "_")
-            pname = data.get("name", "").strip()
-            picon = data.get("icon", "🔌").strip() or "🔌"
-            pdesc = data.get("desc", f"Controls {pname} application").strip()
-            pcmd = data.get("cmd", f"open {pname}").strip()
-
-            if not pid or not pname:
-                return {"success": False, "message": "Plugin ID and Name are required."}
-
-            file_created = plugin_manager.create_plugin_template(pid, pname, picon, pdesc, pcmd)
-            return {
-                "success": True,
-                "message": f"Plugin '{pname}' created and activated!",
-                "filename": os.path.basename(file_created)
-            }
-        except Exception as e:
-            logger.error(f"Error creating plugin: {e}")
-            return {"success": False, "message": str(e)}
+        """Custom extensions are now created as OpenClaw skills."""
+        return {"success": True, "message": "Custom tools are now supported as Markdown Skills in skills/."}
 
     def pick_plugin_file(self) -> Dict[str, Any]:
-        """Opens native file picker to select a Python plugin."""
-        try:
-            import tkinter as tk
-            from tkinter import filedialog
-            root = tk.Tk()
-            root.withdraw()
-            root.attributes("-topmost", True)
-            file_path = filedialog.askopenfilename(
-                title="Select PRIVACY68 Plugin File",
-                filetypes=[("Python plugin files", "*.py")]
-            )
-            root.destroy()
-            return {"success": True, "file_path": file_path or ""}
-        except Exception as e:
-            logger.error(f"Error opening file dialog: {e}")
-            return {"success": False, "message": str(e)}
+        return {"success": False, "message": "Plugins have been superseded by Markdown Skills (SKILL.md)."}
 
     def install_plugin_file(self, file_path: str) -> Dict[str, Any]:
-        """Installs a plugin from selected file path."""
-        try:
-            if not file_path or not os.path.exists(file_path):
-                return {"success": False, "message": "Invalid file path selected."}
-
-            success = plugin_manager.install_plugin_from_file(file_path)
-            if success:
-                return {"success": True, "message": f"Plugin installed successfully: {os.path.basename(file_path)}"}
-            else:
-                err_msg = getattr(plugin_manager, "last_error", None) or "Could not install plugin file."
-                return {"success": False, "message": err_msg}
-        except Exception as e:
-            logger.error(f"Error installing plugin file: {e}")
-            return {"success": False, "message": str(e)}
+        return {"success": False, "message": "Plugins have been superseded by Markdown Skills (SKILL.md)."}
 
     def open_plugins_folder(self) -> Dict[str, Any]:
-        """Opens the user plugins directory (%APPDATA%/PRIVACY68/plugins) in Windows File Explorer."""
-        try:
-            folder = plugin_manager.plugin_dir
-            os.makedirs(folder, exist_ok=True)
-            if platform.system() == "Windows":
-                os.startfile(folder)
-            else:
-                subprocess.Popen(["xdg-open", folder])
-            return {"success": True, "path": folder, "message": f"Opened plugins folder: {folder}"}
-        except Exception as e:
-            logger.error(f"Error opening plugins folder: {e}")
-            return {"success": False, "message": str(e)}
+        """Opens the skills directory in Windows File Explorer."""
+        return self.open_skills_folder()
 
     # ---------------- Markdown Agent Skills (SKILL.md) ---------------- #
 
@@ -1030,11 +934,10 @@ class DashboardAPI:
             return []
 
     def open_skills_folder(self) -> Dict[str, Any]:
-        """Opens the user's custom skills directory in Windows File Explorer."""
+        """Opens the skills directory in Windows File Explorer."""
         try:
             from skills.skill_registry import skill_registry
-            skill_registry.user_skills_dir.mkdir(parents=True, exist_ok=True)
-            folder = str(skill_registry.user_skills_dir)
+            folder = str(skill_registry.root_skills_dir)
             if platform.system() == "Windows":
                 os.startfile(folder)
             else:
@@ -1047,28 +950,22 @@ class DashboardAPI:
     # ---------------- WhatsApp Contacts ---------------- #
 
     def get_whatsapp_contacts(self) -> List[Dict]:
-        """Returns the saved WhatsApp contacts list for the plugin config UI."""
+        """Returns the saved WhatsApp contacts list."""
         try:
-            from plugins.manager import plugin_manager
-            plugin = plugin_manager.get_plugin("whatsapp")
-            if plugin and hasattr(plugin, "load_contacts"):
-                return plugin.load_contacts()
+            return profile_manager.get("whatsapp_contacts", [])
         except Exception as e:
             logger.error(f"Error loading WhatsApp contacts: {e}")
-        return []
+            return []
 
-    def save_whatsapp_contacts(self, contacts: List[Dict]) -> Dict:
-        """Saves the WhatsApp contacts list from the plugin config UI."""
+    def save_whatsapp_contacts(self, contacts: List[Dict]) -> Dict[str, Any]:
+        """Saves the WhatsApp contacts list."""
         try:
-            from plugins.manager import plugin_manager
-            plugin = plugin_manager.get_plugin("whatsapp")
-            if plugin and hasattr(plugin, "save_contacts"):
-                success = plugin.save_contacts(contacts)
-                return {"success": success, "message": f"Saved {len(contacts)} contacts." if success else "Save failed."}
-            return {"success": False, "message": "WhatsApp plugin not found or not loaded."}
+            profile_manager.set("whatsapp_contacts", contacts)
+            return {"success": True, "message": f"Saved {len(contacts)} contacts."}
         except Exception as e:
             logger.error(f"Error saving WhatsApp contacts: {e}")
             return {"success": False, "message": str(e)}
+
 
     # ---------------- System Diagnostics & Telemetry ---------------- #
 

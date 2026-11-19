@@ -75,18 +75,15 @@ class TestDashboardLaunch(unittest.TestCase):
             overlay.cmd_entry.delete(0, tk.END)
             overlay.cmd_entry.insert(0, "open chrome")
 
-            with patch("actions.executor.execute_system_command_detailed", return_value={"success": True, "message": "Chrome opened"}) as mock_exec:
+            with patch("actions.executor.execute_system_command_detailed", return_value={"success": True, "message": "Chrome opened"}) as mock_exec, \
+                 patch.object(overlay, "_schedule_ui") as mock_sched, \
+                 patch("threading.Thread") as mock_thread:
+                mock_thread.side_effect = lambda target, args=(), **kw: MagicMock(start=lambda: target(*args))
                 overlay._on_text_submitted()
-                # Wait for worker thread to complete execution
-                import time
-                for _ in range(20):
-                    if mock_exec.called:
-                        break
-                    time.sleep(0.05)
                 mock_exec.assert_called_once()
                 self.assertEqual(mock_exec.call_args[0][0], "open chrome")
                 mock_ui.on_transcription.assert_called_once_with("open chrome")
-                time.sleep(0.05)
+                mock_sched.assert_called_once()
 
             overlay.window.destroy()
         finally:

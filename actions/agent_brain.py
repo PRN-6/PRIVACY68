@@ -175,7 +175,7 @@ class AgentBrain:
             "PRIORITY TOOLBOX (Use in this order):\n"
             "1. Active Developer Skills (SKILL.md): If specialized skill guidelines are injected below (e.g. GitHub CLI 'gh', VS Code 'code', Docker 'docker'), strictly follow their CLI patterns and examples via subprocess.\n"
             "2. Native Services & Desktop Automation: For web browsing, Gmail, and Windows System controls, "
-            "use webbrowser, services (e.g. 'from services.gmail import gmail_service; from services.system import system_service') or existing desktop plugins.\n"
+            "use webbrowser, services (e.g. 'from services.gmail import gmail_service; from services.system import system_service') and active developer skills.\n"
             "3. pyautogui: For mouse/keyboard control and hotkeys.\n"
             "4. pywinauto: For deep Windows application interaction.\n"
             "5. os/subprocess/shutil/pathlib: For shell commands, developer CLIs, and file management.\n"

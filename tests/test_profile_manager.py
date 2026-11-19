@@ -4,7 +4,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from plugins.profile_manager import ProfileManager
+from utils.profile_manager import ProfileManager
 
 
 class TestProfileManager(unittest.TestCase):

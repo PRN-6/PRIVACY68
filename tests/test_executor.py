@@ -39,29 +39,15 @@ class TestActionExecutor(unittest.TestCase):
         self.assertEqual(result, expected)
         generate.assert_called_once_with(request)
 
-    def test_github_push_requires_confirmation(self):
+    def test_github_commands_route_to_agent_brain(self):
         request = "in vscode can u push my code to github this is the branch feat/demo"
-        plugin = Mock()
-        plugin.is_enabled = True
-        plugin.parse_command.return_value = {
-            "action": "push",
-            "kwargs": {"branch": "feat/demo"},
-            "requires_confirmation": True,
-            "description": "push the current project branch feat/demo to GitHub",
-        }
-        plugin.perform.return_value = {"success": True, "message": "Pushed branch feat/demo"}
-        with patch.object(executor, "autocorrect_speech_command", side_effect=[request, "yes"]):
-            with patch("plugins.manager.plugin_manager.get_plugin", return_value=plugin):
+        expected = {"success": True, "message": "Pushed branch feat/demo", "method": "agentic_engine"}
+        with patch.object(executor, "autocorrect_speech_command", return_value=request):
+            with patch("actions.agent_brain.agent_brain.generate_and_execute", return_value=expected) as generate:
                 result = executor.execute_system_command_detailed(request)
-                self.assertTrue(result["success"])
-                self.assertTrue(result["details"]["requires_confirmation"])
-                self.assertIn("Confirm", result["message"])
-                plugin.perform.assert_not_called()
-                confirmation = executor.execute_system_command_detailed("yes")
 
-        self.assertTrue(confirmation["success"])
-        self.assertEqual(confirmation["tool"], "security_confirmation")
-        plugin.perform.assert_called_once_with("push", branch="feat/demo")
+        self.assertEqual(result, expected)
+        generate.assert_called_once_with(request)
 
     def test_commands_are_delegated_and_success_is_notified(self):
         status_callback = Mock()
@@ -80,89 +66,62 @@ class TestActionExecutor(unittest.TestCase):
         status_callback.assert_called_once_with("completed", "completed")
         action_callback.assert_called_once_with("agent_brain", True, "completed")
 
-    def test_open_chrome_routes_directly_to_chrome_plugin(self):
-        chrome = Mock()
-        chrome.is_enabled = True
-        chrome.execute.return_value = True
+    def test_open_chrome_routes_directly(self):
         with patch.object(executor, "autocorrect_speech_command", return_value="open chrome"):
-            with patch("plugins.manager.plugin_manager.get_plugin", side_effect=lambda pid: {
-                "github": None,
-                "chrome": chrome,
-            }.get(pid)):
+            with patch("actions.executor._open_url", return_value=True) as mock_open:
                 with patch("actions.agent_brain.agent_brain.generate_and_execute") as generate:
                     result = executor.execute_system_command_detailed("open chrome")
 
         self.assertTrue(result["success"])
-        self.assertEqual(result["method"], "chrome_plugin")
-        chrome.execute.assert_called_once_with("open_url")
+        self.assertEqual(result["method"], "chrome_service")
+        self.assertEqual(result["tool"], "chrome")
+        mock_open.assert_called_once_with("https://www.google.com", preferred_browser="chrome")
         generate.assert_not_called()
 
-    def test_open_brave_routes_directly_to_brave_plugin(self):
-        brave = Mock()
-        brave.is_enabled = True
-        brave.execute.return_value = True
+    def test_open_brave_routes_directly(self):
         with patch.object(executor, "autocorrect_speech_command", return_value="open brave"):
-            with patch("plugins.manager.plugin_manager.get_plugin", side_effect=lambda pid: {
-                "github": None,
-                "brave": brave,
-            }.get(pid)):
+            with patch("actions.executor._open_url", return_value=True) as mock_open:
                 with patch("actions.agent_brain.agent_brain.generate_and_execute") as generate:
                     result = executor.execute_system_command_detailed("open brave")
 
         self.assertTrue(result["success"])
-        self.assertEqual(result["method"], "brave_plugin")
-        brave.execute.assert_called_once_with("open")
+        self.assertEqual(result["method"], "brave_service")
+        self.assertEqual(result["tool"], "brave")
+        mock_open.assert_called_once_with("https://search.brave.com", preferred_browser="brave")
         generate.assert_not_called()
 
-    def test_open_brave_and_create_new_tab_routes_directly_to_plugin(self):
-        brave = Mock()
-        brave.is_enabled = True
-        brave.execute.return_value = True
+    def test_open_brave_and_create_new_tab_routes_directly(self):
         request = "open brave and create a new tab in brave"
         with patch.object(executor, "autocorrect_speech_command", return_value=request):
-            with patch("plugins.manager.plugin_manager.get_plugin", side_effect=lambda pid: {
-                "github": None,
-                "brave": brave,
-            }.get(pid)):
+            with patch("actions.executor._open_url", return_value=True) as mock_open:
                 with patch("actions.agent_brain.agent_brain.generate_and_execute") as generate:
                     result = executor.execute_system_command_detailed(request)
 
         self.assertTrue(result["success"])
         self.assertEqual(result["message"], "Opened a new Brave tab.")
-        brave.execute.assert_called_once_with("open_new_tab")
+        mock_open.assert_called_once_with("https://search.brave.com", preferred_browser="brave")
         generate.assert_not_called()
 
-    def test_open_whatsapp_routes_directly_to_whatsapp_plugin(self):
-        whatsapp = Mock()
-        whatsapp.is_enabled = True
-        whatsapp.execute.return_value = True
+    def test_open_whatsapp_routes_directly(self):
         with patch.object(executor, "autocorrect_speech_command", return_value="open whatsapp"):
-            with patch("plugins.manager.plugin_manager.get_plugin", side_effect=lambda pid: {
-                "github": None,
-                "whatsapp": whatsapp,
-            }.get(pid)):
+            with patch("webbrowser.open", return_value=True) as mock_wb:
                 with patch("actions.agent_brain.agent_brain.generate_and_execute") as generate:
                     result = executor.execute_system_command_detailed("open whatsapp")
 
         self.assertTrue(result["success"])
-        self.assertEqual(result["method"], "whatsapp_plugin")
-        whatsapp.execute.assert_called_once_with("open")
+        self.assertEqual(result["method"], "whatsapp_service")
+        mock_wb.assert_called_once_with("https://web.whatsapp.com")
         generate.assert_not_called()
 
-    def test_disabled_builtin_app_plugin_reports_actionable_error(self):
-        chrome = Mock()
-        chrome.is_enabled = False
-        with patch.object(executor, "autocorrect_speech_command", return_value="open chrome"):
-            with patch("plugins.manager.plugin_manager.get_plugin", side_effect=lambda pid: {
-                "github": None,
-                "chrome": chrome,
-            }.get(pid)):
-                result = executor.execute_system_command_detailed("open chrome")
+    def test_disabled_gmail_service_reports_actionable_error(self):
+        with patch("services.gmail.gmail_service.is_enabled", False):
+            with patch.object(executor, "autocorrect_speech_command", return_value="compose email to test@example.com"):
+                result = executor.execute_system_command_detailed("compose email to test@example.com")
 
         self.assertFalse(result["success"])
-        self.assertEqual(result["method"], "chrome_plugin")
+        self.assertEqual(result["tool"], "gmail")
+        self.assertEqual(result["method"], "gmail_service")
         self.assertIn("disabled", result["message"])
-        chrome.execute.assert_not_called()
 
     def test_failed_agent_action_returns_failsafe_and_notifies(self):
         status_callback = Mock()
@@ -199,25 +158,19 @@ class TestActionExecutor(unittest.TestCase):
         self.assertEqual(result["tool"], "security_confirmation")
         action.assert_called_once_with()
 
-    def test_go_to_gmail_routes_to_plugin_when_enabled(self):
-        gmail_mock = Mock()
-        gmail_mock.is_enabled = True
-        gmail_mock.execute.return_value = True
-
-        with patch("plugins.manager.plugin_manager.get_plugin", return_value=gmail_mock):
-            with patch.object(executor, "autocorrect_speech_command", return_value="go to gmail"):
-                result = executor.execute_system_command_detailed("go to gmail")
+    def test_go_to_gmail_routes_to_service_when_enabled(self):
+        with patch("services.gmail.gmail_service.is_enabled", True):
+            with patch("services.gmail.gmail_service.open_inbox", return_value=True) as mock_inbox:
+                with patch.object(executor, "autocorrect_speech_command", return_value="go to gmail"):
+                    result = executor.execute_system_command_detailed("go to gmail")
 
         self.assertTrue(result["success"])
         self.assertEqual(result["tool"], "gmail")
-        self.assertEqual(result["method"], "gmail_plugin")
-        gmail_mock.execute.assert_called_once_with("open")
+        self.assertEqual(result["method"], "gmail_service")
+        mock_inbox.assert_called_once()
 
-    def test_go_to_gmail_blocks_when_plugin_is_disabled(self):
-        gmail_mock = Mock()
-        gmail_mock.is_enabled = False
-
-        with patch("plugins.manager.plugin_manager.get_plugin", return_value=gmail_mock):
+    def test_go_to_gmail_blocks_when_service_is_disabled(self):
+        with patch("services.gmail.gmail_service.is_enabled", False):
             with patch.object(executor, "autocorrect_speech_command", return_value="go to gmail"):
                 result = executor.execute_system_command_detailed("go to gmail")
 
@@ -225,19 +178,17 @@ class TestActionExecutor(unittest.TestCase):
         self.assertEqual(result["tool"], "gmail")
         self.assertIn("disabled", result["message"].lower())
 
-    def test_open_telegram_routes_to_telegram_plugin(self):
-        tg_mock = Mock()
-        tg_mock.is_enabled = True
-        tg_mock.execute.return_value = True
-
-        with patch("plugins.manager.plugin_manager.get_plugin", return_value=tg_mock):
-            with patch.object(executor, "autocorrect_speech_command", return_value="open telegram"):
-                result = executor.execute_system_command_detailed("open telegram")
+    def test_open_telegram_routes_to_service(self):
+        with patch.object(executor, "autocorrect_speech_command", return_value="open telegram"):
+            with patch("actions.executor._open_url", return_value=True) as mock_open:
+                with patch("actions.agent_brain.agent_brain.generate_and_execute") as generate:
+                    result = executor.execute_system_command_detailed("open telegram")
 
         self.assertTrue(result["success"])
         self.assertEqual(result["tool"], "telegram")
-        self.assertEqual(result["method"], "telegram_plugin")
-        tg_mock.execute.assert_called_once_with("open")
+        self.assertEqual(result["method"], "telegram_service")
+        mock_open.assert_called_once_with("https://web.telegram.org")
+        generate.assert_not_called()
 
     def test_compound_app_commands_fall_through_to_agent_brain(self):
         expected = {"success": True, "message": "done", "method": "agentic_engine"}
@@ -249,20 +200,20 @@ class TestActionExecutor(unittest.TestCase):
         mock_brain.assert_called_once_with("open notepad and write hello world")
 
     def test_open_site_in_browser_routing(self):
-        with patch("actions.executor._open_url") as mock_open:
+        with patch("actions.executor._open_url", return_value=True) as mock_open:
             result = executor.execute_system_command_detailed("open chatgpt in chrome")
             self.assertTrue(result["success"])
             self.assertEqual(result["tool"], "browser")
             self.assertEqual(result["method"], "website_launcher")
-            mock_open.assert_called_once_with("https://chatgpt.com", unittest.mock.ANY, preferred_browser="chrome")
+            mock_open.assert_called_once_with("https://chatgpt.com", preferred_browser="chrome")
 
     def test_open_browser_and_navigate_routing(self):
-        with patch("actions.executor._open_url") as mock_open:
+        with patch("actions.executor._open_url", return_value=True) as mock_open:
             result = executor.execute_system_command_detailed("open chrome and go to chatgpt")
             self.assertTrue(result["success"])
             self.assertEqual(result["tool"], "browser")
             self.assertEqual(result["method"], "browser_search")
-            mock_open.assert_called_once_with("https://chatgpt.com", unittest.mock.ANY, preferred_browser="chrome")
+            mock_open.assert_called_once_with("https://chatgpt.com", preferred_browser="chrome")
 
 
 if __name__ == "__main__":

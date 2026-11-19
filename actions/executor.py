@@ -1,5 +1,7 @@
 import logging
+import os
 import re
+import subprocess
 import urllib.parse
 import webbrowser
 from speech.streamer import autocorrect_speech_command
@@ -73,80 +75,80 @@ def _notify(on_status_callback, on_action_callback, tool: str, success: bool, me
             on_action_callback(tool, success)
 
 
-def _open_url(url: str, plugin_manager, preferred_browser: str = None) -> bool:
-    """Attempts to open URL via Chrome or Brave plugin, falling back to system browser."""
+def _open_url(url: str, preferred_browser: str = None) -> bool:
+    """Attempts to open URL via Chrome or Brave binary, falling back to system browser."""
     if preferred_browser == "chrome":
-        chrome = plugin_manager.get_plugin("chrome")
-        if chrome and chrome.is_enabled and hasattr(chrome, "open_url"):
-            try:
-                if chrome.open_url(url):
+        for p in [
+            os.path.join(os.environ.get("ProgramFiles", r"C:\Program Files"), r"Google\Chrome\Application\chrome.exe"),
+            os.path.join(os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)"), r"Google\Chrome\Application\chrome.exe"),
+            os.path.join(os.environ.get("LOCALAPPDATA", ""), r"Google\Chrome\Application\chrome.exe"),
+        ]:
+            if os.path.isfile(p):
+                try:
+                    subprocess.Popen([p, url])
                     return True
-            except Exception:
-                pass
+                except Exception:
+                    pass
     elif preferred_browser == "brave":
-        brave = plugin_manager.get_plugin("brave")
-        if brave and brave.is_enabled and hasattr(brave, "open_url"):
-            try:
-                if brave.open_url(url):
+        for p in [
+            os.path.join(os.environ.get("ProgramFiles", r"C:\Program Files"), r"BraveSoftware\Brave-Browser\Application\brave.exe"),
+            os.path.join(os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)"), r"BraveSoftware\Brave-Browser\Application\brave.exe"),
+            os.path.join(os.environ.get("LOCALAPPDATA", ""), r"BraveSoftware\Brave-Browser\Application\brave.exe"),
+        ]:
+            if os.path.isfile(p):
+                try:
+                    subprocess.Popen([p, url])
                     return True
-            except Exception:
-                pass
-
-    chrome = plugin_manager.get_plugin("chrome")
-    if chrome and chrome.is_enabled and hasattr(chrome, "open_url"):
-        try:
-            if chrome.open_url(url):
-                return True
-        except Exception:
-            pass
-
-    brave = plugin_manager.get_plugin("brave")
-    if brave and brave.is_enabled and hasattr(brave, "open_url"):
-        try:
-            if brave.open_url(url):
-                return True
-        except Exception:
-            pass
+                except Exception:
+                    pass
 
     return webbrowser.open(url)
 
 
-def _execute_builtin_app_command(command: str, plugin_manager, on_action_callback, on_status_callback):
-    """Routes common app-launch commands directly to their installed plugins."""
+def _execute_builtin_app_command(command: str, on_action_callback, on_status_callback):
+    """Routes common app-launch commands directly to native services and browsers."""
     clean_cmd = re.sub(r"^['\"`‘“\s]+|['\"`’”\s]+$", "", command.strip()).strip(".!?, \t\n")
-    for pattern, plugin_id, action in BUILTIN_APP_COMMANDS:
+    for pattern, app_id, action in BUILTIN_APP_COMMANDS:
         if not pattern.fullmatch(clean_cmd):
             continue
 
-        plugin = plugin_manager.get_plugin(plugin_id)
-        if not plugin:
-            message = f"The built-in {plugin_id.title()} plugin is unavailable."
-            success = False
-        elif not plugin.is_enabled:
-            message = f"The {plugin_id.title()} plugin is disabled. Enable it in the Plugins dashboard."
-            success = False
+        success = False
+        message = ""
+        if app_id == "chrome":
+            success = _open_url("https://www.google.com", preferred_browser="chrome")
+            message = "Opened Chrome." if success else "Could not open Chrome."
+        elif app_id == "brave":
+            success = _open_url("https://search.brave.com", preferred_browser="brave")
+            message = "Opened a new Brave tab." if action == "open_new_tab" else "Opened Brave."
+        elif app_id == "gmail":
+            from services.gmail import gmail_service
+            if not getattr(gmail_service, "is_enabled", True):
+                message = "The Gmail service is disabled. Enable it in the Services dashboard to use Gmail commands."
+                _notify(on_status_callback, on_action_callback, "gmail", False, message)
+                return {
+                    "success": False,
+                    "tool": "gmail",
+                    "method": "gmail_service",
+                    "message": message,
+                    "output": "",
+                }
+            success = bool(gmail_service.open_inbox())
+            message = "Opened Gmail inbox." if success else "Could not open Gmail."
+        elif app_id == "whatsapp":
+            success = webbrowser.open("https://web.whatsapp.com")
+            message = "Opened WhatsApp." if success else "Could not open WhatsApp."
+        elif app_id == "telegram":
+            success = _open_url("https://web.telegram.org")
+            message = "Opened Telegram." if success else "Could not open Telegram."
         else:
-            success = bool(plugin.execute(action))
-            if success:
-                message = (
-                    "Opened a new Brave tab."
-                    if plugin_id == "brave" and action == "open_new_tab"
-                    else f"Opened {plugin_id.title()}."
-                )
-            elif plugin_id == "chrome":
-                message = "Could not open Chrome. Check that Google Chrome is installed."
-            elif plugin_id == "brave":
-                message = "Could not open Brave. Check that Brave is installed."
-            elif plugin_id == "gmail":
-                message = "Could not open Gmail. Check your internet connection or browser."
-            else:
-                message = "Could not open WhatsApp. Check that WhatsApp is installed and its app link is registered."
+            success = _open_url("https://www.google.com")
+            message = f"Opened {app_id.title()}."
 
-        _notify(on_status_callback, on_action_callback, plugin_id, success, message)
+        _notify(on_status_callback, on_action_callback, app_id, success, message)
         return {
             "success": success,
-            "tool": plugin_id,
-            "method": f"{plugin_id}_plugin",
+            "tool": app_id,
+            "method": f"{app_id}_service",
             "message": message,
             "output": "",
         }
@@ -154,7 +156,7 @@ def _execute_builtin_app_command(command: str, plugin_manager, on_action_callbac
     return None
 
 
-def _execute_web_or_app_command(command: str, plugin_manager, on_action_callback, on_status_callback):
+def _execute_web_or_app_command(command: str, on_action_callback, on_status_callback):
     """
     Directly routes common web searches, website navigations, and desktop app launches
     without requiring LLM/Ollama reasoning.
@@ -178,7 +180,7 @@ def _execute_web_or_app_command(command: str, plugin_manager, on_action_callback
             url = f"https://www.google.com/search?q={urllib.parse.quote(query)}"
             target_name = f"'{query}'"
 
-        _open_url(url, plugin_manager, preferred_browser=browser_pref)
+        _open_url(url, preferred_browser=browser_pref)
         msg = f"Opened {browser_pref.title()} and navigated to {target_name}."
         _notify(on_status_callback, on_action_callback, "browser", True, msg)
         return {
@@ -211,7 +213,7 @@ def _execute_web_or_app_command(command: str, plugin_manager, on_action_callback
             url = f"https://www.google.com/search?q={urllib.parse.quote(target_site)}"
             target_name = f"'{target_site}'"
 
-        _open_url(url, plugin_manager, preferred_browser=browser_pref)
+        _open_url(url, preferred_browser=browser_pref)
         pref_label = f" in {browser_pref.title()}" if browser_pref else ""
         msg = f"Opened {target_name}{pref_label}."
         _notify(on_status_callback, on_action_callback, "browser", True, msg)
@@ -242,7 +244,7 @@ def _execute_web_or_app_command(command: str, plugin_manager, on_action_callback
             url = f"https://www.google.com/search?q={urllib.parse.quote(query)}"
             target_name = f"'{query}'"
 
-        _open_url(url, plugin_manager, preferred_browser=browser_pref)
+        _open_url(url, preferred_browser=browser_pref)
         pref_label = f" in {browser_pref.title()}" if browser_pref else ""
         msg = f"Searched for {target_name}{pref_label}."
         _notify(on_status_callback, on_action_callback, "browser", True, msg)
@@ -259,7 +261,7 @@ def _execute_web_or_app_command(command: str, plugin_manager, on_action_callback
     if m_yt:
         query = m_yt.group(1).strip().strip("'\"")
         url = f"https://www.youtube.com/results?search_query={urllib.parse.quote(query)}"
-        _open_url(url, plugin_manager)
+        _open_url(url)
         msg = f"Searched YouTube for '{query}'."
         _notify(on_status_callback, on_action_callback, "browser", True, msg)
         return {
@@ -285,7 +287,7 @@ def _execute_web_or_app_command(command: str, plugin_manager, on_action_callback
             url = f"https://www.google.com/search?q={urllib.parse.quote(query)}"
             target = f"'{query}'"
 
-        _open_url(url, plugin_manager)
+        _open_url(url)
         msg = f"Searched for {target}."
         _notify(on_status_callback, on_action_callback, "browser", True, msg)
         return {
@@ -301,44 +303,43 @@ def _execute_web_or_app_command(command: str, plugin_manager, on_action_callback
     if m_site:
         site_key = m_site.group(1).lower().strip()
 
-        # Prioritize integrated plugins (e.g. gmail, github, whatsapp) over generic web fallback
-        plugin = plugin_manager.get_plugin(site_key)
-        if plugin:
-            if not plugin.is_enabled:
-                msg = f"The {site_key.title()} plugin is disabled. Enable it in the Plugins dashboard to use {site_key.title()} commands."
-                _notify(on_status_callback, on_action_callback, site_key, False, msg)
+        if site_key == "gmail":
+            from services.gmail import gmail_service
+            if not getattr(gmail_service, "is_enabled", True):
+                msg = "The Gmail service is disabled. Enable it in the Services dashboard to use Gmail commands."
+                _notify(on_status_callback, on_action_callback, "gmail", False, msg)
                 return {
                     "success": False,
-                    "tool": site_key,
-                    "method": f"{site_key}_plugin",
+                    "tool": "gmail",
+                    "method": "gmail_service",
                     "message": msg,
+                    "output": "",
                 }
-            if hasattr(plugin, "execute"):
-                success = bool(plugin.execute("open"))
-            elif hasattr(plugin, "open_inbox"):
-                success = bool(plugin.open_inbox())
-            elif hasattr(plugin, "open"):
-                success = bool(plugin.open())
-            else:
-                success = False
-
-            if site_key == "gmail":
-                msg = "Opened Gmail inbox." if success else "Could not open Gmail inbox."
-            else:
-                msg = f"Opened {site_key.title()}." if success else f"Could not open {site_key.title()}."
-
-            _notify(on_status_callback, on_action_callback, site_key, success, msg)
+            success = bool(gmail_service.open_inbox())
+            msg = "Opened Gmail inbox." if success else "Could not open Gmail inbox."
+            _notify(on_status_callback, on_action_callback, "gmail", success, msg)
             return {
                 "success": success,
-                "tool": site_key,
-                "method": f"{site_key}_plugin",
+                "tool": "gmail",
+                "method": "gmail_service",
+                "message": msg,
+                "output": "",
+            }
+        elif site_key == "whatsapp":
+            success = webbrowser.open("https://web.whatsapp.com")
+            msg = "Opened WhatsApp." if success else "Could not open WhatsApp."
+            _notify(on_status_callback, on_action_callback, "whatsapp", success, msg)
+            return {
+                "success": success,
+                "tool": "whatsapp",
+                "method": "whatsapp_service",
                 "message": msg,
                 "output": "",
             }
 
         if site_key in COMMON_WEB_SERVICES:
             url = COMMON_WEB_SERVICES[site_key]
-            _open_url(url, plugin_manager)
+            _open_url(url)
             msg = f"Opened {site_key.title()}."
             _notify(on_status_callback, on_action_callback, "browser", True, msg)
             return {
@@ -350,7 +351,7 @@ def _execute_web_or_app_command(command: str, plugin_manager, on_action_callback
             }
         elif "." in site_key and not site_key.endswith((".exe", ".py", ".txt", ".md")):
             url = f"https://{site_key}"
-            _open_url(url, plugin_manager)
+            _open_url(url)
             msg = f"Navigated to {site_key}."
             _notify(on_status_callback, on_action_callback, "browser", True, msg)
             return {
@@ -415,67 +416,49 @@ def execute_system_command_detailed(text: str, on_action_callback=None, on_statu
             "details": {"requires_confirmation": True},
         }
 
-    from plugins.manager import plugin_manager
-
     if low in GREETINGS:
         return {"success": True, "tool": "greeting", "method": "none", "message": "I'm listening. How can I help you with your computer today?"}
 
-    # 2. Built-in Core Application Plugins (Exact app opens)
+    # 2. Built-in Core Application Commands (Exact app opens)
     app_result = _execute_builtin_app_command(
         low,
-        plugin_manager,
         on_action_callback,
         on_status_callback,
     )
     if app_result is not None:
         return app_result
 
-    # 2b. Custom / External User Plugins (Dynamic voice dispatch)
-    for p in plugin_manager.get_all_plugins():
-        if not getattr(p, "is_builtin", False) and getattr(p, "is_enabled", True):
-            p_id = getattr(p, "id", "").lower()
-            p_name = getattr(p, "name", "").lower()
-            if low in (f"open {p_id}", f"launch {p_id}", f"start {p_id}", f"open {p_name}", f"launch {p_name}", f"start {p_name}", p_id, p_name):
-                try:
-                    success = bool(p.execute("main")) or bool(p.execute("open"))
-                    msg = f"Executed {p.name}." if success else f"Could not execute {p.name}."
-                    _notify(on_status_callback, on_action_callback, p_id, success, msg)
-                    return {"success": success, "tool": p_id, "method": f"{p_id}_plugin", "message": msg, "output": ""}
-                except Exception as e:
-                    logger.error(f"Error executing custom plugin {p_id}: {e}")
-
     # 3. Direct Web Searches, Websites, and App Launches
     web_result = _execute_web_or_app_command(
         low,
-        plugin_manager,
         on_action_callback,
         on_status_callback,
     )
     if web_result is not None:
         return web_result
 
-    # 4. Route explicit Gmail tasks to the integrated plugin.
-    gmail_plugin = plugin_manager.get_plugin("gmail")
-    if gmail_plugin and not gmail_plugin.is_enabled and gmail_plugin.parse_command(cleaned):
+    # 4. Route explicit Gmail tasks to native service
+    from services.gmail import gmail_service
+    if not getattr(gmail_service, "is_enabled", True) and gmail_service.parse_command(cleaned):
         return {
             "success": False,
             "tool": "gmail",
-            "method": "gmail_plugin",
-            "message": "The Gmail plugin is disabled. Enable it in the Plugins dashboard to use Gmail commands.",
+            "method": "gmail_service",
+            "message": "The Gmail service is disabled. Enable it in the Services dashboard to use Gmail commands.",
         }
-    if gmail_plugin and gmail_plugin.is_enabled:
-        gmail_req = gmail_plugin.parse_command(cleaned)
+    if getattr(gmail_service, "is_enabled", True):
+        gmail_req = gmail_service.parse_command(cleaned)
         if gmail_req and gmail_req.get("action") in ("open", "compose"):
             action = gmail_req["action"]
             kwargs = gmail_req.get("kwargs", {})
             if action == "open":
-                success = bool(gmail_plugin.open_inbox(**kwargs))
+                success = bool(gmail_service.open_inbox(**kwargs))
                 msg = "Opened Gmail inbox." if success else "Could not open Gmail inbox."
             elif action == "compose":
                 to = kwargs.get("to", "")
                 subject = kwargs.get("subject", "")
                 body = kwargs.get("body", "")
-                success = bool(gmail_plugin.compose_email(to=to, subject=subject, body=body))
+                success = bool(gmail_service.compose_email(to=to, subject=subject, body=body))
                 if success:
                     msg = f"Drafted email to {to} in Gmail." if to else "Opened Gmail compose window."
                 else:
@@ -485,73 +468,10 @@ def execute_system_command_detailed(text: str, on_action_callback=None, on_statu
             return {
                 "success": success,
                 "tool": "gmail",
-                "method": "gmail_plugin",
+                "method": "gmail_service",
                 "message": msg,
                 "output": kwargs,
             }
-
-    # 5. Route explicit GitHub tasks to the integrated plugin instead of generating shell code.
-    github_plugin = plugin_manager.get_plugin("github")
-    if github_plugin and not github_plugin.is_enabled and github_plugin.parse_command(cleaned):
-        return {
-            "success": False,
-            "tool": "github",
-            "method": "github_plugin",
-            "message": "The GitHub plugin is disabled. Enable it in the Plugins dashboard to use GitHub commands.",
-        }
-    if github_plugin and github_plugin.is_enabled:
-        request = github_plugin.parse_command(cleaned)
-        if request and request.get("action") != "unsupported":
-            action = request["action"]
-            kwargs = request["kwargs"]
-            if action == "create_issue" and not kwargs.get("title"):
-                return {
-                    "success": False,
-                    "tool": "github",
-                    "method": "github_plugin",
-                    "message": "Specify an issue title, for example: create GitHub issue title Fix login.",
-                }
-            if action == "create_pull_request" and not all(kwargs.get(key) for key in ("title", "head", "base")):
-                return {
-                    "success": False,
-                    "tool": "github",
-                    "method": "github_plugin",
-                    "message": "Specify the PR title, head branch, and base branch.",
-                }
-
-            def perform_github_action():
-                return github_plugin.perform(action, **kwargs)
-
-            if request["requires_confirmation"]:
-                risk_action = "github_push" if action == "push" else "github_write"
-                success, message, details = security_guard.request_execution(
-                    risk_action,
-                    perform_github_action,
-                    description=request["description"],
-                )
-                requires_confirmation = bool(details and details.get("requires_confirmation"))
-                if not requires_confirmation:
-                    _notify(on_status_callback, on_action_callback, "github", success, message)
-                return {
-                    "success": success or requires_confirmation,
-                    "tool": "github",
-                    "method": "github_plugin",
-                    "message": message,
-                    "details": details,
-                }
-
-            try:
-                result = perform_github_action()
-            except (RuntimeError, ValueError) as exc:
-                message = str(exc)
-                _notify(on_status_callback, on_action_callback, "github", False, message)
-                return {"success": False, "tool": "github", "method": "github_plugin", "message": message}
-            message = result.get("message", "GitHub request completed.")
-            details = result.get("details")
-            if details is not None:
-                message = f"{message}\n{details}"
-            _notify(on_status_callback, on_action_callback, "github", True, message)
-            return {**result, "tool": "github", "method": "github_plugin", "message": message}
 
     # 5. Complex agentic requests go to Agent Brain (Local Ollama / Cloud LLM)
     from actions.agent_brain import agent_brain

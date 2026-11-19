@@ -50,7 +50,7 @@ class TestDashboardAPI(unittest.TestCase):
         self.assertEqual(result["code"], "")
 
     def test_github_connection_methods_use_secure_plugin_service(self):
-        with patch("plugins.github_plugin.GitHubPlugin.connect", return_value={
+        with patch("ui.dashboard_bridge.connect_github", return_value={
             "success": True,
             "message": "Connected to GitHub as tester.",
             "login": "tester",
@@ -75,65 +75,37 @@ class TestDashboardAPI(unittest.TestCase):
         self.assertEqual(result["cuda"], cuda)
 
     def test_get_plugins_returns_registered_plugin_metadata(self):
-        plugin = SimpleNamespace(
-            id="chrome",
-            name="Chrome",
-            version="1.0",
-            description="Browser integration",
-            icon="🌐",
-            is_enabled=True,
-            is_builtin=True,
-            category="General",
-            plugin_type="",
-        )
-        with patch("ui.dashboard_bridge.plugin_manager.check_and_reload_if_changed"):
-            with patch("ui.dashboard_bridge.plugin_manager.get_all_plugins", return_value=[plugin]):
-                result = self.api.get_plugins()
+        result = self.api.get_plugins()
+        self.assertEqual(len(result), 3)
+        ids = [r["id"] for r in result]
+        self.assertIn("telegram", ids)
+        self.assertIn("gmail", ids)
+        self.assertIn("system", ids)
 
-        self.assertEqual(len(result), 1)
-        self.assertEqual(result[0]["id"], "chrome")
-        self.assertEqual(result[0]["category"], "Browser")
-        self.assertTrue(result[0]["is_enabled"])
-        self.assertTrue(result[0]["is_builtin"])
+    def test_toggle_plugin(self):
+        with patch("utils.profile_manager.profile_manager.set"):
+            result = self.api.toggle_plugin("gmail", False)
+            self.assertTrue(result["success"])
+            self.assertFalse(result["enabled"])
 
-    def test_toggle_plugin_reports_unknown_plugin(self):
-        with patch("ui.dashboard_bridge.plugin_manager.set_plugin_enabled", return_value=False):
-            result = self.api.toggle_plugin("missing", True)
-
+    def test_uninstall_plugin_reports_builtin(self):
+        result = self.api.uninstall_plugin("gmail")
         self.assertFalse(result["success"])
-        self.assertIn("not found", result["message"])
+        self.assertIn("cannot be uninstalled", result["message"])
 
-    def test_uninstall_plugin_reports_missing_plugin(self):
-        with patch("ui.dashboard_bridge.plugin_manager.get_plugin", return_value=None):
-            result = self.api.uninstall_plugin("missing")
-
-        self.assertFalse(result["success"])
-        self.assertIn("not found", result["message"])
-
-    def test_execute_plugin_action_success_and_disabled(self):
-        plugin = Mock()
-        plugin.name = "Test Plugin"
-        plugin.is_enabled = True
-        plugin.execute.return_value = True
-
-        with patch("plugins.manager.plugin_manager.get_plugin", return_value=plugin):
-            res = self.api.execute_plugin_action("test", "test_action", {"key": "val"})
+    def test_execute_plugin_action_success(self):
+        with patch("channels.telegram.telegram_channel.execute", return_value=True) as mock_exec:
+            res = self.api.execute_plugin_action("telegram", "start", {"key": "val"})
             self.assertTrue(res["success"])
-            plugin.execute.assert_called_once_with("test_action", key="val")
-
-        plugin.is_enabled = False
-        with patch("plugins.manager.plugin_manager.get_plugin", return_value=plugin):
-            res_disabled = self.api.execute_plugin_action("test", "test_action")
-            self.assertFalse(res_disabled["success"])
-            self.assertIn("disabled", res_disabled["message"])
+            mock_exec.assert_called_once_with("start", key="val")
 
     def test_set_and_get_plugin_setting(self):
-        with patch("plugins.profile_manager.profile_manager.set") as mock_set:
+        with patch("utils.profile_manager.profile_manager.set") as mock_set:
             res = self.api.set_plugin_setting("whatsapp", "default_contact", "+1987654321")
             self.assertTrue(res["success"])
             mock_set.assert_called_once_with("whatsapp_default_contact", "+1987654321")
 
-        with patch("plugins.profile_manager.profile_manager.get", return_value="+1987654321"):
+        with patch("utils.profile_manager.profile_manager.get", return_value="+1987654321"):
             get_res = self.api.get_plugin_setting("whatsapp", "default_contact")
             self.assertTrue(get_res["success"])
             self.assertEqual(get_res["value"], "+1987654321")
@@ -156,16 +128,16 @@ class TestDashboardAPI(unittest.TestCase):
         self.assertIn("whisper_model", cfg)
 
     def test_telegram_bridge_methods(self):
-        plugin = Mock()
-        plugin.start_bot.return_value = (True, "Bot started")
-        plugin.stop_bot.return_value = (True, "Bot stopped")
-        plugin.send_test_message.return_value = (True, "Alert sent")
+        with patch("channels.telegram.telegram_channel.start_bot", return_value=(True, "Bot started")), \
+             patch("channels.telegram.telegram_channel.stop_bot", return_value=(True, "Bot stopped")), \
+             patch("channels.telegram.telegram_channel.send_test_message", return_value=(True, "Alert sent")), \
+             patch("channels.telegram.telegram_channel.set_bot_token") as mock_tok, \
+             patch("channels.telegram.telegram_channel.set_allowed_chat_id") as mock_chat:
 
-        with patch("plugins.manager.plugin_manager.get_plugin", return_value=plugin):
             cfg_res = self.api.set_telegram_config("123:TOKEN", "999888")
             self.assertTrue(cfg_res["success"])
-            plugin.set_bot_token.assert_called_once_with("123:TOKEN")
-            plugin.set_allowed_chat_id.assert_called_once_with("999888")
+            mock_tok.assert_called_once_with("123:TOKEN")
+            mock_chat.assert_called_once_with("999888")
 
             start_res = self.api.start_telegram_bot()
             self.assertTrue(start_res["success"])
