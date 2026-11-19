@@ -36,7 +36,7 @@
                 <span class="nav-sep">·</span>
                 <a href="docs.html" class="nav-item active">[ docs ]</a>
                 <span class="nav-sep">·</span>
-                <a href="plugins.html" class="nav-item">[ plugins ]</a>
+                <a href="plugins.html" class="nav-item">[ skills ]</a>
                 <span class="nav-sep">·</span>
                 <a href="about.html" class="nav-item">[ about ]</a>
                 <span class="nav-sep">·</span>
@@ -73,12 +73,12 @@
                 <aside class="docs-sidebar">
                     <div class="docs-menu-title">// NAVIGATION INDEX</div>
                     <ul class="docs-nav-list">
-                        <li><a href="#arch-overview" class="docs-nav-link active">01. Command Processing</a></li>
+                        <li><a href="#arch-overview" class="docs-nav-link active">01. 5-Tier Dispatcher</a></li>
                         <li><a href="#speech-pipeline" class="docs-nav-link">02. Speech & Normalization</a></li>
                         <li><a href="#mic-diagnostics" class="docs-nav-link">03. Microphone Setup & Testing</a></li>
                         <li><a href="#security-guard" class="docs-nav-link">04. 3-Tier Security Guard</a></li>
                         <li><a href="#performance-boost" class="docs-nav-link">05. Hardware & Performance</a></li>
-                        <li><a href="#plugin-system" class="docs-nav-link">06. Plugins & Mobile Remote</a></li>
+                        <li><a href="#plugin-system" class="docs-nav-link">06. OpenClaw Skills & Services</a></li>
                         <li><a href="#command-reference" class="docs-nav-link">07. Voice Command Reference</a></li>
                         <li><a href="#config-reference" class="docs-nav-link">08. Configuration File</a></li>
                     </ul>
@@ -91,33 +91,38 @@
                     <div class="doc-block" id="arch-overview">
                         <div class="doc-block-header">
                             <i data-lucide="cpu" class="doc-block-icon"></i>
-                            <h3 class="doc-block-title">01 // Current Command Processing Flow</h3>
+                            <h3 class="doc-block-title">01 // 5-Tier Command Dispatcher Architecture</h3>
                         </div>
                         <p class="doc-text">
-                            The current implementation does <strong>not</strong> use a three-lane command router. The executor handles pending security confirmations and greeting requests directly, routes explicit GitHub requests to the built-in GitHub plugin, and sends other non-empty requests to the Agent Brain. The Agent Brain asks LiteLLM for Python code using the configured model identifier <code>Google Gemini / Groq Cloud / Multi-Provider Auto-Failover</code>, then runs returned code in a Python subprocess.
+                            PRIVACY68 v2.0.0 implements a modular <strong>5-Tier Command Dispatcher</strong> (<code>actions/executor.py</code>). Commands pass hierarchically through low-latency deterministic fast paths before reaching the autonomous LLM reasoning engine. When general reasoning or complex automation is required, the Agent Brain dynamically injects <strong>OpenClaw Markdown Skills</strong> (<code>skills/*/SKILL.md</code>) into the system prompt to generate verified, self-correcting Python code.
                         </p>
                         <div class="doc-code-preview">
-Microphone/audio path (when voice mode is used)
-  -> speech recognition and command transcription
-  -> command executor
-       -> pending security confirmation? handle confirmation/cancellation
-       -> short greeting? return greeting
-       -> explicit GitHub request? GitHub plugin
-            -> GitHub REST API or local Git
-            -> confirmation required for pushes and GitHub writes
-       -> otherwise send request to Agent Brain
-            -> LiteLLM completion (Google Gemini / Groq Cloud / Multi-Provider Auto-Failover)
-            -> generated Python code
-            -> Python subprocess (30-second timeout)
-            -> result returned to UI
+Microphone / Audio Path (100% Click-to-Speak Hardware Isolation)
+  -> Dynamic Peak Normalization & Speech Transcription (Google Web Speech / Faster-Whisper)
+  -> Command Executor (actions/executor.py - 5-Tier Dispatcher):
+       [Tier 1] Security Confirmation Interceptor
+            -> Pending confirmations ("yes", "confirm", "proceed", "cancel")
+       [Tier 2] Built-in Conversational Responses & Greetings
+            -> Zero-latency greetings ("hi", "hello", "good morning")
+       [Tier 3] Built-in App & Native Service Launcher
+            -> Direct launch: Chrome, Brave (new tab), WhatsApp Web, Gmail Inbox (services/gmail.py)
+       [Tier 4] Zero-LLM Fast-Path Web Search & Desktop Utilities
+            -> Browser queries ("open youtube in brave", "search AI in chrome")
+            -> OS utilities: Notepad, Calculator, Explorer, Task Manager, CMD, PowerShell, Windows Terminal
+       [Tier 5] Autonomous OpenClaw Agent Brain (actions/agent_brain.py)
+            -> Dynamic injection of 11 OpenClaw Markdown Skills (skills/*/SKILL.md)
+            -> Multi-Provider LLM Orchestration (Gemini, Groq, OpenRouter, Claude, Ollama)
+            -> 3-Tier AST Security Guard (Safe, Sensitive Confirmation, Blocked)
+            -> Python Subprocess Execution (30-second watchdog + self-healing retry loop)
+            -> Telemetry & UI callback streaming to Control Center
                         </div>
                         <p class="doc-text" style="margin-top: 15px;">
-                            The model identifier includes <code>cloud</code>; do not assume requests are processed offline or that prompt text remains on the device. Generated code is executed with the application's user permissions. The website command simulator is illustrative and does not submit commands to the running application.
+                            Zero-LLM fast paths execute instantly with zero token consumption and zero internet overhead. For complex workflows, the Agent Brain generates Python code executed in an isolated subprocess with strict 3-tier security confirmation gating.
                         </p>
                         <h4 style="color: var(--accent-cyan); margin: 15px 0 8px 0; font-family: var(--font-retro);">Universal AI Brain &amp; Multi-Provider Core</h4>
                         <p class="doc-text">
                             PRIVACY68 supports <strong>any AI API key</strong> and <strong>any local offline model</strong>:
-                            <br>&bull; <strong>Free Cloud APIs:</strong> Google Gemini 3.5 Flash, Groq Cloud LPU (GPT-OSS 120B / Qwen 27B), OpenRouter (100+ free models) with automatic failover.
+                            <br>&bull; <strong>Free Cloud APIs:</strong> Google Gemini 2.5 Flash, Groq Cloud LPU (GPT-OSS 120B / Qwen 27B), OpenRouter (100+ free models) with automatic failover.
                             <br>&bull; <strong>Local Offline Models:</strong> Connects to local or remote Ollama (<code>http://127.0.0.1:11434</code>), LM Studio (<code>http://localhost:1234/v1</code>), or any OpenAI-compatible server.
                             <br>&bull; <strong>Intra-Provider Cascading:</strong> Automatically shifts to sibling models if a provider deprecates an API identifier, healing settings in real time.
                         </p>
@@ -289,20 +294,25 @@ Microphone/audio path (when voice mode is used)
                         </p>
                     </div>
 
-                    <!-- Section 06: Plugins & Remote Server -->
+                    <!-- Section 06: OpenClaw Skills & Native Services -->
                     <div class="doc-block" id="plugin-system">
                         <div class="doc-block-header">
                             <i data-lucide="puzzle" class="doc-block-icon"></i>
-                            <h3 class="doc-block-title">06 // Plugin Architecture &amp; Mobile Web Remote</h3>
+                            <h3 class="doc-block-title">06 // OpenClaw Skills Architecture &amp; Native Services</h3>
                         </div>
                         <p class="doc-text">
-                            The desktop dashboard includes a plugin registry for viewing registered integrations, changing enabled state, creating a template, installing a Python plugin file, and uninstalling user plugins. It also supports connecting a GitHub personal access token through Windows Credential Manager. External Python plugins are loaded from <code>%APPDATA%/PRIVACY68/plugins/</code>; plugin code runs with the current user's permissions.
+                            PRIVACY68 v2.0.0 replaces legacy monolithic Python plugins with the open <strong>OpenClaw Markdown Skills Standard</strong>. Skills are declarative, lightweight Markdown definitions (<code>SKILL.md</code>) stored under <code>skills/&lt;skill_name&gt;/SKILL.md</code> or in the user folder <code>%APPDATA%\PRIVACY68\skills\</code>. Each skill defines its schema, capabilities, and procedural execution guidelines, dynamically synthesized by <code>skill_registry</code> and injected into the Agent Brain system prompt.
                         </p>
-                        <p class="doc-text">Explicit GitHub requests are routed directly to the built-in GitHub integration for current-repository status/push, repository and issue/pull-request listings, and issue/pull-request creation. Pushes and create actions require confirmation. Other plugin registrations are not automatically dispatched. The plugin registry is not a sandbox or an execution boundary.</p>
-                        <p class="doc-text"><a href="plugins.html">See the built-in plugins and extension details.</a></p>
+                        <p class="doc-text">
+                            Native long-running processes and background communication channels operate as dedicated, hardened Python modules:
+                            <br>&bull; <strong>Telegram Remote Gateway (<code>channels/telegram.py</code>):</strong> Global out-of-band mobile teleoperation on 4G/5G, transcribing voice notes offline and executing remote commands.
+                            <br>&bull; <strong>Gmail Automation Controller (<code>services/gmail.py</code>):</strong> Direct multi-account browser compose and inbox routing via Google's <code>authuser</code> gateway.
+                            <br>&bull; <strong>Windows System Controller (<code>services/system.py</code>):</strong> Core hardware metrics, volume controls, screenshot capture, and power state management.
+                        </p>
+                        <p class="doc-text"><a href="plugins.html">Explore the full OpenClaw Skills &amp; Services Registry.</a></p>
                         <h4 style="color: var(--accent-cyan); margin: 15px 0 8px 0; font-family: var(--font-retro);">Mobile Web Remote (LAN) &amp; Telegram Remote Gateway (Global)</h4>
                         <p class="doc-text">
-                            Control your computer hands-free from any mobile browser on local Wi-Fi, protected by an ephemeral 6-character cryptographic pairing PIN. For global out-of-band access, enable the <strong>Telegram Remote Gateway</strong> in the Plugins drawer to send text or native voice notes (transcribed locally via Faster-Whisper), request live desktop screenshots, and inspect hardware telemetry from anywhere on 4G/5G mobile data.
+                            Control your computer hands-free from any mobile browser on local Wi-Fi (Port 8765), protected by an ephemeral 6-character cryptographic pairing PIN. For global out-of-band access, enable the <strong>Telegram Remote Gateway</strong> in the Skills &amp; Services drawer to send text or native voice notes (transcribed locally via Faster-Whisper), request live desktop screenshots, and inspect hardware telemetry from anywhere on 4G/5G mobile data.
                         </p>
                     </div>
 
@@ -312,7 +322,7 @@ Microphone/audio path (when voice mode is used)
                             <i data-lucide="terminal" class="doc-block-icon"></i>
                             <h3 class="doc-block-title">07 // Complete Voice Command Reference</h3>
                         </div>
-                        <p class="doc-text">These examples describe current dispatch behavior. GitHub requests listed below use the direct integration; most other requests go to the Agent Brain, and outcomes depend on model response, available software, and permissions.</p>
+                        <p class="doc-text">These examples describe current 5-Tier Dispatcher behavior. Fast-path shortcuts execute instantly without LLM latency; complex instructions leverage the OpenClaw Agent Brain.</p>
                         <div class="table-responsive">
                             <table class="cmd-table">
                                 <thead>
@@ -325,64 +335,59 @@ Microphone/audio path (when voice mode is used)
                                 </thead>
                                 <tbody>
                                     <tr>
-                                        <td><strong>System Control</strong></td>
-                                        <td><code>"Privacy68, mute volume"</code>, <code>"set volume 75"</code></td>
-                                        <td>Agent Brain</td>
-                                        <td>Requests are sent to the configured model; actions are not guaranteed.</td>
+                                        <td><strong>Security Confirmation</strong></td>
+                                        <td><code>"yes"</code>, <code>"confirm"</code>, <code>"proceed"</code>, <code>"cancel"</code></td>
+                                        <td>Tier 1: Security Interceptor</td>
+                                        <td>Zero-LLM instant resolution of pending security confirmation prompts.</td>
                                     </tr>
                                     <tr>
-                                        <td><strong>Display &amp; Power</strong></td>
-                                        <td><code>"Privacy68, lock screen"</code>, <code>"take screenshot"</code></td>
-                                        <td>Agent Brain</td>
-                                        <td>Generated code runs in a subprocess with the current user's permissions.</td>
+                                        <td><strong>Conversational Greetings</strong></td>
+                                        <td><code>"hi"</code>, <code>"hello"</code>, <code>"good morning"</code></td>
+                                        <td>Tier 2: Built-in Greetings</td>
+                                        <td>Sub-millisecond polite greeting response without model invocations.</td>
                                     </tr>
                                     <tr>
-                                        <td><strong>Applications</strong></td>
-                                        <td><code>"Privacy68, open Chrome"</code>, <code>"launch VS Code"</code></td>
-                                        <td>Agent Brain</td>
-                                        <td>Results depend on model output and installed applications.</td>
+                                        <td><strong>Direct App Launching</strong></td>
+                                        <td><code>"open Chrome"</code>, <code>"open a new tab in Brave"</code></td>
+                                        <td>Tier 3: Built-in App Launcher</td>
+                                        <td>Dispatches directly to browser binaries or system defaults.</td>
                                     </tr>
                                     <tr>
-                                        <td><strong>Web Navigation</strong></td>
-                                        <td><code>"Privacy68, open YouTube"</code>, <code>"open GitHub"</code></td>
-                                        <td>Agent Brain</td>
-                                        <td>Requests may involve network access if generated code performs it.</td>
+                                        <td><strong>Native Gmail Service</strong></td>
+                                        <td><code>"check Gmail inbox"</code>, <code>"open Gmail"</code></td>
+                                        <td>Tier 3 / Native Gmail Service</td>
+                                        <td>Routes through <code>services.gmail</code> with multi-account profile support.</td>
                                     </tr>
                                     <tr>
-                                        <td><strong>Windows Settings</strong></td>
-                                        <td><code>"Privacy68, open bluetooth"</code>, <code>"open wifi settings"</code></td>
-                                        <td>Agent Brain</td>
-                                        <td>No separate deterministic settings lane is implemented.</td>
+                                        <td><strong>Messaging &amp; Chat</strong></td>
+                                        <td><code>"open WhatsApp"</code>, <code>"send WhatsApp message"</code></td>
+                                        <td>Tier 3 / OpenClaw WhatsApp Skill</td>
+                                        <td>Tier 3 fast-path opens WhatsApp Web; messaging flows inject OpenClaw skill.</td>
                                     </tr>
                                     <tr>
-                                        <td><strong>Compound Browser</strong></td>
-                                        <td><code>"Privacy68, play Believer on YouTube"</code></td>
-                                        <td>Agent Brain</td>
-                                        <td>The website demo does not execute this example.</td>
+                                        <td><strong>Fast-Path Browser Navigation</strong></td>
+                                        <td><code>"open YouTube in Brave"</code>, <code>"search AI in Chrome"</code></td>
+                                        <td>Tier 4: Fast-Path Web Utilities</td>
+                                        <td>Instantly launches the requested browser and executes the search URL.</td>
                                     </tr>
                                     <tr>
-                                        <td><strong>Messaging</strong></td>
-                                        <td><code>"Privacy68, send WhatsApp message to Mom"</code></td>
-                                        <td>Agent Brain</td>
-                                        <td>The built-in plugin code is available, but the executor does not route commands directly to it.</td>
+                                        <td><strong>Desktop System Utilities</strong></td>
+                                        <td><code>"open notepad"</code>, <code>"launch calculator"</code>, <code>"task manager"</code></td>
+                                        <td>Tier 4: System App Launchers</td>
+                                        <td>Fast-path execution of native Windows tools (calc, notepad, taskmgr, wt).</td>
                                     </tr>
                                     <tr>
-                                        <td><strong>Live Web Search</strong></td>
-                                        <td><code>"Privacy68, search latest space discoveries"</code></td>
-                                        <td>Agent Brain</td>
-                                        <td>Any live search depends on model-generated code and may use the network.</td>
+                                        <td><strong>Developer &amp; Git Automation</strong></td>
+                                        <td><code>"check Git status"</code>, <code>"push to branch feat/demo"</code></td>
+                                        <td>Tier 5: OpenClaw Git Skill</td>
+                                        <td>Agent Brain injects <code>skills/git/SKILL.md</code>; requires confirmation for git push.</td>
                                     </tr>
                                     <tr>
-                                        <td><strong>General AI Reasoning</strong></td>
-                                        <td><code>"Privacy68, explain quantum computing simply"</code></td>
-                                        <td>Agent Brain</td>
-                                        <td>Current model identifier: <code>Google Gemini / Groq Cloud / Multi-Provider Auto-Failover</code>.</td>
+                                        <td><strong>Compound Automation &amp; AI</strong></td>
+                                        <td><code>"summarize my system specs and capture screenshot"</code></td>
+                                        <td>Tier 5: OpenClaw Agent Brain</td>
+                                        <td>Synthesizes multi-skill Python automation with 3-tier security validation.</td>
                                     </tr>
-                                    <tr>
-                                        <td><strong>GitHub</strong></td>
-                                        <td><code>"check GitHub status"</code>, <code>"push my code to GitHub branch feat/demo"</code>, <code>"list repositories"</code>, <code>"show issues"</code></td>
-                                        <td>GitHub plugin</td>
-                                        <td>Connect a fine-grained token in the dashboard. Pushes and GitHub write actions require confirmation; pushes do not stage or commit files.</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -444,7 +449,7 @@ SUBPROCESS_TIMEOUT   = 30.0           # Max script execution timeout
                 <span class="telemetry-item"><span class="dot-indicator"></span><span class="t-label">SYS:</span>
                     ONLINE</span>
                 <span class="telemetry-sep">·</span>
-                <span class="telemetry-item"><span class="t-label">DOCS:</span> v1.6.5</span>
+                <span class="telemetry-item"><span class="t-label">DOCS:</span> v2.0.0</span>
             </div>
         </footer>
 

@@ -5,13 +5,30 @@
 [![Contributing](https://img.shields.io/badge/contributing-Guide-orange.svg)](CONTRIBUTING.md)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-3776AB.svg?logo=python&logoColor=white)](https://www.python.org/)
 [![Platform: Windows 10/11](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-0078D6.svg?logo=windows&logoColor=white)](#)
-[![Tests: 144 Passed](https://img.shields.io/badge/tests-144%20passed-brightgreen.svg)](#unit-testing)
-[![Version: 1.6.5](https://img.shields.io/badge/version-1.6.5-blue.svg)](https://github.com/PRN-6/PRIVACY68/releases/tag/v1.6.5)
+[![Tests: 119 Passed](https://img.shields.io/badge/tests-119%20passed-brightgreen.svg)](#unit-testing)
+[![Version: 2.0.0](https://img.shields.io/badge/version-2.0.0-blue.svg)](https://github.com/PRN-6/PRIVACY68/releases/tag/v2.0.0)
 
 PRIVACY68 is a 100% private Windows desktop AI assistant featuring on-demand Click-to-Speak, a modern minimalist Control Center, universal multi-provider AI brain orchestration, and agentic OS automation. It pairs zero-key speech recognition (Google Web Speech) with an Agent Brain powered by universal AI APIs (Google Gemini, Groq LPU, OpenRouter, Anthropic Claude, OpenAI, or local Ollama / LM Studio) to execute complex desktop tasks safely through generated, self-correcting Python scripts.
 
-**Latest Windows Release:** [Download PRIVACY68 Installer v1.6.5 from GitHub Releases](https://github.com/PRN-6/PRIVACY68/releases/tag/v1.6.5)  
+**Latest Windows Release:** [Download PRIVACY68 Installer v2.0.0 from GitHub Releases](https://github.com/PRN-6/PRIVACY68/releases/tag/v2.0.0)  
 **Universal LLM Guide:** [Read Complete Guide to Connecting Any Cloud or Local LLM](docs/UNIVERSAL_LLM_GUIDE.md)
+
+---
+
+## What's New in v2.0.0 (OpenClaw Edition)
+
+- **OpenClaw Markdown Skills Standard**: Retired monolithic Python plugins in favor of 11 modular, declarative OpenClaw Markdown Skills (`SKILL.md`). The Agent Brain indexes these dynamically via `skills.skill_registry` and injects exact CLI syntax and recipes directly into the system prompt with zero Python class overhead.
+- **11 Built-in Core Skills**: Includes `git`, `powershell`, `browser_automation`, `whatsapp_web`, `media_control`, `desktop_automation`, `file_manager`, `system_info`, `screenshot`, `security_scanner`, and `workspace_cleaner`. Extensible simply by dropping a new `SKILL.md` into `%APPDATA%\PRIVACY68\skills\<skill_name>\`.
+- **Decoupled Native Services & Channels**: Clean architectural separation for persistent services: `channels/telegram.py` (Telegram Remote Gateway), `services/gmail.py` (multi-account browser automation), and `services/system.py` (Windows audio, display, power, and metrics).
+- **5-Tier Command Dispatcher**: Strict hierarchical routing prioritizing zero-LLM deterministic paths:
+  - **Tier 1:** Security Confirmation Interceptor (`yes`, `confirm`, `cancel`, `stop`)
+  - **Tier 2:** Built-in Conversational Responses (`hi`, `hello`, `good morning`)
+  - **Tier 3:** Built-in App & Native Service Launcher (Chrome, Brave, WhatsApp Web, Gmail Inbox)
+  - **Tier 4:** Zero-LLM Fast-Path Browser Search & Desktop Launchers (queries in preferred browser, calc, notepad, taskmgr, cmd, powershell, wt)
+  - **Tier 5:** Autonomous OpenClaw Agent Brain (dynamic markdown skill synthesis, multi-provider LLM inference, 3-tier security guard, 30s subprocess watchdog, self-healing retry loop)
+- **Windows Credential Manager Integration**: Seamless encrypted storage of GitHub personal access tokens, Telegram bot keys, and API tokens using Windows DPAPI via `utils.credentials`.
+- **Control Center Skills & Services Dashboard**: Completely revamped dashboard UI displaying active OpenClaw Skills and Native Services with live toggles, configuration drawers, and one-click skills folder access.
+- **119 Unit Tests Passing (100% Pass Rate)**: Comprehensive test suite validating the entire 5-tier dispatch chain, skill registry synthesis, native channels and services, and dashboard bridge.
 
 ---
 
@@ -60,21 +77,26 @@ PRIVACY68 is a 100% private Windows desktop AI assistant featuring on-demand Cli
 
 ## Command Routing Architecture
 
-The assistant uses deterministic shortcut dispatching alongside an LLM-powered Agent Brain:
+The assistant uses a deterministic 5-Tier Dispatcher with fast-path execution alongside an OpenClaw LLM-powered Agent Brain:
 
 ```text
-Voice/Text Command
-  -> Command Executor (actions/executor.py)
-       ├── Pending Security Confirmation ("yes", "confirm", "cancel")
-       ├── Built-in Greeting Shortcuts ("hi", "hello", "good morning")
-       ├── Direct App Launch Shortcuts (Chrome, Brave, WhatsApp) -> Native Plugins
-       ├── GitHub Integration Plugin -> GitHub REST API & local Git operations
-       ├── Skill Crystallizer -> 0ms fast-path execution of cached automation
-       └── Agent Brain (actions/agent_brain.py)
-            ├── Multi-Provider AI Routing (Gemini / Groq / Claude / OpenAI / Ollama)
+Voice/Text Command (100% Click-to-Speak Hardware Isolation)
+  -> Command Executor (actions/executor.py - 5-Tier Dispatcher)
+       ├── [Tier 1] Security Confirmation Interceptor ("yes", "confirm", "cancel", "stop")
+       ├── [Tier 2] Built-in Conversational Responses ("hi", "hello", "good morning")
+       ├── [Tier 3] Built-in App & Native Service Launcher
+       │    ├── Chrome / Brave (new tab / window)
+       │    ├── WhatsApp Web
+       │    └── Native Gmail Inbox (services/gmail.py)
+       ├── [Tier 4] Zero-LLM Fast-Path Browser Search & Desktop Launchers
+       │    ├── Browser Queries ("open youtube in brave", "search AI in chrome")
+       │    └── Windows Utilities (Notepad, Calculator, Explorer, Taskmgr, CMD, PowerShell, Terminal)
+       └── [Tier 5] Autonomous OpenClaw Agent Brain (actions/agent_brain.py)
+            ├── Dynamic Skill Synthesis (11 skills/SKILL.md loaded via skill_registry)
+            ├── Multi-Provider AI Routing (Gemini / Groq / OpenRouter / Claude / OpenAI / Ollama)
             ├── Automatic Failover on Rate Limits (Groq 429 -> Gemini Fallback)
-            ├── Dynamic Windows Path Resolution (OneDrive/Desktop/Downloads)
-            ├── Isolated Code Execution with 30-Second Watchdog
+            ├── 3-Tier AST Security Guard (Safe Level 1, Sensitive Level 2, Critical Level 3)
+            ├── Isolated Python Code Subprocess with 30-Second Watchdog
             ├── Self-Healing Error Correction Loop (up to 2 retry attempts)
             └── Formatted Results & UI Telemetry to Control Center & Floating HUD
 ```
@@ -138,12 +160,14 @@ Upon restart, PRIVACY68 automatically registers these DLLs and switches the audi
 ## Core Features
 
 - **Push-to-Talk Privacy**: Zero continuous microphone streaming. Audio capture triggers exclusively when you click 'Click to Speak', eliminating background surveillance.
+- **OpenClaw Markdown Skills**: 11 modular, declarative agent skills (`git`, `powershell`, `browser_automation`, `whatsapp_web`, `media_control`, `desktop_automation`, `file_manager`, `system_info`, `screenshot`, `security_scanner`, `workspace_cleaner`) with dynamic prompt synthesis and user extensibility via `%APPDATA%\PRIVACY68\skills\`.
+- **Dedicated Native Services**: Hardened background channels and controllers for Telegram Remote Gateway (`channels/telegram.py`), Gmail Automation (`services/gmail.py`), and Windows System Controller (`services/system.py`).
+- **5-Tier Command Dispatcher**: Zero-LLM fast paths for greetings, app launches, browser navigation, and desktop utilities before escalating to autonomous reasoning.
 - **Agentic Code Execution**: Translates user intent into verified Python automation with an integrated 30-second watchdog timer and automatic self-healing.
-- **Minimalist Control Center**: Clean pywebview interface for managing runtime status, testing microphones, reviewing LLM output, configuring AI keys, and managing plugins.
+- **Minimalist Control Center**: Clean pywebview interface for managing runtime status, testing microphones, reviewing LLM output, configuring AI keys, and managing skills & services.
 - **Mobile Web Remote**: Access and control your assistant from any device on your local Wi-Fi network (Port 8765) with live status and quick action tiles.
 - **3-Tier Security Guard**: Strict permission gating (Safe Level 1 auto-execute, Sensitive Level 2 confirmation prompt, Critical Level 3 blocked).
-- **GitHub Integration**: Authenticated repository status, issue/PR creation, and branch pushes via Windows Credential Manager.
-- **Built-in Plugins**: 7 native integrations: Windows System, Google Chrome, Brave Browser, WhatsApp, Gmail, GitHub, and Telegram Remote Gateway.
+- **Windows Credential Manager**: Encrypted storage for GitHub PAT tokens, Telegram bot keys, and API secrets using Windows DPAPI.
 - **Dynamic Path Resolution**: Dynamically resolves active OneDrive, Desktop, Downloads, and Documents paths.
 
 ---
@@ -183,13 +207,13 @@ Building a standalone distributable installer uses PyInstaller and Inno Setup 6:
 .\build.bat
 ```
 
-This compiles `PRIVACY68.exe` under `dist\PRIVACY68\` and packages an Inno Setup installer under `installer\PRIVACY68-Setup-v1.6.5.exe`.
+This compiles `PRIVACY68.exe` under `dist\PRIVACY68\` and packages an Inno Setup installer under `installer\PRIVACY68-Setup-v2.0.0.exe`.
 
 ---
 
 ## Unit Testing
 
-Run the full automated test suite (144 unit tests covering agent brain failover, execution self-healing, command executor, Telegram Remote Gateway, Faster-Whisper offline transcription, Gmail automation, security guard, GitHub integration, push-to-talk overlay, and dashboard bridge):
+Run the full automated test suite (119 unit tests covering 5-tier dispatching, OpenClaw skill registry, agent brain failover, execution self-healing, Telegram Remote Gateway, Faster-Whisper offline transcription, Gmail automation, security guard, push-to-talk overlay, and dashboard bridge):
 
 ```powershell
 python -m unittest discover tests -v
@@ -201,7 +225,7 @@ python -m unittest discover tests -v
 
 - [Project Documentation Portal](website/docs.html)
 - [About & Architecture](website/about.html)
-- [Plugin Architecture Guide](website/plugins.html)
+- [OpenClaw Skills & Services Registry](website/plugins.html)
 - [Security Policy](SECURITY.md)
 - [Contributing Guidelines](CONTRIBUTING.md)
 - [License](LICENSE)
