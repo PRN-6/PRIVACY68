@@ -18,5 +18,5 @@ Welcome to the official, complete documentation for **PRIVACY68** — an autonom
 
 ---
 
-*PRIVACY68 Engineering Team // Documentation Version 1.7.1*
+*PRIVACY68 Engineering Team // Documentation Version 1.7.2*
 
