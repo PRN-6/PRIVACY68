@@ -288,7 +288,9 @@ class PushToTalkOverlay:
             )
             if isinstance(result, dict):
                 success = result.get("success", True)
-                msg = result.get("message") or ("Completed" if success else "Action failed")
+                out_str = (result.get("output") or "").strip()
+                msg_str = (result.get("message") or "").strip()
+                msg = out_str if out_str else (msg_str or ("Completed" if success else "Action failed"))
         except Exception as exec_err:
             logger.error(f"Error executing typed command: {exec_err}")
             success = False
@@ -476,7 +478,9 @@ class PushToTalkOverlay:
             )
             if isinstance(result, dict):
                 success = result.get("success", True)
-                msg = result.get("message") or ("Completed" if success else "Action failed")
+                out_str = (result.get("output") or "").strip()
+                msg_str = (result.get("message") or "").strip()
+                msg = out_str if out_str else (msg_str or ("Completed" if success else "Action failed"))
         except Exception as exec_err:
             success = False
             msg = str(exec_err)
@@ -497,7 +501,10 @@ class PushToTalkOverlay:
             self.mic_btn.config(text=icon, bg=color, fg="#ffffff")
             self.dot_label.config(fg=color)
             self.status_title.config(text=title, fg=color)
-            self.status_subtitle.config(text=subtitle, fg="#e2e8f0")
+            display_sub = subtitle.strip()
+            if len(display_sub) > 200:
+                display_sub = display_sub[:197] + "..."
+            self.status_subtitle.config(text=display_sub, fg="#e2e8f0")
 
             # Auto-reset to ready state after 4 seconds
             self.window.after(4200, self._reset_to_idle)

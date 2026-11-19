@@ -386,9 +386,12 @@ class AgentBrain:
                     self.last_code = matched_skill.get("code", "")
                     self.last_reasoning = f"Executed learned skill: {matched_skill['name']} (0ms)"
                     skill_manager.record_execution(matched_skill["id"], success=True)
+                    stdout_clean = (skill_res.get("output") or "").strip()
+                    display_msg = stdout_clean if stdout_clean else f"Executed learned skill: {matched_skill['name']}."
+                    logger.info(f"[SKILL RECALL OUTPUT]\n{display_msg}")
                     return {
                         "success": True,
-                        "message": f"Executed learned skill: {matched_skill['name']}",
+                        "message": display_msg,
                         "output": skill_res.get("output", ""),
                         "method": "learned_skill",
                         "tool": "learned_skill",
