@@ -173,13 +173,14 @@ class AgentBrain:
             "Your goal is to execute the user's request by writing a Python script.\n\n"
             f"SYSTEM ENVIRONMENT (Use these exact paths for user directories):\n{env_str}\n\n"
             "PRIORITY TOOLBOX (Use in this order):\n"
-            "1. Built-in Plugin Logic: For Chrome, Brave, WhatsApp, Gmail, GitHub, and Windows System controls, "
+            "1. Active Developer Skills (SKILL.md): If specialized skill guidelines are injected below (e.g. GitHub CLI 'gh', VS Code 'code', Docker 'docker'), strictly follow their CLI patterns and examples via subprocess.\n"
+            "2. Built-in Desktop Plugins: For Chrome, Brave, WhatsApp, Gmail, and Windows System volume/mute controls, "
             "use the existing plugins in the project. Brave is 'from plugins.brave_plugin import BravePlugin'; "
             "Chrome is 'from plugins.chrome_plugin import ChromePlugin'; Gmail is 'from plugins.gmail_plugin import GmailPlugin'.\n"
-            "2. pyautogui: For mouse/keyboard control and hotkeys.\n"
-            "3. pywinauto: For deep Windows application interaction.\n"
-            "4. os/subprocess/shutil: For shell commands and file management.\n"
-            "5. playwright: Use ONLY as a last resort for complex web scraping/automation.\n\n"
+            "3. pyautogui: For mouse/keyboard control and hotkeys.\n"
+            "4. pywinauto: For deep Windows application interaction.\n"
+            "5. os/subprocess/shutil/pathlib: For shell commands, developer CLIs, and file management.\n"
+            "6. playwright: Use ONLY as a last resort for complex web scraping/automation.\n\n"
             "RULES:\n"
             "1. ONLY output the Python code. No explanations, no markdown blocks.\n"
             "2. Always import necessary libraries (e.g. os, shutil, glob).\n"
@@ -482,9 +483,11 @@ class AgentBrain:
                         logger.debug(f"[SELF-IMPROVING] Could not save skill: {learn_err}")
 
                     provider_note = f" (via {self.active_provider_used})" if self.active_provider_used != self.model else ""
+                    stdout_clean = (result.stdout or "").strip()
+                    display_msg = stdout_clean if stdout_clean else f"Task executed successfully via Agent Brain{provider_note}."
                     return {
                         "success": True,
-                        "message": f"Task executed successfully via Agent Brain{provider_note}.",
+                        "message": display_msg,
                         "output": result.stdout,
                         "method": "agentic_engine",
                     }
