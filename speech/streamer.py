@@ -15,12 +15,6 @@ import sounddevice as sd
 
 import config
 
-try:
-    from utils.cuda_manager import register_cuda_dlls
-    register_cuda_dlls()
-except Exception:
-    pass
-
 # Patch PyAV av.open to gracefully handle versions where metadata_errors was removed
 try:
     import av

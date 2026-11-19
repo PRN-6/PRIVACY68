@@ -50,15 +50,6 @@ logger = logging.getLogger("PRIVACY68.Core")
 logger.info(f"PRIVACY68 starting — frozen={IS_FROZEN}, base={BASE_DIR}")
 logger.info(f"Log file: {LOG_FILE}")
 
-# CUDA registration is optional and must happen after logging is ready: in the
-# windowed executable, an exception here otherwise prevents every app mode
-# from starting and leaves no diagnostic log.
-try:
-    from utils.cuda_manager import register_cuda_dlls
-    register_cuda_dlls()
-except Exception:
-    logger.exception("Could not register optional CUDA runtime DLL paths; continuing without CUDA setup.")
-
 import config
 
 

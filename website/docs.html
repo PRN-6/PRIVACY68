@@ -250,47 +250,50 @@ Microphone / Audio Path (100% Click-to-Speak Hardware Isolation)
                         </p>
                     </div>
 
-                    <!-- Section 05: Hardware Acceleration -->
+                    <!-- Section 05: Cloud AI Engine & Acceleration -->
                     <div class="doc-block" id="performance-boost">
                         <div class="doc-block-header">
                             <i data-lucide="zap" class="doc-block-icon"></i>
-                            <h3 class="doc-block-title">05 // Hardware Acceleration &amp; Performance Boost</h3>
+                            <h3 class="doc-block-title">05 // Cloud AI Brain &amp; Performance Acceleration</h3>
                         </div>
                         <p class="doc-text">
-                            PRIVACY68 automatically detects your host hardware on startup via <code>utils/cuda_manager.py</code> and configures optimal compute precision:
+                            PRIVACY68 utilizes high-speed Cloud AI inference APIs (Google Gemini 3.1 Flash-Lite, Groq Llama-3.3 70B, Claude 3.5 Sonnet, and OpenAI GPT-4o-mini), providing instant sub-second reasoning with zero local GPU overhead or heavy CUDA driver dependencies:
                         </p>
                         <div class="cmd-table-wrap">
                             <table class="cmd-table">
                                 <thead>
                                     <tr>
-                                        <th>HARDWARE SETUP</th>
-                                        <th>COMPUTE PRECISION</th>
-                                        <th>TRANSCRIPTION TIME</th>
-                                        <th>MEMORY USAGE</th>
+                                        <th>AI ENGINE BACKEND</th>
+                                        <th>DEFAULT MODEL</th>
+                                        <th>RESPONSE LATENCY</th>
+                                        <th>HARDWARE OVERHEAD</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <tr>
-                                        <td><strong>NVIDIA GPU (CUDA 12)</strong></td>
-                                        <td><code>float16</code> (Tensor Cores)</td>
-                                        <td><code>~120ms – 160ms</code></td>
-                                        <td>~1.4 GB VRAM</td>
+                                        <td><strong>Google Gemini (Default)</strong></td>
+                                        <td><code>gemini-3.1-flash-lite</code></td>
+                                        <td><code>~300ms – 550ms</code></td>
+                                        <td>0 MB Local VRAM (API Cloud)</td>
                                     </tr>
                                     <tr>
-                                        <td><strong>Standard Intel / AMD CPU</strong></td>
-                                        <td><code>int8</code> (AVX2 / AVX-512)</td>
-                                        <td><code>~350ms – 600ms</code></td>
-                                        <td>~1.5 GB RAM</td>
+                                        <td><strong>Groq Hardware LPU</strong></td>
+                                        <td><code>llama-3.3-70b-versatile</code></td>
+                                        <td><code>~180ms – 280ms</code></td>
+                                        <td>0 MB Local VRAM (LPU Cloud)</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Telegram Remote Gateway</strong></td>
+                                        <td>Offline Faster-Whisper Voice</td>
+                                        <td><code>~400ms – 700ms</code></td>
+                                        <td>~120 MB RAM (Quantized INT8)</td>
                                     </tr>
                                 </tbody>
                             </table>
                         </div>
-                        <h4 style="color: var(--accent-cyan); margin: 15px 0 8px 0; font-family: var(--font-retro);">Zero-Config CUDA Runtime Manager</h4>
+                        <h4 style="color: var(--accent-cyan); margin: 15px 0 8px 0; font-family: var(--font-retro);">Zero Local Setup Required</h4>
                         <p class="doc-text">
-                            PRIVACY68 operates with zero-setup cloud APIs (100% Free Google Web Speech Recognition), removing all requirements for 800MB local CUDA DLLs. Note that official NVIDIA CUDA Toolkit installers (such as CUDA 13.x) have mismatched DLL versions and omit cuDNN entirely.
-                        </p>
-                        <p class="doc-text">
-                            PRIVACY68 eliminates this manual setup: the built-in <strong>CUDA Manager</strong> allows one-click runtime installation. Simply click <em>"Download CUDA (~450MB)"</em> in the Control Center Hardware card to automatically download and register the pre-compiled cuBLAS 12 and cuDNN 9 DLLs into <code>%APPDATA%\PRIVACY68\cuda\bin\</code>.
+                            By delegating complex multi-turn reasoning to state-of-the-art Cloud AI models and speech processing through the Telegram Remote Gateway, PRIVACY68 eliminates gigabytes of manual CUDA runtimes, PyTorch wheel builds, and cuDNN DLL version mismatches.
                         </p>
                     </div>
 

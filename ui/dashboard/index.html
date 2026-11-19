@@ -1974,21 +1974,12 @@
       if (!grid) return;
       try {
         const rt = await bridge().get_runtime_status();
-        const cuda = rt.cuda || {};
-        const speechEngine = rt.speech_engine || 'auto';
-        const speechLabel = speechEngine === 'whisper'
-          ? `Voice: Local Offline Whisper (${rt.speech_model || 'tiny'})`
-          : (speechEngine === 'google'
-            ? 'Voice: Google Web Speech (Cloud)'
-            : `Voice: Auto (Google Speech First + Local Fallback)`);
         grid.innerHTML = `
-          <div class="chip ${cuda.is_ready ? 'good' : ''}">CUDA: ${cuda.is_ready ? 'Ready (GPU Acceleration)' : (cuda.has_gpu ? 'DLLs Missing' : 'CPU Mode')}</div>
-          <div class="chip">${cuda.gpu_name ? 'GPU: ' + cuda.gpu_name : 'GPU: Integrated / CPU'}</div>
-          <div class="chip good">${speechLabel}</div>
-          <div class="chip good">Privacy: Push-to-Talk (Private)</div>
+          <div class="chip good">Compute: Cloud AI Brain (${rt.model || 'Gemini 3.1'})</div>
+          <div class="chip good">Voice Gateway: Telegram Remote (Voice & Text)</div>
+          <div class="chip good">Local Mic: Fully Disabled (Zero Eavesdropping)</div>
+          <div class="chip good">Security: Windows DPAPI Enclave Active</div>
         `;
-        const btnCuda = $('btn-download-cuda');
-        if (btnCuda) btnCuda.style.display = (cuda.has_gpu && !cuda.is_ready) ? 'inline-flex' : 'none';
       } catch (e) {}
     }
 

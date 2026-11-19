@@ -50,20 +50,6 @@ if os.path.isfile(_primary_env):
 else:
     load_dotenv()
 
-try:
-    from utils.cuda_manager import register_cuda_dlls, get_cuda_status
-    register_cuda_dlls()
-    _status = get_cuda_status()
-    _HAS_CUDA = _status["is_ready"]
-except Exception:
-    def _cuda_available() -> bool:
-        try:
-            ctypes.WinDLL("nvcuda.dll")
-            return True
-        except OSError:
-            return False
-    _HAS_CUDA = _cuda_available()
-
 
 # Application Version
 APP_VERSION = "1.6.5"

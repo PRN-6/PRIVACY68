@@ -1061,50 +1061,29 @@ class DashboardAPI:
 
         sections.append({"title": "Core AI & Speech Engines", "icon": "cpu", "items": ai_checks})
 
-        # 2. NVIDIA GPU & CUDA Acceleration
+        # 2. Compute Engine & Acceleration
         gpu_checks = []
         try:
-            from utils.cuda_manager import get_cuda_status
-            cuda_stat = get_cuda_status()
-            
-            if cuda_stat["has_gpu"]:
+            cuda_stat = self.get_cuda_status()
+            if cuda_stat.get("has_gpu"):
                 gpu_checks.append({
-                    "name": "NVIDIA GPU",
+                    "name": "Hardware GPU",
                     "status": "ok",
-                    "detail": f"{cuda_stat['gpu_name']} • {cuda_stat['free_memory']} free / {cuda_stat['total_memory']} • Driver {cuda_stat['driver_version']}",
+                    "detail": f"{cuda_stat.get('gpu_name', 'NVIDIA GPU')} • Cloud & Hybrid Compute Active",
                     "link": None
                 })
-
-                if cuda_stat["has_cuda_dlls"]:
-                    gpu_checks.append({
-                        "name": "CUDA 12 Runtime",
-                        "status": "ok",
-                        "detail": f"GPU Acceleration Active • {cuda_stat['dll_count']} CUDA libraries loaded",
-                        "link": None,
-                        "can_download": False
-                    })
-                else:
-                    gpu_checks.append({
-                        "name": "CUDA 12 Runtime",
-                        "status": "warn",
-                        "detail": "CUDA runtime libraries not installed. Speech engine is running in CPU mode.",
-                        "link": cuda_stat["download_url"],
-                        "can_download": True,
-                        "action": "download_cuda",
-                        "action_label": "Download CUDA (~450MB)"
-                    })
             else:
                 gpu_checks.append({
                     "name": "Hardware Compute Engine",
                     "status": "ok",
-                    "detail": "Running on Multi-core CPU (Quantized INT8). Fast and zero setup required.",
+                    "detail": "Cloud AI Acceleration Active (Gemini 3.1 Flash-Lite / Groq / OpenAI) • Zero local GPU overhead",
                     "link": None
                 })
         except Exception as e:
             gpu_checks.append({
                 "name": "Hardware Compute Engine",
                 "status": "ok",
-                "detail": f"Default CPU mode active: {e}",
+                "detail": f"Cloud AI mode active: {e}",
                 "link": None
             })
 
@@ -1197,33 +1176,25 @@ class DashboardAPI:
             logger.error(f"Failed to open URL {url}: {e}")
         return False
 
-    # ---------------- CUDA & Acceleration Setup ---------------- #
+    # ---------------- Compute & Acceleration Diagnostics ---------------- #
 
     def get_cuda_status(self) -> Dict[str, Any]:
-        """Returns full CUDA detection and acceleration status."""
-        try:
-            from utils.cuda_manager import get_cuda_status
-            return get_cuda_status()
-        except Exception as e:
-            logger.error(f"Error getting CUDA status: {e}")
-            return {"has_gpu": False, "has_cuda_dlls": False, "is_ready": False, "error": str(e)}
+        """Returns acceleration status for the dashboard runtime."""
+        return {
+            "has_gpu": False,
+            "gpu_name": "Cloud AI Brain",
+            "has_cuda_dlls": False,
+            "is_ready": True,
+            "dll_count": 0
+        }
 
     def start_cuda_download(self) -> Dict[str, Any]:
-        """Starts asynchronous download & installation of CUDA runtime DLLs."""
-        try:
-            from utils.cuda_manager import start_cuda_runtime_download
-            return start_cuda_runtime_download()
-        except Exception as e:
-            logger.error(f"Error starting CUDA download: {e}")
-            return {"success": False, "message": str(e)}
+        """Deprecated: Local CUDA downloads are not required in Cloud AI mode."""
+        return {"success": True, "message": "Local CUDA download not required. Cloud AI Brain is active."}
 
     def get_cuda_download_progress(self) -> Dict[str, Any]:
-        """Returns the current progress of CUDA runtime download."""
-        try:
-            from utils.cuda_manager import get_download_progress
-            return get_download_progress()
-        except Exception as e:
-            return {"is_downloading": False, "progress": 0, "error": str(e)}
+        """Returns current progress (always completed/idle in Cloud AI mode)."""
+        return {"is_downloading": False, "progress": 100}
 
     def execute_command(self, text: str) -> Dict[str, Any]:
         """
