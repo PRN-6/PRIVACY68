@@ -39,7 +39,7 @@ class SystemTray:
         menu = pystray.Menu(
             pystray.MenuItem(f"🤖 Status: {self.current_status}", lambda: None, enabled=False),
             pystray.Menu.SEPARATOR,
-            pystray.MenuItem("🎙️ Voice & Text Command (Push to Talk)", self._on_voice_command),
+            pystray.MenuItem("⌨️ Run Command (Quick Command Bar)", self._on_voice_command),
             pystray.MenuItem("📊 Open Dashboard", self._on_open_dashboard),
             pystray.Menu.SEPARATOR,
             pystray.MenuItem("🚪 Exit PRIVACY68", self._on_exit)

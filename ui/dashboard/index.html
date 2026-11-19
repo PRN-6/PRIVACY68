@@ -111,31 +111,26 @@
       border-left: 3px solid var(--accent);
     }
 
-    /* Push-to-Talk Button */
-    .ptt-btn {
+    /* Quick Command Button */
+    .quick-cmd-btn {
       display: flex;
       align-items: center;
       justify-content: center;
+      gap: 8px;
       padding: 10px 14px;
       border-radius: var(--radius-sm);
-      background: #10b981;
+      background: var(--blue, #3b82f6);
       color: white;
       font-size: 12px;
       font-weight: 700;
       border: none;
       cursor: pointer;
       transition: all 0.15s ease;
+      margin-bottom: 12px;
     }
-    .ptt-btn:hover { background: #059669; }
-    .ptt-btn.recording {
-      background: #e53935;
-      animation: pulse 1.2s infinite;
-    }
-
-    @keyframes pulse {
-      0% { opacity: 1; }
-      50% { opacity: 0.85; }
-      100% { opacity: 1; }
+    .quick-cmd-btn:hover {
+      background: #2563eb;
+      transform: translateY(-1px);
     }
 
     /* Sidebar Footer Status Card */
@@ -527,15 +522,16 @@
       </nav>
 
       <!-- Push To Talk Microphone Button -->
-      <button class="ptt-btn" id="ptt-speak-btn">
-        <span id="ptt-label">Click to Speak</span>
+      <!-- Quick Focus Command Button -->
+      <button class="quick-cmd-btn" id="quick-cmd-btn" onclick="focusConsoleInput()">
+        <span>⌨️ Type Command</span>
       </button>
 
       <!-- Bottom Mini Status Card -->
       <div class="sidebar-status">
         <div class="status-indicator">
           <span class="status-dot green"></span>
-          <span>Voice: Push-to-Talk (Private)</span>
+          <span>Input: Type & Run</span>
         </div>
         <div class="status-indicator">
           <span class="status-dot blue"></span>
@@ -568,8 +564,8 @@
       <!-- TAB 1: Live Console -->
       <section class="tab-view active" id="tab-console">
         <div style="display:flex; flex-wrap:wrap; gap:8px;">
-          <span class="chip good" id="active-speech-badge">Speech: Auto (Offline Whisper + Cloud)</span>
-          <span class="chip good">100% Private (No Background Listening)</span>
+          <span class="chip good">Type & Run Console</span>
+          <span class="chip good">100% Private (Zero Background Listening)</span>
           <span class="chip" id="active-model-badge">Model: Loading...</span>
         </div>
 
@@ -577,13 +573,13 @@
         <div class="console-feed" id="console-feed">
           <div class="feed-card system">
             <div class="feed-header">
-              <span>PRIVACY68 Ready (100% Private)</span>
+              <span>PRIVACY68 Ready (Type & Run)</span>
               <span>SYSTEM</span>
             </div>
             <div class="feed-body">PRIVACY68 Control Center initialized.
-• Click "Click to Speak" in the sidebar to speak a command hands-free.
-• Or type any command below (e.g. "open chrome and search for quantum computing", "organize my downloads", or "take a screenshot").
-• Or select any Quick OS Action below for instant execution.</div>
+• Type any natural language command below and press Enter (e.g. "Create a project named my_demo_app on Desktop, create a virtual environment, and open it in Antigravity").
+• Or select any Quick OS Action below for instant 0ms execution.
+• Or teleoperate remotely via Telegram Gateway.</div>
           </div>
         </div>
 
@@ -607,8 +603,8 @@
 
         <!-- Command Input Row -->
         <div class="cmd-bar">
-          <input type="text" class="cmd-input" id="cmd-input" placeholder="Type a natural language command or click 'Click to Speak'..." autocomplete="off">
-          <button class="btn primary" id="cmd-run-btn">Run</button>
+          <input type="text" class="cmd-input" id="cmd-input" placeholder="Type a natural language command and press Enter (or select a Quick Action)..." autocomplete="off">
+          <button class="btn primary" id="cmd-run-btn">Run ↵</button>
           <button class="btn" id="cmd-clear-btn">Clear Log</button>
         </div>
       </section>
@@ -1178,33 +1174,16 @@
       }
     };
 
-    // Push To Talk Voice Recording
-    const pttBtn = $('ptt-speak-btn');
-    let isRecording = false;
-
-    pttBtn.addEventListener('click', async () => {
-      if (isRecording) return;
-      isRecording = true;
-      pttBtn.classList.add('recording');
-      $('ptt-label').textContent = 'Listening (Speak now)...';
-      showToast('Microphone active. Speak your command now...');
-
-      try {
-        const res = await bridge().record_voice_command();
-        if (res && res.success && res.text) {
-          showToast(`Transcribed: "${res.text}"`);
-          await handleCommand(res.text);
-        } else {
-          showToast(res?.message || 'No speech heard.', true);
-        }
-      } catch (err) {
-        showToast(err.message, true);
-      } finally {
-        isRecording = false;
-        pttBtn.classList.remove('recording');
-        $('ptt-label').textContent = 'Click to Speak';
+    // Quick Focus Console Input Action
+    window.focusConsoleInput = () => {
+      const consoleTabBtn = document.querySelector('.nav-btn[data-tab="console"]');
+      if (consoleTabBtn) consoleTabBtn.click();
+      const inp = $('cmd-input');
+      if (inp) {
+        inp.focus();
+        inp.select();
       }
-    });
+    };
 
     // AI Brain & Multi-Slot Logic
     async function loadBrainDetails() {

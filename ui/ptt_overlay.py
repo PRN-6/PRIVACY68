@@ -81,7 +81,7 @@ class PushToTalkOverlay:
 
         title_lbl = tk.Label(
             title_box,
-            text="PRIVACY68 // PUSH TO TALK & COMMAND",
+            text="PRIVACY68 // QUICK COMMAND BAR",
             fg="#94a3b8",
             bg="#0d111a",
             font=("Segoe UI", 8, "bold")
@@ -107,15 +107,15 @@ class PushToTalkOverlay:
             w_item.bind("<Button-1>", self._on_drag_start)
             w_item.bind("<B1-Motion>", self._on_drag_motion)
 
-        # 2. Middle Body: Mic Action Button (Left) + Status / Speech (Right)
+        # 2. Middle Body: Status Icon (Left) + Status / Speech (Right)
         body = tk.Frame(self.main_container, bg="#0d111a")
         body.pack(fill="x", side="top", pady=(0, 9))
 
-        # Large Microphone Click-to-Speak Button
+        # Status Icon / Focus Button
         self.mic_btn = tk.Button(
             body,
-            text="🎙️",
-            font=("Segoe UI Emoji", 18),
+            text="⌨️",
+            font=("Segoe UI Emoji", 14),
             bg="#1e293b",
             fg="#f8fafc",
             activebackground="#334155",
@@ -129,7 +129,7 @@ class PushToTalkOverlay:
         )
         self.mic_btn.pack(side="left", padx=(0, 12))
 
-        # Status & Transcribed Command Block
+        # Status & Command Block
         info_frame = tk.Frame(body, bg="#0d111a")
         info_frame.pack(side="left", fill="both", expand=True)
         info_frame.bind("<Button-1>", self._on_drag_start)
@@ -137,7 +137,7 @@ class PushToTalkOverlay:
 
         self.status_title = tk.Label(
             info_frame,
-            text="Click Mic or Type Command",
+            text="Type Command & Run",
             fg="#f8fafc",
             bg="#0d111a",
             font=("Segoe UI", 11, "bold"),
@@ -147,7 +147,7 @@ class PushToTalkOverlay:
 
         self.status_subtitle = tk.Label(
             info_frame,
-            text="Google Speech 1st • Offline Whisper Fallback",
+            text="Press Enter to execute • Esc to close",
             fg="#64748b",
             bg="#0d111a",
             font=("Segoe UI", 8),
@@ -323,6 +323,11 @@ class PushToTalkOverlay:
         self.window.attributes("-topmost", True)
         try:
             self.window.focus_set()
+            if self.cmd_entry:
+                self.cmd_entry.focus_set()
+                if self.cmd_entry.get() == self.PLACEHOLDER:
+                    self.cmd_entry.delete(0, tk.END)
+                    self.cmd_entry.config(fg="#f1f5f9")
         except Exception:
             pass
 
@@ -343,14 +348,12 @@ class PushToTalkOverlay:
             self.show()
 
     def _on_mic_clicked(self):
-        """Handles user clicking the microphone button."""
-        if self.is_processing:
-            return
-
-        if not self.is_recording:
-            self._start_recording()
-        else:
-            self._stop_and_transcribe()
+        """Focuses the command input entry."""
+        if self.cmd_entry:
+            self.cmd_entry.focus_set()
+            if self.cmd_entry.get() == self.PLACEHOLDER:
+                self.cmd_entry.delete(0, tk.END)
+                self.cmd_entry.config(fg="#f1f5f9")
 
     def _start_recording(self):
         """Opens microphone hardware on-demand and begins capturing voice."""
@@ -500,19 +503,19 @@ class PushToTalkOverlay:
             self.window.after(4200, self._reset_to_idle)
 
     def _reset_to_idle(self):
-        """Restores the overlay to the idle Click-to-Speak state."""
+        """Restores the overlay to the idle ready state."""
         if not self.is_alive() or self.is_recording or self.is_processing:
             return
 
         self.mic_btn.config(
-            text="🎙️",
+            text="⌨️",
             bg="#1e293b",
             activebackground="#334155",
             fg="#f8fafc"
         )
         self.dot_label.config(fg="#10b981")
-        self.status_title.config(text="Click Mic or Type Command", fg="#f8fafc")
-        self.status_subtitle.config(text="Google Speech 1st • Offline Whisper Fallback", fg="#64748b")
+        self.status_title.config(text="Type Command & Run", fg="#f8fafc")
+        self.status_subtitle.config(text="Press Enter to execute • Esc to close", fg="#64748b")
         if self.cmd_entry and not self.cmd_entry.get().strip():
             self.cmd_entry.delete(0, tk.END)
             self.cmd_entry.insert(0, self.PLACEHOLDER)

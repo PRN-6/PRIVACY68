@@ -556,20 +556,8 @@ class DashboardAPI:
             return {"success": False, "message": str(e)}
 
     def record_voice_command(self) -> Dict[str, Any]:
-        """Records on-demand voice from the microphone and returns transcribed text."""
-        try:
-            from speech.streamer import PushToTalkRecorder, autocorrect_speech_command
-            import time
-            recorder = PushToTalkRecorder()
-            recorder.start()
-            time.sleep(3.2)
-            raw_text = recorder.stop_and_transcribe()
-            text = autocorrect_speech_command(raw_text) if raw_text else ""
-            if text:
-                return {"success": True, "text": text}
-            return {"success": False, "message": "No speech detected in audio sample."}
-        except Exception as e:
-            return {"success": False, "message": str(e)}
+        """Deprecated: Push-to-Talk has been removed in favor of direct typed commands."""
+        return {"success": False, "message": "Push-to-Talk voice recording has been removed. Type commands directly in the console."}
 
     def get_remote_server_info(self) -> Dict[str, Any]:
         """Deprecated: Local web remote server removed in favor of Telegram Remote Gateway."""
