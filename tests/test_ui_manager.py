@@ -58,6 +58,75 @@ class TestDashboardLaunch(unittest.TestCase):
         finally:
             root.destroy()
 
+    def test_ptt_overlay_text_command_submission(self):
+        import tkinter as tk
+        from ui.ptt_overlay import PushToTalkOverlay
+        from unittest.mock import MagicMock, patch
+
+        root = tk.Tk()
+        root.withdraw()
+        try:
+            mock_ui = MagicMock()
+            overlay = PushToTalkOverlay(parent_root=root, ui_manager=mock_ui)
+            overlay.cmd_entry.delete(0, tk.END)
+            overlay.cmd_entry.insert(0, "open chrome")
+
+            with patch("actions.executor.execute_system_command_detailed", return_value={"success": True, "message": "Chrome opened"}) as mock_exec:
+                overlay._on_text_submitted()
+                # Wait briefly for worker thread to complete execution
+                import time
+                time.sleep(0.1)
+                mock_exec.assert_called_once()
+                self.assertEqual(mock_exec.call_args[0][0], "open chrome")
+                mock_ui.on_transcription.assert_called_once_with("open chrome")
+
+            overlay.window.destroy()
+        finally:
+            root.destroy()
+
+    def test_ptt_overlay_placeholder_not_submitted(self):
+        import tkinter as tk
+        from ui.ptt_overlay import PushToTalkOverlay
+        from unittest.mock import MagicMock, patch
+
+        root = tk.Tk()
+        root.withdraw()
+        try:
+            overlay = PushToTalkOverlay(parent_root=root)
+            with patch("actions.executor.execute_system_command_detailed") as mock_exec:
+                overlay._on_text_submitted()
+                mock_exec.assert_not_called()
+            overlay.window.destroy()
+        finally:
+            root.destroy()
+
+    def test_ptt_overlay_spacebar_inside_entry_does_not_trigger_mic(self):
+        import tkinter as tk
+        from ui.ptt_overlay import PushToTalkOverlay
+        from unittest.mock import MagicMock
+
+        root = tk.Tk()
+        root.withdraw()
+        try:
+            overlay = PushToTalkOverlay(parent_root=root)
+            overlay._on_mic_clicked = MagicMock()
+
+            # Event originating from cmd_entry
+            entry_event = MagicMock()
+            entry_event.widget = overlay.cmd_entry
+            overlay._on_space_pressed(entry_event)
+            overlay._on_mic_clicked.assert_not_called()
+
+            # Event originating from window
+            win_event = MagicMock()
+            win_event.widget = overlay.window
+            overlay._on_space_pressed(win_event)
+            overlay._on_mic_clicked.assert_called_once()
+
+            overlay.window.destroy()
+        finally:
+            root.destroy()
+
 
 if __name__ == "__main__":
     unittest.main()

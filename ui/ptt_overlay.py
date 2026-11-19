@@ -17,13 +17,18 @@ logger = logging.getLogger("PRIVACY68.PTTOverlay")
 class PushToTalkOverlay:
     """
     Compact, draggable, semi-transparent Push-to-Talk floating overlay.
-    Triggered from the Windows System Tray menu: '🎙️ Voice Command (Push to Talk)'.
+    Triggered from the Windows System Tray menu: '🎙️ Voice & Text Command (Push to Talk)'.
+    Supports on-demand voice capture (Click-to-Speak) and instant text command execution.
     """
+
+    PLACEHOLDER = "Type command and press Enter..."
 
     def __init__(self, parent_root: tk.Tk, ui_manager: Optional[Any] = None):
         self.parent_root = parent_root
         self.ui_manager = ui_manager
         self.window: Optional[tk.Toplevel] = None
+        self.cmd_entry: Optional[tk.Entry] = None
+        self.send_btn: Optional[tk.Button] = None
         self.is_recording = False
         self.is_processing = False
         self.recorder = None
@@ -38,7 +43,7 @@ class PushToTalkOverlay:
     def _build_window(self):
         """Constructs the glassmorphic frameless floating widget."""
         self.window = tk.Toplevel(self.parent_root)
-        self.window.title("PRIVACY68 Push-to-Talk")
+        self.window.title("PRIVACY68 Push-to-Talk & Command")
         self.window.overrideredirect(True)
         self.window.attributes("-topmost", True)
         try:
@@ -47,7 +52,7 @@ class PushToTalkOverlay:
             pass
 
         # Dimensions & screen positioning (bottom center, above taskbar)
-        w, h = 390, 125
+        w, h = 420, 162
         sw = self.parent_root.winfo_screenwidth()
         sh = self.parent_root.winfo_screenheight()
         x = max(20, (sw - w) // 2)
@@ -76,7 +81,7 @@ class PushToTalkOverlay:
 
         title_lbl = tk.Label(
             title_box,
-            text="PRIVACY68 // PUSH TO TALK",
+            text="PRIVACY68 // PUSH TO TALK & COMMAND",
             fg="#94a3b8",
             bg="#0d111a",
             font=("Segoe UI", 8, "bold")
@@ -104,7 +109,7 @@ class PushToTalkOverlay:
 
         # 2. Middle Body: Mic Action Button (Left) + Status / Speech (Right)
         body = tk.Frame(self.main_container, bg="#0d111a")
-        body.pack(fill="both", expand=True)
+        body.pack(fill="x", expand=False)
 
         # Large Microphone Click-to-Speak Button
         self.mic_btn = tk.Button(
@@ -132,7 +137,7 @@ class PushToTalkOverlay:
 
         self.status_title = tk.Label(
             info_frame,
-            text="Click Mic to Speak",
+            text="Click Mic or Type Command",
             fg="#f8fafc",
             bg="#0d111a",
             font=("Segoe UI", 11, "bold"),
@@ -147,14 +152,149 @@ class PushToTalkOverlay:
             bg="#0d111a",
             font=("Segoe UI", 9),
             anchor="w",
-            wraplength=250,
+            wraplength=275,
             justify="left"
         )
         self.status_subtitle.pack(fill="x", pady=(2, 0))
 
-        # Keyboard shortcut: Spacebar toggles speak when window is active
-        self.window.bind("<space>", lambda e: self._on_mic_clicked())
+        # 3. Bottom Row: Text Command Input + Send Button
+        input_container = tk.Frame(self.main_container, bg="#1e2433", padx=1, pady=1)
+        input_container.pack(fill="x", side="bottom", pady=(8, 0))
+
+        input_inner = tk.Frame(input_container, bg="#111827", padx=8, pady=4)
+        input_inner.pack(fill="x", expand=True)
+
+        input_icon = tk.Label(
+            input_inner,
+            text="⌨️",
+            fg="#64748b",
+            bg="#111827",
+            font=("Segoe UI Emoji", 9)
+        )
+        input_icon.pack(side="left", padx=(0, 6))
+
+        self.cmd_entry = tk.Entry(
+            input_inner,
+            bg="#111827",
+            fg="#64748b",
+            font=("Segoe UI", 9),
+            insertbackground="#38bdf8",
+            relief="flat",
+            bd=0
+        )
+        self.cmd_entry.pack(side="left", fill="x", expand=True, padx=(0, 6))
+        self.cmd_entry.insert(0, self.PLACEHOLDER)
+        self.cmd_entry.bind("<FocusIn>", self._on_entry_focus_in)
+        self.cmd_entry.bind("<FocusOut>", self._on_entry_focus_out)
+        self.cmd_entry.bind("<Return>", lambda e: self._on_text_submitted())
+
+        self.send_btn = tk.Button(
+            input_inner,
+            text="➤",
+            font=("Segoe UI", 8, "bold"),
+            bg="#2563eb",
+            fg="#ffffff",
+            activebackground="#1d4ed8",
+            activeforeground="#ffffff",
+            relief="flat",
+            bd=0,
+            padx=8,
+            pady=2,
+            cursor="hand2",
+            command=self._on_text_submitted
+        )
+        self.send_btn.pack(side="right")
+        self.send_btn.bind("<Enter>", lambda e: self.send_btn.config(bg="#3b82f6"))
+        self.send_btn.bind("<Leave>", lambda e: self.send_btn.config(bg="#2563eb"))
+
+        # Keyboard shortcuts
+        self.window.bind("<space>", self._on_space_pressed)
         self.window.bind("<Escape>", lambda e: self.hide())
+
+    def _on_entry_focus_in(self, event):
+        if self.cmd_entry and self.cmd_entry.get() == self.PLACEHOLDER:
+            self.cmd_entry.delete(0, tk.END)
+            self.cmd_entry.config(fg="#f1f5f9")
+
+    def _on_entry_focus_out(self, event):
+        if self.cmd_entry and not self.cmd_entry.get().strip():
+            self.cmd_entry.delete(0, tk.END)
+            self.cmd_entry.insert(0, self.PLACEHOLDER)
+            self.cmd_entry.config(fg="#64748b")
+
+    def _on_space_pressed(self, event):
+        """Spacebar triggers push-to-talk only when user is not typing in the text entry."""
+        if hasattr(self, "cmd_entry") and self.cmd_entry and event.widget == self.cmd_entry:
+            return
+        self._on_mic_clicked()
+
+    def _on_text_submitted(self):
+        """Handles execution of command typed into the text input bar."""
+        if self.is_processing or not self.cmd_entry:
+            return
+
+        cmd = self.cmd_entry.get().strip()
+        if not cmd or cmd == self.PLACEHOLDER:
+            return
+
+        # If user was actively recording voice, abort recording to prioritize typed command
+        if self.is_recording:
+            self._abort_recording()
+
+        # Clear text entry and restore placeholder
+        self.cmd_entry.delete(0, tk.END)
+        self.cmd_entry.insert(0, self.PLACEHOLDER)
+        self.cmd_entry.config(fg="#64748b")
+        if self.window:
+            self.window.focus_set()
+
+        self.is_processing = True
+
+        # Visual state: Processing
+        self.mic_btn.config(
+            text="⚡",
+            bg="#d97706",
+            activebackground="#b45309",
+            fg="#ffffff"
+        )
+        self.dot_label.config(fg="#f59e0b")
+        self.status_title.config(text=f'"{cmd}"', fg="#fbbf24")
+        self.status_subtitle.config(text="Executing command...", fg="#94a3b8")
+
+        # Run execution in background thread
+        threading.Thread(target=self._execute_text_command_worker, args=(cmd,), daemon=True).start()
+
+    def _execute_text_command_worker(self, command: str):
+        """Worker thread: routes typed text command to executor and updates UI."""
+        logger.info(f"PTT Overlay Typed Command: '{command}'")
+
+        # Notify UI Manager
+        if self.ui_manager and hasattr(self.ui_manager, "on_transcription"):
+            self.ui_manager.on_transcription(command)
+
+        # Dispatch command execution
+        msg = "Executed successfully."
+        success = True
+        try:
+            from actions.executor import execute_system_command_detailed
+            result = execute_system_command_detailed(
+                command,
+                on_action_callback=getattr(self.ui_manager, "on_action_completed", None),
+                on_status_callback=getattr(self.ui_manager, "on_agent_status", None)
+            )
+            if isinstance(result, dict):
+                success = result.get("success", True)
+                msg = result.get("message") or ("Completed" if success else "Action failed")
+        except Exception as exec_err:
+            logger.error(f"Error executing typed command: {exec_err}")
+            success = False
+            msg = str(exec_err)
+
+        final_title = f'"{command}"'
+        final_msg = msg
+        is_err = not success
+
+        self._schedule_ui(lambda: self._show_result(final_title, final_msg, is_error=is_err))
 
     def _on_drag_start(self, event):
         self._drag_start_x = event.x
@@ -363,8 +503,12 @@ class PushToTalkOverlay:
             fg="#f8fafc"
         )
         self.dot_label.config(fg="#10b981")
-        self.status_title.config(text="Click Mic to Speak", fg="#f8fafc")
+        self.status_title.config(text="Click Mic or Type Command", fg="#f8fafc")
         self.status_subtitle.config(text="Google Speech 1st • Offline Whisper Fallback", fg="#64748b")
+        if self.cmd_entry and not self.cmd_entry.get().strip():
+            self.cmd_entry.delete(0, tk.END)
+            self.cmd_entry.insert(0, self.PLACEHOLDER)
+            self.cmd_entry.config(fg="#64748b")
 
     def _set_state_ui(self, state: str, title: str, subtitle: str):
         """Updates UI elements safely."""

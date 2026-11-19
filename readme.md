@@ -17,7 +17,7 @@ PRIVACY68 is a 100% private Windows desktop AI assistant featuring on-demand Cli
 
 ## What's New in v1.6.5
 
-- **Push-to-Talk Transparent Floating Overlay**: Added `"🎙️ Voice Command (Push to Talk)"` to the Windows System Tray menu. Clicking it opens a sleek, draggable, glassmorphic floating pill above the taskbar with click-to-speak recording, live audio pulsing, and instant command feedback.
+- **Push-to-Talk & Command Transparent Floating Overlay**: Added `"🎙️ Voice & Text Command (Push to Talk)"` to the Windows System Tray menu. Clicking it opens a sleek, draggable, glassmorphic floating pill above the taskbar with click-to-speak recording, live audio pulsing, an integrated text command entry bar for instant typed execution, and instant feedback.
 - **Adaptive Speech Priority with Offline Local Fallback**: Default speech pipeline prioritizes ultra-fast, zero-setup Google Web Speech, seamlessly auto-failing over to on-device Faster-Whisper whenever an internet outage or network disconnect is detected.
 - **Dual-Pass Dialect & Accent Recovery**: Added locale-aware recognition with automatic dual-pass retry (`en-IN` $\leftrightarrow$ `en-US`) and raw hypothesis rescue (`show_all=True`) for high accuracy on Indian English and global accents.
 - **Acoustic Waveform Enhancement**: Added DC offset bias removal, $0.95$ dynamic peak normalization, integer clipping overflow protection, and $60\text{ ms}$ boundary padding to prevent phoneme truncation.
