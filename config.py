@@ -123,7 +123,7 @@ OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
 if os.environ.get("AGENT_BRAIN_MODEL"):
     _default_model = os.environ.get("AGENT_BRAIN_MODEL")
 elif GEMINI_API_KEY:
-    _default_model = "gemini/gemini-3.5-flash"
+    _default_model = "gemini/gemini-3.1-flash-lite"
 elif GROQ_API_KEY:
     _default_model = "groq/openai/gpt-oss-120b"
 elif OPENROUTER_API_KEY:
@@ -135,7 +135,7 @@ elif OPENAI_API_KEY:
 elif OLLAMA_BASE_URL and OLLAMA_BASE_URL != "http://localhost:11434":
     _default_model = "ollama/llama3.2:latest"
 else:
-    _default_model = "gemini/gemini-3.5-flash"
+    _default_model = "gemini/gemini-3.1-flash-lite"
 
 AGENT_BRAIN_MODEL = _default_model
 AGENT_BRAIN_MAX_RETRIES = 2  # Open-Interpreter style self-healing code retry loop

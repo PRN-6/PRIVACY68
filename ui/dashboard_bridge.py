@@ -347,7 +347,7 @@ class DashboardAPI:
             config.GEMINI_API_KEY = api_key
             os.environ["GEMINI_API_KEY"] = api_key
             os.environ["GOOGLE_API_KEY"] = api_key
-            default_model = "gemini/gemini-3.5-flash"
+            default_model = "gemini/gemini-3.1-flash-lite"
         elif "groq" in provider:
             key_var = "GROQ_API_KEY"
             config.GROQ_API_KEY = api_key
@@ -413,7 +413,7 @@ class DashboardAPI:
             "openrouter": bool(getattr(config, "OPENROUTER_API_KEY", "") or os.environ.get("OPENROUTER_API_KEY", "")),
             "claude": bool(getattr(config, "ANTHROPIC_API_KEY", "") or os.environ.get("ANTHROPIC_API_KEY", "")),
             "openai": bool(getattr(config, "OPENAI_API_KEY", "") or os.environ.get("OPENAI_API_KEY", "") or getattr(config, "CUSTOM_API_KEY", "")),
-            "active_model": getattr(config, "AGENT_BRAIN_MODEL", "gemini/gemini-3.5-flash"),
+            "active_model": getattr(config, "AGENT_BRAIN_MODEL", "gemini/gemini-3.1-flash-lite"),
         }
 
     def set_active_model(self, model: str) -> Dict[str, Any]:
@@ -453,11 +453,11 @@ class DashboardAPI:
         ollama_status = self.check_ollama_status()
 
         return {
-            "active_model": getattr(config, "AGENT_BRAIN_MODEL", "gemini/gemini-3.5-flash"),
+            "active_model": getattr(config, "AGENT_BRAIN_MODEL", "gemini/gemini-3.1-flash-lite"),
             "gemini": {
                 "configured": bool(gemini_k),
                 "preview": mask(gemini_k),
-                "model": "gemini/gemini-3.5-flash"
+                "model": "gemini/gemini-3.1-flash-lite"
             },
             "groq": {
                 "configured": bool(groq_k),

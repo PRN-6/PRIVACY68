@@ -32,10 +32,12 @@ def is_ollama_online(host: Optional[str] = None) -> bool:
 
 PROVIDER_FALLBACKS = {
     "gemini": [
+        "gemini/gemini-3.1-flash-lite",
+        "gemini/gemini-3.5-flash-lite",
+        "gemini/gemini-3.8-flash",
         "gemini/gemini-3.5-flash",
         "gemini/gemini-flash-latest",
-        "gemini/gemini-2.5-flash",
-        "gemini/gemini-2.0-flash",
+        "gemini/gemini-flash-lite-latest",
     ],
     "groq": [
         "groq/openai/gpt-oss-120b",
@@ -72,7 +74,7 @@ class AgentBrain:
     """
 
     def __init__(self, model: Optional[str] = None):
-        self.model = model or getattr(config, "AGENT_BRAIN_MODEL", "gemini/gemini-3.5-flash")
+        self.model = model or getattr(config, "AGENT_BRAIN_MODEL", "gemini/gemini-3.1-flash-lite")
         self.max_retries = getattr(config, "AGENT_BRAIN_MAX_RETRIES", 2)
         self.last_code = ""
         self.last_reasoning = ""
@@ -288,8 +290,10 @@ class AgentBrain:
         call_kwargs = {
             "model": model,
             "messages": messages,
-            "temperature": 0,
+            "timeout": 25,
         }
+        if not ("gemini" in model_lower and ("gemini-3" in model_lower or "gemini-4" in model_lower)):
+            call_kwargs["temperature"] = 0
         if api_base:
             call_kwargs["api_base"] = api_base
         if api_key:
@@ -416,7 +420,7 @@ class AgentBrain:
                     if "ollama" in self.model.lower():
                         msg = f"Model '{self.model}' is not installed in Ollama. Verify model name or switch to Gemini / Groq in the dashboard."
                     else:
-                        msg = f"Model '{self.model}' was not found or is deprecated by the provider API. Please select an active model (such as 'gemini/gemini-3.5-flash') in the AI Brain tab."
+                        msg = f"Model '{self.model}' was not found or is deprecated by the provider API. Please select an active model (such as 'gemini/gemini-3.1-flash-lite') in the AI Brain tab."
                     return {
                         "success": False,
                         "message": msg,

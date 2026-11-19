@@ -628,12 +628,14 @@
           <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:center; background:#0f121a; padding:12px; border-radius:6px; border:1px solid var(--line);">
             <div style="flex:1; min-width:240px; display:flex; flex-direction:column; gap:4px;">
               <label style="font-size:11px; font-weight:700; color:var(--text-muted);">Active LLM Model Identifier</label>
-              <input type="text" id="active-model-input" placeholder="gemini/gemini-3.5-flash">
+              <input type="text" id="active-model-input" placeholder="gemini/gemini-3.1-flash-lite">
             </div>
             <div style="display:flex; flex-direction:column; gap:4px;">
               <label style="font-size:11px; font-weight:700; color:var(--text-muted);">Quick Presets</label>
               <select id="model-presets-select">
-                <option value="gemini/gemini-3.5-flash">Google Gemini 3.5 Flash (Free Tier - Recommended)</option>
+                <option value="gemini/gemini-3.1-flash-lite">Google Gemini 3.1 Flash-Lite (Free Tier - Ultra-Fast & Recommended)</option>
+                <option value="gemini/gemini-3.5-flash-lite">Google Gemini 3.5 Flash-Lite</option>
+                <option value="gemini/gemini-3.5-flash">Google Gemini 3.5 Flash</option>
                 <option value="groq/openai/gpt-oss-120b">Groq Cloud (OpenAI GPT-OSS 120B Free)</option>
                 <option value="groq/openai/gpt-oss-20b">Groq Cloud (OpenAI GPT-OSS 20B Free)</option>
                 <option value="groq/qwen/qwen3.8-27b">Groq Cloud (Qwen 3.8 27B Free)</option>
@@ -1032,7 +1034,7 @@
     const mockBridge = {
       get_profile: async () => ({ user_name: 'User', assistant_name: 'Privacy68' }),
       get_api_keys_detail: async () => ({
-        active_model: 'gemini/gemini-1.5-flash',
+        active_model: 'gemini/gemini-3.1-flash-lite',
         gemini: { configured: true, preview: 'AIzaSy...****' },
         groq: { configured: true, preview: 'gsk_...****' },
         claude: { configured: false, preview: '' },
@@ -1221,7 +1223,7 @@
         const det = await bridge().get_api_keys_detail();
         if (!det) return;
 
-        const activeMod = det.active_model || 'gemini/gemini-1.5-flash';
+        const activeMod = det.active_model || 'gemini/gemini-3.1-flash-lite';
         $('active-model-input').value = activeMod;
         $('active-model-badge').textContent = 'Model: ' + activeMod;
         $('sidebar-brain-text').textContent = 'Brain: ' + activeMod.split('/')[0].toUpperCase();

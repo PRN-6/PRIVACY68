@@ -71,7 +71,7 @@ class TestAgentBrain(unittest.TestCase):
 
 
 
-    @patch.object(AgentBrain, "get_fallback_models", return_value=["gemini/gemini-1.5-flash"])
+    @patch.object(AgentBrain, "get_fallback_models", return_value=["gemini/gemini-3.1-flash-lite"])
     def test_auto_failover_switches_to_fallback_provider(self, mock_fallbacks):
         def mock_call(model, messages):
             if "groq" in model:
@@ -83,8 +83,8 @@ class TestAgentBrain(unittest.TestCase):
             code = self.brain._get_code_from_llm("test task")
 
         self.assertEqual(code, "print('fallback succeeded')")
-        self.assertEqual(self.brain.active_provider_used, "gemini/gemini-1.5-flash")
-        self.assertEqual(self.brain.model, "gemini/gemini-1.5-flash")
+        self.assertEqual(self.brain.active_provider_used, "gemini/gemini-3.1-flash-lite")
+        self.assertEqual(self.brain.model, "gemini/gemini-3.1-flash-lite")
 
     def test_get_fallback_models_includes_same_provider_alternatives(self):
         with patch("config.GROQ_API_KEY", "mock_gsk_key"):
