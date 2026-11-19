@@ -1,7 +1,7 @@
 ---
 name: system
 description: "Windows OS system controls: audio volume, mute, app launching, screenshot capture, lock screen, and clipboard."
-keywords: ["system", "volume", "mute", "unmute", "sound", "audio", "screenshot", "lock", "windows", "app", "launch", "clipboard"]
+keywords: ["system", "volume", "mute", "unmute", "sound", "audio", "screenshot", "lock", "windows", "app", "launch", "clipboard", "process", "processes", "tasklist", "taskkill", "task manager"]
 metadata:
   openclaw:
     emoji: "💻"
@@ -62,5 +62,34 @@ lock_screen()
 from services.system import system_service
 system_service.launch_app("notepad")
 print("Launched application.")
+```
+
+## Clipboard Management
+```python
+import subprocess
+
+def get_clipboard() -> str:
+    res = subprocess.run(["powershell", "-c", "Get-Clipboard"], capture_output=True, text=True, check=False)
+    return res.stdout.strip()
+
+def set_clipboard(text: str):
+    subprocess.run(["powershell", "-c", f"Set-Clipboard -Value @'\n{text}\n'@"], check=False)
+    print("Copied text to clipboard.")
+```
+
+## Process Management & Task Termination
+```python
+import subprocess
+
+def list_running_processes(filter_name: str = ""):
+    cmd = ["tasklist"]
+    if filter_name:
+        cmd.extend(["/fi", f"imagename eq {filter_name}*"])
+    res = subprocess.run(cmd, capture_output=True, text=True, check=False)
+    print(res.stdout)
+
+def kill_process(process_name: str):
+    subprocess.run(["taskkill", "/f", "/im", process_name], check=False)
+    print(f"Terminated process: {process_name}")
 ```
 
