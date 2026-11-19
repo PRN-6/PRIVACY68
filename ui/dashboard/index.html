@@ -802,7 +802,7 @@
             <span class="chip good" id="remote-server-status-pill">Server Active</span>
           </div>
 
-          <div style="display:grid; grid-template-columns:1fr auto; gap:20px; align-items:center; background:#0f121a; border:1px solid var(--line); border-radius:8px; padding:16px;">
+          <div style="background:#0f121a; border:1px solid var(--line); border-radius:8px; padding:16px;">
             <div style="display:flex; flex-direction:column; gap:8px;">
               <div style="font-size:12px; color:var(--text-muted);">Access URL for devices on your Wi-Fi:</div>
               <div style="font-family:'Cascadia Code', Consolas, monospace; font-size:16px; font-weight:700; color:var(--blue);" id="remote-url-display">http://127.0.0.1:8765</div>
@@ -810,13 +810,6 @@
                 <button class="btn blue sm" id="open-remote-browser-btn">Open in Browser</button>
                 <button class="btn sm" id="copy-remote-url-btn">Copy Link</button>
               </div>
-            </div>
-            <!-- Dynamic QR Code Container -->
-            <div style="text-align:center;">
-              <div id="remote-qr-box" style="background:white; padding:8px; border-radius:6px; display:inline-block;">
-                <canvas id="qr-canvas" width="120" height="120"></canvas>
-              </div>
-              <div style="font-size:10px; color:var(--text-muted); margin-top:4px;">Scan with Camera</div>
             </div>
           </div>
         </div>
