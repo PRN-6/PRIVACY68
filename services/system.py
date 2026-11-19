@@ -6,6 +6,7 @@ Provides low-latency Windows system execution, volume/mute toggles, process laun
 import logging
 import os
 import subprocess
+import time
 from typing import Any, Dict, Tuple
 
 logger = logging.getLogger("PRIVACY68.Services.System")
@@ -50,6 +51,31 @@ PROTECTED_SYSTEM_PROCESSES = frozenset({
     "winlogon.exe", "svchost.exe", "explorer.exe", "spoolsv.exe",
     "system", "registry", "dwm.exe", "fontdrvhost.exe"
 })
+
+# Virtual Key Codes for Windows Navigation
+VK_LWIN = 0x5B
+VK_CONTROL = 0x11
+VK_RIGHT = 0x27
+VK_LEFT = 0x25
+VK_TAB = 0x09
+VK_D = 0x44
+VK_F4 = 0x73
+KEYEVENTF_KEYUP = 0x0002
+
+
+def _send_keybd_combo(keys: list) -> bool:
+    """Helper to send a multi-key press and release via native Win32 keybd_event."""
+    try:
+        import ctypes
+        for vk in keys:
+            ctypes.windll.user32.keybd_event(vk, 0, 0, 0)
+        time.sleep(0.04)
+        for vk in reversed(keys):
+            ctypes.windll.user32.keybd_event(vk, 0, KEYEVENTF_KEYUP, 0)
+        return True
+    except Exception as e:
+        logger.error(f"Failed to send keybd_event combo {keys}: {e}")
+        return False
 
 
 class SystemService:
@@ -151,6 +177,125 @@ class SystemService:
             return True, "Closed active application window."
         return False, "Could not identify or close active window."
 
+    def get_virtual_desktop_info(self) -> Tuple[int, int]:
+        """
+        Queries the Windows Registry for:
+        (current_desktop_1_based_index, total_desktops_count).
+        Falls back to internal tracker if registry query fails.
+        """
+        total = 1
+        current = getattr(self, "_cached_desktop", 1)
+
+        reg_paths = [
+            r"Software\Microsoft\Windows\CurrentVersion\Explorer\VirtualDesktops",
+            r"Software\Microsoft\Windows\CurrentVersion\Explorer\SessionInfo\1\VirtualDesktops",
+        ]
+
+        try:
+            import winreg
+            for path in reg_paths:
+                try:
+                    key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, path)
+                    try:
+                        ids, _ = winreg.QueryValueEx(key, "VirtualDesktopIDs")
+                        if ids and len(ids) >= 16:
+                            total = max(1, len(ids) // 16)
+                    except Exception:
+                        pass
+
+                    try:
+                        cur, _ = winreg.QueryValueEx(key, "CurrentVirtualDesktop")
+                        if cur and len(cur) == 16:
+                            for i in range(0, len(ids), 16):
+                                if ids[i:i + 16] == cur:
+                                    current = (i // 16) + 1
+                                    break
+                    except Exception:
+                        pass
+
+                    winreg.CloseKey(key)
+                    self._cached_desktop = current
+                    return current, total
+                except Exception:
+                    continue
+        except Exception as e:
+            logger.debug(f"Could not read virtual desktop registry: {e}")
+
+        return current, total
+
+    def switch_to_desktop(self, target_desktop: int) -> Tuple[bool, str]:
+        """
+        Navigates directly to a target virtual desktop (1, 2, 3, 4, 5, etc).
+        Calculates distance from current virtual desktop and dispatches
+        Win+Ctrl+Right or Win+Ctrl+Left events.
+        """
+        if target_desktop < 1:
+            target_desktop = 1
+
+        current, total = self.get_virtual_desktop_info()
+
+        # If target exceeds current total, create new desktops up to target
+        if target_desktop > total:
+            needed = target_desktop - total
+            for _ in range(needed):
+                _send_keybd_combo([VK_LWIN, VK_CONTROL, VK_D])
+                time.sleep(0.06)
+            self._cached_desktop = target_desktop
+            return True, f"Created and switched to Desktop {target_desktop}."
+
+        diff = target_desktop - current
+        if diff == 0:
+            return True, f"Already on Desktop {target_desktop}."
+
+        if diff > 0:
+            for _ in range(diff):
+                _send_keybd_combo([VK_LWIN, VK_CONTROL, VK_RIGHT])
+                time.sleep(0.06)
+        else:
+            for _ in range(abs(diff)):
+                _send_keybd_combo([VK_LWIN, VK_CONTROL, VK_LEFT])
+                time.sleep(0.06)
+
+        self._cached_desktop = target_desktop
+        return True, f"Switched to Desktop {target_desktop} (of {total})."
+
+    def switch_next_desktop(self) -> Tuple[bool, str]:
+        """Switches to the next virtual desktop (Win + Ctrl + Right)."""
+        _send_keybd_combo([VK_LWIN, VK_CONTROL, VK_RIGHT])
+        current, total = self.get_virtual_desktop_info()
+        next_d = min(total, current + 1)
+        self._cached_desktop = next_d
+        return True, f"Navigated to next desktop (Desktop {next_d} of {total})."
+
+    def switch_previous_desktop(self) -> Tuple[bool, str]:
+        """Switches to the previous virtual desktop (Win + Ctrl + Left)."""
+        _send_keybd_combo([VK_LWIN, VK_CONTROL, VK_LEFT])
+        current, total = self.get_virtual_desktop_info()
+        prev_d = max(1, current - 1)
+        self._cached_desktop = prev_d
+        return True, f"Navigated to previous desktop (Desktop {prev_d} of {total})."
+
+    def create_virtual_desktop(self) -> Tuple[bool, str]:
+        """Creates a new virtual desktop and switches to it (Win + Ctrl + D)."""
+        _send_keybd_combo([VK_LWIN, VK_CONTROL, VK_D])
+        current, total = self.get_virtual_desktop_info()
+        return True, f"Created a new virtual desktop (Desktop {total})."
+
+    def close_virtual_desktop(self) -> Tuple[bool, str]:
+        """Closes the current virtual desktop (Win + Ctrl + F4)."""
+        _send_keybd_combo([VK_LWIN, VK_CONTROL, VK_F4])
+        return True, "Closed current virtual desktop."
+
+    def show_task_view(self) -> Tuple[bool, str]:
+        """Opens Windows Task View showing all virtual desktops (Win + Tab)."""
+        _send_keybd_combo([VK_LWIN, VK_TAB])
+        return True, "Opened Windows Task View (all virtual desktops)."
+
+    def toggle_show_desktop(self) -> Tuple[bool, str]:
+        """Minimizes/restores all windows to show desktop (Win + D)."""
+        _send_keybd_combo([VK_LWIN, VK_D])
+        return True, "Toggled Windows Desktop view."
+
     def execute(self, action: str, **kwargs) -> bool:
         if action == "launch":
             app = kwargs.get("app", "")
@@ -161,6 +306,28 @@ class SystemService:
             return success
         elif action in ("close_window", "close_active_window"):
             success, _ = self.close_active_window()
+            return success
+        elif action in ("switch_desktop", "goto_desktop"):
+            target = kwargs.get("desktop", 1)
+            success, _ = self.switch_to_desktop(target)
+            return success
+        elif action == "next_desktop":
+            success, _ = self.switch_next_desktop()
+            return success
+        elif action == "prev_desktop":
+            success, _ = self.switch_previous_desktop()
+            return success
+        elif action == "create_desktop":
+            success, _ = self.create_virtual_desktop()
+            return success
+        elif action == "close_desktop":
+            success, _ = self.close_virtual_desktop()
+            return success
+        elif action == "task_view":
+            success, _ = self.show_task_view()
+            return success
+        elif action == "show_desktop":
+            success, _ = self.toggle_show_desktop()
             return success
         logger.warning(f"Action '{action}' not supported by SystemService.")
         return False

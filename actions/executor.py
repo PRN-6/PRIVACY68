@@ -508,6 +508,165 @@ def _execute_close_command(command: str, on_action_callback, on_status_callback)
     return None
 
 
+WORD_TO_DESKTOP_NUM = {
+    "one": 1, "first": 1, "1": 1,
+    "two": 2, "second": 2, "2": 2,
+    "three": 3, "third": 3, "3": 3,
+    "four": 4, "fourth": 4, "4": 4,
+    "five": 5, "fifth": 5, "5": 5,
+    "six": 6, "sixth": 6, "6": 6,
+    "seven": 7, "seventh": 7, "7": 7,
+    "eight": 8, "eighth": 8, "8": 8,
+    "nine": 9, "ninth": 9, "9": 9,
+    "ten": 10, "tenth": 10, "10": 10,
+}
+
+RE_VIRTUAL_DESKTOP_NUM = re.compile(
+    r"^(?:switch(?:\s+to)?|go\s+to|navigate(?:\s+to)?|move(?:\s+to)?|jump(?:\s+to)?|open|show)?\s*(?:the\s+)?(?:virtual\s+)?desktop\s+(\d+|one|first|two|second|three|third|four|fourth|five|fifth|six|sixth|seven|seventh|eight|eighth|nine|ninth|ten|tenth)$",
+    re.IGNORECASE
+)
+
+RE_VIRTUAL_DESKTOP_NEXT = re.compile(
+    r"^(?:switch(?:\s+to)?|go\s+to|navigate(?:\s+to)?|move(?:\s+to)?)?\s*(?:the\s+)?next\s+(?:virtual\s+)?desktop$",
+    re.IGNORECASE
+)
+
+RE_VIRTUAL_DESKTOP_PREV = re.compile(
+    r"^(?:switch(?:\s+to)?|go\s+to|navigate(?:\s+to)?|move(?:\s+to)?)?\s*(?:the\s+)?(?:previous|prev|prior)\s+(?:virtual\s+)?desktop$",
+    re.IGNORECASE
+)
+
+RE_VIRTUAL_DESKTOP_NEW = re.compile(
+    r"^(?:create|add|open|new)\s+(?:a\s+)?(?:new\s+)?(?:virtual\s+)?desktop$",
+    re.IGNORECASE
+)
+
+RE_VIRTUAL_DESKTOP_CLOSE = re.compile(
+    r"^(?:close|delete|remove)\s+(?:the\s+|this\s+|current\s+)?(?:virtual\s+)?desktop$",
+    re.IGNORECASE
+)
+
+RE_VIRTUAL_DESKTOP_ALL = re.compile(
+    r"^(?:show|view|open|see)\s+(?:all\s+)?(?:the\s+)?(?:virtual\s+)?desktops$|^(?:open\s+)?task\s+view$",
+    re.IGNORECASE
+)
+
+RE_SHOW_DESKTOP = re.compile(
+    r"^(?:show|go\s+to|minimize\s+all(?:\s+to)?)\s+(?:the\s+)?desktop$",
+    re.IGNORECASE
+)
+
+
+def _execute_virtual_desktop_command(command: str, on_action_callback, on_status_callback):
+    """
+    Directly routes Windows Virtual Desktop navigation (desktops 1, 2, 3, 4, 5, etc.,
+    next desktop, previous desktop, new desktop, close desktop, task view).
+    """
+    clean_cmd = command.strip().strip("'\"")
+
+    # 1. Specific desktop number: "desktop 2", "switch to desktop 3", "go to desktop 5"
+    m_num = RE_VIRTUAL_DESKTOP_NUM.fullmatch(clean_cmd)
+    if m_num:
+        raw_num = m_num.group(1).lower().strip()
+        target_num = WORD_TO_DESKTOP_NUM.get(raw_num)
+        if target_num is None:
+            try:
+                target_num = int(raw_num)
+            except ValueError:
+                target_num = 1
+
+        from services.system import system_service
+        success, msg = system_service.switch_to_desktop(target_num)
+        _notify(on_status_callback, on_action_callback, "virtual_desktop", success, msg)
+        return {
+            "success": success,
+            "tool": "virtual_desktop",
+            "method": "switch_desktop",
+            "message": msg,
+            "output": {"target_desktop": target_num},
+        }
+
+    # 2. Next virtual desktop
+    if RE_VIRTUAL_DESKTOP_NEXT.fullmatch(clean_cmd):
+        from services.system import system_service
+        success, msg = system_service.switch_next_desktop()
+        _notify(on_status_callback, on_action_callback, "virtual_desktop", success, msg)
+        return {
+            "success": success,
+            "tool": "virtual_desktop",
+            "method": "next_desktop",
+            "message": msg,
+            "output": "",
+        }
+
+    # 3. Previous virtual desktop
+    if RE_VIRTUAL_DESKTOP_PREV.fullmatch(clean_cmd):
+        from services.system import system_service
+        success, msg = system_service.switch_previous_desktop()
+        _notify(on_status_callback, on_action_callback, "virtual_desktop", success, msg)
+        return {
+            "success": success,
+            "tool": "virtual_desktop",
+            "method": "prev_desktop",
+            "message": msg,
+            "output": "",
+        }
+
+    # 4. Create new virtual desktop
+    if RE_VIRTUAL_DESKTOP_NEW.fullmatch(clean_cmd):
+        from services.system import system_service
+        success, msg = system_service.create_virtual_desktop()
+        _notify(on_status_callback, on_action_callback, "virtual_desktop", success, msg)
+        return {
+            "success": success,
+            "tool": "virtual_desktop",
+            "method": "create_desktop",
+            "message": msg,
+            "output": "",
+        }
+
+    # 5. Close virtual desktop
+    if RE_VIRTUAL_DESKTOP_CLOSE.fullmatch(clean_cmd):
+        from services.system import system_service
+        success, msg = system_service.close_virtual_desktop()
+        _notify(on_status_callback, on_action_callback, "virtual_desktop", success, msg)
+        return {
+            "success": success,
+            "tool": "virtual_desktop",
+            "method": "close_desktop",
+            "message": msg,
+            "output": "",
+        }
+
+    # 6. Task View / All Desktops
+    if RE_VIRTUAL_DESKTOP_ALL.fullmatch(clean_cmd):
+        from services.system import system_service
+        success, msg = system_service.show_task_view()
+        _notify(on_status_callback, on_action_callback, "virtual_desktop", success, msg)
+        return {
+            "success": success,
+            "tool": "virtual_desktop",
+            "method": "task_view",
+            "message": msg,
+            "output": "",
+        }
+
+    # 7. Toggle Show Desktop
+    if RE_SHOW_DESKTOP.fullmatch(clean_cmd):
+        from services.system import system_service
+        success, msg = system_service.toggle_show_desktop()
+        _notify(on_status_callback, on_action_callback, "system_desktop", success, msg)
+        return {
+            "success": success,
+            "tool": "system_desktop",
+            "method": "show_desktop",
+            "message": msg,
+            "output": "",
+        }
+
+    return None
+
+
 def execute_system_command_detailed(text: str, on_action_callback=None, on_status_callback=None) -> dict:
     """
     Routes built-in commands directly and uses Agent Brain for other requests.
@@ -559,7 +718,16 @@ def execute_system_command_detailed(text: str, on_action_callback=None, on_statu
     if close_result is not None:
         return close_result
 
-    # 4. Direct Web Searches, Websites, and App Launches
+    # 4. Windows Virtual Desktop Navigation (desktops 1, 2, 3, 4, 5, etc.)
+    vd_result = _execute_virtual_desktop_command(
+        low,
+        on_action_callback,
+        on_status_callback,
+    )
+    if vd_result is not None:
+        return vd_result
+
+    # 5. Direct Web Searches, Websites, and App Launches
     web_result = _execute_web_or_app_command(
         low,
         on_action_callback,

@@ -75,6 +75,25 @@ system_service.close_app("notepad")
 system_service.close_active_window()
 ```
 
+## Virtual Desktop Navigation
+```python
+from services.system import system_service
+
+# Navigate directly to Desktop 1, 2, 3, 4, 5, etc.
+system_service.switch_to_desktop(2)
+
+# Navigate to next or previous desktop
+system_service.switch_next_desktop()
+system_service.switch_previous_desktop()
+
+# Create or close a virtual desktop
+system_service.create_virtual_desktop()
+system_service.close_virtual_desktop()
+
+# Open Windows Task View (view all desktops)
+system_service.show_task_view()
+```
+
 ## Clipboard Management
 ```python
 import subprocess

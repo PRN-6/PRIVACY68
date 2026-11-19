@@ -274,6 +274,68 @@ class TestActionExecutor(unittest.TestCase):
                 mock_thread_start.assert_called_once()
                 generate.assert_not_called()
 
+    def test_virtual_desktop_numeric_navigation(self):
+        with patch("services.system.system_service.switch_to_desktop", return_value=(True, "Switched to Desktop 3 (of 5).")) as mock_sw:
+            with patch("actions.agent_brain.agent_brain.generate_and_execute") as generate:
+                result = executor.execute_system_command_detailed("switch to desktop 3")
+                self.assertTrue(result["success"])
+                self.assertEqual(result["tool"], "virtual_desktop")
+                self.assertEqual(result["method"], "switch_desktop")
+                mock_sw.assert_called_once_with(3)
+                generate.assert_not_called()
+
+    def test_virtual_desktop_word_navigation(self):
+        with patch("services.system.system_service.switch_to_desktop", return_value=(True, "Switched to Desktop 5 (of 5).")) as mock_sw:
+            with patch("actions.agent_brain.agent_brain.generate_and_execute") as generate:
+                result = executor.execute_system_command_detailed("desktop five")
+                self.assertTrue(result["success"])
+                self.assertEqual(result["tool"], "virtual_desktop")
+                self.assertEqual(result["method"], "switch_desktop")
+                mock_sw.assert_called_once_with(5)
+                generate.assert_not_called()
+
+    def test_virtual_desktop_next_and_prev(self):
+        with patch("services.system.system_service.switch_next_desktop", return_value=(True, "Navigated to next desktop")) as mock_next:
+            with patch("actions.agent_brain.agent_brain.generate_and_execute") as generate:
+                result = executor.execute_system_command_detailed("next desktop")
+                self.assertTrue(result["success"])
+                self.assertEqual(result["method"], "next_desktop")
+                mock_next.assert_called_once()
+                generate.assert_not_called()
+
+        with patch("services.system.system_service.switch_previous_desktop", return_value=(True, "Navigated to previous desktop")) as mock_prev:
+            with patch("actions.agent_brain.agent_brain.generate_and_execute") as generate:
+                result = executor.execute_system_command_detailed("previous desktop")
+                self.assertTrue(result["success"])
+                self.assertEqual(result["method"], "prev_desktop")
+                mock_prev.assert_called_once()
+                generate.assert_not_called()
+
+    def test_virtual_desktop_create_close_task_view(self):
+        with patch("services.system.system_service.create_virtual_desktop", return_value=(True, "Created")) as mock_create:
+            result = executor.execute_system_command_detailed("new desktop")
+            self.assertTrue(result["success"])
+            self.assertEqual(result["method"], "create_desktop")
+            mock_create.assert_called_once()
+
+        with patch("services.system.system_service.close_virtual_desktop", return_value=(True, "Closed")) as mock_close:
+            result = executor.execute_system_command_detailed("close desktop")
+            self.assertTrue(result["success"])
+            self.assertEqual(result["method"], "close_desktop")
+            mock_close.assert_called_once()
+
+        with patch("services.system.system_service.show_task_view", return_value=(True, "Opened")) as mock_tv:
+            result = executor.execute_system_command_detailed("task view")
+            self.assertTrue(result["success"])
+            self.assertEqual(result["method"], "task_view")
+            mock_tv.assert_called_once()
+
+        with patch("services.system.system_service.toggle_show_desktop", return_value=(True, "Toggled")) as mock_sd:
+            result = executor.execute_system_command_detailed("show desktop")
+            self.assertTrue(result["success"])
+            self.assertEqual(result["method"], "show_desktop")
+            mock_sd.assert_called_once()
+
 
 if __name__ == "__main__":
     unittest.main()

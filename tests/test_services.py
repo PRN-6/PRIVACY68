@@ -59,6 +59,56 @@ class TestServices(unittest.TestCase):
         self.assertTrue(result)
         mock_close.assert_called_once_with("notepad")
 
+    @patch("services.system._send_keybd_combo", return_value=True)
+    def test_system_service_virtual_desktops(self, mock_combo):
+        svc = SystemService()
+        # Mock desktop info (current 1, total 5)
+        with patch.object(svc, "get_virtual_desktop_info", return_value=(1, 5)):
+            success, msg = svc.switch_to_desktop(3)
+            self.assertTrue(success)
+            self.assertIn("Switched to Desktop 3", msg)
+            self.assertEqual(mock_combo.call_count, 2)  # diff = 2 right clicks
+
+        mock_combo.reset_mock()
+        with patch.object(svc, "get_virtual_desktop_info", return_value=(3, 5)):
+            success, msg = svc.switch_to_desktop(1)
+            self.assertTrue(success)
+            self.assertIn("Switched to Desktop 1", msg)
+            self.assertEqual(mock_combo.call_count, 2)  # diff = -2 left clicks
+
+        mock_combo.reset_mock()
+        with patch.object(svc, "get_virtual_desktop_info", return_value=(2, 5)):
+            success, msg = svc.switch_next_desktop()
+            self.assertTrue(success)
+            self.assertIn("Navigated to next desktop", msg)
+
+            success, msg = svc.switch_previous_desktop()
+            self.assertTrue(success)
+            self.assertIn("Navigated to previous desktop", msg)
+
+            success, msg = svc.create_virtual_desktop()
+            self.assertTrue(success)
+            self.assertIn("Created a new virtual desktop", msg)
+
+            success, msg = svc.close_virtual_desktop()
+            self.assertTrue(success)
+            self.assertIn("Closed current virtual desktop", msg)
+
+            success, msg = svc.show_task_view()
+            self.assertTrue(success)
+            self.assertIn("Opened Windows Task View", msg)
+
+            success, msg = svc.toggle_show_desktop()
+            self.assertTrue(success)
+            self.assertIn("Toggled Windows Desktop view", msg)
+
+    @patch.object(SystemService, "switch_to_desktop", return_value=(True, "Switched"))
+    def test_system_service_execute_desktop_action(self, mock_switch):
+        svc = SystemService()
+        res = svc.execute("switch_desktop", desktop=4)
+        self.assertTrue(res)
+        mock_switch.assert_called_once_with(4)
+
 
 if __name__ == "__main__":
     unittest.main()
