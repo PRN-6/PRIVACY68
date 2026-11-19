@@ -96,13 +96,54 @@ class SkillRegistry:
 
         # Generate automatic keywords from name and description
         auto_words = set(re.findall(r"\b[a-zA-Z0-9_\-]{2,}\b", f"{name} {description}".lower()))
-        combined_keywords = set(k.lower() for k in keywords) | (auto_words - _STOP_WORDS)
+
+        # Extract CLI bins from OpenClaw and standard metadata
+        metadata = frontmatter.get("metadata", {})
+        if isinstance(metadata, dict):
+            openclaw_meta = metadata.get("openclaw", {})
+            if isinstance(openclaw_meta, dict):
+                bins = openclaw_meta.get("requires", {}).get("bins", [])
+                for b in bins:
+                    auto_words.add(str(b).lower())
+            req_bins = metadata.get("requires", {}).get("bins", [])
+            if isinstance(req_bins, list):
+                for b in req_bins:
+                    auto_words.add(str(b).lower())
+
+        # Extract keywords from Markdown headings (e.g., ## PRs, ## Issues, ## Async merges)
+        headings = re.findall(r"^#+\s+(.+)$", body, re.MULTILINE)
+        for h in headings:
+            for w in re.findall(r"\b[a-zA-Z0-9_\-]{2,}\b", h.lower()):
+                auto_words.add(w)
+
+        # Expand singular/plural variants so queries match regardless of grammatical number
+        stems = set()
+        for w in auto_words:
+            if w.endswith("ies") and len(w) > 4:
+                stems.add(w[:-3] + "y")
+            elif w.endswith("es") and len(w) > 4:
+                stems.add(w[:-2])
+            elif w.endswith("s") and len(w) > 2:
+                stems.add(w[:-1])
+            elif not w.endswith("s"):
+                stems.add(w + "s")
+        auto_words |= stems
+
+        # Expand explicit keywords and tokenize multi-word phrases
+        kw_set = set()
+        for k in keywords:
+            k_lower = k.lower().strip()
+            kw_set.add(k_lower)
+            for part in re.findall(r"\b[a-zA-Z0-9_\-]{2,}\b", k_lower):
+                kw_set.add(part)
+
+        combined_keywords = (kw_set | (auto_words - _STOP_WORDS))
 
         return {
             "name": name,
             "description": description,
-            "keywords": list(combined_keywords),
-            "metadata": frontmatter.get("metadata", {}),
+            "keywords": sorted(list(combined_keywords)),
+            "metadata": metadata,
             "body": body,
             "path": str(file_path),
             "is_builtin": is_builtin
@@ -110,21 +151,39 @@ class SkillRegistry:
 
     def find_matching_skills(self, text: str, max_skills: int = 2) -> List[Dict[str, Any]]:
         """Finds matching skills based on text keywords and relevance score."""
-        tokens = set(re.findall(r"\b[a-zA-Z0-9_\-]{2,}\b", text.lower())) - _STOP_WORDS
+        text_lower = text.lower()
+        tokens = set(re.findall(r"\b[a-zA-Z0-9_\-]{2,}\b", text_lower)) - _STOP_WORDS
         if not tokens:
             return []
 
         scored_skills = []
         for name, skill in self._skills.items():
             score = 0.0
-            # Direct name match in query
-            if name in text.lower():
-                score += 3.0
+            # Direct skill name match in query (e.g., "github", "docker", "vscode")
+            if name in text_lower:
+                score += 4.0
+
+            # Direct CLI bin matches from metadata
+            metadata = skill.get("metadata", {})
+            bins = []
+            if isinstance(metadata, dict):
+                openclaw_meta = metadata.get("openclaw", {})
+                if isinstance(openclaw_meta, dict):
+                    bins.extend(openclaw_meta.get("requires", {}).get("bins", []))
+                bins.extend(metadata.get("requires", {}).get("bins", []))
+            for b in bins:
+                if str(b).lower() in tokens:
+                    score += 3.0
 
             # Keyword overlap
             skill_kws = set(skill.get("keywords", []))
             overlap = tokens & skill_kws
             score += len(overlap) * 1.5
+
+            # Substring matching for phrases in keywords (e.g., "pull request")
+            for kw in skill.get("keywords", []):
+                if " " in kw and kw in text_lower:
+                    score += 3.0
 
             if score >= 1.5:
                 scored_skills.append((score, skill))
@@ -141,9 +200,9 @@ class SkillRegistry:
         context_blocks = []
         for skill in matches:
             body = skill.get("body", "").strip()
-            # Truncate very long skill documents to avoid token blowout
-            if len(body) > 3000:
-                body = body[:3000] + "\n...(remaining skill instructions truncated)..."
+            # Allow full OpenClaw skills (up to 30,000 characters) without truncation
+            if len(body) > 30000:
+                body = body[:30000] + "\n...(remaining skill instructions truncated)..."
             
             context_blocks.append(
                 f"### ACTIVE DEVELOPER SKILL GUIDELINES: {skill['name'].upper()}\n"
