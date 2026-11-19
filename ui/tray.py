@@ -42,7 +42,6 @@ class SystemTray:
             pystray.MenuItem("🎙️ Voice Command (Push to Talk)", self._on_voice_command),
             pystray.MenuItem("📊 Open Dashboard", self._on_open_dashboard),
             pystray.MenuItem("📱 Open Mobile Remote", self._on_open_mobile_remote),
-            pystray.MenuItem("🧹 Reset Brain Session", self._on_reset_brain),
             pystray.Menu.SEPARATOR,
             pystray.MenuItem("🚪 Exit PRIVACY68", self._on_exit)
         )
