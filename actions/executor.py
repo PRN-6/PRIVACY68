@@ -501,16 +501,9 @@ def execute_system_command_detailed(text: str, on_action_callback=None, on_statu
         }
     if github_plugin and github_plugin.is_enabled:
         request = github_plugin.parse_command(cleaned)
-        if request:
+        if request and request.get("action") != "unsupported":
             action = request["action"]
             kwargs = request["kwargs"]
-            if action == "unsupported":
-                return {
-                    "success": False,
-                    "tool": "github",
-                    "method": "github_plugin",
-                    "message": "That GitHub operation is not supported yet. Supported tasks: repository status, current-branch push, list repositories/issues/pull requests, and create issues/pull requests.",
-                }
             if action == "create_issue" and not kwargs.get("title"):
                 return {
                     "success": False,

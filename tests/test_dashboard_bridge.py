@@ -186,6 +186,20 @@ class TestDashboardAPI(unittest.TestCase):
         self.assertIn("path", res)
         mock_startfile.assert_called_once()
 
+    def test_get_markdown_skills(self):
+        skills = self.api.get_markdown_skills()
+        self.assertIsInstance(skills, list)
+        names = [s["name"].lower() for s in skills]
+        self.assertIn("github", names)
+        self.assertIn("vscode", names)
+
+    @patch("os.startfile", create=True)
+    def test_open_skills_folder(self, mock_startfile):
+        res = self.api.open_skills_folder()
+        self.assertTrue(res["success"])
+        self.assertIn("path", res)
+        mock_startfile.assert_called_once()
+
 
 if __name__ == "__main__":
     unittest.main()

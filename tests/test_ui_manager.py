@@ -73,9 +73,12 @@ class TestDashboardLaunch(unittest.TestCase):
 
             with patch("actions.executor.execute_system_command_detailed", return_value={"success": True, "message": "Chrome opened"}) as mock_exec:
                 overlay._on_text_submitted()
-                # Wait briefly for worker thread to complete execution
+                # Wait for worker thread to complete execution
                 import time
-                time.sleep(0.1)
+                for _ in range(20):
+                    if mock_exec.called:
+                        break
+                    time.sleep(0.05)
                 mock_exec.assert_called_once()
                 self.assertEqual(mock_exec.call_args[0][0], "open chrome")
                 mock_ui.on_transcription.assert_called_once_with("open chrome")

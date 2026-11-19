@@ -308,8 +308,18 @@ class AgentBrain:
 
     def _get_code_from_llm(self, text: str, error_context: Optional[str] = None) -> str:
         """Uses LiteLLM to get Python code from configured models with automated multi-provider failover."""
+        system_content = self.system_prompt
+        try:
+            from skills.skill_registry import skill_registry
+            skill_context = skill_registry.build_skill_prompt_context(text)
+            if skill_context:
+                system_content += f"\n\n{skill_context}"
+                logger.info(f"[AGENT BRAIN] Injected Markdown Skill context for prompt: '{text}'")
+        except Exception as e:
+            logger.debug(f"[AGENT BRAIN] Skill context injection note: {e}")
+
         messages = [
-            {"role": "system", "content": self.system_prompt},
+            {"role": "system", "content": system_content},
             {"role": "user", "content": text},
         ]
         if error_context and self.last_code:

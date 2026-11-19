@@ -1017,6 +1017,33 @@ class DashboardAPI:
             logger.error(f"Error opening plugins folder: {e}")
             return {"success": False, "message": str(e)}
 
+    # ---------------- Markdown Agent Skills (SKILL.md) ---------------- #
+
+    def get_markdown_skills(self) -> List[Dict[str, Any]]:
+        """Returns all discovered Markdown Agent Skills (SKILL.md) for developer tools."""
+        try:
+            from skills.skill_registry import skill_registry
+            skill_registry.reload_skills()
+            return skill_registry.list_skills()
+        except Exception as e:
+            logger.error("Error retrieving markdown skills: %s", e)
+            return []
+
+    def open_skills_folder(self) -> Dict[str, Any]:
+        """Opens the user's custom skills directory in Windows File Explorer."""
+        try:
+            from skills.skill_registry import skill_registry
+            skill_registry.user_skills_dir.mkdir(parents=True, exist_ok=True)
+            folder = str(skill_registry.user_skills_dir)
+            if platform.system() == "Windows":
+                os.startfile(folder)
+            else:
+                subprocess.Popen(["xdg-open", folder])
+            return {"success": True, "path": folder, "message": f"Opened skills directory: {folder}"}
+        except Exception as e:
+            logger.error(f"Error opening skills folder: {e}")
+            return {"success": False, "message": str(e)}
+
     # ---------------- WhatsApp Contacts ---------------- #
 
     def get_whatsapp_contacts(self) -> List[Dict]:
