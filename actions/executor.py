@@ -75,26 +75,24 @@ def _notify(on_status_callback, on_action_callback, tool: str, success: bool, me
             on_action_callback(tool, success)
 
 
+BROWSER_EXECUTABLES = {
+    "chrome": [
+        os.path.join(os.environ.get("ProgramFiles", r"C:\Program Files"), r"Google\Chrome\Application\chrome.exe"),
+        os.path.join(os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)"), r"Google\Chrome\Application\chrome.exe"),
+        os.path.join(os.environ.get("LOCALAPPDATA", ""), r"Google\Chrome\Application\chrome.exe"),
+    ],
+    "brave": [
+        os.path.join(os.environ.get("ProgramFiles", r"C:\Program Files"), r"BraveSoftware\Brave-Browser\Application\brave.exe"),
+        os.path.join(os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)"), r"BraveSoftware\Brave-Browser\Application\brave.exe"),
+        os.path.join(os.environ.get("LOCALAPPDATA", ""), r"BraveSoftware\Brave-Browser\Application\brave.exe"),
+    ],
+}
+
+
 def _open_url(url: str, preferred_browser: str = None) -> bool:
-    """Attempts to open URL via Chrome or Brave binary, falling back to system browser."""
-    if preferred_browser == "chrome":
-        for p in [
-            os.path.join(os.environ.get("ProgramFiles", r"C:\Program Files"), r"Google\Chrome\Application\chrome.exe"),
-            os.path.join(os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)"), r"Google\Chrome\Application\chrome.exe"),
-            os.path.join(os.environ.get("LOCALAPPDATA", ""), r"Google\Chrome\Application\chrome.exe"),
-        ]:
-            if os.path.isfile(p):
-                try:
-                    subprocess.Popen([p, url])
-                    return True
-                except Exception:
-                    pass
-    elif preferred_browser == "brave":
-        for p in [
-            os.path.join(os.environ.get("ProgramFiles", r"C:\Program Files"), r"BraveSoftware\Brave-Browser\Application\brave.exe"),
-            os.path.join(os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)"), r"BraveSoftware\Brave-Browser\Application\brave.exe"),
-            os.path.join(os.environ.get("LOCALAPPDATA", ""), r"BraveSoftware\Brave-Browser\Application\brave.exe"),
-        ]:
+    """Attempts to open URL via preferred browser executable, falling back to system browser."""
+    if preferred_browser in BROWSER_EXECUTABLES:
+        for p in BROWSER_EXECUTABLES[preferred_browser]:
             if os.path.isfile(p):
                 try:
                     subprocess.Popen([p, url])
@@ -302,40 +300,6 @@ def _execute_web_or_app_command(command: str, on_action_callback, on_status_call
     m_site = re.fullmatch(r"(?:open|launch|go to)\s+([a-zA-Z0-9_\-\.]+)", clean_cmd, re.IGNORECASE)
     if m_site:
         site_key = m_site.group(1).lower().strip()
-
-        if site_key == "gmail":
-            from services.gmail import gmail_service
-            if not getattr(gmail_service, "is_enabled", True):
-                msg = "The Gmail service is disabled. Enable it in the Services dashboard to use Gmail commands."
-                _notify(on_status_callback, on_action_callback, "gmail", False, msg)
-                return {
-                    "success": False,
-                    "tool": "gmail",
-                    "method": "gmail_service",
-                    "message": msg,
-                    "output": "",
-                }
-            success = bool(gmail_service.open_inbox())
-            msg = "Opened Gmail inbox." if success else "Could not open Gmail inbox."
-            _notify(on_status_callback, on_action_callback, "gmail", success, msg)
-            return {
-                "success": success,
-                "tool": "gmail",
-                "method": "gmail_service",
-                "message": msg,
-                "output": "",
-            }
-        elif site_key == "whatsapp":
-            success = webbrowser.open("https://web.whatsapp.com")
-            msg = "Opened WhatsApp." if success else "Could not open WhatsApp."
-            _notify(on_status_callback, on_action_callback, "whatsapp", success, msg)
-            return {
-                "success": success,
-                "tool": "whatsapp",
-                "method": "whatsapp_service",
-                "message": msg,
-                "output": "",
-            }
 
         if site_key in COMMON_WEB_SERVICES:
             url = COMMON_WEB_SERVICES[site_key]
