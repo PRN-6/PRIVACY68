@@ -525,7 +525,6 @@
         <button class="nav-btn" data-tab="security">Security Guard</button>
         <button class="nav-btn" data-tab="voice">Voice & Audio</button>
         <button class="nav-btn" data-tab="plugins">Plugins</button>
-        <button class="nav-btn" data-tab="settings">Settings & Hardware</button>
       </nav>
 
       <!-- Push To Talk Microphone Button -->
@@ -1021,40 +1020,6 @@
           </div>
         </div>
       </section>
-
-      <!-- TAB 8: Settings & Hardware -->
-      <section class="tab-view" id="tab-settings">
-        <div class="card">
-          <div class="card-header">
-            <h2 class="card-title">User Profile</h2>
-          </div>
-          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
-            <div style="display:flex; flex-direction:column; gap:4px;">
-              <label style="font-size:11px; font-weight:700; color:var(--text-muted);">Your Name</label>
-              <input type="text" id="setting-user-name" placeholder="User">
-            </div>
-            <div style="display:flex; flex-direction:column; gap:4px;">
-              <label style="font-size:11px; font-weight:700; color:var(--text-muted);">Assistant Name</label>
-              <input type="text" id="setting-assistant-name" placeholder="Privacy68">
-            </div>
-          </div>
-          <button class="btn primary" id="save-profile-btn" style="align-self:flex-start; margin-top:8px;">Save Profile</button>
-        </div>
-
-        <!-- Hardware & CUDA Diagnostics -->
-        <div class="card">
-          <div class="card-header">
-            <h2 class="card-title">System Hardware & NVIDIA CUDA</h2>
-            <button class="btn sm" id="refresh-sys-btn">Refresh</button>
-          </div>
-          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:10px;" id="sys-diag-grid">
-            <div class="chip">CUDA: Checking...</div>
-            <div class="chip">GPU: Checking...</div>
-            <div class="chip">Platform: Windows x64</div>
-          </div>
-          <button class="btn primary sm" id="btn-download-cuda" style="display:none; align-self:flex-start; margin-top:8px;">Download CUDA 12 Runtime (~450MB)</button>
-        </div>
-      </section>
     </main>
   </div>
 
@@ -1119,8 +1084,7 @@
       remote: 'Mobile Web Remote Server',
       security: '3-Tier Security & Permission Guard',
       voice: 'Voice & Audio Settings',
-      plugins: 'Automation Plugins',
-      settings: 'Settings & Hardware'
+      plugins: 'Automation Plugins'
     };
 
     tabBtns.forEach(btn => {
@@ -2104,26 +2068,29 @@
       try {
         const p = await bridge().get_profile();
         if (p) {
-          $('setting-user-name').value = p.user_name || 'User';
-          $('setting-assistant-name').value = p.assistant_name || 'Privacy68';
-          $('top-user-chip').textContent = p.user_name || 'User';
+          if ($('setting-user-name')) $('setting-user-name').value = p.user_name || 'User';
+          if ($('setting-assistant-name')) $('setting-assistant-name').value = p.assistant_name || 'Privacy68';
+          if ($('top-user-chip')) $('top-user-chip').textContent = p.user_name || 'User';
         }
       } catch (e) {}
     }
 
-    $('save-profile-btn').addEventListener('click', async () => {
-      try {
-        const res = await bridge().save_profile({
-          user_name: $('setting-user-name').value.trim() || 'User',
-          wake_word: $('setting-assistant-name').value.trim() || 'Privacy68'
-        });
-        showToast(res.message || 'Profile saved!');
-        await loadProfile();
-      } catch (e) { showToast(e.message, true); }
-    });
+    if ($('save-profile-btn')) {
+      $('save-profile-btn').addEventListener('click', async () => {
+        try {
+          const res = await bridge().save_profile({
+            user_name: $('setting-user-name').value.trim() || 'User',
+            wake_word: $('setting-assistant-name').value.trim() || 'Privacy68'
+          });
+          showToast(res.message || 'Profile saved!');
+          await loadProfile();
+        } catch (e) { showToast(e.message, true); }
+      });
+    }
 
     async function loadSysDiag() {
       const grid = $('sys-diag-grid');
+      if (!grid) return;
       try {
         const rt = await bridge().get_runtime_status();
         const cuda = rt.cuda || {};
@@ -2144,7 +2111,7 @@
       } catch (e) {}
     }
 
-    $('refresh-sys-btn').addEventListener('click', loadSysDiag);
+    if ($('refresh-sys-btn')) $('refresh-sys-btn').addEventListener('click', loadSysDiag);
     $('close-window-btn').addEventListener('click', async () => {
       try { await bridge().close_app(); } catch (e) {}
     });
