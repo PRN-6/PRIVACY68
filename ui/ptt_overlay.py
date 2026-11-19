@@ -52,7 +52,7 @@ class PushToTalkOverlay:
             pass
 
         # Dimensions & screen positioning (bottom center, above taskbar)
-        w, h = 420, 162
+        w, h = 450, 182
         sw = self.parent_root.winfo_screenwidth()
         sh = self.parent_root.winfo_screenheight()
         x = max(20, (sw - w) // 2)
@@ -64,12 +64,12 @@ class PushToTalkOverlay:
         outer = tk.Frame(self.window, bg="#1e2433", padx=1, pady=1)
         outer.pack(fill="both", expand=True)
 
-        self.main_container = tk.Frame(outer, bg="#0d111a", padx=12, pady=10)
+        self.main_container = tk.Frame(outer, bg="#0d111a", padx=14, pady=12)
         self.main_container.pack(fill="both", expand=True)
 
         # 1. Top Header Bar (Draggable + Title + Close Button)
         header = tk.Frame(self.main_container, bg="#0d111a")
-        header.pack(fill="x", side="top", pady=(0, 6))
+        header.pack(fill="x", side="top", pady=(0, 8))
 
         # Drag handle & Title
         title_box = tk.Frame(header, bg="#0d111a")
@@ -109,13 +109,13 @@ class PushToTalkOverlay:
 
         # 2. Middle Body: Mic Action Button (Left) + Status / Speech (Right)
         body = tk.Frame(self.main_container, bg="#0d111a")
-        body.pack(fill="x", expand=False)
+        body.pack(fill="x", side="top", pady=(0, 9))
 
         # Large Microphone Click-to-Speak Button
         self.mic_btn = tk.Button(
             body,
             text="🎙️",
-            font=("Segoe UI Emoji", 20),
+            font=("Segoe UI Emoji", 18),
             bg="#1e293b",
             fg="#f8fafc",
             activebackground="#334155",
@@ -150,32 +150,36 @@ class PushToTalkOverlay:
             text="Google Speech 1st • Offline Whisper Fallback",
             fg="#64748b",
             bg="#0d111a",
-            font=("Segoe UI", 9),
+            font=("Segoe UI", 8),
             anchor="w",
-            wraplength=275,
+            wraplength=340,
             justify="left"
         )
         self.status_subtitle.pack(fill="x", pady=(2, 0))
 
-        # 3. Bottom Row: Text Command Input + Send Button
-        input_container = tk.Frame(self.main_container, bg="#1e2433", padx=1, pady=1)
-        input_container.pack(fill="x", side="bottom", pady=(8, 0))
+        # 3. Subtle Divider Line
+        divider = tk.Frame(self.main_container, bg="#1e293b", height=1)
+        divider.pack(fill="x", side="top", pady=(0, 9))
 
-        input_inner = tk.Frame(input_container, bg="#111827", padx=8, pady=4)
+        # 4. Bottom Row: Text Command Input + Send Button
+        input_container = tk.Frame(self.main_container, bg="#263147", padx=1, pady=1)
+        input_container.pack(fill="x", side="top")
+
+        input_inner = tk.Frame(input_container, bg="#0f172a", padx=8, pady=5)
         input_inner.pack(fill="x", expand=True)
 
-        input_icon = tk.Label(
+        prompt_lbl = tk.Label(
             input_inner,
-            text="⌨️",
-            fg="#64748b",
-            bg="#111827",
-            font=("Segoe UI Emoji", 9)
+            text="❯",
+            fg="#38bdf8",
+            bg="#0f172a",
+            font=("Consolas", 10, "bold")
         )
-        input_icon.pack(side="left", padx=(0, 6))
+        prompt_lbl.pack(side="left", padx=(2, 6))
 
         self.cmd_entry = tk.Entry(
             input_inner,
-            bg="#111827",
+            bg="#0f172a",
             fg="#64748b",
             font=("Segoe UI", 9),
             insertbackground="#38bdf8",
@@ -190,7 +194,7 @@ class PushToTalkOverlay:
 
         self.send_btn = tk.Button(
             input_inner,
-            text="➤",
+            text="Run ↵",
             font=("Segoe UI", 8, "bold"),
             bg="#2563eb",
             fg="#ffffff",
@@ -317,6 +321,10 @@ class PushToTalkOverlay:
         self.window.deiconify()
         self.window.lift()
         self.window.attributes("-topmost", True)
+        try:
+            self.window.focus_set()
+        except Exception:
+            pass
 
     def hide(self):
         """Hides the overlay and cancels any active recording."""
