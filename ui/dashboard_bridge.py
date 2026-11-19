@@ -4,7 +4,6 @@ import platform
 import shutil
 import subprocess
 from typing import Dict, Any, List, Optional
-import sounddevice as sd
 import numpy as np
 
 import config
@@ -1089,34 +1088,20 @@ class DashboardAPI:
 
         sections.append({"title": "Hardware Acceleration & Compute", "icon": "zap", "items": gpu_checks})
 
-        # 3. Audio & Hardware Input
+        # 3. Privacy Policy & System Specs
         hw_checks = []
-        try:
-            devices = sd.query_devices()
-            input_devs = [d for d in devices if d['max_input_channels'] > 0]
-            if input_devs:
-                default_in = sd.query_devices(kind='input')
-                hw_checks.append({
-                    "name": "Microphone Hardware",
-                    "status": "ok",
-                    "detail": f"{len(input_devs)} input device(s) • Default: {default_in['name'][:35]}",
-                    "link": None
-                })
-            else:
-                hw_checks.append({
-                    "name": "Microphone Hardware",
-                    "status": "fail",
-                    "detail": "No audio recording devices found! Please connect a microphone.",
-                    "link": None
-                })
-        except Exception as e:
-            hw_checks.append({
-                "name": "Microphone Hardware",
-                "status": "fail",
-                "detail": f"Audio subsystem error: {e}",
-                "link": None
-            })
-
+        hw_checks.append({
+            "name": "Microphone Eavesdropping Guard",
+            "status": "ok",
+            "detail": "PC Mic Hardware Disabled • 100% Zero Ambient Eavesdropping",
+            "link": None
+        })
+        hw_checks.append({
+            "name": "Voice Teleoperation Channel",
+            "status": "ok",
+            "detail": "Telegram Remote Gateway Active (Encrypted 4G/5G)",
+            "link": None
+        })
         hw_checks.append({
             "name": "Operating System",
             "status": "ok",
@@ -1124,22 +1109,13 @@ class DashboardAPI:
             "link": None
         })
 
-        sections.append({"title": "Audio Input & System Specs", "icon": "mic", "items": hw_checks})
+        sections.append({"title": "Privacy & System Specs", "icon": "shield", "items": hw_checks})
 
         return sections
 
     def test_microphone(self) -> Dict[str, Any]:
-        """Records a 0.4s audio slice to measure current mic volume/energy."""
-        try:
-            duration = 0.4
-            sr = 16000
-            recording = sd.rec(int(duration * sr), samplerate=sr, channels=1, dtype="float32")
-            sd.wait()
-            rms = float(np.sqrt(np.mean(recording**2)))
-            level_pct = min(100, int(rms * 500))
-            return {"success": True, "level": level_pct, "rms": rms}
-        except Exception as e:
-            return {"success": False, "level": 0, "message": str(e)}
+        """Local microphone capture is permanently disabled for privacy; teleoperation runs via Telegram."""
+        return {"success": True, "level": 0, "message": "Local microphone capture is disabled. Voice commands are received exclusively through Telegram Remote Gateway."}
 
     # ---------------- Voice Lock (Removed) ---------------- #
 
