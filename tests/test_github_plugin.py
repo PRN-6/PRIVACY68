@@ -57,8 +57,25 @@ class TestGitHubPlugin(unittest.TestCase):
         self.assertTrue(result["success"])
         request.assert_called_once_with("GET", "/user", token="github_pat_example")
         saved = credential_manager.CredWrite.call_args.args[0]
-        self.assertEqual(saved["CredentialBlob"], b"github_pat_example")
+        self.assertEqual(saved["CredentialBlob"], "github_pat_example")
         self.assertEqual(saved["TargetName"], "PRIVACY68/GitHub/PersonalAccessToken")
+
+    def test_get_token_decodes_utf16_and_utf8_blobs(self):
+        credential_manager = Mock()
+        # Test UTF-16LE bytes (standard Windows Credential Manager Unicode return)
+        credential_manager.CredRead.return_value = {"CredentialBlob": "token_utf16".encode("utf-16-le")}
+        with patch.object(self.plugin, "_credential_manager", return_value=credential_manager):
+            self.assertEqual(self.plugin.get_token(), "token_utf16")
+
+        # Test UTF-8 bytes
+        credential_manager.CredRead.return_value = {"CredentialBlob": "token_utf8".encode("utf-8")}
+        with patch.object(self.plugin, "_credential_manager", return_value=credential_manager):
+            self.assertEqual(self.plugin.get_token(), "token_utf8")
+
+        # Test plain string
+        credential_manager.CredRead.return_value = {"CredentialBlob": "token_plain"}
+        with patch.object(self.plugin, "_credential_manager", return_value=credential_manager):
+            self.assertEqual(self.plugin.get_token(), "token_plain")
 
     def test_connect_does_not_save_a_token_if_github_rejects_it(self):
         credential_manager = Mock()

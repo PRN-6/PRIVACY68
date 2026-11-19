@@ -42,20 +42,42 @@ class GitHubPlugin(BasePlugin):
         return win32cred
 
     def get_token(self) -> Optional[str]:
-        win32cred = self._credential_manager()
+        # 1. Primary: Windows Credential Manager
         try:
+            win32cred = self._credential_manager()
             credential = win32cred.CredRead(_CREDENTIAL_TARGET, win32cred.CRED_TYPE_GENERIC)
+            secret = credential.get("CredentialBlob")
+            if isinstance(secret, str):
+                return secret
+            if isinstance(secret, (bytes, bytearray)):
+                # Windows Credential Manager returns UTF-16LE bytes for Unicode credentials
+                if b"\x00" in secret:
+                    try:
+                        return secret.decode("utf-16").rstrip("\x00")
+                    except Exception:
+                        pass
+                try:
+                    return secret.decode("utf-8")
+                except Exception:
+                    return secret.decode("latin-1").replace("\x00", "")
         except Exception as exc:
-            if getattr(exc, "winerror", None) == 1168:
-                return None
-            raise RuntimeError("Could not read the GitHub credential from Windows Credential Manager.") from exc
+            if getattr(exc, "winerror", None) not in (1168, None):
+                logger.debug("Could not read GitHub token from Windows Credential Manager: %s", exc)
 
-        secret = credential.get("CredentialBlob")
-        if isinstance(secret, bytes):
-            return secret.decode("utf-8")
-        if isinstance(secret, str):
-            return secret
-        raise RuntimeError("The saved GitHub credential has an unsupported format.")
+        # 2. Secondary fallback: environment variable or .env
+        env_token = os.environ.get("GITHUB_TOKEN") or os.environ.get("PRIVACY68_GITHUB_TOKEN")
+        if env_token and env_token.strip():
+            return env_token.strip()
+
+        try:
+            import config
+            saved_token = getattr(config, "GITHUB_TOKEN", None)
+            if saved_token and str(saved_token).strip():
+                return str(saved_token).strip()
+        except Exception:
+            pass
+
+        return None
 
     def connect(self, token: str) -> Dict[str, Any]:
         token = token.strip()
@@ -63,26 +85,78 @@ class GitHubPlugin(BasePlugin):
             return {"success": False, "message": "Enter a valid GitHub personal access token."}
 
         user = self._api_request("GET", "/user", token=token)
-        win32cred = self._credential_manager()
+        saved = False
+        save_err = None
+
+        # 1. Primary storage: Windows Credential Manager
         try:
-            win32cred.CredWrite({
-                "Type": win32cred.CRED_TYPE_GENERIC,
-                "TargetName": _CREDENTIAL_TARGET,
-                "UserName": user["login"],
-                "CredentialBlob": token.encode("utf-8"),
-                "Persist": win32cred.CRED_PERSIST_LOCAL_MACHINE,
-            }, 0)
+            win32cred = self._credential_manager()
+            for persist in (
+                getattr(win32cred, "CRED_PERSIST_LOCAL_MACHINE", 2),
+                getattr(win32cred, "CRED_PERSIST_ENTERPRISE", 3),
+                getattr(win32cred, "CRED_PERSIST_SESSION", 1),
+            ):
+                try:
+                    # pywin32 CredWrite accepts str on Windows (Unicode WCHAR)
+                    win32cred.CredWrite({
+                        "Type": win32cred.CRED_TYPE_GENERIC,
+                        "TargetName": _CREDENTIAL_TARGET,
+                        "UserName": user["login"],
+                        "CredentialBlob": token,
+                        "Persist": persist,
+                    }, 0)
+                    saved = True
+                    break
+                except TypeError:
+                    # Fallback if an older pywin32 build expects bytes
+                    try:
+                        win32cred.CredWrite({
+                            "Type": win32cred.CRED_TYPE_GENERIC,
+                            "TargetName": _CREDENTIAL_TARGET,
+                            "UserName": user["login"],
+                            "CredentialBlob": token.encode("utf-8"),
+                            "Persist": persist,
+                        }, 0)
+                        saved = True
+                        break
+                    except Exception as e:
+                        save_err = e
+                except Exception as e:
+                    save_err = e
         except Exception as exc:
-            raise RuntimeError("GitHub sign-in succeeded, but Windows Credential Manager could not save the token.") from exc
+            save_err = exc
+
+        # 2. Secondary fallback: .env configuration
+        if not saved:
+            try:
+                import config
+                config.update_dotenv_var("GITHUB_TOKEN", token)
+                os.environ["GITHUB_TOKEN"] = token
+                saved = True
+            except Exception as env_exc:
+                save_err = env_exc
+
+        if not saved:
+            raise RuntimeError(f"GitHub sign-in succeeded, but token could not be saved: {save_err}")
+
         return {"success": True, "message": f"Connected to GitHub as {user['login']}.", "login": user["login"]}
 
     def disconnect(self) -> Dict[str, Any]:
-        win32cred = self._credential_manager()
         try:
+            win32cred = self._credential_manager()
             win32cred.CredDelete(_CREDENTIAL_TARGET, win32cred.CRED_TYPE_GENERIC, 0)
         except Exception as exc:
             if getattr(exc, "winerror", None) != 1168:
-                raise RuntimeError("Could not remove the GitHub credential from Windows Credential Manager.") from exc
+                logger.debug("Windows Credential Manager could not remove token: %s", exc)
+
+        try:
+            import config
+            config.update_dotenv_var("GITHUB_TOKEN", "")
+            if "GITHUB_TOKEN" in os.environ:
+                del os.environ["GITHUB_TOKEN"]
+        except Exception:
+            pass
+
         return {"success": True, "message": "GitHub token removed from Windows Credential Manager."}
 
     def get_connection_status(self) -> Dict[str, Any]:
