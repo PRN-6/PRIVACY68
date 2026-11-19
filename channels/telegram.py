@@ -9,6 +9,7 @@ import io
 import logging
 import os
 import re
+import secrets
 import tempfile
 import threading
 import time
@@ -21,6 +22,21 @@ import config
 from utils.profile_manager import profile_manager
 
 logger = logging.getLogger("PRIVACY68.Channels.Telegram")
+
+# Ephemeral 6-character pairing PIN for Telegram authentication
+_global_telegram_pin = secrets.token_hex(3).upper()
+
+
+def get_pairing_pin() -> str:
+    """Returns the active 6-character pairing PIN for authorizing Telegram."""
+    global _global_telegram_pin
+    return _global_telegram_pin
+
+
+def set_pairing_pin(pin: str) -> None:
+    """Sets a custom pairing PIN."""
+    global _global_telegram_pin
+    _global_telegram_pin = str(pin).strip().upper()
 
 
 class TelegramChannel:
@@ -89,6 +105,14 @@ class TelegramChannel:
             config.update_dotenv_var("TELEGRAM_ALLOWED_CHAT_ID", cleaned)
         except Exception as e:
             logger.debug(f"Could not persist TELEGRAM_ALLOWED_CHAT_ID to .env: {e}")
+
+    def get_pairing_pin(self) -> str:
+        """Returns the active 6-character Telegram pairing PIN."""
+        return get_pairing_pin()
+
+    def set_pairing_pin(self, pin: str) -> None:
+        """Sets a custom 6-character Telegram pairing PIN."""
+        set_pairing_pin(pin)
 
     # ---------------- Telegram Bot API Helpers ---------------- #
 
@@ -238,18 +262,14 @@ class TelegramChannel:
 
         # 1. Pairing Flow: when no allowed_chat_id is set yet
         if not allowed_id:
+            pin_hint = self.get_pairing_pin()
             if text.startswith("/start"):
-                try:
-                    from server.remote_server import get_auth_token
-                    pin_hint = get_auth_token()
-                except Exception:
-                    pin_hint = "visible on desktop dashboard"
                 welcome = (
-                    "👋 *Welcome to PRIVACY68 Remote Gateway!*\n\n"
+                    "👋 *Welcome to PRIVACY68 Telegram Remote Gateway!*\n\n"
                     "This assistant is currently unpaired.\n\n"
                     f"To authorize this chat to control your computer, send:\n"
                     f"`/pair <PIN>`\n\n"
-                    f"_(Your 6-character Pairing PIN is {pin_hint} on your desktop dashboard)_"
+                    f"_(Your 6-character Pairing PIN is `{pin_hint}` on your desktop dashboard)_"
                 )
                 self.send_message(welcome, chat_id=chat_id, parse_mode="Markdown")
                 return
@@ -257,14 +277,10 @@ class TelegramChannel:
             if text.startswith("/pair"):
                 parts = text.split(maxsplit=1)
                 if len(parts) < 2:
-                    self.send_message("❌ Usage: `/pair <PIN>` (find the PIN in the dashboard Mobile Remote tab)", chat_id=chat_id, parse_mode="Markdown")
+                    self.send_message("❌ Usage: `/pair <PIN>` (find the PIN in the desktop dashboard under Telegram Remote Gateway)", chat_id=chat_id, parse_mode="Markdown")
                     return
                 candidate_pin = parts[1].strip().upper()
-                try:
-                    from server.remote_server import get_auth_token
-                    current_pin = get_auth_token().upper()
-                except Exception:
-                    current_pin = ""
+                current_pin = self.get_pairing_pin()
 
                 if current_pin and candidate_pin == current_pin:
                     self.set_allowed_chat_id(chat_id)

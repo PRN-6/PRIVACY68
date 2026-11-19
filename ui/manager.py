@@ -85,15 +85,6 @@ class UIManager:
         """Toggles HUD visibility on/off."""
         self.hud.toggle_visibility()
 
-    def open_mobile_remote(self):
-        """Opens the Mobile Web Remote interface in the default browser."""
-        import webbrowser
-        import config
-        from server.remote_server import get_remote_url
-        url = get_remote_url(getattr(config, "REMOTE_SERVER_PORT", 8765))
-        logger.info(f"Opening Mobile Web Remote in browser: {url}")
-        webbrowser.open(url)
-
     def open_plugin_manager(self):
         """Opens the visual Plugin Manager window."""
         self.hud.open_plugin_manager()

@@ -521,7 +521,6 @@
         <button class="nav-btn active" data-tab="console">Live Console</button>
         <button class="nav-btn" data-tab="brain">AI Brain (APIs)</button>
         <button class="nav-btn" data-tab="skills">Learned Skills</button>
-        <button class="nav-btn" data-tab="remote">Mobile Remote</button>
         <button class="nav-btn" data-tab="security">Security Guard</button>
         <button class="nav-btn" data-tab="voice">Voice & Audio</button>
         <button class="nav-btn" data-tab="plugins">Skills & Services</button>
@@ -540,7 +539,7 @@
         </div>
         <div class="status-indicator">
           <span class="status-dot blue"></span>
-          <span id="sidebar-remote-text">Remote: Port 8765</span>
+          <span id="sidebar-remote-text">Remote: Telegram Gateway</span>
         </div>
         <div class="status-indicator">
           <span class="status-dot green" id="sidebar-brain-dot"></span>
@@ -558,8 +557,8 @@
           <span class="chip good" id="top-conn-chip">
             <span class="status-dot green"></span> Desktop connected
           </span>
-          <span class="chip blue" id="top-remote-chip" style="cursor:pointer;" title="Click to view Mobile Remote">
-            Mobile Remote: Active
+          <span class="chip blue" id="top-remote-chip" style="cursor:pointer;" title="Click to configure Telegram Remote Gateway">
+            Telegram Gateway
           </span>
           <span class="chip" id="top-user-chip">User</span>
           <button class="icon-btn" id="close-window-btn" title="Close Control Center">✕</button>
@@ -811,42 +810,7 @@
         </div>
       </section>
 
-      <!-- TAB 4: Mobile Web Remote Server -->
-      <section class="tab-view" id="tab-remote">
-        <div class="card">
-          <div class="card-header">
-            <div>
-              <h2 class="card-title">Mobile Web Remote Server</h2>
-              <p class="card-desc">Control PRIVACY68 hands-free from your phone or tablet over your local Wi-Fi network.</p>
-            </div>
-            <span class="chip good" id="remote-server-status-pill">Server Active</span>
-          </div>
-
-          <div style="background:#0f121a; border:1px solid var(--line); border-radius:8px; padding:16px;">
-            <div style="display:flex; flex-direction:column; gap:8px;">
-              <div style="font-size:12px; color:var(--text-muted);">Access URL for devices on your Wi-Fi:</div>
-              <div style="font-family:'Cascadia Code', Consolas, monospace; font-size:16px; font-weight:700; color:var(--blue);" id="remote-url-display">http://127.0.0.1:8765</div>
-              <div style="display:flex; gap:8px; margin-top:6px;">
-                <button class="btn blue sm" id="open-remote-browser-btn">Open in Browser</button>
-                <button class="btn sm" id="copy-remote-url-btn">Copy Link</button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-header">
-            <h2 class="card-title">Architecture Details</h2>
-          </div>
-          <ul style="color:var(--text-muted); font-size:12px; line-height:1.7; padding-left:18px;">
-            <li>Hosts a lightweight threaded HTTP server directly on port 8765.</li>
-            <li>No cloud relay: network packets stay within your local Wi-Fi router.</li>
-            <li>Allows remote voice and text command execution from any mobile browser.</li>
-          </ul>
-        </div>
-      </section>
-
-      <!-- TAB 5: Security Guard -->
+      <!-- TAB 4: Security Guard -->
       <section class="tab-view" id="tab-security">
         <div class="card">
           <div class="card-header">
@@ -1084,7 +1048,7 @@
       ],
       open_skills_folder: async () => ({ success: true, message: 'Opened skills folder' }),
       get_github_status: async () => ({ connected: false }),
-      get_remote_server_info: async () => ({ enabled: true, port: 8765, local_ip: '10.199.156.53', url: 'http://10.199.156.53:8765' }),
+      get_remote_server_info: async () => ({ enabled: false }),
       get_security_guard_info: async () => ({ has_pending: false, audit_log: [], rules_summary: { safe_count: 14, sensitive_count: 13, critical_count: 4 } }),
       execute_command: async (text) => ({ success: true, message: 'Executed: ' + text }),
       execute_system_quick_action: async (name) => ({ success: true, message: 'Quick action: ' + name }),
@@ -1111,7 +1075,6 @@
       console: 'Live Command Console',
       brain: 'Cloud AI Brain (APIs)',
       skills: 'Learned Skills Engine',
-      remote: 'Mobile Web Remote Server',
       security: '3-Tier Security & Permission Guard',
       voice: 'Voice & Audio Settings',
       plugins: 'Automation Plugins'
@@ -1130,7 +1093,7 @@
     });
 
     $('top-remote-chip').addEventListener('click', () => {
-      const b = document.querySelector('.nav-btn[data-tab="remote"]');
+      const b = document.querySelector('.nav-btn[data-tab="plugins"]');
       if (b) b.click();
     });
 
@@ -1553,63 +1516,6 @@
 
     $('refresh-skills-btn').addEventListener('click', loadSkills);
 
-    // Mobile Web Remote Logic & Minimal QR Renderer
-    let remoteUrl = 'http://127.0.0.1:8765';
-    async function loadRemoteServerInfo() {
-      try {
-        const info = await bridge().get_remote_server_info();
-        if (info && info.url) {
-          remoteUrl = info.url;
-          $('remote-url-display').textContent = info.url;
-          $('top-remote-chip').textContent = 'Mobile: ' + info.url.replace('http://', '');
-          $('sidebar-remote-text').textContent = 'Remote: ' + (info.local_ip || '8765');
-          drawQuickQR(info.url);
-        }
-      } catch (e) { console.warn('loadRemoteServerInfo error:', e); }
-    }
-
-    function drawQuickQR(text) {
-      const canvas = $('qr-canvas');
-      if (!canvas) return;
-      const ctx = canvas.getContext('2d');
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, 120, 120);
-      ctx.fillStyle = '#0c0e12';
-
-      function drawCorner(x, y) {
-        ctx.fillRect(x, y, 32, 32);
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(x + 5, y + 5, 22, 22);
-        ctx.fillStyle = '#0c0e12';
-        ctx.fillRect(x + 10, y + 10, 12, 12);
-      }
-      drawCorner(8, 8);
-      drawCorner(80, 8);
-      drawCorner(8, 80);
-
-      let hash = 0;
-      for (let i = 0; i < text.length; i++) hash = ((hash << 5) - hash) + text.charCodeAt(i);
-      for (let r = 0; r < 14; r++) {
-        for (let c = 0; c < 14; c++) {
-          const bit = ((hash ^ (r * 17 + c * 31)) >> (c % 8)) & 1;
-          const px = 12 + c * 7;
-          const py = 12 + r * 7;
-          if ((px < 44 && py < 44) || (px > 74 && py < 44) || (px < 44 && py > 74)) continue;
-          if (bit) ctx.fillRect(px, py, 5, 5);
-        }
-      }
-    }
-
-    $('open-remote-browser-btn').addEventListener('click', async () => {
-      try { await bridge().open_external_url(remoteUrl); }
-      catch (e) { window.open(remoteUrl, '_blank'); }
-    });
-
-    $('copy-remote-url-btn').addEventListener('click', () => {
-      navigator.clipboard.writeText(remoteUrl);
-      showToast('Copied Mobile URL: ' + remoteUrl);
-    });
-
     // Security Guard Logic
     async function loadSecurityGuard() {
       try {
@@ -1793,6 +1699,7 @@
             const chatId = (p.settings && p.settings.chat_id) || '';
             const isRunning = p.settings && p.settings.bot_running;
             const username = (p.settings && p.settings.bot_username) || '';
+            const pairingPin = (p.settings && p.settings.pairing_pin) || '';
             drawer.innerHTML = `
               <div style="font-size:11px; font-weight:700; color:var(--text); margin-bottom:2px;">Telegram Remote Gateway</div>
               <div style="font-size:10px; color:var(--text-muted); margin-bottom:8px;">Control your PC globally via Telegram text or voice notes. Get your bot token from <b>@BotFather</b>.</div>
@@ -1804,6 +1711,7 @@
                 <div>
                   <div style="font-size:10px; font-weight:600; color:var(--text-muted); margin-bottom:3px;">2. Authorized Chat ID (Leave blank to pair via PIN):</div>
                   <input type="text" id="tg-chat-input-${p.id}" placeholder="Leave blank, then send /start to your bot" value="${chatId}" style="width:100%; font-size:11px; padding:6px 8px; border-radius:6px; border:1px solid var(--border); background:var(--bg-card); color:var(--text);">
+                  ${pairingPin ? `<div style="font-size:10px; color:var(--accent-cyan); margin-top:4px;">Active Pairing PIN: <b style="font-family:monospace; font-size:12px; letter-spacing:1px; background:#0f172a; padding:2px 6px; border-radius:4px; border:1px solid var(--border);">${pairingPin}</b> (Send <code>/pair ${pairingPin}</code> to your bot)</div>` : ''}
                 </div>
               </div>
               <div style="font-size:10px; margin-bottom:8px; color:${isRunning ? 'var(--accent-good, #10b981)' : 'var(--text-muted)'};">
@@ -2273,7 +2181,6 @@
         await loadProfile();
         await loadSpeechConfig();
         await loadBrainDetails();
-        await loadRemoteServerInfo();
         await loadSecurityGuard();
         await loadSkills();
         await loadPlugins();

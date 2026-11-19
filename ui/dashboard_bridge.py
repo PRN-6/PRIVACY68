@@ -572,27 +572,15 @@ class DashboardAPI:
             return {"success": False, "message": str(e)}
 
     def get_remote_server_info(self) -> Dict[str, Any]:
-        """Returns Mobile Web Remote server access URL, IP, pairing PIN, and status."""
-        try:
-            from server.remote_server import get_remote_url, get_local_ip, get_auth_token
-            import config
-            port = getattr(config, "REMOTE_SERVER_PORT", 8765)
-            enabled = getattr(config, "ENABLE_REMOTE_SERVER", True)
-            local_ip = get_local_ip()
-            token = get_auth_token()
-            url = get_remote_url(port, include_token=True)
-            return {
-                "enabled": enabled,
-                "port": port,
-                "local_ip": local_ip,
-                "pairing_token": token,
-                "url": url,
-                "clean_url": f"http://{local_ip}:{port}",
-                "message": f"Pair any phone/tablet on your Wi-Fi: {url} (PIN: {token})"
-            }
-        except Exception as e:
-            logger.error(f"Error getting remote server info: {e}")
-            return {"enabled": False, "port": 8765, "local_ip": "127.0.0.1", "url": "http://127.0.0.1:8765", "error": str(e)}
+        """Deprecated: Local web remote server removed in favor of Telegram Remote Gateway."""
+        return {
+            "enabled": False,
+            "port": 0,
+            "local_ip": "127.0.0.1",
+            "pairing_token": "",
+            "url": "",
+            "message": "Local web remote server removed in favor of Telegram Remote Gateway."
+        }
 
     def get_security_guard_info(self) -> Dict[str, Any]:
         """Returns 3-tier security model status and recent audit log entries."""
@@ -834,6 +822,7 @@ class DashboardAPI:
                         "chat_id": telegram_channel.get_allowed_chat_id(),
                         "bot_running": telegram_channel.is_bot_running(),
                         "bot_username": getattr(telegram_channel, "bot_username", ""),
+                        "pairing_pin": telegram_channel.get_pairing_pin(),
                     },
                     "commands": [
                         {"action": "start", "description": "Starts the Telegram bot polling worker.", "triggers": ["start telegram", "connect telegram"]},

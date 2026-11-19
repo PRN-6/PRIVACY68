@@ -41,7 +41,6 @@ class SystemTray:
             pystray.Menu.SEPARATOR,
             pystray.MenuItem("🎙️ Voice & Text Command (Push to Talk)", self._on_voice_command),
             pystray.MenuItem("📊 Open Dashboard", self._on_open_dashboard),
-            pystray.MenuItem("📱 Open Mobile Remote", self._on_open_mobile_remote),
             pystray.Menu.SEPARATOR,
             pystray.MenuItem("🚪 Exit PRIVACY68", self._on_exit)
         )
@@ -71,21 +70,6 @@ class SystemTray:
             self.ui_manager.open_dashboard()
         else:
             logger.error("UI Manager not found; cannot open dashboard.")
-
-    def _on_open_mobile_remote(self):
-        """Opens the local web remote using the dynamic project URL."""
-        try:
-            from server.remote_server import get_remote_url
-            # Get the correct IP and port (default 8765)
-            url = get_remote_url()
-            webbrowser.open(url)
-            logger.info(f"Opening mobile remote at: {url}")
-        except Exception as e:
-            logger.error(f"Could not open remote: {e}")
-
-    def _on_open_settings(self):
-        # In the new lean architecture, settings are handled in the Web UI
-        self._on_open_mobile_remote()
 
     def _on_reset_brain(self):
         """Tells the AgentBrain to clear its session state."""

@@ -52,6 +52,55 @@ class TestChannels(unittest.TestCase):
         self.assertTrue(success)
         mock_post.assert_called_once()
 
+    def test_pairing_pin_get_and_set(self):
+        channel = TelegramChannel()
+        pin = channel.get_pairing_pin()
+        self.assertTrue(len(pin) >= 6)
+        channel.set_pairing_pin("SEC123")
+        self.assertEqual(channel.get_pairing_pin(), "SEC123")
+
+    @patch("requests.post")
+    def test_pairing_flow_start_and_pair(self, mock_post):
+        channel = TelegramChannel()
+        channel._allowed_chat_id = ""
+        channel.set_pairing_pin("PIN999")
+        mock_resp = Mock()
+        mock_resp.status_code = 200
+        mock_resp.json.return_value = {"ok": True}
+        mock_post.return_value = mock_resp
+
+        # 1. /start command
+        with patch.object(channel, "get_allowed_chat_id", return_value=""):
+            with patch.object(channel, "get_bot_token", return_value="FAKE_TOKEN"):
+                channel._handle_update({
+                    "message": {
+                        "chat": {"id": 12345},
+                        "from": {"id": 12345},
+                        "text": "/start"
+                    }
+                })
+                self.assertTrue(mock_post.called)
+
+                # 2. Invalid /pair PIN
+                channel._handle_update({
+                    "message": {
+                        "chat": {"id": 12345},
+                        "from": {"id": 12345},
+                        "text": "/pair WRONGPIN"
+                    }
+                })
+
+                # 3. Valid /pair PIN
+                with patch.object(channel, "set_allowed_chat_id") as mock_set_allowed:
+                    channel._handle_update({
+                        "message": {
+                            "chat": {"id": 12345},
+                            "from": {"id": 12345},
+                            "text": "/pair PIN999"
+                        }
+                    })
+                    mock_set_allowed.assert_called_with("12345")
+
 
 if __name__ == "__main__":
     unittest.main()

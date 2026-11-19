@@ -223,11 +223,6 @@ else:
 AGENT_BRAIN_MODEL = _default_model
 AGENT_BRAIN_MAX_RETRIES = 2  # Open-Interpreter style self-healing code retry loop
 
-# Mobile Web Remote Server configuration
-ENABLE_REMOTE_SERVER = True
-REMOTE_SERVER_HOST = "0.0.0.0"
-REMOTE_SERVER_PORT = 8765
-
 # Telegram Remote Gateway configuration
 ENABLE_TELEGRAM_BOT = True
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")

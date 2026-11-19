@@ -166,7 +166,7 @@ Upon restart, PRIVACY68 automatically registers these DLLs and switches the audi
 - **5-Tier Command Dispatcher**: Zero-LLM fast paths for greetings, app launches, browser navigation, and desktop utilities before escalating to autonomous reasoning.
 - **Agentic Code Execution**: Translates user intent into verified Python automation with an integrated 30-second watchdog timer and automatic self-healing.
 - **Minimalist Control Center**: Clean pywebview interface for managing runtime status, testing microphones, reviewing LLM output, configuring AI keys, and managing skills & services.
-- **Mobile Web Remote**: Access and control your assistant from any device on your local Wi-Fi network (Port 8765) with live status and quick action tiles.
+- **Telegram Remote Gateway**: Secure mobile teleoperation from anywhere in the world on 4G/5G mobile data with live status, voice note transcription, and desktop screenshot tiles.
 - **3-Tier Security Guard**: Strict permission gating (Safe Level 1 auto-execute, Sensitive Level 2 confirmation prompt, Critical Level 3 blocked).
 - **Windows Credential Manager**: Encrypted storage for GitHub PAT tokens, Telegram bot keys, and API secrets using Windows DPAPI.
 - **Dynamic Path Resolution**: Dynamically resolves active OneDrive, Desktop, Downloads, and Documents paths.

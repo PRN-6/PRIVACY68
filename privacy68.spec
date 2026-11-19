@@ -32,7 +32,7 @@ for package in (
     except Exception:
         pass
 
-for package in ("actions", "channels", "computer_use", "services", "skills", "server", "speech", "ui", "utils"):
+for package in ("actions", "channels", "computer_use", "services", "skills", "speech", "ui", "utils"):
     hiddenimports += collect_submodules(package)
 
 # tiktoken discovers its encoding definitions by scanning the tiktoken_ext
