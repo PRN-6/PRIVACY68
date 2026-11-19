@@ -17,7 +17,6 @@ for package in (
     "litellm",
     "webview",
     "pystray",
-    "sounddevice",
     "speech_recognition",
     "pyttsx3",
     "ollama",
