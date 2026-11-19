@@ -56,7 +56,11 @@ class TestDashboardLaunch(unittest.TestCase):
             self.assertTrue(overlay.window.winfo_viewable())
             overlay.window.destroy()
         finally:
-            root.destroy()
+            try:
+                root.update_idletasks()
+                root.destroy()
+            except Exception:
+                pass
 
     def test_ptt_overlay_text_command_submission(self):
         import tkinter as tk
@@ -82,10 +86,15 @@ class TestDashboardLaunch(unittest.TestCase):
                 mock_exec.assert_called_once()
                 self.assertEqual(mock_exec.call_args[0][0], "open chrome")
                 mock_ui.on_transcription.assert_called_once_with("open chrome")
+                time.sleep(0.05)
 
             overlay.window.destroy()
         finally:
-            root.destroy()
+            try:
+                root.update_idletasks()
+                root.destroy()
+            except Exception:
+                pass
 
     def test_ptt_overlay_placeholder_not_submitted(self):
         import tkinter as tk
@@ -101,7 +110,11 @@ class TestDashboardLaunch(unittest.TestCase):
                 mock_exec.assert_not_called()
             overlay.window.destroy()
         finally:
-            root.destroy()
+            try:
+                root.update_idletasks()
+                root.destroy()
+            except Exception:
+                pass
 
     def test_ptt_overlay_spacebar_inside_entry_does_not_trigger_mic(self):
         import tkinter as tk
@@ -128,7 +141,11 @@ class TestDashboardLaunch(unittest.TestCase):
 
             overlay.window.destroy()
         finally:
-            root.destroy()
+            try:
+                root.update_idletasks()
+                root.destroy()
+            except Exception:
+                pass
 
 
 if __name__ == "__main__":
