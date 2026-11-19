@@ -517,7 +517,6 @@
         <button class="nav-btn" data-tab="brain">AI Brain (APIs)</button>
         <button class="nav-btn" data-tab="skills">Learned Skills</button>
         <button class="nav-btn" data-tab="security">Security Guard</button>
-        <button class="nav-btn" data-tab="voice">Voice & Audio</button>
         <button class="nav-btn" data-tab="plugins">Skills & Services</button>
       </nav>
 
@@ -867,76 +866,7 @@
         </div>
       </section>
 
-      <!-- TAB 6: Voice & Audio -->
-      <section class="tab-view" id="tab-voice">
-        <div class="card">
-          <div class="card-header">
-            <h2 class="card-title">Speech Recognition Engine Mode</h2>
-            <span class="chip good" id="voice-privacy-chip">100% Local Offline</span>
-          </div>
-          <div style="display:flex; flex-direction:column; gap:14px;">
-            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:12px;">
-              <div>
-                <label style="display:block; font-size:11px; color:var(--text-muted); margin-bottom:5px; font-weight:600;">Active Speech Engine</label>
-                <select id="speech-engine-select" style="width:100%; background:#0b0e14; border:1px solid var(--line); color:var(--text); border-radius:6px; padding:8px 10px; font-size:12px;">
-                  <option value="auto">Auto (Google Web Speech First + Local Offline Fallback)</option>
-                  <option value="whisper">100% Local Offline (Faster-Whisper On-Device)</option>
-                  <option value="google">Google Web Speech (Free Cloud ASR)</option>
-                </select>
-              </div>
-              <div>
-                <label style="display:block; font-size:11px; color:var(--text-muted); margin-bottom:5px; font-weight:600;">Speech Accent / Dialect</label>
-                <select id="speech-lang-select" style="width:100%; background:#0b0e14; border:1px solid var(--line); color:var(--text); border-radius:6px; padding:8px 10px; font-size:12px;">
-                  <option value="auto">Auto (Detect System Accent)</option>
-                  <option value="en-IN">English (India - en-IN)</option>
-                  <option value="en-US">English (United States - en-US)</option>
-                  <option value="en-GB">English (United Kingdom - en-GB)</option>
-                </select>
-              </div>
-              <div>
-                <label style="display:block; font-size:11px; color:var(--text-muted); margin-bottom:5px; font-weight:600;">Local Whisper Model Size</label>
-                <select id="whisper-model-select" style="width:100%; background:#0b0e14; border:1px solid var(--line); color:var(--text); border-radius:6px; padding:8px 10px; font-size:12px;">
-                  <option value="tiny">Tiny (~75 MB) - Fastest CPU</option>
-                  <option value="base">Base (~145 MB) - Balanced</option>
-                  <option value="small">Small (~480 MB) - High Accuracy</option>
-                </select>
-              </div>
-            </div>
-            <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
-              <button class="btn primary sm" id="save-speech-btn">Save Speech Settings</button>
-              <span style="font-size:11px; color:var(--text-muted);">Local Offline mode requires zero internet connection and keeps 100% of voice audio on your PC.</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-header">
-            <h2 class="card-title">Speech & Audio Architecture</h2>
-          </div>
-          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:12px;">
-            <div style="background:#0f121a; border:1px solid var(--line); border-radius:6px; padding:12px;">
-              <div style="font-weight:700; margin-bottom:4px; color:var(--green);">Local Offline Faster-Whisper</div>
-              <div style="font-size:11px; color:var(--text-muted); line-height:1.45;">On-device neural speech recognition powered by CTranslate2 int8 quantization. Transcribes accurately even with Wi-Fi completely turned off.</div>
-            </div>
-            <div style="background:#0f121a; border:1px solid var(--line); border-radius:6px; padding:12px;">
-              <div style="font-weight:700; margin-bottom:4px; color:var(--blue);">Strict Click-to-Speak Privacy</div>
-              <div style="font-size:11px; color:var(--text-muted); line-height:1.45;">Your microphone hardware is powered off at all times. Audio is recorded only when you click 'Click to Speak'. No background eavesdropping.</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-header">
-            <h2 class="card-title">Microphone Hardware Diagnostic</h2>
-            <button class="btn primary sm" id="test-mic-btn">Test Microphone</button>
-          </div>
-          <div style="display:flex; align-items:center; gap:12px; margin-top:6px;">
-            <span class="chip" id="mic-test-result">Click 'Test Microphone' to measure input level</span>
-          </div>
-        </div>
-      </section>
-
-      <!-- TAB 7: Skills & Services -->
+      <!-- TAB 5: Skills & Services -->
       <section class="tab-view" id="tab-plugins">
         <div class="card">
           <div class="card-header" style="flex-wrap:wrap; gap:10px;">
@@ -1072,7 +1002,6 @@
       brain: 'Cloud AI Brain (APIs)',
       skills: 'Learned Skills Engine',
       security: '3-Tier Security & Permission Guard',
-      voice: 'Voice & Audio Settings',
       plugins: 'Automation Plugins'
     };
 
@@ -2015,87 +1944,6 @@
       } catch (e) { showToast(e.message, true); }
     });
 
-    // Mic Test
-    $('test-mic-btn').addEventListener('click', async () => {
-      const btn = $('test-mic-btn');
-      const res = $('mic-test-result');
-      btn.disabled = true;
-      res.textContent = 'Listening sample for 1.5 seconds...';
-      try {
-        const result = await bridge().test_microphone();
-        if (result && result.success) {
-          res.textContent = `Input Level: ${result.level}% (RMS ${Number(result.rms).toFixed(4)}) - Working properly!`;
-          res.className = 'chip good';
-        } else {
-          res.textContent = result?.message || 'Test failed.';
-          res.className = 'chip warn';
-        }
-      } catch (e) {
-        res.textContent = e.message;
-        res.className = 'chip warn';
-      } finally {
-        btn.disabled = false;
-      }
-    });
-
-    // Speech Engine Configuration
-    async function loadSpeechConfig() {
-      try {
-        const cfg = await bridge().get_speech_config();
-        if (cfg && cfg.success) {
-          const engine = cfg.engine || 'auto';
-          const model = cfg.whisper_model || 'tiny';
-          const lang = cfg.language || 'auto';
-          if ($('speech-engine-select')) $('speech-engine-select').value = engine;
-          if ($('whisper-model-select')) $('whisper-model-select').value = model;
-          if ($('speech-lang-select')) $('speech-lang-select').value = lang;
-
-          const badgeMap = {
-            whisper: `Speech: Local Offline (Whisper ${model})`,
-            auto: `Speech: Auto (Google Speech First + Offline Fallback)`,
-            google: 'Speech: Google Web Speech (Cloud)'
-          };
-          const activeBadge = $('active-speech-badge');
-          if (activeBadge) {
-            activeBadge.textContent = badgeMap[engine] || `Speech: ${engine}`;
-            activeBadge.className = engine === 'google' ? 'chip blue' : 'chip good';
-          }
-
-          const privacyChip = $('voice-privacy-chip');
-          if (privacyChip) {
-            if (engine === 'whisper') {
-              privacyChip.textContent = '100% Air-Gapped Local';
-              privacyChip.className = 'chip good';
-            } else if (engine === 'auto') {
-              privacyChip.textContent = `Google Speech (${lang}) + Offline Fallback`;
-              privacyChip.className = 'chip good';
-            } else {
-              privacyChip.textContent = `Cloud ASR (${lang})`;
-              privacyChip.className = 'chip blue';
-            }
-          }
-        }
-      } catch (e) {}
-    }
-
-    if ($('save-speech-btn')) {
-      $('save-speech-btn').addEventListener('click', async () => {
-        const engine = $('speech-engine-select').value;
-        const model = $('whisper-model-select').value;
-        const lang = $('speech-lang-select') ? $('speech-lang-select').value : 'auto';
-        try {
-          const res = await bridge().save_speech_config(engine, model, lang);
-          if (res && res.success) {
-            showToast(res.message || 'Speech settings saved!');
-            await loadSpeechConfig();
-            await loadSysDiag();
-          } else {
-            showToast(res?.message || 'Failed to save speech settings.', true);
-          }
-        } catch (e) { showToast(e.message, true); }
-      });
-    }
-
     // Profile & Diagnostics
     async function loadProfile() {
       try {
@@ -2158,7 +2006,6 @@
         $('top-conn-chip').className = 'chip good';
         $('top-conn-chip').innerHTML = '<span class="status-dot green"></span> Desktop connected';
         await loadProfile();
-        await loadSpeechConfig();
         await loadBrainDetails();
         await loadSecurityGuard();
         await loadSkills();

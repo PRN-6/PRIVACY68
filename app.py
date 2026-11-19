@@ -82,30 +82,12 @@ def main() -> None:
             raise SystemExit(1)
         return
 
-    from speech.streamer import SpeechStreamer, set_speech_streamer
     from actions.executor import execute_system_command, execute_system_command_detailed
     from ui.manager import UIManager
 
     logger.info("Initializing PRIVACY68 Assistant Services...")
 
     ui_manager = UIManager()
-
-    def on_text_transcribed(text: str) -> bool:
-        """Callback hook executed whenever a transcription segment settles."""
-        logger.info(f"User: '{text}'")
-        if sys.stdout is not None:
-            try:
-                sys.stdout.write(f"\r[User Input] {text}\n")
-                sys.stdout.flush()
-            except Exception as e:
-                logger.debug(f"on_text_transcribed: {e}")
-
-        ui_manager.on_transcription(text)
-        return execute_system_command(
-            text,
-            on_action_callback=ui_manager.on_action_completed,
-            on_status_callback=ui_manager.on_agent_status
-        )
 
     try:
         # Start System Tray in background
@@ -123,26 +105,8 @@ def main() -> None:
         except Exception as tg_err:
             logger.debug(f"Could not initialize Telegram Bot on startup: {tg_err}")
 
-        # Initialize Audio Streamer and register module-level singleton
-        streamer = SpeechStreamer()
-        set_speech_streamer(streamer)
-        ui_manager.set_streamer(streamer)
-
-        # Run speech streamer in a dedicated worker thread
-        audio_thread = threading.Thread(
-            target=streamer.start,
-            kwargs={
-                "on_text_callback": on_text_transcribed,
-                "on_wake_word_callback": ui_manager.on_wake_word_detected,
-                "on_audio_energy_callback": ui_manager.on_audio_energy,
-                "on_sleep_callback": ui_manager.on_sleep
-            },
-            daemon=True
-        )
-        audio_thread.start()
-
         # Run the Floating HUD Tkinter loop on the main thread
-        logger.info("Starting PRIVACY68 Floating HUD Overlay...")
+        logger.info("Starting PRIVACY68 Background Service...")
         ui_manager.run_hud_loop()
 
     except KeyboardInterrupt:
