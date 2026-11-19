@@ -26,7 +26,17 @@ class SkillRegistry:
     """Discovers and provides contextual prompt injection for SKILL.md files."""
 
     def __init__(self, root_skills_dir: Optional[str] = None):
-        self.root_skills_dir = Path(root_skills_dir or os.path.join(os.path.dirname(__file__), os.pardir, "skills")).resolve()
+        if root_skills_dir:
+            self.root_skills_dir = Path(root_skills_dir).resolve()
+        elif getattr(os.sys, "frozen", False):
+            # In compiled PyInstaller bundle: check _MEIPASS, executable dir, and _internal
+            exe_dir = Path(os.path.dirname(os.sys.executable))
+            meipass = Path(getattr(os.sys, "_MEIPASS", ""))
+            candidates = [meipass / "skills", exe_dir / "skills", exe_dir / "_internal" / "skills"]
+            found = next((p for p in candidates if p.is_dir()), None)
+            self.root_skills_dir = (found or exe_dir / "skills").resolve()
+        else:
+            self.root_skills_dir = Path(os.path.join(os.path.dirname(__file__), os.pardir, "skills")).resolve()
         
         # User appdata directory for custom developer skills
         appdata = os.environ.get("APPDATA") or str(Path.home())

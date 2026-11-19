@@ -7,6 +7,7 @@ root = Path(SPECPATH).resolve()
 datas = [
     (str(root / "assets"), "assets"),
     (str(root / "ui" / "dashboard"), "ui/dashboard"),
+    (str(root / "skills"), "skills"),
 ]
 
 binaries = []
@@ -31,7 +32,7 @@ for package in (
     except Exception:
         pass
 
-for package in ("actions", "computer_use", "plugins", "server", "speech", "ui", "utils"):
+for package in ("actions", "channels", "computer_use", "services", "skills", "server", "speech", "ui", "utils"):
     hiddenimports += collect_submodules(package)
 
 # tiktoken discovers its encoding definitions by scanning the tiktoken_ext
