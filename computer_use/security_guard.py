@@ -17,6 +17,33 @@ from typing import Any, Callable, Dict, Optional, Tuple
 
 logger = logging.getLogger("PRIVACY68.SecurityGuard")
 
+SAFE_USER_PROCESS_TARGETS = frozenset({
+    "notepad", "notepad.exe",
+    "calculator", "calc", "calc.exe", "calculatorapp.exe",
+    "chrome", "chrome.exe",
+    "brave", "brave.exe",
+    "msedge", "msedge.exe", "edge",
+    "firefox", "firefox.exe",
+    "code", "code.exe", "vscode",
+    "spotify", "spotify.exe",
+    "telegram", "telegram.exe",
+    "whatsapp", "whatsapp.exe",
+    "discord", "discord.exe",
+    "slack", "slack.exe",
+    "cmd", "cmd.exe",
+    "powershell", "powershell.exe", "pwsh", "pwsh.exe",
+    "terminal", "wt.exe", "windowsterminal.exe",
+    "taskmgr", "taskmgr.exe",
+    "vlc", "vlc.exe",
+    "winword.exe", "excel.exe", "powerpnt.exe",
+})
+
+PROTECTED_SYSTEM_PROCESSES = frozenset({
+    "csrss", "csrss.exe", "smss", "smss.exe", "wininit", "wininit.exe",
+    "services.exe", "lsass", "lsass.exe", "winlogon", "winlogon.exe",
+    "svchost", "svchost.exe", "explorer.exe", "spoolsv.exe"
+})
+
 
 class ActionRiskLevel(Enum):
     SAFE = 1        # Execute immediately
@@ -51,6 +78,9 @@ class SecurityGuard:
         self._action_risk_rules: Dict[str, ActionRiskLevel] = {
             # Safe Actions (Level 1)
             "open_app": ActionRiskLevel.SAFE,
+            "close_app": ActionRiskLevel.SAFE,
+            "close_window": ActionRiskLevel.SAFE,
+            "kill_user_process": ActionRiskLevel.SAFE,
             "open_settings": ActionRiskLevel.SAFE,
             "window_focus": ActionRiskLevel.SAFE,
             "window_minimize": ActionRiskLevel.SAFE,
@@ -81,6 +111,7 @@ class SecurityGuard:
             "github_write": ActionRiskLevel.SENSITIVE,
 
             # Critical Actions (Level 3)
+            "kill_system_process": ActionRiskLevel.CRITICAL,
             "format_drive": ActionRiskLevel.CRITICAL,
             "modify_registry": ActionRiskLevel.CRITICAL,
             "uninstall_app": ActionRiskLevel.CRITICAL,
@@ -114,6 +145,14 @@ class SecurityGuard:
         if "shutdown" in code_lower and any(flag in code_lower for flag in ("/s", "-s", "/r", "-r", "/h", "-h")):
             return ActionRiskLevel.SENSITIVE, "shutdown_pc", "shut down or reboot the computer"
         if "taskkill" in code_lower or re.search(r'\b(os\.kill|process\.kill|process\.terminate)\b', code_lower):
+            # Check if attempting to kill protected Windows system processes
+            if any(p in code_lower for p in PROTECTED_SYSTEM_PROCESSES):
+                return ActionRiskLevel.CRITICAL, "kill_system_process", "terminate a critical Windows system process"
+
+            # Check if safely terminating standard user application without wildcards
+            if any(app in code_lower for app in SAFE_USER_PROCESS_TARGETS) and "*" not in code_lower:
+                return ActionRiskLevel.SAFE, "kill_user_process", "close a user application"
+
             return ActionRiskLevel.SENSITIVE, "kill_process", "forcefully terminate a running system process"
         if re.search(r'\b(shutil\.rmtree|os\.remove|os\.unlink|os\.rmdir|\.unlink\(|\.rmdir\(|rmdir\s+/[sq]|del\s+/[sqf])\b', code_lower):
             return ActionRiskLevel.SENSITIVE, "delete_file", "permanently delete files or directories from your disk"

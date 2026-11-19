@@ -2,6 +2,7 @@ import logging
 import os
 import re
 import subprocess
+import threading
 import urllib.parse
 import webbrowser
 from speech.streamer import autocorrect_speech_command
@@ -350,6 +351,163 @@ def _execute_web_or_app_command(command: str, on_action_callback, on_status_call
     return None
 
 
+RE_ASSISTANT_SHUTDOWN = re.compile(
+    r"^(?:close|exit|quit|stop|shut\s*down)\s+(?:the\s+)?(?:privacy68|assistant|bot)$",
+    re.IGNORECASE
+)
+
+RE_CLOSE_TAB = re.compile(
+    r"^(?:close|exit)\s+(?:the\s+|this\s+|current\s+)?tab$",
+    re.IGNORECASE
+)
+
+RE_CLOSE_ACTIVE_WINDOW = re.compile(
+    r"^(?:close|exit|quit)\s+(?:the\s+|this\s+|current\s+|active\s+)?(?:window|application|app|program)$",
+    re.IGNORECASE
+)
+
+RE_CLOSE_NAMED_APP = re.compile(
+    r"^(?:close|kill|quit|exit|terminate|shut\s*down)\s+(?:the\s+)?([a-zA-Z0-9_\-\.\s]+?)(?:\s+(?:browser|application|app|window))?$",
+    re.IGNORECASE
+)
+
+KNOWN_APPS_CLOSE_MAP = {
+    "chrome": "chrome",
+    "google chrome": "chrome",
+    "brave": "brave",
+    "brave browser": "brave",
+    "edge": "edge",
+    "microsoft edge": "edge",
+    "msedge": "edge",
+    "firefox": "firefox",
+    "notepad": "notepad",
+    "calculator": "calculator",
+    "calc": "calc",
+    "vscode": "vscode",
+    "vs code": "vscode",
+    "visual studio code": "vscode",
+    "code": "vscode",
+    "spotify": "spotify",
+    "telegram": "telegram",
+    "whatsapp": "whatsapp",
+    "discord": "discord",
+    "slack": "slack",
+    "cmd": "cmd",
+    "command prompt": "cmd",
+    "powershell": "powershell",
+    "terminal": "terminal",
+    "windows terminal": "terminal",
+    "task manager": "task manager",
+    "taskmgr": "task manager",
+    "word": "word",
+    "ms word": "word",
+    "excel": "excel",
+    "ms excel": "excel",
+    "powerpoint": "powerpoint",
+    "ppt": "powerpoint",
+    "vlc": "vlc",
+}
+
+
+def _execute_close_command(command: str, on_action_callback, on_status_callback):
+    """
+    Directly routes close / terminate requests for assistant, windows, tabs, and applications.
+    """
+    clean_cmd = command.strip().strip("'\"")
+
+    # 1. Close Tab
+    if RE_CLOSE_TAB.fullmatch(clean_cmd):
+        closed = False
+        try:
+            import ctypes
+            VK_CONTROL = 0x11
+            VK_W = 0x57
+            KEYEVENTF_KEYUP = 0x0002
+            ctypes.windll.user32.keybd_event(VK_CONTROL, 0, 0, 0)
+            ctypes.windll.user32.keybd_event(VK_W, 0, 0, 0)
+            ctypes.windll.user32.keybd_event(VK_W, 0, KEYEVENTF_KEYUP, 0)
+            ctypes.windll.user32.keybd_event(VK_CONTROL, 0, KEYEVENTF_KEYUP, 0)
+            closed = True
+        except Exception as e:
+            logger.debug(f"Native keybd_event ctrl+w failed: {e}")
+
+        if not closed:
+            try:
+                import pyautogui
+                pyautogui.FAILSAFE = False
+                pyautogui.hotkey("ctrl", "w")
+                closed = True
+            except Exception as e:
+                logger.error(f"Failed to close tab: {e}")
+
+        msg = "Closed current tab."
+        _notify(on_status_callback, on_action_callback, "browser", True, msg)
+        return {
+            "success": True,
+            "tool": "browser",
+            "method": "close_tab",
+            "message": msg,
+            "output": "",
+        }
+
+    # 2. Assistant Shutdown
+    if RE_ASSISTANT_SHUTDOWN.fullmatch(clean_cmd):
+        def _delayed_assistant_shutdown():
+            import time
+            time.sleep(0.5)
+            try:
+                from ui.manager import ui_manager
+                ui_manager.shutdown()
+            except Exception:
+                import os
+                os._exit(0)
+
+        threading.Thread(target=_delayed_assistant_shutdown, daemon=True).start()
+        msg = "Shutting down PRIVACY68. Goodbye!"
+        _notify(on_status_callback, on_action_callback, "system", True, msg)
+        return {
+            "success": True,
+            "tool": "system",
+            "method": "assistant_shutdown",
+            "message": msg,
+            "output": "",
+        }
+
+    # 3. Close Active Application / Window
+    if RE_CLOSE_ACTIVE_WINDOW.fullmatch(clean_cmd):
+        from services.system import system_service
+        success, msg = system_service.close_active_window()
+        _notify(on_status_callback, on_action_callback, "system_app", success, msg)
+        return {
+            "success": success,
+            "tool": "system_app",
+            "method": "close_active_window",
+            "message": msg,
+            "output": "",
+        }
+
+    # 4. Close Specific Named Application
+    m_named = RE_CLOSE_NAMED_APP.fullmatch(clean_cmd)
+    if m_named:
+        target = m_named.group(1).lower().strip()
+        app_id = KNOWN_APPS_CLOSE_MAP.get(target)
+        if app_id or target.endswith(".exe"):
+            from services.system import system_service
+            target_proc = app_id or target
+            success, msg = system_service.close_app(target_proc)
+            tool_name = "browser" if target_proc in ("chrome", "brave", "edge", "firefox") else "system_app"
+            _notify(on_status_callback, on_action_callback, tool_name, success, msg)
+            return {
+                "success": success,
+                "tool": tool_name,
+                "method": "close_app",
+                "message": msg,
+                "output": "",
+            }
+
+    return None
+
+
 def execute_system_command_detailed(text: str, on_action_callback=None, on_status_callback=None) -> dict:
     """
     Routes built-in commands directly and uses Agent Brain for other requests.
@@ -392,7 +550,16 @@ def execute_system_command_detailed(text: str, on_action_callback=None, on_statu
     if app_result is not None:
         return app_result
 
-    # 3. Direct Web Searches, Websites, and App Launches
+    # 3. Direct App, Window, Tab, and Assistant Closures
+    close_result = _execute_close_command(
+        low,
+        on_action_callback,
+        on_status_callback,
+    )
+    if close_result is not None:
+        return close_result
+
+    # 4. Direct Web Searches, Websites, and App Launches
     web_result = _execute_web_or_app_command(
         low,
         on_action_callback,
@@ -401,7 +568,7 @@ def execute_system_command_detailed(text: str, on_action_callback=None, on_statu
     if web_result is not None:
         return web_result
 
-    # 4. Route explicit Gmail tasks to native service
+    # 5. Route explicit Gmail tasks to native service
     from services.gmail import gmail_service
     if not getattr(gmail_service, "is_enabled", True) and gmail_service.parse_command(cleaned):
         return {

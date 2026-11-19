@@ -103,6 +103,25 @@ class TestSecurityGuard(unittest.TestCase):
         self.assertEqual(risk2, ActionRiskLevel.CRITICAL)
         self.assertEqual(action_id2, "format_drive")
 
+    def test_inspect_code_risk_process_levels(self):
+        # 1. Safe: User applications like notepad.exe
+        safe_code = "import subprocess\nsubprocess.run(['taskkill', '/F', '/IM', 'notepad.exe', '/T'])"
+        risk_safe, action_safe, _ = self.guard.inspect_code_risk(safe_code)
+        self.assertEqual(risk_safe, ActionRiskLevel.SAFE)
+        self.assertEqual(action_safe, "kill_user_process")
+
+        # 2. Critical: System critical processes like svchost.exe
+        crit_code = "import subprocess\nsubprocess.run(['taskkill', '/F', '/IM', 'svchost.exe', '/T'])"
+        risk_crit, action_crit, _ = self.guard.inspect_code_risk(crit_code)
+        self.assertEqual(risk_crit, ActionRiskLevel.CRITICAL)
+        self.assertEqual(action_crit, "kill_system_process")
+
+        # 3. Sensitive: Unknown or wildcard processes
+        sens_code = "import subprocess\nsubprocess.run(['taskkill', '/F', '/IM', 'unknown_proc.exe', '/T'])"
+        risk_sens, action_sens, _ = self.guard.inspect_code_risk(sens_code)
+        self.assertEqual(risk_sens, ActionRiskLevel.SENSITIVE)
+        self.assertEqual(action_sens, "kill_process")
+
 
 if __name__ == "__main__":
     unittest.main()

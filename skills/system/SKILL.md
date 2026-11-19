@@ -64,6 +64,17 @@ system_service.launch_app("notepad")
 print("Launched application.")
 ```
 
+## Closing Applications & Windows
+```python
+from services.system import system_service
+
+# Close specific application cleanly
+system_service.close_app("notepad")
+
+# Or close the currently active / focused foreground window cleanly
+system_service.close_active_window()
+```
+
 ## Clipboard Management
 ```python
 import subprocess

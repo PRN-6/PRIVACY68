@@ -215,6 +215,65 @@ class TestActionExecutor(unittest.TestCase):
             self.assertEqual(result["method"], "browser_search")
             mock_open.assert_called_once_with("https://chatgpt.com", preferred_browser="chrome")
 
+    def test_close_notepad_direct_routing(self):
+        with patch("services.system.system_service.close_app", return_value=(True, "Closed Notepad.")) as mock_close:
+            with patch("actions.agent_brain.agent_brain.generate_and_execute") as generate:
+                result = executor.execute_system_command_detailed("close notepad")
+                self.assertTrue(result["success"])
+                self.assertEqual(result["tool"], "system_app")
+                self.assertEqual(result["method"], "close_app")
+                self.assertEqual(result["message"], "Closed Notepad.")
+                mock_close.assert_called_once_with("notepad")
+                generate.assert_not_called()
+
+    def test_close_chrome_direct_routing(self):
+        with patch("services.system.system_service.close_app", return_value=(True, "Closed Chrome.")) as mock_close:
+            with patch("actions.agent_brain.agent_brain.generate_and_execute") as generate:
+                result = executor.execute_system_command_detailed("close chrome")
+                self.assertTrue(result["success"])
+                self.assertEqual(result["tool"], "browser")
+                self.assertEqual(result["method"], "close_app")
+                mock_close.assert_called_once_with("chrome")
+                generate.assert_not_called()
+
+    def test_close_application_routes_to_active_window(self):
+        with patch("services.system.system_service.close_active_window", return_value=(True, "Closed active application window.")) as mock_close:
+            with patch("actions.agent_brain.agent_brain.generate_and_execute") as generate:
+                result = executor.execute_system_command_detailed("close the application")
+                self.assertTrue(result["success"])
+                self.assertEqual(result["tool"], "system_app")
+                self.assertEqual(result["method"], "close_active_window")
+                mock_close.assert_called_once()
+                generate.assert_not_called()
+
+    def test_close_window_routes_to_active_window(self):
+        with patch("services.system.system_service.close_active_window", return_value=(True, "Closed active application window.")) as mock_close:
+            with patch("actions.agent_brain.agent_brain.generate_and_execute") as generate:
+                result = executor.execute_system_command_detailed("close window")
+                self.assertTrue(result["success"])
+                self.assertEqual(result["tool"], "system_app")
+                self.assertEqual(result["method"], "close_active_window")
+                mock_close.assert_called_once()
+                generate.assert_not_called()
+
+    def test_close_tab_routes_directly(self):
+        with patch("actions.agent_brain.agent_brain.generate_and_execute") as generate:
+            result = executor.execute_system_command_detailed("close tab")
+            self.assertTrue(result["success"])
+            self.assertEqual(result["tool"], "browser")
+            self.assertEqual(result["method"], "close_tab")
+            generate.assert_not_called()
+
+    def test_close_assistant_routes_to_shutdown(self):
+        with patch("threading.Thread.start") as mock_thread_start:
+            with patch("actions.agent_brain.agent_brain.generate_and_execute") as generate:
+                result = executor.execute_system_command_detailed("exit assistant")
+                self.assertTrue(result["success"])
+                self.assertEqual(result["tool"], "system")
+                self.assertEqual(result["method"], "assistant_shutdown")
+                mock_thread_start.assert_called_once()
+                generate.assert_not_called()
+
 
 if __name__ == "__main__":
     unittest.main()
