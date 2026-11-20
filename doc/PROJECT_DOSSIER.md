@@ -17,7 +17,7 @@
 | Attribute | Specification |
 | :--- | :--- |
 | **Project Name** | **PRIVACY68** |
-| **Version** | `1.7.2` (Production Cloud-Hybrid Architecture) |
+| **Version** | `1.7.3` (Production Cloud-Hybrid Architecture) |
 | **Primary Platform** | Microsoft Windows 10 / 11 (x64) |
 | **Language & Runtime** | Python 3.11+ / Chromium WebView2 (`pywebview 6.x`) |
 | **Core Mission** | Autonomous AI desktop assistant and mobile teleoperation with **100% strict mic privacy** (zero local background eavesdropping) and high-speed multi-provider Cloud AI reasoning. |
@@ -26,7 +26,7 @@
 | **Voice Channel** | Out-of-band **Telegram Remote Gateway** ([channels/telegram.py](file:///d:/projects/PRIVACY68/channels/telegram.py)) with offline Faster-Whisper int8 transcription |
 | **Local Input Channel** | Sleek HUD **Quick Command Bar** ([ui/ptt_overlay.py](file:///d:/projects/PRIVACY68/ui/ptt_overlay.py), `Ctrl+Alt+Space`) |
 | **Security Enclave** | Windows Credential Manager (**DPAPI**) via [utils/credentials.py](file:///d:/projects/PRIVACY68/utils/credentials.py) |
-| **Automated Tests** | **121 / 121 Unit & Integration Tests Passing (100% Pass Rate)** |
+| **Automated Tests** | **138 / 138 Unit & Integration Tests Passing (100% Pass Rate)** |
 
 ---
 

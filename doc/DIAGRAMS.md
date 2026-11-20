@@ -1,6 +1,6 @@
 # PRIVACY68 // SYSTEM ARCHITECTURE & DATA FLOW DIAGRAMS
 
-This document contains the complete visual diagram specifications for **PRIVACY68** (Version 1.7.2). All diagrams use standard Mermaid syntax suitable for documentation, Overleaf LaTeX rendering, and presentation slides.
+This document contains the complete visual diagram specifications for **PRIVACY68** (Version 1.7.3). All diagrams use standard Mermaid syntax suitable for documentation, Overleaf LaTeX rendering, and presentation slides.
 
 ---
 
