@@ -14,7 +14,8 @@ Welcome to the official, complete documentation for **PRIVACY68** — an autonom
 | **[AI_ENGINE.md](file:///d:/projects/PRIVACY68/doc/AI_ENGINE.md)** | **AI Brain & OpenClaw Skills**: Multi-provider cascading failover topology (Gemini 3.1 Flash-Lite, Groq LPU, Claude 3.5, OpenAI, Ollama), Self-Healing Code Reflection Loop, and OpenClaw Markdown Skill specifications. |
 | **[SECURITY_AND_PRIVACY.md](file:///d:/projects/PRIVACY68/doc/SECURITY_AND_PRIVACY.md)** | **Security & Privacy Specification**: Strict Zero-Mic Hardware Policy, Windows Credential Manager DPAPI vault encryption, single-user Telegram PIN pairing, and subprocess execution safety. |
 | **[SETUP_AND_CONFIGURATION.md](file:///d:/projects/PRIVACY68/doc/SETUP_AND_CONFIGURATION.md)** | **Setup & Installation**: Quick-start guide, virtual environment setup, minimal dependencies (zero CUDA bloat), `.env` configuration, and PyInstaller executable building. |
-| **[VERIFICATION_AND_TESTS.md](file:///d:/projects/PRIVACY68/doc/VERIFICATION_AND_TESTS.md)** | **Benchmarks & Test Suite**: Full breakdown of the **121 automated test suite (100% pass rate in 15.9s)**, latency benchmarks across models, and acoustic ingestion telemetry. |
+| **[DIAGRAMS.md](file:///d:/projects/PRIVACY68/doc/DIAGRAMS.md)** | **Visual Architecture & Data Flow**: Complete Mermaid diagram suite: End-to-End Block Architecture, DFD Level 0 Context & Level 1 Decomposition, Runtime Sequence with Self-Healing, and Zero-Mic Acoustic Isolation Model. |
+| **[VERIFICATION_AND_TESTS.md](file:///d:/projects/PRIVACY68/doc/VERIFICATION_AND_TESTS.md)** | **Benchmarks & Test Suite**: Full breakdown of the **138 automated test suite (100% pass rate in 16.5s)**, latency benchmarks across models, and acoustic ingestion telemetry. |
 
 ---
 
