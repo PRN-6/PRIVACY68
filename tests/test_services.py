@@ -59,8 +59,9 @@ class TestServices(unittest.TestCase):
         self.assertTrue(result)
         mock_close.assert_called_once_with("notepad")
 
+    @patch("services.system.time.sleep", return_value=None)
     @patch("services.system._send_keybd_combo", return_value=True)
-    def test_system_service_virtual_desktops(self, mock_combo):
+    def test_system_service_virtual_desktops(self, mock_combo, mock_sleep):
         svc = SystemService()
         # Mock desktop info (current 1, total 5)
         with patch.object(svc, "get_virtual_desktop_info", return_value=(1, 5)):
