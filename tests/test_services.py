@@ -46,11 +46,15 @@ class TestServices(unittest.TestCase):
         self.assertFalse(success)
         self.assertIn("protected system process", msg)
 
-    def test_system_service_close_active_window(self):
+    @patch("ctypes.windll.user32.PostMessageW", return_value=1)
+    @patch("ctypes.windll.user32.GetForegroundWindow", return_value=12345)
+    def test_system_service_close_active_window(self, mock_fg, mock_post):
         svc = SystemService()
         success, msg = svc.close_active_window()
         self.assertTrue(success)
         self.assertIn("Closed active application", msg)
+        mock_fg.assert_called_once()
+        mock_post.assert_called_once_with(12345, 0x0010, 0, 0)
 
     @patch.object(SystemService, "close_app", return_value=(True, "Closed Notepad."))
     def test_system_service_execute_close(self, mock_close):
