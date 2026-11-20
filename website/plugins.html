@@ -168,17 +168,23 @@
                 <p class="doc-text">When you speak or type a developer command, the <strong>Skill Registry</strong> matches prompt keywords against active skills and injects exact CLI recipes directly into the Agent Brain prompt. The model writes standard, idiomatic code that runs in an isolated subprocess.</p>
                 <p class="doc-text">To create a custom skill, simply drop a new folder containing a <code>SKILL.md</code> into <code>%APPDATA%\PRIVACY68\skills\&lt;skill_name&gt;\SKILL.md</code>. PRIVACY68 will index it automatically on the next command.</p>
                 <p class="doc-text">Sensitive credentials (such as GitHub PAT tokens and Telegram bot keys) are encrypted natively using the <strong>Windows Credential Manager</strong> vault, ensuring secure persistent storage without plain-text configuration files.</p>
-                <a class="button-link" href="docs.html#plugin-system">Read the complete architecture guide</a>
+                <a class="button-link" href="docs.html#openclaw-skills">Read the complete architecture guide</a>
             </section>
         </main>
 
         <footer class="bottom-bar">
             <div class="bar-left">
-                <a href="https://github.com/PRN-6/PRIVACY68" target="_blank" rel="noreferrer" class="social-icon" aria-label="PRIVACY68 on GitHub"><i data-lucide="code"></i></a>
+                <a href="https://github.com/PRN-6/PRIVACY68" target="_blank" rel="noreferrer" class="social-icon" aria-label="PRIVACY68 on GitHub"><i data-lucide="github"></i></a>
                 <a href="mailto:contact@prinson.dev" class="social-icon"><i data-lucide="mail"></i></a>
                 <span class="bar-tag">&copy; 2026 PRIVACY68 &middot; PRINSON</span>
             </div>
-            <div class="bar-right"><span class="telemetry-item"><span class="dot-indicator"></span><span class="t-label">SYS:</span> ONLINE</span></div>
+            <div class="bar-right">
+                <span class="telemetry-item"><span class="dot-indicator"></span><span class="t-label">SYS:</span> ONLINE</span>
+                <span class="telemetry-sep">&middot;</span>
+                <span class="telemetry-item"><span class="t-label">BUILD:</span> v1.7.4</span>
+                <span class="telemetry-sep">&middot;</span>
+                <span class="telemetry-item"><span class="t-label">TESTS:</span> 138/138 PASSING</span>
+            </div>
         </footer>
     </div>
     <script src="script.js"></script>

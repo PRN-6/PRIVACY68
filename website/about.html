@@ -4,9 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>About // PRIVACY68 & Developer Spotlight</title>
+    <title>About // PRIVACY68 &amp; Developer Spotlight (v1.7.4)</title>
     <meta name="description"
-        content="Learn about PRIVACY68, its voice assistant technology, command processing, and developer profile.">
+        content="Learn about PRIVACY68 v1.7.4, its Zero-Mic hardware isolation, Three-Lane router, Telegram Remote Gateway, and developer profile.">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -63,31 +63,30 @@
         <!-- Main About Section -->
         <main class="content-section">
             <div class="section-title-wrap">
-                <span class="section-index">[ 04 // PROJECT MISSION & CREATOR ]</span>
-                <h2 class="section-heading">About PRIVACY68 Voice Assistant</h2>
-                <p class="section-desc">Building an uncompromised, hyper-fast, private desktop intelligence engine.</p>
+                <span class="section-index">[ 04 // PROJECT MISSION &amp; CREATOR · v1.7.4 ]</span>
+                <h2 class="section-heading">About PRIVACY68 Desktop Assistant</h2>
+                <p class="section-desc">Building an uncompromised, hyper-fast, private desktop intelligence engine for Windows.</p>
             </div>
 
             <!-- About Hero Card -->
             <div class="about-hero">
                 <h3
                     style="font-family: var(--font-pixel); font-size: 1.1rem; color: var(--color-ruby); margin-bottom: 12px;">
-                    // THE PRIVACY-FIRST PHILOSOPHY
+                    // THE ZERO-MIC PRIVACY PHILOSOPHY
                 </h3>
                 <p style="color: var(--text-secondary); font-size: 0.95rem; line-height: 1.7;">
-                    PRIVACY68 isolates microphone hardware through 100% on-demand Click-to-Speak and dynamic acoustic normalization <code>norm = (audio / peak) × 0.9</code>. For reasoning, the Universal Agent Brain supports both free cloud APIs (Google Gemini, Groq, OpenRouter) and fully offline air-gapped models (Ollama, LM Studio), giving users complete autonomy over data transit and compute privacy.
+                    PRIVACY68 eliminates workstation microphone eavesdropping entirely. The PC microphone hardware is <strong>completely disabled at all times</strong>, preventing wake-word background daemon listeners and room telemetry leaks. For hands-on PC interaction, users trigger the <strong>Quick Command Bar (<code>Ctrl+Alt+Space</code>)</strong>; for voice control, commands are transmitted out-of-band via encrypted Telegram voice notes decoded strictly in RAM (PyAV) with zero audio files written to disk.
                 </p>
                 <p style="color: var(--text-secondary); font-size: 0.95rem; line-height: 1.7; margin-top: 12px;">
-                    Commands route through a hierarchical 5-Tier Dispatcher featuring zero-LLM fast paths for security confirmations, greetings, native services, browser queries, and desktop utilities. For complex compound tasks, the Agent Brain dynamically injects OpenClaw Markdown Skills (<code>SKILL.md</code>) to generate verified, self-healing Python automation running in an isolated watchdog subprocess.
+                    Commands route through an intelligent <strong>Three-Lane Execution Router</strong>: Lane 1 executes built-in Win32 OS controls (volume, virtual desktops, window controls, and app launching) in under 5ms with zero token cost; Lane 2 replays auto-crystallized learned skills (<code>learned_skills.json</code>) with 0ms latency; Lane 3 leverages a cascading multi-cloud Agent Brain (Gemini 3.1 Flash-Lite &rarr; Groq LPU &rarr; Claude &rarr; GPT-4o &rarr; Ollama) with AST security gating and self-healing error correction.
                 </p>
 
                 <!-- Developer Bio Box -->
                 <div class="about-author-box">
                     <div class="author-avatar">P</div>
                     <div class="author-info">
-                        <h3>Designed & Developed by Prinson</h3>
-                        <p>AI Architect & Full-Stack Systems Engineer focusing on local AI inference, high-performance
-                            desktop automation, and low-latency speech pipelines.</p>
+                        <h3>Designed &amp; Developed by Prinson</h3>
+                        <p>AI Architect &amp; Systems Engineer focusing on private desktop intelligence, out-of-band teleoperation, and high-performance Windows systems automation.</p>
                         <div style="display: flex; gap: 16px; margin-top: 8px;">
                             <a href="https://github.com/PRN-6/PRIVACY68" target="_blank" rel="noreferrer" class="social-icon"
                                 style="font-size: 0.8rem;"><i data-lucide="github"
@@ -105,39 +104,39 @@
             <!-- Technology Core Stack Grid -->
             <div class="section-title-wrap" style="margin-top: 48px;">
                 <span class="section-index">[ NEURAL ENGINE CORE ]</span>
-                <h3 class="section-heading">Technology Stack & Libraries</h3>
+                <h3 class="section-heading">Technology Stack &amp; Libraries</h3>
             </div>
 
             <div class="tech-stack-grid">
                 <div class="tech-card">
-                    <div class="tech-card-header"><i data-lucide="cpu"></i> SPEECH-TO-TEXT</div>
-                    <h4 style="color: var(--text-pure); font-size: 1.05rem;">Google Web Speech (100% Free)</h4>
+                    <div class="tech-card-header"><i data-lucide="cpu"></i> ZERO-MIC SPEECH</div>
+                    <h4 style="color: var(--text-pure); font-size: 1.05rem;">Faster-Whisper (INT8 CPU)</h4>
                     <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 6px;">
-                        100% Free zero-key Google Web Speech Recognition API with sub-100ms transcription latency.
+                        RAM-only voice note decoding with lightweight INT8 CPU quantization (~180MB RAM footprint).
                     </p>
                 </div>
 
                 <div class="tech-card">
-                    <div class="tech-card-header"><i data-lucide="activity"></i> AUDIO NORMALIZATION</div>
-                    <h4 style="color: var(--text-pure); font-size: 1.05rem;">Dynamic Peak Scaling</h4>
+                    <div class="tech-card-header"><i data-lucide="activity"></i> COMMAND ROUTER</div>
+                    <h4 style="color: var(--text-pure); font-size: 1.05rem;">Three-Lane Execution Router</h4>
                     <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 6px;">
-                        Applies <code>norm = (audio / peak) × 0.9</code> dynamic scaling for optimal acoustic clarity and zero distortion.
+                        Built-in Win32 Fast-Paths (&lt;5ms) &rarr; Learned Skills Replay (0ms) &rarr; Multi-Cloud Agent Brain.
                     </p>
                 </div>
 
                 <div class="tech-card">
                     <div class="tech-card-header"><i data-lucide="shield-check"></i> SECURITY POLICY</div>
-                    <h4 style="color: var(--text-pure); font-size: 1.05rem;">3-Tier Security Guard</h4>
+                    <h4 style="color: var(--text-pure); font-size: 1.05rem;">3-Tier AST Security Guard</h4>
                     <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 6px;">
-                        Zero-trust execution policy requiring explicit user confirmation before executing any destructive operations.
+                        Abstract Syntax Tree static analysis requiring explicit user confirmation before executing destructive operations.
                     </p>
                 </div>
 
                 <div class="tech-card">
                     <div class="tech-card-header"><i data-lucide="bot"></i> AGENT BRAIN</div>
-                    <h4 style="color: var(--text-pure); font-size: 1.05rem;">Universal LLM Orchestration</h4>
+                    <h4 style="color: var(--text-pure); font-size: 1.05rem;">Cascading Multi-Cloud AI</h4>
                     <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 6px;">
-                        Supports Google Gemini 2.5 Flash, Groq LPU, OpenRouter, and local Ollama/LM Studio with self-healing automation.
+                        Gemini 3.1 Flash-Lite &rarr; Groq LPU (Llama 3.3) &rarr; Claude 3.5 &rarr; GPT-4o-mini &rarr; Local Ollama.
                     </p>
                 </div>
 
@@ -158,70 +157,40 @@
                 </div>
                 <ul style="list-style: none; display: flex; flex-direction: column; gap: 16px; margin-top: 16px;">
                     <li style="border-left: 2px solid var(--color-ruby); padding-left: 16px;">
-                        <div style="font-family: var(--font-pixel); color: var(--color-ruby); font-size: 0.8rem;">v2.0.0
-                            · CURRENT RELEASE</div>
-                        <h4 style="color: var(--text-pure); margin-top: 2px;">OpenClaw Markdown Skills, Native Services Architecture &amp; 5-Tier Dispatcher</h4>
-                        <p style="color: var(--text-secondary); font-size: 0.85rem;">Permanently retires legacy monolithic Python plugins in favor of the open <strong>OpenClaw Markdown Skills Standard</strong> (11 core developer skills in <code>skills/*/SKILL.md</code>) with dynamic system prompt injection; introduces dedicated native background channels (<code>channels/telegram.py</code>) and native services (<code>services/gmail.py</code>, <code>services/system.py</code>); introduces a 5-tier command dispatcher with zero-LLM fast paths for browser searches, app launching, and system utilities; fully validated with 119 passing unit tests (100% pass rate).</p>
+                        <div style="font-family: var(--font-pixel); color: var(--color-ruby); font-size: 0.8rem;">v1.7.4
+                            · CURRENT PRODUCTION RELEASE</div>
+                        <h4 style="color: var(--text-pure); margin-top: 2px;">CI Test Isolation, Windows Virtual Desktops Navigation &amp; 138 Passing Tests</h4>
+                        <p style="color: var(--text-secondary); font-size: 0.85rem;">Mocks Win32 PostMessageW in automated test runners to eliminate CI runner window closure aborts; adds native Windows virtual desktop navigation (desktops 1-10, next, prev, task view) via services/system.py; optimizes OpenClaw markdown skills with dynamic repository directory resolution; verified with 138 passing unit and integration tests (100% pass rate).</p>
+                    </li>
+                    <li style="border-left: 2px solid var(--border-dim); padding-left: 16px; margin-top: 12px;">
+                        <div style="font-family: var(--font-pixel); color: var(--text-muted); font-size: 0.8rem;">v1.7.3
+                            · PREVIOUS RELEASE</div>
+                        <h4 style="color: var(--text-pure); margin-top: 2px;">Dynamic Skill Working Directory &amp; Repository Path Resolution</h4>
+                        <p style="color: var(--text-secondary); font-size: 0.85rem;">Implements dynamic repo resolution across source and frozen executable directories, ensuring git status, diff, and branch commands target the active workspace accurately regardless of launcher location.</p>
+                    </li>
+                    <li style="border-left: 2px solid var(--border-dim); padding-left: 16px; margin-top: 12px;">
+                        <div style="font-family: var(--font-pixel); color: var(--text-muted); font-size: 0.8rem;">v1.7.2
+                            · PREVIOUS RELEASE</div>
+                        <h4 style="color: var(--text-pure); margin-top: 2px;">Windows Virtual Desktop Controls &amp; Win32 System Integration</h4>
+                        <p style="color: var(--text-secondary); font-size: 0.85rem;">Adds direct Windows 10/11 virtual desktop navigation hotkeys, task view simulation, active window minimization/close, and master volume controls.</p>
+                    </li>
+                    <li style="border-left: 2px solid var(--border-dim); padding-left: 16px; margin-top: 12px;">
+                        <div style="font-family: var(--font-pixel); color: var(--text-muted); font-size: 0.8rem;">v1.7.1
+                            · PREVIOUS RELEASE</div>
+                        <h4 style="color: var(--text-pure); margin-top: 2px;">Dynamic Markdown Agent Skills Architecture (Universal SKILL.md)</h4>
+                        <p style="color: var(--text-secondary); font-size: 0.85rem;">Migrates skills to open OpenClaw Markdown standard (11 core developer skills in skills/*/SKILL.md) with dynamic system prompt injection and zero fragile Python inheritance.</p>
+                    </li>
+                    <li style="border-left: 2px solid var(--border-dim); padding-left: 16px; margin-top: 12px;">
+                        <div style="font-family: var(--font-pixel); color: var(--text-muted); font-size: 0.8rem;">v1.7.0
+                            · PREVIOUS RELEASE</div>
+                        <h4 style="color: var(--text-pure); margin-top: 2px;">Zero-Mic Hardware Isolation &amp; Telegram RAM Audio Decoding</h4>
+                        <p style="color: var(--text-secondary); font-size: 0.85rem;">Enforces 100% strict workstation microphone isolation; introduces out-of-band Telegram Remote Gateway with in-memory PyAV audio decoding and CPU INT8 Faster-Whisper transcription.</p>
                     </li>
                     <li style="border-left: 2px solid var(--border-dim); padding-left: 16px; margin-top: 12px;">
                         <div style="font-family: var(--font-pixel); color: var(--text-muted); font-size: 0.8rem;">v1.6.5
-                            · PREVIOUS RELEASE</div>
-                        <h4 style="color: var(--text-pure); margin-top: 2px;">Push-to-Talk Transparent Overlay, Adaptive Google Speech Priority &amp; Dual-Accent Recovery</h4>
-                        <p style="color: var(--text-secondary); font-size: 0.85rem;">Introduces a dedicated Push-to-Talk floating overlay triggered from the Windows System Tray menu; sets Google Web Speech as primary with automatic local Faster-Whisper offline fallback; adds dual-pass dialect recovery (en-IN / en-US), acoustic DC-bias centering, clipping guards, boundary padding, and multi-prefix conversational cleaners.</p>
-                    </li>
-                    <li style="border-left: 2px solid var(--border-dim); padding-left: 16px; margin-top: 12px;">
-                        <div style="font-family: var(--font-pixel); color: var(--text-muted); font-size: 0.8rem;">v1.6.4
-                            · PREVIOUS RELEASE</div>
-                        <h4 style="color: var(--text-pure); margin-top: 2px;">Telegram Remote Gateway, Offline Faster-Whisper Toggle &amp; AST Security Guard</h4>
-                        <p style="color: var(--text-secondary); font-size: 0.85rem;">Enables global out-of-band mobile teleoperation via Telegram Bot from anywhere on 4G/5G; transcribes mobile voice notes locally using Faster-Whisper; introduces 6-character interactive PIN security pairing; AST static code risk analysis for Agent Brain; unblocks compound app commands; validated across 137 unit tests (100% pass rate).</p>
-                    </li>
-                    <li style="border-left: 2px solid var(--border-dim); padding-left: 16px; margin-top: 12px;">
-                        <div style="font-family: var(--font-pixel); color: var(--text-muted); font-size: 0.8rem;">v1.6.3
-                            · PREVIOUS RELEASE</div>
-                        <h4 style="color: var(--text-pure); margin-top: 2px;">Gmail Automation Controller &amp; Interactive Plugin Drawers</h4>
-                        <p style="color: var(--text-secondary); font-size: 0.85rem;">Introduces native Gmail automation with multi-account URL compose and inbox routing; expands plugin cards in the Control Center with interactive click-to-configure drawers; zero-latency speech-to-email extraction; verified with 107 passing unit tests.</p>
-                    </li>
-                    <li style="border-left: 2px solid var(--border-dim); padding-left: 16px; margin-top: 12px;">
-                        <div style="font-family: var(--font-pixel); color: var(--text-muted); font-size: 0.8rem;">v1.6.2
-                            · PREVIOUS RELEASE</div>
-                        <h4 style="color: var(--text-pure); margin-top: 2px;">Universal LLM Engine, Custom Endpoints &amp; 3-Tier Security</h4>
-                        <p style="color: var(--text-secondary); font-size: 0.85rem;">Delivers universal AI compatibility with free cloud APIs (Google Gemini, Groq, OpenRouter) and custom local endpoints (LM Studio, Ollama, LocalAI); dynamic acoustic peak normalization <code>(audio/peak) × 0.9</code> with Click-to-Speak hardware isolation; 3-tier security confirmation gating.</p>
-                    </li>
-                    <li style="border-left: 2px solid var(--border-dim); padding-left: 16px; margin-top: 12px;">
-                        <div style="font-family: var(--font-pixel); color: var(--text-muted); font-size: 0.8rem;">v1.6.1
-                            · PREVIOUS RELEASE</div>
-                        <h4 style="color: var(--text-secondary); margin-top: 2px;">Google Gemini, Multi-Provider Auto-Failover &amp; Click-to-Speak</h4>
-                        <p style="color: var(--text-muted); font-size: 0.85rem;">Introduces zero-setup Google Web Speech Recognition with strict Click-to-Speak privacy, multi-provider cloud reasoning with automatic failover, and modern WebView2 Control Center.</p>
-                    </li>
-                    <li style="border-left: 2px solid var(--border-dim); padding-left: 16px; margin-top: 12px;">
-                        <div style="font-family: var(--font-pixel); color: var(--text-muted); font-size: 0.8rem;">v1.5.0
-                            · PREVIOUS RELEASE</div>
-                        <h4 style="color: var(--text-secondary); margin-top: 2px;">Cloud AI Architecture & Modern Control Center</h4>
-                        <p style="color: var(--text-muted); font-size: 0.85rem;">Lightweight executable build, cloud intelligence, and unified desktop management dashboard.</p>
-                    </li>
-                    <li style="border-left: 2px solid var(--border-dim); padding-left: 16px; margin-top: 12px;">
-                        <div style="font-family: var(--font-pixel); color: var(--text-muted); font-size: 0.8rem;">v1.4.3
                             · ARCHIVED RELEASE</div>
-                        <h4 style="color: var(--text-secondary); margin-top: 2px;">Reliable Windows Commands & Packaging</h4>
-                        <p style="color: var(--text-muted); font-size: 0.85rem;">Fixes a missing tokenizer plugin in the frozen build, routes Chrome and WhatsApp launch commands through their built-in plugins, and improves command error reporting.</p>
-                    </li>
-                    <li style="border-left: 2px solid var(--border-dim); padding-left: 16px; margin-top: 12px;">
-                        <div style="font-family: var(--font-pixel); color: var(--text-muted); font-size: 0.8rem;">v1.4.1
-                            · PREVIOUS RELEASE</div>
-                        <h4 style="color: var(--text-secondary); margin-top: 2px;">Agentic Brain & Professional CLI Installation</h4>
-                        <p style="color: var(--text-muted); font-size: 0.85rem;">Uses an Agent Brain with LiteLLM model requests and generated-code execution, alongside the CLI installer.</p>
-                    </li>
-                    <li style="border-left: 2px solid var(--border-dim); padding-left: 16px; margin-top: 12px;">
-                        <div style="font-family: var(--font-pixel); color: var(--text-muted); font-size: 0.8rem;">v1.1.0
-                            · LEGACY RELEASE</div>
-                        <h4 style="color: var(--text-secondary); margin-top: 2px;">Mobile Responsiveness & Neural Engine Enhancements</h4>
-                        <p style="color: var(--text-muted); font-size: 0.85rem;">Full responsive mobile navigation drawer, fluid typography, Silero VAD, and CUDA acceleration.</p>
-                    </li>
-                    <li style="border-left: 2px solid var(--border-dim); padding-left: 16px; margin-top: 12px;">
-                        <div style="font-family: var(--font-pixel); color: var(--text-muted); font-size: 0.8rem;">v1.0.0
-                            · INITIAL LAUNCH</div>
-                        <h4 style="color: var(--text-secondary); margin-top: 2px;">Core Voice Assistant Engine</h4>
-                        <p style="color: var(--text-muted); font-size: 0.85rem;">Production release with 100% private Click-to-Speak, and multi-provider AI APIs.</p>
+                        <h4 style="color: var(--text-secondary); margin-top: 2px;">Quick Command Bar Transparent Overlay &amp; Multi-Prefix Recovery</h4>
+                        <p style="color: var(--text-muted); font-size: 0.85rem;">Introduced transparent floating Quick Command Bar triggered via system tray and Ctrl+Alt+Space, dual-accent recovery, and multi-prefix conversational cleaners.</p>
                     </li>
                 </ul>
             </div>
@@ -242,7 +211,9 @@
                 <span class="telemetry-item"><span class="dot-indicator"></span><span class="t-label">SYS:</span>
                     ONLINE</span>
                 <span class="telemetry-sep">·</span>
-                <span class="telemetry-item"><span class="t-label">BUILD:</span>                 RELEASE 2.0.0</span>
+                <span class="telemetry-item"><span class="t-label">BUILD:</span> RELEASE 1.7.4</span>
+                <span class="telemetry-sep">·</span>
+                <span class="telemetry-item"><span class="t-label">TESTS:</span> 138/138 PASSING</span>
             </div>
         </footer>
 
