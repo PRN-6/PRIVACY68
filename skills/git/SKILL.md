@@ -26,13 +26,31 @@ git stash && git stash pop
 
 ## Python Automation Pattern in PRIVACY68
 ```python
+import os
 import subprocess
 
-def run_git(*args):
+def resolve_repo_dir(target_name: str = "PRIVACY68") -> str:
+    if os.path.exists(".git"):
+        return os.getcwd()
+    candidates = [
+        rf"D:\projects\{target_name}",
+        os.path.join(os.path.expanduser("~"), "projects", target_name),
+    ]
+    for p in candidates:
+        if os.path.exists(os.path.join(p, ".git")):
+            return p
+    return os.getcwd()
+
+def run_git(*args, repo_dir: str = None):
+    cwd = repo_dir or resolve_repo_dir()
     cmd = ["git", *args]
-    res = subprocess.run(cmd, capture_output=True, text=True, check=False)
+    res = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, check=False)
     output = res.stdout.strip() or res.stderr.strip()
-    print(output or f"Git command '{' '.join(args)}' completed.")
+    repo_label = f"[{os.path.basename(cwd)}] " if cwd else ""
+    if res.returncode == 0:
+        print(f"{repo_label}{output}" if output else f"{repo_label}Working directory is clean (nothing to commit).")
+    else:
+        print(f"{repo_label}Error: {output or 'Not a git repository.'}")
     return res.returncode == 0
 
 # Check git status
