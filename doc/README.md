@@ -11,5 +11,3 @@ These guides describe the current text-command application.
 | [Diagrams](DIAGRAMS.md) | Current command flow |
 | [Verification](VERIFICATION_AND_TESTS.md) | Tests and manual checks |
 | [Project overview](PROJECT_DOSSIER.md) | Scope and source layout |
-
-Research and generated report artifacts under `docs/` describe earlier versions. Consult the source and these guides for current behavior.

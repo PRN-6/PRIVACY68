@@ -51,4 +51,4 @@ python -m compileall -q actions channels computer_use services skills ui utils t
 .\build.bat
 ```
 
-The build uses PyInstaller and Inno Setup. See [Contributing](CONTRIBUTING.md), [architecture](doc/ARCHITECTURE.md), and [setup](doc/SETUP_AND_CONFIGURATION.md). Research papers and generated project reports in `docs/` describe earlier versions and are not the current runtime specification.
+The build uses PyInstaller and Inno Setup. See [Contributing](CONTRIBUTING.md), [architecture](doc/ARCHITECTURE.md), and [setup](doc/SETUP_AND_CONFIGURATION.md).
