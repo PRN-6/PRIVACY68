@@ -1,7 +1,6 @@
 import os
 import sys
 import logging
-import threading
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 1. PyInstaller frozen-safe base directory resolution
@@ -73,7 +72,6 @@ def main() -> None:
             raise SystemExit(1)
         return
 
-    from actions.executor import execute_system_command, execute_system_command_detailed
     from ui.manager import UIManager
 
     logger.info("Initializing PRIVACY68 Assistant Services...")
@@ -96,9 +94,9 @@ def main() -> None:
         except Exception as tg_err:
             logger.debug(f"Could not initialize Telegram Bot on startup: {tg_err}")
 
-        # Run the Floating HUD Tkinter loop on the main thread
+        # Run the text command bar's Tkinter loop on the main thread.
         logger.info("Starting PRIVACY68 Background Service...")
-        ui_manager.run_hud_loop()
+        ui_manager.run_ui_loop()
 
     except KeyboardInterrupt:
         logger.info("Graceful shutdown sequence initialized by user.")
@@ -106,6 +104,9 @@ def main() -> None:
         logger.critical(f"Unhandled fatal error in main thread: {e}", exc_info=True)
         sys.exit(1)
     finally:
+        ui_manager.tray.stop()
+        from channels.telegram import telegram_channel
+        telegram_channel.stop_bot()
         logger.info("Cleanup completed. PRIVACY68 is offline.")
 
 

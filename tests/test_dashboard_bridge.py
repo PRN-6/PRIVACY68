@@ -61,18 +61,16 @@ class TestDashboardAPI(unittest.TestCase):
         self.assertTrue(result["success"])
         self.assertEqual(result["login"], "tester")
 
-    def test_runtime_status_reports_configured_model_and_hardware(self):
-        voice = {"model_ready": True, "is_enrolled": False, "enabled": False}
-        cuda = {"is_ready": False, "has_gpu": False}
-        with patch.object(self.api, "get_voice_lock_status", return_value=voice):
-            with patch.object(self.api, "get_cuda_status", return_value=cuda):
-                result = self.api.get_runtime_status()
-
+    def test_runtime_status_reports_text_mode_and_actual_gateway_state(self):
+        with patch.object(self.api, "check_ollama_status", return_value={"is_running": False}), \
+             patch("ui.dashboard_bridge.telegram_channel.is_bot_running", return_value=False):
+            result = self.api.get_runtime_status()
         self.assertTrue(result["success"])
         self.assertIn("model", result)
-        self.assertIn("speech_model", result)
-        self.assertEqual(result["voice_lock"], voice)
-        self.assertEqual(result["cuda"], cuda)
+        self.assertEqual(result["input_mode"], "text")
+        self.assertFalse(result["telegram_running"])
+        self.assertNotIn("speech_model", result)
+        self.assertNotIn("voice_lock", result)
 
     def test_get_plugins_returns_registered_plugin_metadata(self):
         result = self.api.get_plugins()
@@ -109,23 +107,6 @@ class TestDashboardAPI(unittest.TestCase):
             get_res = self.api.get_plugin_setting("whatsapp", "default_contact")
             self.assertTrue(get_res["success"])
             self.assertEqual(get_res["value"], "+1987654321")
-
-    def test_get_and_save_speech_config(self):
-        with patch("config.update_dotenv_var") as mock_upd:
-            res = self.api.save_speech_config("whisper", "base")
-            self.assertTrue(res["success"])
-            self.assertEqual(res["engine"], "whisper")
-            self.assertEqual(res["whisper_model"], "base")
-            mock_upd.assert_any_call("SPEECH_ENGINE", "whisper")
-            mock_upd.assert_any_call("WHISPER_MODEL_SIZE", "base")
-
-            bad_res = self.api.save_speech_config("invalid_engine", "tiny")
-            self.assertFalse(bad_res["success"])
-
-        cfg = self.api.get_speech_config()
-        self.assertTrue(cfg["success"])
-        self.assertIn("engine", cfg)
-        self.assertIn("whisper_model", cfg)
 
     def test_telegram_bridge_methods(self):
         with patch("channels.telegram.telegram_channel.start_bot", return_value=(True, "Bot started")), \

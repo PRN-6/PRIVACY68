@@ -59,7 +59,7 @@ jobs:
       # ── 5. Byte-compile every source file (catches syntax errors) ──────────────
       - name: Byte-compile sources
         run: |
-          python -m compileall -q actions computer_use speech ui utils skills tests app.py config.py
+          python -m compileall -q actions channels computer_use services ui utils skills tests app.py config.py
 
       # ── 6. Upload the test log when the suite fails ────────────────────────────
       - name: Upload test log on failure

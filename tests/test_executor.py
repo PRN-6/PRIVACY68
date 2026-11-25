@@ -13,7 +13,7 @@ class TestActionExecutor(unittest.TestCase):
         self.addCleanup(self.guard_patch.stop)
 
     def test_empty_command_is_rejected(self):
-        with patch.object(executor, "autocorrect_speech_command", return_value=""):
+        with patch.object(executor, "normalize_command", return_value=""):
             result = executor.execute_system_command_detailed("  ")
 
         self.assertFalse(result["success"])
@@ -21,7 +21,7 @@ class TestActionExecutor(unittest.TestCase):
         self.assertEqual(result["message"], "Empty command")
 
     def test_greeting_does_not_call_agent_brain(self):
-        with patch.object(executor, "autocorrect_speech_command", return_value="hello there"):
+        with patch.object(executor, "normalize_command", return_value="hello there"):
             with patch("actions.agent_brain.agent_brain.generate_and_execute") as generate:
                 result = executor.execute_system_command_detailed("hello there")
 
@@ -32,7 +32,7 @@ class TestActionExecutor(unittest.TestCase):
     def test_sentence_containing_this_is_not_misread_as_greeting(self):
         request = "do this now"
         expected = {"success": True, "message": "request handled", "method": "agentic_engine"}
-        with patch.object(executor, "autocorrect_speech_command", return_value=request):
+        with patch.object(executor, "normalize_command", return_value=request):
             with patch("actions.agent_brain.agent_brain.generate_and_execute", return_value=expected) as generate:
                 result = executor.execute_system_command_detailed(request)
 
@@ -42,7 +42,7 @@ class TestActionExecutor(unittest.TestCase):
     def test_github_commands_route_to_agent_brain(self):
         request = "in vscode can u push my code to github this is the branch feat/demo"
         expected = {"success": True, "message": "Pushed branch feat/demo", "method": "agentic_engine"}
-        with patch.object(executor, "autocorrect_speech_command", return_value=request):
+        with patch.object(executor, "normalize_command", return_value=request):
             with patch("actions.agent_brain.agent_brain.generate_and_execute", return_value=expected) as generate:
                 result = executor.execute_system_command_detailed(request)
 
@@ -53,7 +53,7 @@ class TestActionExecutor(unittest.TestCase):
         status_callback = Mock()
         action_callback = Mock()
         expected = {"success": True, "message": "completed", "method": "agentic_engine"}
-        with patch.object(executor, "autocorrect_speech_command", return_value="summarize this document"):
+        with patch.object(executor, "normalize_command", return_value="summarize this document"):
             with patch("actions.agent_brain.agent_brain.generate_and_execute", return_value=expected) as generate:
                 result = executor.execute_system_command_detailed(
                     "summarize this document",
@@ -67,7 +67,7 @@ class TestActionExecutor(unittest.TestCase):
         action_callback.assert_called_once_with("agent_brain", True, "completed")
 
     def test_open_chrome_routes_directly(self):
-        with patch.object(executor, "autocorrect_speech_command", return_value="open chrome"):
+        with patch.object(executor, "normalize_command", return_value="open chrome"):
             with patch("actions.executor._open_url", return_value=True) as mock_open:
                 with patch("actions.agent_brain.agent_brain.generate_and_execute") as generate:
                     result = executor.execute_system_command_detailed("open chrome")
@@ -79,7 +79,7 @@ class TestActionExecutor(unittest.TestCase):
         generate.assert_not_called()
 
     def test_open_brave_routes_directly(self):
-        with patch.object(executor, "autocorrect_speech_command", return_value="open brave"):
+        with patch.object(executor, "normalize_command", return_value="open brave"):
             with patch("actions.executor._open_url", return_value=True) as mock_open:
                 with patch("actions.agent_brain.agent_brain.generate_and_execute") as generate:
                     result = executor.execute_system_command_detailed("open brave")
@@ -92,7 +92,7 @@ class TestActionExecutor(unittest.TestCase):
 
     def test_open_brave_and_create_new_tab_routes_directly(self):
         request = "open brave and create a new tab in brave"
-        with patch.object(executor, "autocorrect_speech_command", return_value=request):
+        with patch.object(executor, "normalize_command", return_value=request):
             with patch("actions.executor._open_url", return_value=True) as mock_open:
                 with patch("actions.agent_brain.agent_brain.generate_and_execute") as generate:
                     result = executor.execute_system_command_detailed(request)
@@ -103,7 +103,7 @@ class TestActionExecutor(unittest.TestCase):
         generate.assert_not_called()
 
     def test_open_whatsapp_routes_directly(self):
-        with patch.object(executor, "autocorrect_speech_command", return_value="open whatsapp"):
+        with patch.object(executor, "normalize_command", return_value="open whatsapp"):
             with patch("webbrowser.open", return_value=True) as mock_wb:
                 with patch("actions.agent_brain.agent_brain.generate_and_execute") as generate:
                     result = executor.execute_system_command_detailed("open whatsapp")
@@ -115,7 +115,7 @@ class TestActionExecutor(unittest.TestCase):
 
     def test_disabled_gmail_service_reports_actionable_error(self):
         with patch("services.gmail.gmail_service.is_enabled", False):
-            with patch.object(executor, "autocorrect_speech_command", return_value="compose email to test@example.com"):
+            with patch.object(executor, "normalize_command", return_value="compose email to test@example.com"):
                 result = executor.execute_system_command_detailed("compose email to test@example.com")
 
         self.assertFalse(result["success"])
@@ -127,7 +127,7 @@ class TestActionExecutor(unittest.TestCase):
         status_callback = Mock()
         action_callback = Mock()
         underlying_error = "Agent Brain Error: Unknown encoding cl100k_base."
-        with patch.object(executor, "autocorrect_speech_command", return_value="launch app"):
+        with patch.object(executor, "normalize_command", return_value="launch app"):
             with patch(
                 "actions.agent_brain.agent_brain.generate_and_execute",
                 return_value={
@@ -151,7 +151,7 @@ class TestActionExecutor(unittest.TestCase):
     def test_pending_security_action_can_be_confirmed_via_executor(self):
         action = Mock(return_value="done")
         self.guard.request_execution("delete_file", action, description="delete a file")
-        with patch.object(executor, "autocorrect_speech_command", return_value="confirm"):
+        with patch.object(executor, "normalize_command", return_value="confirm"):
             result = executor.execute_system_command_detailed("confirm")
 
         self.assertTrue(result["success"])
@@ -161,7 +161,7 @@ class TestActionExecutor(unittest.TestCase):
     def test_go_to_gmail_routes_to_service_when_enabled(self):
         with patch("services.gmail.gmail_service.is_enabled", True):
             with patch("services.gmail.gmail_service.open_inbox", return_value=True) as mock_inbox:
-                with patch.object(executor, "autocorrect_speech_command", return_value="go to gmail"):
+                with patch.object(executor, "normalize_command", return_value="go to gmail"):
                     result = executor.execute_system_command_detailed("go to gmail")
 
         self.assertTrue(result["success"])
@@ -171,7 +171,7 @@ class TestActionExecutor(unittest.TestCase):
 
     def test_go_to_gmail_blocks_when_service_is_disabled(self):
         with patch("services.gmail.gmail_service.is_enabled", False):
-            with patch.object(executor, "autocorrect_speech_command", return_value="go to gmail"):
+            with patch.object(executor, "normalize_command", return_value="go to gmail"):
                 result = executor.execute_system_command_detailed("go to gmail")
 
         self.assertFalse(result["success"])
@@ -179,7 +179,7 @@ class TestActionExecutor(unittest.TestCase):
         self.assertIn("disabled", result["message"].lower())
 
     def test_open_telegram_routes_to_service(self):
-        with patch.object(executor, "autocorrect_speech_command", return_value="open telegram"):
+        with patch.object(executor, "normalize_command", return_value="open telegram"):
             with patch("actions.executor._open_url", return_value=True) as mock_open:
                 with patch("actions.agent_brain.agent_brain.generate_and_execute") as generate:
                     result = executor.execute_system_command_detailed("open telegram")
@@ -192,7 +192,7 @@ class TestActionExecutor(unittest.TestCase):
 
     def test_compound_app_commands_fall_through_to_agent_brain(self):
         expected = {"success": True, "message": "done", "method": "agentic_engine"}
-        with patch.object(executor, "autocorrect_speech_command", return_value="open notepad and write hello world"):
+        with patch.object(executor, "normalize_command", return_value="open notepad and write hello world"):
             with patch("actions.agent_brain.agent_brain.generate_and_execute", return_value=expected) as mock_brain:
                 result = executor.execute_system_command_detailed("open notepad and write hello world")
 

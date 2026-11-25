@@ -2,7 +2,6 @@ import threading
 import logging
 from PIL import Image, ImageDraw
 import pystray
-import webbrowser
 
 logger = logging.getLogger("PRIVACY68.SystemTray")
 
@@ -39,7 +38,7 @@ class SystemTray:
         menu = pystray.Menu(
             pystray.MenuItem(f"🤖 Status: {self.current_status}", lambda: None, enabled=False),
             pystray.Menu.SEPARATOR,
-            pystray.MenuItem("⌨️ Run Command (Quick Command Bar)", self._on_voice_command),
+            pystray.MenuItem("⌨️ Run Command (Quick Command Bar)", self._on_command, default=True),
             pystray.MenuItem("📊 Open Dashboard", self._on_open_dashboard),
             pystray.Menu.SEPARATOR,
             pystray.MenuItem("🚪 Exit PRIVACY68", self._on_exit)
@@ -57,12 +56,10 @@ class SystemTray:
         tray_thread.start()
         logger.info("Agentic System Tray icon initialized.")
 
-    def _on_voice_command(self):
-        """Shows or toggles the Push-to-Talk floating transparent overlay."""
-        if self.ui_manager and hasattr(self.ui_manager, "show_push_to_talk_overlay"):
-            self.ui_manager.show_push_to_talk_overlay()
-        else:
-            logger.error("UI Manager not found; cannot open Voice Command overlay.")
+    def _on_command(self):
+        """Show or hide the text command bar."""
+        if self.ui_manager:
+            self.ui_manager.show_command_bar()
 
     def _on_open_dashboard(self):
         """Opens the Control Center Dashboard via the UI Manager."""
@@ -71,20 +68,15 @@ class SystemTray:
         else:
             logger.error("UI Manager not found; cannot open dashboard.")
 
-    def _on_reset_brain(self):
-        """Tells the AgentBrain to clear its session state."""
-        logger.info("Resetting Agent Brain session via tray.")
-        if self.ui_manager:
-            # If your ui_manager has a reset method, call it here
-            if hasattr(self.ui_manager, 'reset_agent'):
-                self.ui_manager.reset_agent()
-
     def _on_exit(self):
         logger.info("Exit requested via System Tray.")
-        if self.icon:
-            self.icon.stop()
         if self.ui_manager:
             self.ui_manager.shutdown()
+
+    def stop(self):
+        if self.icon:
+            self.icon.stop()
+        self.is_running = False
 
     def update_status(self, status: str, color: str = "#EF4444"):
         """Updates the tray icon color and the status menu text."""

@@ -4,7 +4,6 @@ import platform
 import shutil
 import subprocess
 from typing import Dict, Any, List, Optional
-import numpy as np
 
 import config
 from utils.profile_manager import profile_manager
@@ -42,18 +41,12 @@ class DashboardAPI:
             return {
                 "user_name": profile_manager.get("user_name", "User"),
                 "assistant_name": profile_manager.get("assistant_name", "Alexa"),
-                "wake_word": profile_manager.get("wake_word", "alexa"),
-                "wake_threshold": float(profile_manager.get("wake_threshold", 0.50)),
-                "whisper_model": profile_manager.get("whisper_model", "small.en"),
                 "llm_provider": profile_manager.get("llm_provider", "ollama"),
                 "llm_model": profile_manager.get("llm_model", "qwen2.5:0.5b"),
                 "api_key": profile_manager.get("api_key", ""),
                 "api_base_url": profile_manager.get("api_base_url", ""),
                 "cloud_model": profile_manager.get("cloud_model", "gpt-4o-mini"),
-                "hud_enabled": bool(profile_manager.get("hud_enabled", True)),
                 "theme": profile_manager.get("theme", "obsidian_red"),
-                "voice_lock_enabled": bool(profile_manager.get("voice_lock_enabled", False)),
-                "voice_lock_threshold": float(profile_manager.get("voice_lock_threshold", 0.50)),
             }
         except Exception as e:
             logger.error(f"Error getting profile: {e}")
@@ -165,76 +158,16 @@ class DashboardAPI:
         """Returns status values read from the active runtime components."""
         try:
             from actions.agent_brain import agent_brain
-            import config
 
-            voice_status = self.get_voice_lock_status()
-            cuda_status = self.get_cuda_status()
             return {
                 "success": True,
                 "model": agent_brain.model,
-                "speech_engine": getattr(config, "SPEECH_ENGINE", "auto"),
-                "speech_model": getattr(config, "WHISPER_MODEL_SIZE", "tiny"),
-                "speech_device": getattr(config, "WHISPER_DEVICE", "cpu"),
-                "speech_compute_type": getattr(config, "WHISPER_COMPUTE_TYPE", "int8"),
-                "voice_lock": voice_status,
-                "cuda": cuda_status,
+                "input_mode": "text",
+                "telegram_running": telegram_channel.is_bot_running(),
                 "ollama": self.check_ollama_status(),
             }
         except Exception as e:
             logger.error(f"Error getting runtime status: {e}")
-            return {"success": False, "message": str(e)}
-
-    def get_speech_config(self) -> Dict[str, Any]:
-        """Returns active speech recognition engine configuration."""
-        try:
-            import config
-            return {
-                "success": True,
-                "engine": getattr(config, "SPEECH_ENGINE", "auto"),
-                "whisper_model": getattr(config, "WHISPER_MODEL_SIZE", "tiny"),
-                "whisper_device": getattr(config, "WHISPER_DEVICE", "cpu"),
-                "language": getattr(config, "SPEECH_LANGUAGE", "auto"),
-            }
-        except Exception as e:
-            return {"success": False, "message": str(e)}
-
-    def save_speech_config(self, engine: str, whisper_model: str = "tiny", language: str = "auto") -> Dict[str, Any]:
-        """Saves speech recognition engine choice ('auto', 'whisper', 'google'), model size, and language dialect."""
-        try:
-            import config
-            clean_engine = (engine or "auto").strip().lower()
-            if clean_engine not in ("auto", "whisper", "google"):
-                return {"success": False, "message": f"Invalid speech engine '{clean_engine}'."}
-
-            clean_model = (whisper_model or "tiny").strip().lower()
-            clean_lang = (language or "auto").strip()
-            prev_model = getattr(config, "WHISPER_MODEL_SIZE", "tiny")
-
-            config.update_dotenv_var("SPEECH_ENGINE", clean_engine)
-            config.update_dotenv_var("WHISPER_MODEL_SIZE", clean_model)
-            config.update_dotenv_var("SPEECH_LANGUAGE", clean_lang)
-
-            if clean_model != prev_model:
-                try:
-                    from speech.streamer import reset_whisper_model
-                    reset_whisper_model()
-                except Exception:
-                    pass
-
-            labels = {
-                "whisper": "Local Offline (Faster-Whisper)",
-                "auto": "Auto (Google Web Speech First + Offline Fallback)",
-                "google": "Google Web Speech (Cloud ASR)"
-            }
-            return {
-                "success": True,
-                "engine": clean_engine,
-                "whisper_model": clean_model,
-                "language": clean_lang,
-                "message": f"Speech engine set to: {labels.get(clean_engine, clean_engine)} (Accent: {clean_lang})"
-            }
-        except Exception as e:
-            logger.error(f"Error saving speech config: {e}")
             return {"success": False, "message": str(e)}
 
     def test_llm_connection(self, data: Dict[str, Any]) -> Dict[str, Any]:
@@ -554,10 +487,6 @@ class DashboardAPI:
         except Exception as e:
             return {"success": False, "message": str(e)}
 
-    def record_voice_command(self) -> Dict[str, Any]:
-        """Deprecated: Push-to-Talk has been removed in favor of direct typed commands."""
-        return {"success": False, "message": "Push-to-Talk voice recording has been removed. Type commands directly in the console."}
-
     def get_remote_server_info(self) -> Dict[str, Any]:
         """Deprecated: Local web remote server removed in favor of Telegram Remote Gateway."""
         return {
@@ -787,7 +716,6 @@ class DashboardAPI:
         except Exception as e:
             return {"success": False, "message": str(e)}
 
-
     # ---------------- Service & Channel Management ---------------- #
 
     def get_plugins(self) -> List[Dict[str, Any]]:
@@ -798,7 +726,7 @@ class DashboardAPI:
                     "id": "telegram",
                     "name": "Telegram Remote Gateway",
                     "version": "2.0.0",
-                    "description": "Live mobile teleoperation, voice notes, and PC execution via Telegram bot.",
+                    "description": "Remote text commands and PC screenshots via Telegram bot.",
                     "icon": "✈️",
                     "category": "Communication",
                     "plugin_type": "Gateway & Remote",
@@ -977,15 +905,13 @@ class DashboardAPI:
             logger.error(f"Error saving WhatsApp contacts: {e}")
             return {"success": False, "message": str(e)}
 
-
     # ---------------- System Diagnostics & Telemetry ---------------- #
-
 
     def get_system_diagnostics(self) -> List[Dict[str, Any]]:
         """Runs hardware and environment health checks."""
         sections = []
 
-        # 1. AI & Speech Engines
+        # AI engine availability
         ai_checks = []
         
         # Ollama Server
@@ -1023,85 +949,15 @@ class DashboardAPI:
                 "link": "https://ollama.com/download"
             })
 
-        # Local Faster-Whisper Offline Engine
-        try:
-            import faster_whisper
-            import config
-            ai_checks.append({
-                "name": "Faster-Whisper (Offline ASR)",
-                "status": "ok",
-                "detail": f"v{getattr(faster_whisper, '__version__', '1.0+')} • 100% Local Offline Model ({getattr(config, 'WHISPER_MODEL_SIZE', 'tiny')})",
-                "link": None
-            })
-        except ImportError:
-            ai_checks.append({
-                "name": "Faster-Whisper (Offline ASR)",
-                "status": "warn",
-                "detail": "faster-whisper library not installed (using Google cloud fallback).",
-                "link": None
-            })
+        sections.append({"title": "AI Engines", "icon": "cpu", "items": ai_checks})
 
-        # Google Web Speech Recognition
-        try:
-            import speech_recognition as sr
-            ai_checks.append({
-                "name": "Google Web Speech (Cloud Fallback)",
-                "status": "ok",
-                "detail": f"SpeechRecognition v{getattr(sr, '__version__', '3.10+')} • Free Cloud Fallback",
-                "link": None
-            })
-        except ImportError:
-            ai_checks.append({
-                "name": "Google Web Speech (Cloud Fallback)",
-                "status": "warn",
-                "detail": "SpeechRecognition library not installed.",
-                "link": None
-            })
-
-        sections.append({"title": "Core AI & Speech Engines", "icon": "cpu", "items": ai_checks})
-
-        # 2. Compute Engine & Acceleration
-        gpu_checks = []
-        try:
-            cuda_stat = self.get_cuda_status()
-            if cuda_stat.get("has_gpu"):
-                gpu_checks.append({
-                    "name": "Hardware GPU",
-                    "status": "ok",
-                    "detail": f"{cuda_stat.get('gpu_name', 'NVIDIA GPU')} • Cloud & Hybrid Compute Active",
-                    "link": None
-                })
-            else:
-                gpu_checks.append({
-                    "name": "Hardware Compute Engine",
-                    "status": "ok",
-                    "detail": "Cloud AI Acceleration Active (Gemini 3.1 Flash-Lite / Groq / OpenAI) • Zero local GPU overhead",
-                    "link": None
-                })
-        except Exception as e:
-            gpu_checks.append({
-                "name": "Hardware Compute Engine",
-                "status": "ok",
-                "detail": f"Cloud AI mode active: {e}",
-                "link": None
-            })
-
-        sections.append({"title": "Hardware Acceleration & Compute", "icon": "zap", "items": gpu_checks})
-
-        # 3. Privacy Policy & System Specs
-        hw_checks = []
-        hw_checks.append({
-            "name": "Microphone Eavesdropping Guard",
-            "status": "ok",
-            "detail": "PC Mic Hardware Disabled • 100% Zero Ambient Eavesdropping",
-            "link": None
-        })
-        hw_checks.append({
-            "name": "Voice Teleoperation Channel",
-            "status": "ok",
-            "detail": "Telegram Remote Gateway Active (Encrypted 4G/5G)",
-            "link": None
-        })
+        running = telegram_channel.is_bot_running()
+        hw_checks = [{
+            "name": "Telegram Text Gateway",
+            "status": "ok" if running else "warn",
+            "detail": "Running" if running else "Stopped",
+            "link": None,
+        }]
         hw_checks.append({
             "name": "Operating System",
             "status": "ok",
@@ -1112,33 +968,6 @@ class DashboardAPI:
         sections.append({"title": "Privacy & System Specs", "icon": "shield", "items": hw_checks})
 
         return sections
-
-    def test_microphone(self) -> Dict[str, Any]:
-        """Local microphone capture is permanently disabled for privacy; teleoperation runs via Telegram."""
-        return {"success": True, "level": 0, "message": "Local microphone capture is disabled. Voice commands are received exclusively through Telegram Remote Gateway."}
-
-    # ---------------- Voice Lock (Removed) ---------------- #
-
-    def get_voice_lock_status(self) -> Dict[str, Any]:
-        return {"enabled": False, "is_enrolled": False, "threshold": 0.50, "model_ready": False}
-
-    def toggle_voice_lock(self, enabled: bool) -> Dict[str, Any]:
-        return {"success": True, "enabled": False}
-
-    def set_voice_lock_threshold(self, threshold: float) -> Dict[str, Any]:
-        return {"success": True, "threshold": 0.50}
-
-    def record_voice_enrollment_sample(self) -> Dict[str, Any]:
-        return {"success": False, "message": "Voice Lock feature has been removed."}
-
-    def finalize_voice_enrollment(self) -> Dict[str, Any]:
-        return {"success": False, "message": "Voice Lock feature has been removed."}
-
-    def reset_voice_enrollment(self) -> Dict[str, Any]:
-        return {"success": True, "message": "Voice profile cleared."}
-
-    def test_voice_match(self) -> Dict[str, Any]:
-        return {"success": False, "score": 0.0, "is_match": False, "message": "Voice Lock feature has been removed."}
 
     # ---------------- System Utilities ---------------- #
 
@@ -1151,26 +980,6 @@ class DashboardAPI:
         except Exception as e:
             logger.error(f"Failed to open URL {url}: {e}")
         return False
-
-    # ---------------- Compute & Acceleration Diagnostics ---------------- #
-
-    def get_cuda_status(self) -> Dict[str, Any]:
-        """Returns acceleration status for the dashboard runtime."""
-        return {
-            "has_gpu": False,
-            "gpu_name": "Cloud AI Brain",
-            "has_cuda_dlls": False,
-            "is_ready": True,
-            "dll_count": 0
-        }
-
-    def start_cuda_download(self) -> Dict[str, Any]:
-        """Deprecated: Local CUDA downloads are not required in Cloud AI mode."""
-        return {"success": True, "message": "Local CUDA download not required. Cloud AI Brain is active."}
-
-    def get_cuda_download_progress(self) -> Dict[str, Any]:
-        """Returns current progress (always completed/idle in Cloud AI mode)."""
-        return {"is_downloading": False, "progress": 100}
 
     def execute_command(self, text: str) -> Dict[str, Any]:
         """

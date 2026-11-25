@@ -45,7 +45,7 @@ APP_PROCESS_MAP = {
     "powerpoint": ["POWERPNT.EXE"],
 }
 
-# Protected system processes that must never be terminated by voice/text requests
+# Protected system processes that must never be terminated by user requests
 PROTECTED_SYSTEM_PROCESSES = frozenset({
     "csrss.exe", "smss.exe", "wininit.exe", "services.exe", "lsass.exe",
     "winlogon.exe", "svchost.exe", "explorer.exe", "spoolsv.exe",

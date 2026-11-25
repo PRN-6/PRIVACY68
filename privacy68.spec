@@ -17,10 +17,7 @@ for package in (
     "litellm",
     "webview",
     "pystray",
-    "speech_recognition",
-    "pyttsx3",
     "ollama",
-    "faster_whisper",
     "requests",
 ):
     try:
@@ -31,7 +28,7 @@ for package in (
     except Exception:
         pass
 
-for package in ("actions", "channels", "computer_use", "services", "skills", "speech", "ui", "utils"):
+for package in ("actions", "channels", "computer_use", "services", "skills", "ui", "utils"):
     hiddenimports += collect_submodules(package)
 
 # tiktoken discovers its encoding definitions by scanning the tiktoken_ext
@@ -47,7 +44,7 @@ a = Analysis(
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=["pytest", "tests"],
+    excludes=["pytest", "tests", "speech_recognition", "faster_whisper", "pyttsx3", "ctranslate2", "av"],
     noarchive=False,
     optimize=0,
 )

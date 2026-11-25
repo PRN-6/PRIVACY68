@@ -2,7 +2,6 @@
     Configuration settings for Privacy68 Assistant
 """
 
-import ctypes
 import os
 import sys
 from dotenv import load_dotenv
@@ -53,29 +52,6 @@ else:
 
 # Application Version
 APP_VERSION = "1.7.4"
-
-# Audio Stream Settings (16kHz standard for voice)
-SAMPLE_RATE = 16000
-BLOCK_SIZE = 1280
-CHANNELS = 1
-DTYPE = "float32"
-
-# Silence & Recording thresholds
-SILENCE_DURATION_CHUNKS = 8      # 8 chunks * 80ms = ~0.64s pause after speech for rapid cut-off
-SILENCE_THRESHOLD = 0.008        # RMS noise floor
-
-# Speech Engine Configuration
-# "auto": First priority is Google Web Speech (100% free, zero setup). Automatically falls back to local Faster-Whisper if offline or no internet.
-# "google": Google Web Speech cloud API (falls back to local Faster-Whisper if disconnected).
-# "whisper": Strictly offline on-device transcription (Faster-Whisper / CTranslate2). Zero cloud data leakage.
-SPEECH_ENGINE = os.environ.get("SPEECH_ENGINE", "auto")
-SPEECH_LANGUAGE = os.environ.get("SPEECH_LANGUAGE", "auto")
-WHISPER_MODEL_SIZE = os.environ.get("WHISPER_MODEL_SIZE", "tiny")
-WHISPER_DEVICE = os.environ.get("WHISPER_DEVICE", "cpu")
-WHISPER_COMPUTE_TYPE = os.environ.get("WHISPER_COMPUTE_TYPE", "int8")
-
-# Audio feedback sounds (True = beep on activation, False = silent)
-ENABLE_BEEP = False
 
 # Ollama API Configuration (Local daemon or remote Cloud/Website Ollama server)
 # Examples: "http://localhost:11434", "https://ollama.your-domain.com", "http://your-vps-ip:11434"

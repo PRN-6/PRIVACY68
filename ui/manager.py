@@ -1,135 +1,74 @@
+"""Coordinate the system tray and the text command bar on Tk's main thread."""
+
 import logging
-import os
+from pathlib import Path
+import queue
 import subprocess
 import sys
-from typing import Optional
-from ui.hud import FloatingHUD
+import tkinter as tk
+
 from ui.tray import SystemTray
 
 logger = logging.getLogger("PRIVACY68.UIManager")
 
-class UIManager:
-    """
-    Central coordinator managing the Floating HUD and Windows System Tray.
-    Thread-safe event bridge between audio pipeline, LLM actions, and UI visuals.
-    """
-    def __init__(self):
-        self.hud = FloatingHUD()
-        self.tray = SystemTray(ui_manager=self)
-        self.is_muted = False
-        self.streamer = None
 
-    def set_streamer(self, streamer):
-        """Connects the active SpeechStreamer instance."""
-        self.streamer = streamer
+class UIManager:
+    def __init__(self):
+        self.tray = SystemTray(ui_manager=self)
+        self.root = None
+        self.command_bar = None
+        self._events = queue.Queue()
 
     def start_tray(self):
-        """Starts the tray in a background thread."""
+        self.tray.start()
+
+    def run_ui_loop(self):
+        """Keep all Tk operations on the main thread, including worker results."""
+        self.root = tk.Tk()
+        self.root.title("PRIVACY68 Background Service")
+        self.root.withdraw()
+        self._poll_events()
         try:
-            self.tray.start()
-        except Exception as e:
-            logger.warning(f"Could not start system tray: {e}")
+            self.root.mainloop()
+        finally:
+            if self.root is not None:
+                self.root.destroy()
+                self.root = None
 
-    def run_hud_loop(self):
-        """Runs the main HUD Tkinter loop on the main thread."""
-        self.hud.start_ui()
+    def _poll_events(self):
+        # Bound each batch so a busy worker cannot starve the UI event loop.
+        for _ in range(100):
+            try:
+                action = self._events.get_nowait()
+            except queue.Empty:
+                break
+            if action == "quit":
+                self.root.quit()
+                return
+            if action == "command_bar":
+                from ui.command_bar import CommandBar
+                if self.command_bar is None or not self.command_bar.is_alive():
+                    self.command_bar = CommandBar(self.root)
+                    self.command_bar.show()
+                else:
+                    self.command_bar.toggle()
+        self.root.after(50, self._poll_events)
 
-    def on_wake_word_detected(self):
-        """Triggered when the wake word is spotted."""
-        if not self.is_muted:
-            self.hud.set_state("listening", text="Listening for command...")
-            self.tray.set_status_color("#EF4444")
-
-    def on_audio_energy(self, level: float):
-        """Updates live audio energy for waveform visualization."""
-        if not self.is_muted:
-            self.hud.update_audio_energy(level)
-
-    def on_transcription(self, text: str):
-        """Triggered when speech settles and transcription starts."""
-        self.hud.set_state("processing", text=f'"{text}"')
-        self.tray.set_status_color("#F97316")
-
-    def on_agent_status(self, status_type: str, message: str):
-        """Triggered during command execution status updates."""
-        if not self.is_muted:
-            if status_type in ("planning", "executing"):
-                self.hud.set_state("agent", title="⚡ PRIVACY68", text=message)
-                self.tray.set_status_color("#8B5CF6")
-            elif status_type in ("completed", "success"):
-                self.hud.set_state("success", title="✔ ACTION COMPLETED", text=message)
-                self.tray.set_status_color("#10B981")
-            elif status_type in ("error", "failed"):
-                self.hud.set_state("error", title="✖ NOT RECOGNIZED", text=message)
-                self.tray.set_status_color("#EF4444")
-
-    def on_action_completed(self, tool_name: str, success: bool = True, message: Optional[str] = None):
-        """Triggered when a skill finishes executing."""
-        if success:
-            display_title = f"⚡ {tool_name.replace('_', ' ').upper()}"
-            display_text = message if message else "Executed successfully"
-            self.hud.set_state("success", title=display_title, text=display_text)
-            self.tray.set_status_color("#10B981")
-        else:
-            display_text = message if message else "Command not recognized"
-            self.hud.set_state("error", text=display_text)
-            self.tray.set_status_color("#EF4444")
-
-    def on_sleep(self):
-        """Triggered when speech times out or returns to idle."""
-        if not self.is_muted:
-            self.hud.set_state("idle", text="Click to Speak to begin")
-            self.tray.set_status_color("#EF4444")
-
-    def toggle_hud(self):
-        """Toggles HUD visibility on/off."""
-        self.hud.toggle_visibility()
-
-    def open_plugin_manager(self):
-        """Opens the visual Plugin Manager window."""
-        self.hud.open_plugin_manager()
-
-    def show_push_to_talk_overlay(self):
-        """Thread-safe request to show or toggle the Push-to-Talk floating overlay."""
-        logger.info("Requesting Push-to-Talk Floating Overlay...")
-        if self.hud:
-            self.hud.show_ptt_overlay(ui_manager=self)
+    def show_command_bar(self):
+        """Can be called from the tray thread before Tk has started."""
+        self._events.put("command_bar")
 
     def open_dashboard(self):
-        """Launches the PRIVACY68 Control Center Dashboard."""
-        logger.info("Requesting Control Center Dashboard launch...")
-        # We cannot run webview.start() in a background thread.
-        # Instead, we use a queue or a simple flag that the main thread can check,
-        # so launch a separate process. A frozen build must use the app's own
-        # --dashboard mode rather than Python's -m module syntax.
+        """Launch WebView on its own process's main thread."""
         if getattr(sys, "frozen", False):
             command = [sys.executable, "--dashboard"]
         else:
-            command = [sys.executable, "-m", "ui.dashboard_runner"]
+            command = [sys.executable, str(Path(__file__).resolve().parents[1] / "app.py"), "--dashboard"]
         try:
             subprocess.Popen(command)
         except OSError:
             logger.exception("Could not launch the PRIVACY68 Control Center.")
 
-
-    def toggle_mute(self):
-        """Toggles assistant listening state."""
-        self.is_muted = not self.is_muted
-        if self.streamer:
-            self.streamer.set_muted(self.is_muted)
-
-        if self.is_muted:
-            self.hud.set_state("error", title="🔇 PRIVACY68 MUTED", text="Microphone input paused")
-            self.tray.set_status_color("#EF4444")
-            logger.info("PRIVACY68 Muted (Microphone Paused).")
-        else:
-            self.hud.set_state("success", title="🎙️ PRIVACY68 ACTIVE", text="Ready (Click to speak)")
-            self.tray.set_status_color("#EF4444")
-            logger.info("PRIVACY68 Unmuted (Microphone Listening).")
-
     def shutdown(self):
-        """Gracefully shuts down HUD and application."""
-        logger.info("Shutting down UI Manager...")
-        self.hud.close()
-        # Trigger process termination
-        os._exit(0)
+        """Return from the main loop so the application's cleanup can run."""
+        self._events.put("quit")

@@ -80,6 +80,7 @@ class TestChannels(unittest.TestCase):
                     }
                 })
                 self.assertTrue(mock_post.called)
+                self.assertNotIn("PIN999", mock_post.call_args.kwargs["json"]["text"])
 
                 # 2. Invalid /pair PIN
                 channel._handle_update({
@@ -100,6 +101,59 @@ class TestChannels(unittest.TestCase):
                         }
                     })
                     mock_set_allowed.assert_called_with("12345")
+
+    def test_text_commands_execute_in_paired_chat(self):
+        channel = TelegramChannel()
+        with patch.object(channel, "get_allowed_chat_id", return_value="123"), \
+             patch.object(channel, "send_message"), \
+             patch("actions.executor.execute_system_command_detailed", return_value={"success": True}) as execute:
+            channel._handle_update({"message": {"chat": {"id": 123}, "text": "open Chrome"}})
+        execute.assert_called_once_with("open Chrome")
+
+    def test_audio_attachments_are_rejected_without_download_or_execution(self):
+        channel = TelegramChannel()
+        for kind in ("voice", "audio"):
+            with self.subTest(kind=kind), patch.object(channel, "get_allowed_chat_id", return_value="123"), \
+                 patch.object(channel, "send_message") as send, patch("requests.get") as download, \
+                 patch("actions.executor.execute_system_command_detailed") as execute:
+                channel._handle_update({"message": {"chat": {"id": 123}, kind: {"file_id": "ignored"}}})
+                download.assert_not_called()
+                execute.assert_not_called()
+                self.assertIn("text commands", send.call_args.args[0])
+
+    def test_authorized_sender_cannot_execute_from_another_chat(self):
+        channel = TelegramChannel()
+        with patch.object(channel, "get_allowed_chat_id", return_value="123"), \
+             patch.object(channel, "send_message"), \
+             patch("actions.executor.execute_system_command_detailed") as execute:
+            channel._handle_update({"message": {"chat": {"id": 456}, "from": {"id": 123}, "text": "open Chrome"}})
+        execute.assert_not_called()
+
+    def test_editing_a_message_does_not_execute_it_again(self):
+        channel = TelegramChannel()
+        with patch("actions.executor.execute_system_command_detailed") as execute:
+            channel._handle_update({"edited_message": {"chat": {"id": 123}, "text": "open Chrome"}})
+        execute.assert_not_called()
+
+    def test_stopping_worker_cannot_be_restarted_while_it_is_alive(self):
+        channel = TelegramChannel()
+        channel._poll_thread = Mock()
+        channel._poll_thread.is_alive.return_value = True
+        channel.stop_bot()
+        with patch("channels.telegram.threading.Thread") as worker:
+            success, _ = channel.start_bot()
+        self.assertFalse(success)
+        worker.assert_not_called()
+
+    def test_non_ascii_pairing_input_is_rejected_without_crashing(self):
+        channel = TelegramChannel()
+        with patch.object(channel, "get_allowed_chat_id", return_value=""), \
+             patch.object(channel, "get_pairing_pin", return_value="ABC123"), \
+             patch.object(channel, "set_allowed_chat_id") as authorize, \
+             patch.object(channel, "send_message") as send:
+            channel._handle_update({"message": {"chat": {"id": 123}, "text": "/pair ☃☃☃"}})
+        authorize.assert_not_called()
+        self.assertIn("Invalid pairing PIN", send.call_args.args[0])
 
 
 if __name__ == "__main__":

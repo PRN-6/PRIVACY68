@@ -1,16 +1,13 @@
 """
 PRIVACY68 Telegram Remote Gateway Channel.
 Enables secure mobile teleoperation from anywhere in the world.
-Users can send text or voice notes from their phone via Telegram, which
-are transcribed locally and executed on the PC.
+Users can send text commands from their phone to execute on the PC.
 """
 
 import io
 import logging
 import os
-import re
 import secrets
-import tempfile
 import threading
 import time
 from typing import Any, Dict, Optional, Tuple
@@ -47,7 +44,7 @@ class TelegramChannel:
         self.name = "Telegram Remote Gateway"
         self.version = "2.0.0"
         self.description = (
-            "Live global remote control via Telegram Bot. Send voice notes or text "
+            "Live global remote control via Telegram Bot. Send text "
             "commands to control your PC from anywhere on 4G/5G mobile data."
         )
         self.icon = "✈️"
@@ -191,63 +188,11 @@ class TelegramChannel:
             return True, f"Test alert sent to chat {chat_id}."
         return False, "Failed to send message. Verify your Bot Token and Chat ID."
 
-    # ---------------- Voice Transcription ---------------- #
-
-    def _transcribe_telegram_voice(self, file_id: str) -> str:
-        """Downloads a Telegram voice note and transcribes it."""
-        try:
-            resp = requests.get(self._api_url("getFile"), params={"file_id": file_id}, timeout=15)
-            file_info = resp.json()
-            if not file_info.get("ok"):
-                logger.error(f"Failed to get voice file path: {file_info}")
-                return ""
-            file_path = file_info["result"]["file_path"]
-
-            token = self.get_bot_token()
-            download_url = f"https://api.telegram.org/file/bot{token}/{file_path}"
-            audio_resp = requests.get(download_url, timeout=30)
-            if audio_resp.status_code != 200:
-                logger.error(f"Failed to download audio file: {audio_resp.status_code}")
-                return ""
-
-            from speech.streamer import decode_audio_bytes_to_pcm, transcribe_audio_data
-            audio_pcm = decode_audio_bytes_to_pcm(audio_resp.content, target_sr=16000)
-            if audio_pcm is not None and len(audio_pcm) > 0:
-                text = transcribe_audio_data(audio_pcm, sample_rate=16000)
-                if text:
-                    logger.info(f"Telegram voice note transcribed: '{text}'")
-                    return text
-
-            suffix = os.path.splitext(file_path)[1] or ".ogg"
-            with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
-                tmp.write(audio_resp.content)
-                tmp_path = tmp.name
-
-            try:
-                from speech.streamer import get_whisper_model, autocorrect_speech_command
-                model = get_whisper_model()
-                if model is not None:
-                    segments, _ = model.transcribe(tmp_path, beam_size=2)
-                    text = " ".join([seg.text for seg in segments]).strip()
-                    if text:
-                        return autocorrect_speech_command(text)
-            finally:
-                if os.path.exists(tmp_path):
-                    try:
-                        os.remove(tmp_path)
-                    except Exception:
-                        pass
-
-        except Exception as e:
-            logger.error(f"Error transcribing Telegram voice note: {e}")
-            return ""
-        return ""
-
     # ---------------- Incoming Update Handling ---------------- #
 
     def _handle_update(self, update: Dict[str, Any]) -> None:
         """Processes a single incoming update from Telegram."""
-        message = update.get("message") or update.get("edited_message")
+        message = update.get("message")
         if not message:
             return
 
@@ -257,19 +202,17 @@ class TelegramChannel:
         user_id = str(sender.get("id", ""))
         allowed_id = self.get_allowed_chat_id()
 
-        text = message.get("text", "").strip()
-        voice = message.get("voice") or message.get("audio")
+        text = (message.get("text") or "").strip()
 
         # 1. Pairing Flow: when no allowed_chat_id is set yet
         if not allowed_id:
-            pin_hint = self.get_pairing_pin()
             if text.startswith("/start"):
                 welcome = (
                     "👋 *Welcome to PRIVACY68 Telegram Remote Gateway!*\n\n"
                     "This assistant is currently unpaired.\n\n"
                     f"To authorize this chat to control your computer, send:\n"
                     f"`/pair <PIN>`\n\n"
-                    f"_(Your 6-character Pairing PIN is `{pin_hint}` on your desktop dashboard)_"
+                    "_(Find your pairing PIN on your desktop dashboard.)_"
                 )
                 self.send_message(welcome, chat_id=chat_id, parse_mode="Markdown")
                 return
@@ -282,12 +225,12 @@ class TelegramChannel:
                 candidate_pin = parts[1].strip().upper()
                 current_pin = self.get_pairing_pin()
 
-                if current_pin and candidate_pin == current_pin:
+                if current_pin and secrets.compare_digest(candidate_pin.encode("utf-8"), current_pin.encode("utf-8")):
                     self.set_allowed_chat_id(chat_id)
                     self.send_message(
                         f"✅ *Successfully paired with PRIVACY68!*\n\n"
                         f"Chat ID `{chat_id}` is now authorized.\n"
-                        f"You can now send text commands or hold the mic button to send voice notes from anywhere on mobile data.",
+                        "You can now send text commands from your phone.",
                         chat_id=chat_id,
                         parse_mode="Markdown"
                     )
@@ -300,25 +243,18 @@ class TelegramChannel:
             return
 
         # 2. Authorization Check
-        if chat_id != allowed_id and user_id != allowed_id:
+        if chat_id != allowed_id:
             logger.warning(f"Rejected unauthorized Telegram message from chat {chat_id} (user {user_id})")
             self.send_message("🔒 Access denied. This PRIVACY68 assistant is paired to another user.", chat_id=chat_id)
             return
 
         self.last_active_timestamp = time.time()
 
-        # 3. Extract Command from Voice Note or Text
-        command_text = ""
-        if voice:
-            file_id = voice.get("file_id")
-            self.send_message("🎙️ Processing voice note...", chat_id=chat_id)
-            command_text = self._transcribe_telegram_voice(file_id)
-            if not command_text:
-                self.send_message("⚠️ Could not transcribe audio. Please speak clearly or send text.", chat_id=chat_id)
-                return
-            self.send_message(f"🗣️ Heard: *\"{command_text}\"*", chat_id=chat_id, parse_mode="Markdown")
-        else:
-            command_text = text
+        # Attachments are never downloaded or used as command input.
+        if message.get("voice") or message.get("audio"):
+            self.send_message("Only text commands are supported. Please type your instruction.", chat_id=chat_id)
+            return
+        command_text = text
 
         if not command_text:
             return
@@ -328,8 +264,7 @@ class TelegramChannel:
         if low_cmd == "/start" or low_cmd == "/help":
             help_text = (
                 "🤖 *PRIVACY68 Remote Assistant*\n\n"
-                "You can send any instruction in plain English or as a voice note!\n\n"
-                "• *Voice Notes:* Tap & hold Telegram mic to speak\n"
+                "Send your instructions as text.\n\n"
                 "• `/screenshot`: Capture and send live desktop screen\n"
                 "• `/status`: View PC diagnostics & CPU/RAM\n"
                 "• `/unpair`: Disconnect this chat\n"
@@ -340,6 +275,7 @@ class TelegramChannel:
 
         if low_cmd == "/unpair":
             self.set_allowed_chat_id("")
+            self.set_pairing_pin(secrets.token_hex(3).upper())
             self.send_message("🔓 Chat disconnected. Send `/pair <PIN>` to pair again.", chat_id=chat_id, parse_mode="Markdown")
             return
 
@@ -351,13 +287,11 @@ class TelegramChannel:
             except Exception:
                 cpu = "Available"
                 ram = "Available"
-            engine = getattr(config, "SPEECH_ENGINE", "auto")
             model = getattr(config, "AGENT_BRAIN_MODEL", "gemini/gemini-3.5-flash")
             status_msg = (
                 f"💻 *PRIVACY68 PC Status*\n\n"
                 f"• CPU Load: `{cpu}`\n"
                 f"• RAM Usage: `{ram}`\n"
-                f"• Speech Engine: `{engine}`\n"
                 f"• Active Model: `{model}`\n"
                 f"• Gateway: 🟢 Online (Telegram)"
             )
@@ -375,7 +309,7 @@ class TelegramChannel:
         # 5. Execute system command via Action Executor
         try:
             from actions.executor import execute_system_command_detailed
-            self.send_message(f"⚡ Executing: _{command_text}_...", chat_id=chat_id, parse_mode="Markdown")
+            self.send_message(f"⚡ Executing: {command_text}", chat_id=chat_id)
             result = execute_system_command_detailed(command_text)
 
             msg = result.get("message", "Completed.")
@@ -408,7 +342,7 @@ class TelegramChannel:
         while not self._stop_event.is_set():
             token = self.get_bot_token()
             if not token:
-                time.sleep(2)
+                self._stop_event.wait(2)
                 continue
 
             try:
@@ -423,31 +357,35 @@ class TelegramChannel:
                     if data.get("ok"):
                         updates = data.get("result", [])
                         for u in updates:
+                            if self._stop_event.is_set():
+                                break
                             update_id = u.get("update_id", 0)
                             offset = max(offset, update_id + 1)
                             self._handle_update(u)
                     else:
                         self.last_error = data.get("description", "Telegram error")
-                        time.sleep(3)
+                        self._stop_event.wait(3)
                 elif resp.status_code in (401, 404):
                     self.last_error = "Invalid or revoked Telegram Bot Token."
                     logger.warning(self.last_error)
-                    time.sleep(5)
+                    self._stop_event.wait(5)
                 else:
-                    time.sleep(2)
+                    self._stop_event.wait(2)
             except requests.exceptions.Timeout:
                 continue
             except Exception as e:
                 self.last_error = str(e)
                 logger.debug(f"Telegram polling note: {e}")
-                time.sleep(3)
+                self._stop_event.wait(3)
 
         self._is_running = False
         logger.info("Telegram Remote Gateway polling worker stopped.")
 
     def start_bot(self) -> Tuple[bool, str]:
         """Starts the background Telegram polling worker."""
-        if self._is_running:
+        if self._poll_thread and self._poll_thread.is_alive():
+            if self._stop_event.is_set():
+                return False, "Telegram Bot is still stopping. Try again shortly."
             return True, f"Telegram Bot is already running as @{self.bot_username or 'online'}."
 
         token = self.get_bot_token()
@@ -470,6 +408,8 @@ class TelegramChannel:
         self._stop_event.set()
         if self._poll_thread and self._poll_thread.is_alive():
             self._poll_thread.join(timeout=2.0)
+        if self._poll_thread and self._poll_thread.is_alive():
+            return True, "Telegram Bot is stopping."
         self._is_running = False
         return True, "Telegram Bot stopped."
 

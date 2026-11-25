@@ -47,7 +47,7 @@ PROTECTED_SYSTEM_PROCESSES = frozenset({
 
 class ActionRiskLevel(Enum):
     SAFE = 1        # Execute immediately
-    SENSITIVE = 2   # Prompt for voice/UI confirmation
+    SENSITIVE = 2   # Prompt for user confirmation
     CRITICAL = 3    # Requires explicit verification
 
 

@@ -1,130 +1,28 @@
-# PRIVACY68 // SETUP, INSTALLATION & CONFIGURATION GUIDE
+# Setup and configuration
 
-```
- ███████╗███████╗████████╗██╗   ██╗██████╗ 
- ██╔════╝██╔════╝╚══██╔══╝██║   ██║██╔══██╗
- ███████╗█████╗     ██║   ██║   ██║██████╔╝
- ╚════██║██╔══╝     ██║   ██║   ██║██╔═══╝ 
- ███████║███████╗   ██║   ╚██████╔╝██║     
- ╚══════╝╚══════╝   ╚═╝    ╚═════╝ ╚═╝     
-```
+Use Windows 10/11 with Python 3.11+ and Microsoft Edge WebView2 for the dashboard.
 
----
-
-## 1. System Requirements
-
-- **Operating System**: Microsoft Windows 10 (Build 19041+) or Windows 11 (64-bit).
-- **Python Version**: Python 3.11 or Python 3.12 (64-bit).
-- **RAM**: Minimum 4 GB (Recommended: 8 GB+).
-- **Disk Space**: ~350 MB (Zero local CUDA bloat).
-- **GPU**: **None required**. PRIVACY68 runs on Cloud AI APIs (Gemini 3.1 Flash-Lite, Groq, Claude, OpenAI) with zero local GPU VRAM requirements.
-
----
-
-## 2. Quick-Start Installation (5 Minutes)
-
-### Step 1: Clone the Repository
-```powershell
-git clone https://github.com/PRN-6/PRIVACY68.git
-cd PRIVACY68
-```
-
-### Step 2: Create a Virtual Environment
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt .
+python app.py --dashboard
 ```
 
-### Step 3: Install Core Dependencies
-```powershell
-pip install -r requirements.txt
-```
+Select an AI provider in the dashboard. Alternatively, copy `.env.example` to `.env` and configure the appropriate provider key and `AGENT_BRAIN_MODEL`. Local inference needs a separately installed server and model; `OLLAMA_BASE_URL` selects the Ollama endpoint.
 
-> [!NOTE]
-> PRIVACY68 uses CPU-optimized int8 Faster-Whisper and Cloud AI APIs. You do **not** need to install heavy CUDA runtimes, Visual Studio C++ build tools, or PyTorch wheels.
+Telegram uses `TELEGRAM_BOT_TOKEN` and `TELEGRAM_ALLOWED_CHAT_ID`, or the dashboard's stored settings. Do not commit these values.
 
----
+Source runs load configuration from the project `.env` and AppData. Frozen builds use a writable `.env` beside the executable when possible, with `%APPDATA%\PRIVACY68` as a fallback. Preferences are stored in `user_profile.json` under that AppData folder.
 
-## 3. Environment Variables & API Key Configuration
+## Updating from an older installation
 
-Create a `.env` file in the project root (or configure via the Control Center Dashboard):
+Audio settings are no longer read. Existing settings and credentials are preserved. To remove previously installed speech packages from your development environment, create a fresh virtual environment from the current requirements.
 
-```ini
-# -------------------------------------------------------------
-# 1. Primary AI Brain Provider Configuration
-# -------------------------------------------------------------
-# Default model: gemini/gemini-3.1-flash-lite
-DEFAULT_MODEL=gemini/gemini-3.1-flash-lite
-
-# Google Gemini API Key (Get free key from https://aistudio.google.com/)
-GEMINI_API_KEY=AIzaSy...
-
-# Groq LPU API Key (Optional high-speed failover: https://console.groq.com/)
-GROQ_API_KEY=gsk_...
-
-# Anthropic Claude API Key (Optional complex reasoning)
-ANTHROPIC_API_KEY=sk-ant-...
-
-# OpenAI API Key (Optional fallback)
-OPENAI_API_KEY=sk-proj-...
-
-# -------------------------------------------------------------
-# 2. Telegram Remote Gateway Configuration
-# -------------------------------------------------------------
-# Create a bot via @BotFather on Telegram (https://t.me/BotFather)
-TELEGRAM_BOT_TOKEN=123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ
-
-# Your personal Telegram Chat ID (Leave blank to use dynamic 6-digit PIN pairing)
-TELEGRAM_ALLOWED_CHAT_ID=
-TELEGRAM_ENABLE_VOICE=true
-
-# -------------------------------------------------------------
-# 3. Speech & Audio Architecture
-# -------------------------------------------------------------
-# "auto": Google Web Speech first, local Faster-Whisper fallback
-SPEECH_ENGINE=auto
-WHISPER_MODEL_SIZE=tiny
-WHISPER_DEVICE=cpu
-WHISPER_COMPUTE_TYPE=int8
-```
-
----
-
-## 4. Running PRIVACY68
-
-### Start the Application
-```powershell
-python app.py
-```
-This initializes:
-- The **Control Center Dashboard** (Edge Chromium window).
-- The **System Tray Icon** in your Windows taskbar.
-- The **Quick Command Bar** listener (`Ctrl+Alt+Space`).
-- The **Telegram Remote Gateway** worker thread.
-
-### Command-Line Arguments
-```powershell
-# Run directly in background tray mode (minimized)
-python app.py --tray
-
-# Run a single isolated agent script directly
-python app.py --run-agent-script <script_path> <log_path>
-```
-
----
-
-## 5. Standalone Executable Packaging (PyInstaller)
-
-To compile PRIVACY68 into a standalone Windows `.exe`:
+Old executables do not change when source files are edited. Rebuild them with:
 
 ```powershell
-pyinstaller privacy68.spec --clean --noconfirm
+.\build.bat
 ```
 
-The compiled standalone executable will be generated at:
-`dist\PRIVACY68\PRIVACY68.exe`
-
----
-
-*Authored by PRN-6 // PRIVACY68 Installation Guide*
-
+PyInstaller collects dashboard HTML, Markdown skill resources, native services, and channels. It excludes the retired audio engines. Inno Setup packages the Windows installer.

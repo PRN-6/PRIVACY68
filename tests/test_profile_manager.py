@@ -13,7 +13,7 @@ class TestProfileManager(unittest.TestCase):
             profile = ProfileManager()
 
         self.assertEqual(profile.get("user_name"), "User")
-        self.assertEqual(profile.get("wake_word"), "alexa")
+        self.assertNotIn("wake_word", profile.profile)
         self.assertEqual(profile.get("missing", "fallback"), "fallback")
 
     def test_updates_persist_and_merge_with_defaults(self):

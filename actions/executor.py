@@ -5,7 +5,7 @@ import subprocess
 import threading
 import urllib.parse
 import webbrowser
-from speech.streamer import autocorrect_speech_command
+from utils.commands import normalize_command
 from computer_use.security_guard import security_guard
 
 logger = logging.getLogger("PRIVACY68.ActionExecutor")
@@ -60,8 +60,10 @@ APP_LAUNCHERS = {
     "file explorer": ["explorer.exe"],
     "task manager": ["taskmgr.exe"],
     "cmd": ["cmd.exe"],
+    "command prompt": ["cmd.exe"],
     "powershell": ["powershell.exe"],
     "terminal": ["wt.exe"],
+    "file manager": ["explorer.exe"],
 }
 
 
@@ -119,6 +121,8 @@ def _execute_builtin_app_command(command: str, on_action_callback, on_status_cal
         elif app_id == "brave":
             success = _open_url("https://search.brave.com", preferred_browser="brave")
             message = "Opened a new Brave tab." if action == "open_new_tab" else "Opened Brave."
+            if not success:
+                message = "Could not open Brave."
         elif app_id == "gmail":
             from services.gmail import gmail_service
             if not getattr(gmail_service, "is_enabled", True):
@@ -155,22 +159,30 @@ def _execute_builtin_app_command(command: str, on_action_callback, on_status_cal
     return None
 
 
+def _browser_result(url, message, method, on_action_callback, on_status_callback, preferred_browser=None):
+    success = bool(_open_url(url, preferred_browser=preferred_browser))
+    if not success:
+        message = f"Could not open the browser for {url}."
+    _notify(on_status_callback, on_action_callback, "browser", success, message)
+    return {"success": success, "tool": "browser", "method": method, "message": message, "output": url}
+
+
 def _execute_web_or_app_command(command: str, on_action_callback, on_status_callback):
     """
     Directly routes common web searches, website navigations, and desktop app launches
     without requiring LLM/Ollama reasoning.
     """
-    clean_cmd = command.strip().strip("'\"")
+    clean_cmd = command.strip()
 
     # 1. "open <browser> and search for / go to / open <query>"
-    m_browser_search = re.match(
+    m_browser_search = re.fullmatch(
         r"(?:open|launch|start)\s+(?:(?:google)\s+)?(chrome|brave|browser)\s+and\s+(?:search(?:\s+for)?|open|go to)\s+(.+)",
         clean_cmd,
         re.IGNORECASE
     )
     if m_browser_search:
         browser_pref = m_browser_search.group(1).lower()
-        query = m_browser_search.group(2).strip().strip("'\"")
+        query = m_browser_search.group(2).strip()
 
         if query.lower() in COMMON_WEB_SERVICES:
             url = COMMON_WEB_SERVICES[query.lower()]
@@ -179,16 +191,10 @@ def _execute_web_or_app_command(command: str, on_action_callback, on_status_call
             url = f"https://www.google.com/search?q={urllib.parse.quote(query)}"
             target_name = f"'{query}'"
 
-        _open_url(url, preferred_browser=browser_pref)
         msg = f"Opened {browser_pref.title()} and navigated to {target_name}."
-        _notify(on_status_callback, on_action_callback, "browser", True, msg)
-        return {
-            "success": True,
-            "tool": "browser",
-            "method": "browser_search",
-            "message": msg,
-            "output": url,
-        }
+        return _browser_result(
+            url, msg, "browser_search", on_action_callback, on_status_callback, preferred_browser=browser_pref
+        )
 
     # 1b. "open <site/query> in (chrome|brave|browser)" (e.g. "open chatgpt in chrome", "open youtube in brave")
     m_site_in_browser = re.fullmatch(
@@ -197,7 +203,7 @@ def _execute_web_or_app_command(command: str, on_action_callback, on_status_call
         re.IGNORECASE
     )
     if m_site_in_browser:
-        target_site = m_site_in_browser.group(1).strip().strip("'\"")
+        target_site = m_site_in_browser.group(1).strip()
         browser_pref = m_site_in_browser.group(2).lower()
         if browser_pref == "browser":
             browser_pref = None
@@ -206,32 +212,26 @@ def _execute_web_or_app_command(command: str, on_action_callback, on_status_call
             url = COMMON_WEB_SERVICES[target_site.lower()]
             target_name = target_site.title()
         elif "." in target_site and not target_site.endswith((".exe", ".py", ".txt", ".md")):
-            url = f"https://{target_site}"
+            url = target_site if target_site.startswith(("http://", "https://")) else f"https://{target_site}"
             target_name = target_site
         else:
             url = f"https://www.google.com/search?q={urllib.parse.quote(target_site)}"
             target_name = f"'{target_site}'"
 
-        _open_url(url, preferred_browser=browser_pref)
         pref_label = f" in {browser_pref.title()}" if browser_pref else ""
         msg = f"Opened {target_name}{pref_label}."
-        _notify(on_status_callback, on_action_callback, "browser", True, msg)
-        return {
-            "success": True,
-            "tool": "browser",
-            "method": "website_launcher",
-            "message": msg,
-            "output": url,
-        }
+        return _browser_result(
+            url, msg, "website_launcher", on_action_callback, on_status_callback, preferred_browser=browser_pref
+        )
 
     # 1c. "search <query> in (chrome|brave|browser)"
     m_search_in_browser = re.fullmatch(
-        r"(?:search|search for|look up)\s+(.+?)\s+in\s+(?:(?:google)\s+)?(chrome|brave|browser)",
+        r"(?:search(?:\s+for)?|look up)\s+(.+?)\s+in\s+(?:(?:google)\s+)?(chrome|brave|browser)",
         clean_cmd,
         re.IGNORECASE
     )
     if m_search_in_browser:
-        query = m_search_in_browser.group(1).strip().strip("'\"")
+        query = m_search_in_browser.group(1).strip()
         browser_pref = m_search_in_browser.group(2).lower()
         if browser_pref == "browser":
             browser_pref = None
@@ -243,38 +243,26 @@ def _execute_web_or_app_command(command: str, on_action_callback, on_status_call
             url = f"https://www.google.com/search?q={urllib.parse.quote(query)}"
             target_name = f"'{query}'"
 
-        _open_url(url, preferred_browser=browser_pref)
         pref_label = f" in {browser_pref.title()}" if browser_pref else ""
         msg = f"Searched for {target_name}{pref_label}."
-        _notify(on_status_callback, on_action_callback, "browser", True, msg)
-        return {
-            "success": True,
-            "tool": "browser",
-            "method": "browser_search",
-            "message": msg,
-            "output": url,
-        }
+        return _browser_result(
+            url, msg, "browser_search", on_action_callback, on_status_callback, preferred_browser=browser_pref
+        )
 
     # 2. "search youtube for <query>"
-    m_yt = re.match(r"(?:search|look up)\s+youtube\s+for\s+(.+)", clean_cmd, re.IGNORECASE)
+    m_yt = re.fullmatch(r"(?:search|look up)\s+youtube\s+for\s+(.+)", clean_cmd, re.IGNORECASE)
     if m_yt:
-        query = m_yt.group(1).strip().strip("'\"")
+        query = m_yt.group(1).strip()
         url = f"https://www.youtube.com/results?search_query={urllib.parse.quote(query)}"
-        _open_url(url)
         msg = f"Searched YouTube for '{query}'."
-        _notify(on_status_callback, on_action_callback, "browser", True, msg)
-        return {
-            "success": True,
-            "tool": "browser",
-            "method": "browser_search",
-            "message": msg,
-            "output": url,
-        }
+        return _browser_result(
+            url, msg, "browser_search", on_action_callback, on_status_callback
+        )
 
     # 3. "search for <query>" / "search google for <query>"
-    m_search = re.match(r"(?:search|look up)(?:\s+for|\s+google for)?\s+(.+)", clean_cmd, re.IGNORECASE)
+    m_search = re.fullmatch(r"(?:search|look up)(?:\s+for|\s+google for)?\s+(.+)", clean_cmd, re.IGNORECASE)
     if m_search:
-        query = m_search.group(1).strip().strip("'\"")
+        query = m_search.group(1).strip()
         if query.lower().endswith(" on youtube"):
             clean_q = query[:-11].strip()
             url = f"https://www.youtube.com/results?search_query={urllib.parse.quote(clean_q)}"
@@ -286,16 +274,10 @@ def _execute_web_or_app_command(command: str, on_action_callback, on_status_call
             url = f"https://www.google.com/search?q={urllib.parse.quote(query)}"
             target = f"'{query}'"
 
-        _open_url(url)
         msg = f"Searched for {target}."
-        _notify(on_status_callback, on_action_callback, "browser", True, msg)
-        return {
-            "success": True,
-            "tool": "browser",
-            "method": "browser_search",
-            "message": msg,
-            "output": url,
-        }
+        return _browser_result(
+            url, msg, "browser_search", on_action_callback, on_status_callback
+        )
 
     # 4. "open <website>" (e.g. "open youtube", "open github")
     m_site = re.fullmatch(r"(?:open|launch|go to)\s+([a-zA-Z0-9_\-\.]+)", clean_cmd, re.IGNORECASE)
@@ -304,31 +286,20 @@ def _execute_web_or_app_command(command: str, on_action_callback, on_status_call
 
         if site_key in COMMON_WEB_SERVICES:
             url = COMMON_WEB_SERVICES[site_key]
-            _open_url(url)
             msg = f"Opened {site_key.title()}."
-            _notify(on_status_callback, on_action_callback, "browser", True, msg)
-            return {
-                "success": True,
-                "tool": "browser",
-                "method": "website_launcher",
-                "message": msg,
-                "output": url,
-            }
+            return _browser_result(
+                url, msg, "website_launcher", on_action_callback, on_status_callback
+            )
         elif "." in site_key and not site_key.endswith((".exe", ".py", ".txt", ".md")):
             url = f"https://{site_key}"
-            _open_url(url)
             msg = f"Navigated to {site_key}."
-            _notify(on_status_callback, on_action_callback, "browser", True, msg)
-            return {
-                "success": True,
-                "tool": "browser",
-                "method": "website_launcher",
-                "message": msg,
-                "output": url,
-            }
+            return _browser_result(
+                url, msg, "website_launcher", on_action_callback, on_status_callback
+            )
 
     # 5. Desktop apps (notepad, calculator, cmd, powershell)
-    m_app = re.fullmatch(r"(?:open|launch|start)\s+(notepad|calculator|calc|explorer|file explorer|task manager|cmd|powershell|terminal)", clean_cmd, re.IGNORECASE)
+    app_names = "|".join(re.escape(name) for name in APP_LAUNCHERS)
+    m_app = re.fullmatch(rf"(?:open|launch|start)\s+({app_names})[.!?]?", clean_cmd, re.IGNORECASE)
     if m_app:
         app_key = m_app.group(1).lower().strip()
         exe_cmd = APP_LAUNCHERS.get(app_key)
@@ -671,7 +642,7 @@ def execute_system_command_detailed(text: str, on_action_callback=None, on_statu
     """
     Routes built-in commands directly and uses Agent Brain for other requests.
     """
-    cleaned = autocorrect_speech_command(text.strip())
+    cleaned = normalize_command(text)
     if not cleaned:
         return {"success": False, "tool": "None", "method": "none", "message": "Empty command"}
 
@@ -693,12 +664,12 @@ def execute_system_command_detailed(text: str, on_action_callback=None, on_statu
             "success": False,
             "tool": "security_confirmation",
             "method": "security_guard",
-            "message": "An action is awaiting confirmation. Say 'confirm' or 'yes' to proceed, or 'cancel' before making another request.",
+            "message": "An action is awaiting confirmation. Type 'confirm' or 'yes' to proceed, or 'cancel' before making another request.",
             "details": {"requires_confirmation": True},
         }
 
     if low in GREETINGS:
-        return {"success": True, "tool": "greeting", "method": "none", "message": "I'm listening. How can I help you with your computer today?"}
+        return {"success": True, "tool": "greeting", "method": "none", "message": "How can I help you with your computer today?"}
 
     # 2. Built-in Core Application Commands (Exact app opens)
     app_result = _execute_builtin_app_command(
@@ -729,7 +700,7 @@ def execute_system_command_detailed(text: str, on_action_callback=None, on_statu
 
     # 5. Direct Web Searches, Websites, and App Launches
     web_result = _execute_web_or_app_command(
-        low,
+        cleaned,
         on_action_callback,
         on_status_callback,
     )

@@ -1,12 +1,12 @@
 import unittest
-from unittest.mock import Mock, MagicMock, patch
-from speech.streamer import autocorrect_speech_command
+from unittest.mock import Mock, patch
+from utils.commands import normalize_command
 from actions.executor import execute_system_command_detailed
 from actions.agent_brain import AgentBrain
 
 
 class TestQuotedCommandsAndBrainConfig(unittest.TestCase):
-    def test_autocorrect_strips_various_quotes(self):
+    def test_normalize_strips_various_quotes(self):
         cases = [
             ("''Open Chrome''", "Open Chrome"),
             ("'Open Chrome'", "Open Chrome"),
@@ -17,7 +17,7 @@ class TestQuotedCommandsAndBrainConfig(unittest.TestCase):
             ("  'Open Chrome'  ", "Open Chrome"),
         ]
         for inp, expected in cases:
-            self.assertEqual(autocorrect_speech_command(inp), expected)
+            self.assertEqual(normalize_command(inp), expected)
 
     def test_quoted_open_chrome_routes_to_service(self):
         for quoted_input in ("''Open Chrome''", "'Open Chrome'", '"Open Chrome"'):
@@ -64,45 +64,6 @@ class TestQuotedCommandsAndBrainConfig(unittest.TestCase):
                         self.assertEqual(kwargs["api_key"], "remote-secret-key")
 
 
-    def test_click_to_speak_recorder(self):
-        from speech.streamer import ClickToSpeakRecorder
-        import numpy as np
-
-        recorder = ClickToSpeakRecorder()
-        self.assertFalse(recorder.is_recording)
-        self.assertEqual(recorder.frames, [])
-
-        recorder.is_recording = True
-        recorder.frames = [np.zeros((1280, 1), dtype=np.float32) for _ in range(5)]
-
-        mock_sr = MagicMock()
-        mock_rec = MagicMock()
-        mock_rec.recognize_google.return_value = "open brave"
-        mock_sr.Recognizer.return_value = mock_rec
-
-        with patch.dict("sys.modules", {"speech_recognition": mock_sr}):
-            text = recorder.stop_and_transcribe()
-            self.assertEqual(text, "open brave")
-            self.assertFalse(recorder.is_recording)
-
-    def test_wake_words_disabled_for_privacy(self):
-        from speech.streamer import SpeechStreamer
-        streamer = SpeechStreamer(auto_init_hardware=False)
-        self.assertFalse(streamer.is_wake_word_detected("alexa open chrome"))
-        self.assertFalse(streamer.is_wake_word_detected("hey google search youtube"))
-
-    def test_microphone_hardware_never_opened_at_startup_or_idle(self):
-        from speech.streamer import SpeechStreamer, PushToTalkRecorder
-        streamer = SpeechStreamer()
-        self.assertIsNone(streamer.stream)
-        self.assertFalse(streamer.is_active)
-        self.assertFalse(streamer.recorder.is_recording)
-        self.assertIsNone(streamer.recorder._stream)
-
-        ptt = PushToTalkRecorder()
-        self.assertFalse(ptt.is_recording)
-        self.assertIsNone(ptt._stream)
-
     def test_update_dotenv_var_persistence(self):
         import tempfile
         import os
@@ -131,133 +92,6 @@ class TestQuotedCommandsAndBrainConfig(unittest.TestCase):
         finally:
             if os.path.exists(temp_path):
                 os.remove(temp_path)
-
-    def test_push_to_talk_recorder(self):
-        from speech.streamer import PushToTalkRecorder
-        import numpy as np
-
-        ptt = PushToTalkRecorder()
-        ptt.is_recording = True
-        # Fake audio frames (0.5s of 16kHz audio)
-        ptt.frames = [np.ones((1280, 1), dtype=np.float32) for _ in range(10)]
-
-        mock_sr = MagicMock()
-        mock_rec = MagicMock()
-        mock_rec.recognize_google.return_value = "open chrome"
-        mock_sr.Recognizer.return_value = mock_rec
-
-        with patch.dict("sys.modules", {"speech_recognition": mock_sr}):
-            text = ptt.stop_and_transcribe()
-            self.assertEqual(text, "open chrome")
-            self.assertFalse(ptt.is_recording)
-
-    def test_agent_brain_openai_model(self):
-        from actions.agent_brain import AgentBrain
-        brain = AgentBrain(model="openai/gpt-4o-mini")
-        mock_resp = MagicMock()
-        mock_resp.choices = [MagicMock(message=MagicMock(content="print('gpt hello')"))]
-
-        with patch("litellm.completion") as mock_comp:
-            mock_comp.return_value = mock_resp
-            with patch("config.OPENAI_API_KEY", "sk-proj-test123"):
-                code = brain._get_code_from_llm("test openai")
-                self.assertEqual(code, "print('gpt hello')")
-                _, kwargs = mock_comp.call_args
-                self.assertEqual(kwargs["model"], "openai/gpt-4o-mini")
-                self.assertEqual(kwargs["api_key"], "sk-proj-test123")
-
-    def test_streamer_offline_whisper_engine(self):
-        from speech.streamer import SpeechStreamer
-        import numpy as np
-        streamer = SpeechStreamer(auto_init_hardware=False)
-
-        mock_whisper_model = MagicMock()
-        mock_segment = MagicMock()
-        mock_segment.text = "navigate to github"
-        mock_whisper_model.transcribe.return_value = ([mock_segment], None)
-
-        with patch("speech.streamer.get_whisper_model", return_value=mock_whisper_model):
-            with patch("config.SPEECH_ENGINE", "whisper"):
-                dummy_audio = np.zeros(16000, dtype=np.float32)
-                res = streamer._transcribe(dummy_audio)
-                self.assertEqual(res, "navigate to github")
-
-    def test_streamer_google_engine_with_offline_whisper_fallback(self):
-        from speech.streamer import SpeechStreamer
-        import numpy as np
-        streamer = SpeechStreamer(auto_init_hardware=False)
-
-        mock_whisper_model = MagicMock()
-        mock_segment = MagicMock()
-        mock_segment.text = "offline whisper fallback"
-        mock_whisper_model.transcribe.return_value = ([mock_segment], None)
-
-        with patch.object(streamer, "_transcribe_google", return_value=""):
-            with patch("speech.streamer.get_whisper_model", return_value=mock_whisper_model):
-                with patch("config.SPEECH_ENGINE", "google"):
-                    dummy_audio = np.zeros(16000, dtype=np.float32)
-                    res = streamer._transcribe(dummy_audio)
-                    self.assertEqual(res, "offline whisper fallback")
-
-
-    def test_streamer_auto_engine_prefers_google_speech(self):
-        from speech.streamer import SpeechStreamer
-        import numpy as np
-        streamer = SpeechStreamer(auto_init_hardware=False)
-
-        with patch.object(streamer, "_transcribe_google", return_value="open chrome") as mock_google:
-            with patch.object(streamer, "_transcribe_whisper", return_value="whisper ignored") as mock_whisper:
-                with patch("config.SPEECH_ENGINE", "auto"):
-                    dummy_audio = np.zeros(16000, dtype=np.float32)
-                    res = streamer._transcribe(dummy_audio)
-                    self.assertEqual(res, "open chrome")
-                    mock_google.assert_called_once()
-                    mock_whisper.assert_not_called()
-
-    def test_streamer_auto_engine_falls_back_to_whisper_when_offline(self):
-        from speech.streamer import SpeechStreamer
-        import numpy as np
-        streamer = SpeechStreamer(auto_init_hardware=False)
-
-        mock_whisper_model = MagicMock()
-        mock_segment = MagicMock()
-        mock_segment.text = "offline local whisper voice"
-        mock_whisper_model.transcribe.return_value = ([mock_segment], None)
-
-        with patch.object(streamer, "_transcribe_google", return_value=""):
-            with patch("speech.streamer.get_whisper_model", return_value=mock_whisper_model):
-                with patch("config.SPEECH_ENGINE", "auto"):
-                    dummy_audio = np.zeros(16000, dtype=np.float32)
-                    res = streamer._transcribe(dummy_audio)
-                    self.assertEqual(res, "offline local whisper voice")
-
-
-    def test_autocorrect_speech_command_conversational_prefixes(self):
-        from speech.streamer import autocorrect_speech_command
-        self.assertEqual(autocorrect_speech_command("can you please open chrome"), "open chrome")
-        self.assertEqual(autocorrect_speech_command("could you open notepad"), "open notepad")
-        self.assertEqual(autocorrect_speech_command("i want to open calculator"), "open calculator")
-        self.assertEqual(autocorrect_speech_command("hey jarvis open brave"), "open brave")
-        self.assertEqual(autocorrect_speech_command("open calci"), "open calculator")
-        self.assertEqual(autocorrect_speech_command("open tele gram"), "open telegram")
-        self.assertEqual(autocorrect_speech_command("open what's app"), "open whatsapp")
-
-    def test_transcribe_google_dual_accent_fallback(self):
-        from speech.streamer import SpeechStreamer
-        import speech_recognition as sr
-        import numpy as np
-
-        streamer = SpeechStreamer(auto_init_hardware=False)
-        mock_rec = MagicMock()
-        # First call (en-IN) raises UnknownValueError, second call (en-US) returns "open youtube"
-        mock_rec.recognize_google.side_effect = [sr.UnknownValueError(), "open youtube"]
-
-        with patch("speech_recognition.Recognizer", return_value=mock_rec):
-            with patch("config.SPEECH_LANGUAGE", "en-IN"):
-                dummy_audio = np.zeros(16000, dtype=np.float32)
-                res = streamer._transcribe_google(dummy_audio)
-                self.assertEqual(res, "open youtube")
-                self.assertEqual(mock_rec.recognize_google.call_count, 2)
 
 
 if __name__ == "__main__":

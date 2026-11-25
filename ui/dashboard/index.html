@@ -520,7 +520,6 @@
         <button class="nav-btn" data-tab="plugins">Skills & Services</button>
       </nav>
 
-      <!-- Push To Talk Microphone Button -->
       <!-- Quick Focus Command Button -->
       <button class="quick-cmd-btn" id="quick-cmd-btn" onclick="focusConsoleInput()">
         <span>⌨️ Type Command</span>
@@ -564,7 +563,7 @@
       <section class="tab-view active" id="tab-console">
         <div style="display:flex; flex-wrap:wrap; gap:8px;">
           <span class="chip good">Type & Run Console</span>
-          <span class="chip good">100% Private (Zero Background Listening)</span>
+          <span class="chip">Text commands · Local or cloud AI</span>
           <span class="chip" id="active-model-badge">Model: Loading...</span>
         </div>
 
@@ -981,10 +980,7 @@
       save_api_key: async () => ({ success: true, message: 'Saved' }),
       test_llm_connection: async () => ({ success: true, message: 'Connected' }),
       set_active_model: async () => ({ success: true }),
-      test_microphone: async () => ({ success: true, level: 42, rms: 0.042 }),
-      record_voice_command: async () => ({ success: false, message: 'Mock' }),
-      get_speech_config: async () => ({ success: true, engine: 'auto', whisper_model: 'tiny' }),
-      save_speech_config: async (engine, model) => ({ success: true, engine, whisper_model: model, message: 'Saved' }),
+      get_runtime_status: async () => ({ success: true, model: 'Preview', input_mode: 'text', telegram_running: false }),
       set_telegram_config: async () => ({ success: true, message: 'Saved' }),
       start_telegram_bot: async () => ({ success: true, message: 'Started' }),
       stop_telegram_bot: async () => ({ success: true, message: 'Stopped' }),
@@ -1610,7 +1606,7 @@
             const pairingPin = (p.settings && p.settings.pairing_pin) || '';
             drawer.innerHTML = `
               <div style="font-size:11px; font-weight:700; color:var(--text); margin-bottom:2px;">Telegram Remote Gateway</div>
-              <div style="font-size:10px; color:var(--text-muted); margin-bottom:8px;">Control your PC globally via Telegram text or voice notes. Get your bot token from <b>@BotFather</b>.</div>
+              <div style="font-size:10px; color:var(--text-muted); margin-bottom:8px;">Control your PC via Telegram text commands. Get your bot token from <b>@BotFather</b>.</div>
               <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:10px;">
                 <div>
                   <div style="font-size:10px; font-weight:600; color:var(--text-muted); margin-bottom:3px;">1. Bot API Token (from @BotFather):</div>
@@ -1961,7 +1957,7 @@
         try {
           const res = await bridge().save_profile({
             user_name: $('setting-user-name').value.trim() || 'User',
-            wake_word: $('setting-assistant-name').value.trim() || 'Privacy68'
+            assistant_name: $('setting-assistant-name').value.trim() || 'Privacy68'
           });
           showToast(res.message || 'Profile saved!');
           await loadProfile();
@@ -1974,12 +1970,17 @@
       if (!grid) return;
       try {
         const rt = await bridge().get_runtime_status();
-        grid.innerHTML = `
-          <div class="chip good">Compute: Cloud AI Brain (${rt.model || 'Gemini 3.1'})</div>
-          <div class="chip good">Voice Gateway: Telegram Remote (Voice & Text)</div>
-          <div class="chip good">Local Mic: Fully Disabled (Zero Eavesdropping)</div>
-          <div class="chip good">Security: Windows DPAPI Enclave Active</div>
-        `;
+        grid.replaceChildren();
+        for (const label of [
+          `AI model: ${rt.model || 'Not configured'}`,
+          'Commands: Text',
+          `Telegram: ${rt.telegram_running ? 'Running' : 'Stopped'}`
+        ]) {
+          const chip = document.createElement('div');
+          chip.className = 'chip';
+          chip.textContent = label;
+          grid.appendChild(chip);
+        }
       } catch (e) {}
     }
 
