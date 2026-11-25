@@ -73,18 +73,14 @@ jobs:
           name: "PRIVACY68 ${{ github.ref_type == 'tag' && github.ref_name || format('v{0}', steps.version.outputs.VERSION) }}"
           body: |
             ## What's Changed in ${{ steps.version.outputs.VERSION }}
-            - **Telegram Remote Gateway**: Global out-of-band teleoperation over cellular 4G/5G with offline Faster-Whisper int8 voice note transcription, dynamic 6-digit PIN pairing, and desktop screenshot delivery.
-            - **Strict Zero-Mic Privacy**: PC microphone hardware is permanently unallocated and disabled. Zero background audio polling or eavesdropping.
-            - **Type-and-Run Quick Command Bar**: Instant HUD overlay triggered via `Ctrl+Alt+Space` with automatic foreground focus.
-            - **Google Gemini 3.1 Flash-Lite Core**: Default AI engine upgraded to ultra-fast Gemini 3.1 with automatic failover to Groq LPU (Llama-3.3 70B), Claude 3.5 Sonnet, and OpenAI GPT-4o-mini.
-            - **Zero-CUDA Architecture**: Removed 800MB local CUDA DLLs and cuDNN zip downloaders. Zero local GPU overhead.
-            - **Learned Skill Instant Recall**: Fast-path execution with live command stdout output streaming.
-            - **Complete Technical Documentation**: Brand new `doc/` directory with comprehensive architecture, channel, and security dossiers.
-            - **100% Automated Test Pass Rate**: Full test suite passing 121/121 tests.
+            - Text commands through the dashboard, tray command bar, and paired Telegram chat.
+            - Removed recording, transcription, voice settings, and speech dependencies.
+            - Preserved typed message content and corrected browser failure reporting.
+            - Simplified UI threading and application shutdown.
+            - Corrected package discovery and bundled dashboard and skill resources.
 
-            ## Requirements & Acceleration
-            - **Zero Setup Cloud AI**: Sub-400ms reasoning with free Google Gemini API or Groq LPU.
-            - **Zero Local GPU Overhead**: Runs on any Windows 10/11 laptop or desktop CPU with quantized Faster-Whisper.
+            ## Requirements
+            Windows 10/11 and WebView2 for the dashboard. Configure a cloud AI provider or a separate local model server for complex commands.
           draft: false
           prerelease: false
           files: |

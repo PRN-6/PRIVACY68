@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PRIVACY68 // Autonomous Private Desktop Assistant (v1.7.4)</title>
     <meta name="description"
-        content="PRIVACY68 is a minimalist, ultra-fast, 100% private desktop AI assistant for Windows with Zero-Mic hardware isolation, Three-Lane Command Router, Telegram Remote Gateway, and cascading multi-cloud AI.">
+        content="PRIVACY68 is a minimalist, ultra-fast, 100% private desktop AI assistant for Windows with text command input, Three-Lane Command Router, Telegram Remote Gateway, and cascading multi-cloud AI.">
 
     <!-- Retro & Monospace Typography (Silkscreen + JetBrains Mono + Space Mono) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -75,7 +75,7 @@
                 <!-- Status Badge -->
                 <div class="hero-pill">
                     <span class="pill-pulse"></span>
-                    <span class="pill-text">STRICT ZERO-MIC HARDWARE ISOLATION · MULTI-CLOUD FAILOVER · WINDOWS TELEOPERATION</span>
+                    <span class="pill-text">TEXT COMMAND INPUT · MULTI-CLOUD FAILOVER · WINDOWS TELEOPERATION</span>
                 </div>
 
                 <!-- Massive Pixel Brutalist Wordmark -->
@@ -178,9 +178,9 @@
                         <span class="spec-num">[ 02 ]</span>
                         <span class="spec-icon"><i data-lucide="shield-check"></i></span>
                     </div>
-                    <h3 class="spec-title">Strict Zero-Mic Privacy</h3>
-                    <p class="spec-body">Workstation microphone is completely disabled. Voice is received out-of-band via Telegram voice notes decoded in RAM with zero disk leaks.</p>
-                    <div class="spec-tag">ZERO EAVESDROPPING</div>
+                    <h3 class="spec-title">Text Command Input</h3>
+                    <p class="spec-body">Type instructions in the dashboard, Quick Command Bar, or paired Telegram chat. No recording or transcription pipeline is included.</p>
+                    <div class="spec-tag">TYPE AND RUN</div>
                 </div>
 
                 <!-- Spec Card 3 -->
@@ -201,7 +201,7 @@
                         <span class="spec-icon"><i data-lucide="send"></i></span>
                     </div>
                     <h3 class="spec-title">Telegram Remote Gateway</h3>
-                    <p class="spec-body">Global out-of-band smartphone teleoperation over 4G/5G. Send voice notes, trigger PC actions, and request live desktop screenshots (<code>/screenshot</code>).</p>
+                    <p class="spec-body">Global out-of-band smartphone teleoperation over 4G/5G. Send text commands, trigger PC actions, and request desktop screenshots (<code>/screenshot</code>).</p>
                     <div class="spec-tag">4G/5G TELEOPERATION</div>
                 </div>
 
@@ -223,8 +223,8 @@
                         <span class="spec-icon"><i data-lucide="layers"></i></span>
                     </div>
                     <h3 class="spec-title">Quick Command Bar HUD</h3>
-                    <p class="spec-body">Lightweight transparent HUD triggered with <code>Ctrl+Alt+Space</code>. Execute natural-language commands and Windows automations instantly.</p>
-                    <div class="spec-tag">HOTKEY: CTRL+ALT+SPACE</div>
+                    <p class="spec-body">Lightweight transparent HUD triggered with <code>Tray → Run Command</code>. Execute natural-language commands and Windows automations instantly.</p>
+                    <div class="spec-tag">TRAY: RUN COMMAND</div>
                 </div>
             </div>
         </section>
@@ -234,7 +234,7 @@
             <div class="section-title-wrap">
                 <span class="section-index">[ 03 // RUNTIME &amp; SPECIFICATIONS ]</span>
                 <h2 class="section-heading">Lightweight Footprint &amp; Universal AI Core</h2>
-                <p class="section-desc">Zero heavy CUDA dependencies. Runs out-of-the-box on standard Windows hardware with lightweight CPU quantization.</p>
+                <p class="section-desc">Use a cloud provider or connect a separately installed local model server.</p>
             </div>
 
             <div class="specs-grid">
@@ -262,16 +262,16 @@
                         <span class="spec-num">[ SPEC-02 ]</span>
                         <span class="spec-icon"><i data-lucide="cpu"></i></span>
                     </div>
-                    <h3 class="spec-title">Lightweight CPU INT8 Footprint</h3>
+                    <h3 class="spec-title">Simpler Desktop Runtime</h3>
                     <p class="spec-body">
-                        Zero gigabytes of bloated CUDA runtimes or driver compilation. PRIVACY68 runs cleanly on CPU with minimal memory overhead.
+                        The desktop runtime includes text input, command routing, and automation. Local AI model resources are managed by your chosen provider.
                     </p>
                     <ul style="color: var(--text-secondary); font-size: 0.85rem; margin: 10px 0 12px 18px; line-height: 1.6;">
                         <li><strong>Memory Footprint:</strong> Consumes only ~180MB RAM at runtime, leaving full workstation memory free for games and developer IDEs.</li>
-                        <li><strong>In-Memory Decoding:</strong> Telegram voice notes are converted directly in RAM via PyAV and transcribed using CPU-quantized Faster-Whisper.</li>
+                        <li><strong>Direct Text Input:</strong> Telegram text commands use the same executor as the desktop dashboard.</li>
                         <li><strong>100% Zero-Leak Guarantee:</strong> Zero temporary WAV/MP3 files written to disk; audio buffers are wiped immediately after transcription.</li>
                     </ul>
-                    <div class="spec-tag">~180MB RAM FOOTPRINT</div>
+                    <div class="spec-tag">TEXT COMMAND RUNTIME</div>
                 </div>
             </div>
         </section>

@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Documentation // PRIVACY68 Architecture & Manual (v1.7.4)</title>
     <meta name="description"
-        content="Technical documentation for PRIVACY68 v1.7.4: Zero-Mic hardware isolation, Three-Lane Command Router, Telegram Remote Gateway, 3-tier security guard, and cascading multi-cloud AI failover.">
+        content="Technical documentation for PRIVACY68 v1.7.4: text command input, Three-Lane Command Router, Telegram Remote Gateway, 3-tier security guard, and cascading multi-cloud AI failover.">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -65,7 +65,7 @@
             <div class="section-title-wrap">
                 <span class="section-index">[ 02 // SYSTEM SPECIFICATIONS &amp; MANUAL · v1.7.4 ]</span>
                 <h2 class="section-heading">PRIVACY68 Architecture &amp; System Manual</h2>
-                <p class="section-desc">Comprehensive reference covering the Three-Lane Command Router, Zero-Mic hardware isolation, Telegram Remote Gateway, 3-tier security guard, and cascading multi-cloud failover.</p>
+                <p class="section-desc">Comprehensive reference covering the Three-Lane Command Router, text command input, Telegram Remote Gateway, 3-tier security guard, and cascading multi-cloud failover.</p>
             </div>
 
             <div class="docs-wrapper">
@@ -74,12 +74,12 @@
                     <div class="docs-menu-title">// NAVIGATION INDEX</div>
                     <ul class="docs-nav-list">
                         <li><a href="#three-lane-router" class="docs-nav-link active">01. Three-Lane Router</a></li>
-                        <li><a href="#zero-mic-isolation" class="docs-nav-link">02. Zero-Mic Privacy &amp; Speech</a></li>
+                        <li><a href="#text-commands" class="docs-nav-link">02. Text Commands</a></li>
                         <li><a href="#telegram-gateway" class="docs-nav-link">03. Telegram Remote Gateway</a></li>
                         <li><a href="#security-guard" class="docs-nav-link">04. 3-Tier Security Guard</a></li>
-                        <li><a href="#cloud-ai-perf" class="docs-nav-link">05. Cloud AI &amp; INT8 Performance</a></li>
+                        <li><a href="#cloud-ai-perf" class="docs-nav-link">05. Cloud AI Configuration</a></li>
                         <li><a href="#openclaw-skills" class="docs-nav-link">06. OpenClaw Skills &amp; Services</a></li>
-                        <li><a href="#command-reference" class="docs-nav-link">07. Voice &amp; Bar Command Reference</a></li>
+                        <li><a href="#command-reference" class="docs-nav-link">07. Text Command Reference</a></li>
                         <li><a href="#config-reference" class="docs-nav-link">08. Configuration Reference</a></li>
                     </ul>
                 </aside>
@@ -97,7 +97,7 @@
                             PRIVACY68 v1.7.4 routes every user request through a high-efficiency <strong>Three-Lane Execution Architecture</strong> (<code>actions/executor.py</code>). This tri-lane pipeline guarantees instant sub-millisecond execution for deterministic OS operations, zero-token replay for previously synthesized tasks, and robust multi-cloud LLM reasoning with automatic self-healing for complex compound workflows.
                         </p>
                         <div class="doc-code-preview">
-Local Quick Command Bar (Ctrl+Alt+Space) / Telegram Remote Gateway (RAM Audio)
+Local Quick Command Bar (Tray → Run Command) / Telegram Remote Gateway (RAM Audio)
   |
   v
 Action Executor (actions/executor.py - Three-Lane Command Router):
@@ -140,24 +140,14 @@ Action Executor (actions/executor.py - Three-Lane Command Router):
                         </p>
                     </div>
 
-                    <!-- Section 02: Zero-Mic Hardware Policy & Speech -->
-                    <div class="doc-block" id="zero-mic-isolation">
+                    <!-- Section 02: Text commands -->
+                    <div class="doc-block" id="text-commands">
                         <div class="doc-block-header">
-                            <i data-lucide="shield" class="doc-block-icon"></i>
-                            <h3 class="doc-block-title">02 // Strict Zero-Mic Hardware Policy &amp; Acoustic Pipeline</h3>
+                            <i data-lucide="keyboard" class="doc-block-icon"></i>
+                            <h3 class="doc-block-title">02 // Text Commands</h3>
                         </div>
-                        <p class="doc-text">
-                            Traditional assistants maintain background audio listeners to detect wake words (*"Hey Siri"*, *"Alexa"*), creating security vulnerabilities and room eavesdropping risks. PRIVACY68 enforces a strict <strong>Zero-Mic Hardware Isolation Model</strong>:
-                        </p>
-                        <ul style="margin-left: 20px; color: var(--text-secondary); margin-bottom: 20px; line-height: 1.8;">
-                            <li><strong>Zero Local Mic Eavesdropping:</strong> The workstation PC microphone is completely disabled. No background audio daemons, polling loops, or ambient recordings exist on the workstation.</li>
-                            <li><strong>Out-of-Band Voice Processing:</strong> Voice commands are received exclusively via encrypted Telegram voice notes. Audio bytes are decoded directly in RAM using PyAV, with <strong>zero temporary audio files written to disk</strong>.</li>
-                            <li><strong>Dynamic Peak Normalization:</strong> Every in-memory audio chunk is dynamically scaled using peak amplitude scaling:
-                                <br><code style="color: var(--color-ruby); display: inline-block; margin-top: 4px; font-weight: bold;">norm = (audio / peak) × 0.9</code>
-                                <br>Maximizes dynamic range and acoustic clarity for soft-spoken voice notes without signal clipping.</li>
-                            <li><strong>Dual Speech Transcription Engine:</strong> Uses Google Web Speech ASR for instant cloud transcription with automatic local Faster-Whisper int8 CPU fallback if internet access is interrupted.</li>
-                            <li><strong>Quick Command Bar (Ctrl+Alt+Space):</strong> For hands-on PC interaction, users trigger the transparent HUD command bar to type natural-language instructions with zero audio capture.</li>
-                        </ul>
+                        <p class="doc-text">Type instructions in the dashboard, the tray's Quick Command Bar, or your paired Telegram chat. Commands preserve quoted text, punctuation, repeated words, and case. Telegram attachments are not downloaded or executed.</p>
+                        <p class="doc-text">Cloud AI and Telegram use external services. Choose a local model endpoint when local inference is required. Generated scripts run with your Windows user permissions.</p>
                     </div>
 
                     <!-- Section 03: Telegram Remote Gateway -->
@@ -190,11 +180,6 @@ Action Executor (actions/executor.py - Three-Lane Command Router):
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr>
-                                        <td><code>Voice Note (Push-to-Talk)</code></td>
-                                        <td>Transcribed in RAM via Faster-Whisper int8 &amp; executed through Three-Lane Router.</td>
-                                        <td>Text execution summary with stdout logs.</td>
-                                    </tr>
                                     <tr>
                                         <td><code>/screenshot</code></td>
                                         <td>Captures full-resolution desktop screenshot across all active monitors.</td>
@@ -266,7 +251,7 @@ Action Executor (actions/executor.py - Three-Lane Command Router):
                     <div class="doc-block" id="cloud-ai-perf">
                         <div class="doc-block-header">
                             <i data-lucide="zap" class="doc-block-icon"></i>
-                            <h3 class="doc-block-title">05 // Cascading Cloud AI Brain &amp; INT8 CPU Execution</h3>
+                            <h3 class="doc-block-title">05 // Configurable AI Providers</h3>
                         </div>
                         <p class="doc-text">
                             PRIVACY68 utilizes high-speed Cloud AI inference APIs (Google Gemini 3.1 Flash-Lite, Groq Llama-3.3 70B, Claude 3.5 Sonnet, and OpenAI GPT-4o-mini), providing instant sub-second reasoning with <strong>zero local GPU overhead</strong> and zero CUDA driver dependencies:
@@ -294,18 +279,12 @@ Action Executor (actions/executor.py - Three-Lane Command Router):
                                         <td><code>~180ms – 280ms</code></td>
                                         <td>0 MB Local VRAM (LPU Cloud)</td>
                                     </tr>
-                                    <tr>
-                                        <td><strong>Faster-Whisper (INT8 CPU)</strong></td>
-                                        <td>Telegram Voice Decoder</td>
-                                        <td><code>~400ms – 650ms</code></td>
-                                        <td>~180 MB System RAM</td>
-                                    </tr>
                                 </tbody>
                             </table>
                         </div>
                         <h4 style="color: var(--accent-cyan); margin: 15px 0 8px 0; font-family: var(--font-retro);">Lightweight Hardware Footprint</h4>
                         <p class="doc-text">
-                            By eliminating heavy local CUDA/cuDNN gigabyte installations, PRIVACY68 runs cleanly on any standard Windows 10/11 x64 laptop or desktop, consuming less than 200MB total working memory.
+                            The desktop app runs on Windows 10/11. Memory and acceleration requirements depend on the selected model provider; local models are installed separately.
                         </p>
                     </div>
 
@@ -337,13 +316,13 @@ Action Executor (actions/executor.py - Three-Lane Command Router):
                         <p class="doc-text"><a href="plugins.html">Explore the full OpenClaw Skills &amp; Services Registry.</a></p>
                     </div>
 
-                    <!-- Section 07: Voice & Command Reference -->
+                    <!-- Section 07: Text Command Reference -->
                     <div class="doc-block" id="command-reference">
                         <div class="doc-block-header">
                             <i data-lucide="terminal" class="doc-block-icon"></i>
-                            <h3 class="doc-block-title">07 // Voice &amp; Quick Command Bar Reference</h3>
+                            <h3 class="doc-block-title">07 // Quick Command Bar Reference</h3>
                         </div>
-                        <p class="doc-text">All commands can be entered via the Quick Command Bar (<code>Ctrl+Alt+Space</code>) or spoken via Telegram voice notes:</p>
+                        <p class="doc-text">Enter commands in the dashboard, the tray Quick Command Bar, or your paired Telegram chat:</p>
                         <div class="table-responsive">
                             <table class="cmd-table">
                                 <thead>
@@ -421,15 +400,6 @@ Action Executor (actions/executor.py - Three-Lane Command Router):
 # config.py &amp; .env Reference (PRIVACY68 v1.7.4)
 
 APP_VERSION          = "1.7.4"
-
-# Audio &amp; Speech Configuration (Out-of-band RAM Decoding)
-SAMPLE_RATE          = 16000
-BLOCK_SIZE           = 1280
-CHANNELS             = 1
-DTYPE                = "float32"
-SPEECH_ENGINE        = "auto"         # Google Web Speech primary, Faster-Whisper fallback
-WHISPER_DEVICE       = "cpu"          # Lightweight CPU execution
-WHISPER_COMPUTE_TYPE = "int8"         # INT8 quantization (~180MB RAM)
 
 # Cascading Multi-Cloud Agent Brain Routing
 AGENT_BRAIN_MODEL    = "gemini/gemini-3.1-flash-lite"

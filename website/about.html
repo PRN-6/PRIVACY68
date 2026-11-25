@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>About // PRIVACY68 &amp; Developer Spotlight (v1.7.4)</title>
     <meta name="description"
-        content="Learn about PRIVACY68 v1.7.4, its Zero-Mic hardware isolation, Three-Lane router, Telegram Remote Gateway, and developer profile.">
+        content="Learn about PRIVACY68 v1.7.4, its text command input, Three-Lane router, Telegram Remote Gateway, and developer profile.">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -72,10 +72,10 @@
             <div class="about-hero">
                 <h3
                     style="font-family: var(--font-pixel); font-size: 1.1rem; color: var(--color-ruby); margin-bottom: 12px;">
-                    // THE ZERO-MIC PRIVACY PHILOSOPHY
+                    // TEXT COMMANDS AND DATA HANDLING
                 </h3>
                 <p style="color: var(--text-secondary); font-size: 0.95rem; line-height: 1.7;">
-                    PRIVACY68 eliminates workstation microphone eavesdropping entirely. The PC microphone hardware is <strong>completely disabled at all times</strong>, preventing wake-word background daemon listeners and room telemetry leaks. For hands-on PC interaction, users trigger the <strong>Quick Command Bar (<code>Ctrl+Alt+Space</code>)</strong>; for voice control, commands are transmitted out-of-band via encrypted Telegram voice notes decoded strictly in RAM (PyAV) with zero audio files written to disk.
+                    PRIVACY68 accepts typed instructions through the dashboard, tray Quick Command Bar, and paired Telegram chat. External model providers and Telegram process requests according to your configuration. The app does not capture audio or modify system recording devices.
                 </p>
                 <p style="color: var(--text-secondary); font-size: 0.95rem; line-height: 1.7; margin-top: 12px;">
                     Commands route through an intelligent <strong>Three-Lane Execution Router</strong>: Lane 1 executes built-in Win32 OS controls (volume, virtual desktops, window controls, and app launching) in under 5ms with zero token cost; Lane 2 replays auto-crystallized learned skills (<code>learned_skills.json</code>) with 0ms latency; Lane 3 leverages a cascading multi-cloud Agent Brain (Gemini 3.1 Flash-Lite &rarr; Groq LPU &rarr; Claude &rarr; GPT-4o &rarr; Ollama) with AST security gating and self-healing error correction.
@@ -109,10 +109,10 @@
 
             <div class="tech-stack-grid">
                 <div class="tech-card">
-                    <div class="tech-card-header"><i data-lucide="cpu"></i> ZERO-MIC SPEECH</div>
-                    <h4 style="color: var(--text-pure); font-size: 1.05rem;">Faster-Whisper (INT8 CPU)</h4>
+                    <div class="tech-card-header"><i data-lucide="cpu"></i> TEXT COMMANDS</div>
+                    <h4 style="color: var(--text-pure); font-size: 1.05rem;">Tkinter Command Bar</h4>
                     <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 6px;">
-                        RAM-only voice note decoding with lightweight INT8 CPU quantization (~180MB RAM footprint).
+                        Asynchronous command execution with results delivered to the UI through a main-thread queue.
                     </p>
                 </div>
 
@@ -183,14 +183,14 @@
                     <li style="border-left: 2px solid var(--border-dim); padding-left: 16px; margin-top: 12px;">
                         <div style="font-family: var(--font-pixel); color: var(--text-muted); font-size: 0.8rem;">v1.7.0
                             · PREVIOUS RELEASE</div>
-                        <h4 style="color: var(--text-pure); margin-top: 2px;">Zero-Mic Hardware Isolation &amp; Telegram RAM Audio Decoding</h4>
-                        <p style="color: var(--text-secondary); font-size: 0.85rem;">Enforces 100% strict workstation microphone isolation; introduces out-of-band Telegram Remote Gateway with in-memory PyAV audio decoding and CPU INT8 Faster-Whisper transcription.</p>
+                        <h4 style="color: var(--text-pure); margin-top: 2px;">Text Commands &amp; Telegram Remote Control</h4>
+                        <p style="color: var(--text-secondary); font-size: 0.85rem;">Provides typed desktop commands, paired Telegram remote control, and configurable local or cloud AI inference.</p>
                     </li>
                     <li style="border-left: 2px solid var(--border-dim); padding-left: 16px; margin-top: 12px;">
                         <div style="font-family: var(--font-pixel); color: var(--text-muted); font-size: 0.8rem;">v1.6.5
                             · ARCHIVED RELEASE</div>
                         <h4 style="color: var(--text-secondary); margin-top: 2px;">Quick Command Bar Transparent Overlay &amp; Multi-Prefix Recovery</h4>
-                        <p style="color: var(--text-muted); font-size: 0.85rem;">Introduced transparent floating Quick Command Bar triggered via system tray and Ctrl+Alt+Space, dual-accent recovery, and multi-prefix conversational cleaners.</p>
+                        <p style="color: var(--text-muted); font-size: 0.85rem;">Introduced transparent floating Quick Command Bar triggered via system tray and Tray → Run Command, dual-accent recovery, and multi-prefix conversational cleaners.</p>
                     </li>
                 </ul>
             </div>
